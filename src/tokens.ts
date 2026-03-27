@@ -33,13 +33,13 @@ export const C = {
   // Text
   textPrimary: "#c8c8d8",
   textSecondary: "#8a8aaa",
-  textMuted: "#7a7aaa",
-  textDim: "#6a6a8a",
-  textDimmer: "#5a5a7a",
-  textDimmest: "#7070a0",
-  textSubtle: "#4a4a6a",
-  textFaint: "#555580",
-  textNavArrow: "#5a5a9a",
+  textMuted: "#9090b8",
+  textDim: "#9090b0",
+  textDimmer: "#8a8aaa",
+  textDimmest: "#8888bb",
+  textSubtle: "#7a7a9a",
+  textFaint: "#8888b8",
+  textNavArrow: "#7878b0",
   textWhite: "#fff",
 
   // Semantic
@@ -148,6 +148,7 @@ export const O = {
 export const Z = {
   cursorOverlay: 1,
   dropOverlay: 999,
+  galleryPreview: 950,
   modal: 1000,
   toast: 2000,
 } as const;

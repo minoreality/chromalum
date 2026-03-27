@@ -4,6 +4,7 @@ import { rgbStr, hexStr } from "../utils";
 import { C, FS, SP } from "../tokens";
 import { LEVEL_MASK } from "../constants";
 import type { CanvasData } from "../types";
+import { useTranslation } from "../i18n";
 
 interface Slice {
   color: string;
@@ -23,7 +24,11 @@ function computeSlices(entries: { count: number; color: string; info: string[]; 
 }
 
 function drawRing(
-  slices: Slice[], cx: number, cy: number, rOuter: number, rInner: number,
+  slices: Slice[],
+  cx: number,
+  cy: number,
+  rOuter: number,
+  rInner: number,
   onSelect: (info: string[] | null, color?: string) => void,
 ): React.ReactNode[] {
   if (slices.length === 0) return [];
@@ -38,14 +43,25 @@ function drawRing(
     const handlers = {
       onMouseEnter: () => onSelect(s.info, s.color),
       onMouseLeave: () => onSelect(null),
-      onClick: (e: React.MouseEvent) => { e.stopPropagation(); onSelect(s.info, s.color); },
+      onClick: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onSelect(s.info, s.color);
+      },
       style: { cursor: "pointer" } as React.CSSProperties,
     };
 
     if (s.fraction > 0.999) {
       elems.push(
-        <circle key={i} cx={cx} cy={cy} r={(rOuter + rInner) / 2}
-          fill="none" stroke={s.color} strokeWidth={rOuter - rInner} {...handlers} />
+        <circle
+          key={i}
+          cx={cx}
+          cy={cy}
+          r={(rOuter + rInner) / 2}
+          fill="none"
+          stroke={s.color}
+          strokeWidth={rOuter - rInner}
+          {...handlers}
+        />,
       );
       break;
     }
@@ -64,7 +80,7 @@ function drawRing(
     // Only show border on glazed slices
     const showBorder = s.isGlazed;
     elems.push(
-      <path key={i} d={d} fill={s.color} stroke={showBorder ? C.bgPanel : "none"} strokeWidth={showBorder ? 0.5 : 0} {...handlers} />
+      <path key={i} d={d} fill={s.color} stroke={showBorder ? C.bgPanel : "none"} strokeWidth={showBorder ? 0.5 : 0} {...handlers} />,
     );
     angle += sweep;
   }
@@ -80,6 +96,7 @@ interface CompositionDonutProps {
 }
 
 export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist, total, colorLUT, cc }: CompositionDonutProps) {
+  const { t } = useTranslation();
   const [hover, setHover] = useState<{ info: string[]; color: string } | null>(null);
 
   const onSelect = useCallback((info: string[] | null, color?: string) => {
@@ -87,7 +104,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
   }, []);
 
   const { graySlices, colorSlices, glazeSlices, hasGlaze } = useMemo(() => {
-    const pct = (n: number) => (n / Math.max(1, total) * 100).toFixed(1);
+    const pct = (n: number) => ((n / Math.max(1, total)) * 100).toFixed(1);
 
     // === Layer 1: Gray ===
     const grayEntries: { count: number; color: string; info: string[] }[] = [];
@@ -96,11 +113,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
       grayEntries.push({
         count: hist[lv],
         color: `rgb(${g},${g},${g})`,
-        info: [
-          `L${lv} ${LEVEL_INFO[lv].name}`,
-          `トーン値: ${g}`,
-          `${hist[lv].toLocaleString()} px (${pct(hist[lv])}%)`,
-        ],
+        info: [`L${lv} ${LEVEL_INFO[lv].name}`, t("donut_tone_value", g), `${hist[lv].toLocaleString()} px (${pct(hist[lv])}%)`],
       });
     }
 
@@ -117,8 +130,8 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
         color: rgbStr(rgb),
         info: [
           `L${lv} ${LEVEL_INFO[lv].name}`,
-          `${hexStr(rgb)} (色相 ${hueLabel})`,
-          `候補 ${ci + 1}/${alts.length}`,
+          `${hexStr(rgb)} (${t("donut_hue", hueLabel)})`,
+          t("donut_candidate", ci + 1, alts.length),
           `${hist[lv].toLocaleString()} px (${pct(hist[lv])}%)`,
         ],
       });
@@ -131,7 +144,12 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
     const n = data.length;
 
     // Count per (level, actual color) group — merge default and glazed if same color
-    interface GlazeGroup { count: number; rgb: [number, number, number]; isGlazed: boolean; lv: number }
+    interface GlazeGroup {
+      count: number;
+      rgb: [number, number, number];
+      isGlazed: boolean;
+      lv: number;
+    }
     const glazePerLevel: Map<string, GlazeGroup>[] = [];
     for (let lv = 0; lv < 8; lv++) glazePerLevel.push(new Map());
 
@@ -145,7 +163,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
       } else {
         hasGlazeOverride = true;
         const alts = LEVEL_CANDIDATES[lv];
-        const ci = ((cm - 1) % alts.length + alts.length) % alts.length;
+        const ci = (((cm - 1) % alts.length) + alts.length) % alts.length;
         rgb = alts[ci]?.rgb ?? colorLUT[lv];
         // Only mark as glazed if actual color differs from default
         const defRgb = colorLUT[lv];
@@ -164,23 +182,23 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
     const glazeEntries: { count: number; color: string; info: string[]; isGlazed?: boolean }[] = [];
     for (let lv = 0; lv < 8; lv++) {
       // Check if this level has any glaze changes at all
-      const levelHasGlaze = [...glazePerLevel[lv].values()].some(g => g.isGlazed);
+      const levelHasGlaze = [...glazePerLevel[lv].values()].some((g) => g.isGlazed);
       for (const [, g] of glazePerLevel[lv]) {
         // For levels with no glaze changes, draw with same color but no border
         if (!levelHasGlaze && !g.isGlazed) {
-          glazeEntries.push({ count: g.count, color: rgbStr(g.rgb), info: [
-            `L${lv} ${hexStr(g.rgb)}`,
-            `${g.count.toLocaleString()} px (${pct(g.count)}%)`,
-          ], isGlazed: false });
+          glazeEntries.push({
+            count: g.count,
+            color: rgbStr(g.rgb),
+            info: [`L${lv} ${hexStr(g.rgb)}`, `${g.count.toLocaleString()} px (${pct(g.count)}%)`],
+            isGlazed: false,
+          });
           continue;
         }
         const defaultColor = hexStr(colorLUT[lv]);
         const actualColor = hexStr(g.rgb);
-        const lines = [
-          `L${lv} ${actualColor}`,
-        ];
+        const lines = [`L${lv} ${actualColor}`];
         if (g.isGlazed) {
-          lines.push(`グレーズ変更 (元: ${defaultColor})`);
+          lines.push(t("donut_glaze_changed", defaultColor));
         }
         lines.push(`${g.count.toLocaleString()} px (${pct(g.count)}%)`);
         glazeEntries.push({ count: g.count, color: rgbStr(g.rgb), info: lines, isGlazed: g.isGlazed });
@@ -193,10 +211,11 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
       glazeSlices: computeSlices(glazeEntries, total),
       hasGlaze: hasGlazeOverride,
     };
-  }, [cvs.data, cvs.colorMap, hist, total, colorLUT, cc]);
+  }, [cvs.data, cvs.colorMap, hist, total, colorLUT, cc, t]);
 
   const size = 260;
-  const cx = size / 2, cy = size / 2;
+  const cx = size / 2,
+    cy = size / 2;
 
   const grayOuter = hasGlaze ? 42 : 50;
   const grayInner = hasGlaze ? 26 : 28;
@@ -206,30 +225,38 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
   const glazeInner = 81;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-      onClick={() => setHover(null)}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {drawRing(graySlices, cx, cy, grayOuter, grayInner, onSelect)}
-        {drawRing(colorSlices, cx, cy, colorOuter, colorInner, onSelect)}
-        {hasGlaze && drawRing(glazeSlices, cx, cy, glazeOuter, glazeInner, onSelect)}
-        {hover && (
-          <circle cx={cx} cy={cy} r={grayInner - 8} fill={hover.color} stroke={C.border} strokeWidth={1} />
-        )}
-      </svg>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} onClick={() => setHover(null)}>
+      <div style={{ maxWidth: "min(260px, 90vw)", width: "100%" }}>
+        <svg width="100%" height="auto" viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+          {drawRing(graySlices, cx, cy, grayOuter, grayInner, onSelect)}
+          {drawRing(colorSlices, cx, cy, colorOuter, colorInner, onSelect)}
+          {hasGlaze && drawRing(glazeSlices, cx, cy, glazeOuter, glazeInner, onSelect)}
+          {hover && <circle cx={cx} cy={cy} r={grayInner - 18} fill={hover.color} stroke={C.border} strokeWidth={1} />}
+        </svg>
+      </div>
       {/* Legend */}
-      <div style={{ display: "flex", gap: 8, fontSize: FS.xs, color: C.textDimmer, marginTop: 4 }}>
-        <span>第一層: トーン</span>
-        <span>第二層: カラー</span>
-        {hasGlaze && <span>第三層: グレーズ</span>}
+      <div style={{ display: "flex", gap: 8, fontSize: FS.xs, color: C.textDimmer, marginTop: SP.lg }}>
+        <span>{t("donut_layer_tone")}</span>
+        <span>{t("donut_layer_color")}</span>
+        {hasGlaze && <span>{t("donut_layer_glaze")}</span>}
       </div>
       {/* Info text */}
-      <div style={{
-        minHeight: 36, marginTop: SP.md,
-        fontSize: FS.sm, fontFamily: "monospace", textAlign: "center",
-        visibility: hover ? "visible" : "hidden",
-      }}>
+      <div
+        style={{
+          minHeight: 56,
+          marginTop: SP.xl,
+          padding: `${SP.lg}px ${SP.xl}px`,
+          fontSize: FS.sm,
+          fontFamily: "monospace",
+          textAlign: "center",
+          lineHeight: 1.6,
+          visibility: hover ? "visible" : "hidden",
+        }}
+      >
         {hover?.info.map((line, i) => (
-          <div key={i} style={{ color: i === 0 ? C.textPrimary : C.textDimmer }}>{line}</div>
+          <div key={i} style={{ color: i === 0 ? C.textPrimary : C.textDimmer }}>
+            {line}
+          </div>
         ))}
       </div>
     </div>

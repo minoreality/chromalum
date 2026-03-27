@@ -17,7 +17,12 @@
   --c-border-hover: #3a3a5a;
 }
 
-/* ── Mobile overflow prevention ── */
+/* ── Base reset ── */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--c-bg-root, #0a0a12);
+}
 body {
   overflow-x: hidden;
 }
@@ -70,6 +75,57 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 
+/* ── Responsive side-by-side layout for wide screens ── */
+.panel-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+.panel-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Hex diagram title: overlay on mobile, standalone on PC */
+.hex-title-standalone {
+  display: none;
+}
+.hex-title-overlay {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .hex-title-standalone {
+    display: block;
+  }
+  .hex-title-overlay {
+    display: none;
+  }
+  .panel-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 32px;
+  }
+  .panel-canvas {
+    flex-shrink: 0;
+    width: var(--display-max, auto);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .panel-layout > .panel-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    flex: 1;
+  }
+}
+
 /* Toast animation */
 @keyframes toast-in {
   from {
@@ -79,5 +135,24 @@ input[type="checkbox"]:focus-visible {
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ── Safe area support for notched devices ── */
+#root {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(80px, env(safe-area-inset-bottom));
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -3,6 +3,8 @@ import { MAX_IMAGE_SIZE } from "../constants";
 import { LUMA_R, LUMA_G, LUMA_B, GRAY_LUT } from "../color-engine";
 import { useSyncRef } from "./useSyncRef";
 
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"]);
+
 export interface FileDropResult {
   dragging: boolean;
   loadImg: (file: File) => void;
@@ -23,20 +25,30 @@ export function useFileDrop(
   const [dragging, setDragging] = useState(false);
   const dragCountRef = useRef(0);
 
-  const loadImg = useCallback((file: File) => {
-    if (!file || !file.type.startsWith("image/")) return;
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onerror = () => { URL.revokeObjectURL(url); showToast(t("toast_image_load_failed"), "error"); };
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-        const iw = Math.max(1, img.width), ih = Math.max(1, img.height);
+  const loadImg = useCallback(
+    (file: File) => {
+      if (!file || !ALLOWED_IMAGE_TYPES.has(file.type)) return;
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        showToast(t("toast_image_load_failed"), "error");
+      };
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const iw = Math.max(1, img.width),
+          ih = Math.max(1, img.height);
         const scale = Math.min(1, MAX_IMAGE_SIZE / iw, MAX_IMAGE_SIZE / ih);
         const w = Math.min(MAX_IMAGE_SIZE, Math.max(1, Math.round(iw * scale)));
         const h = Math.min(MAX_IMAGE_SIZE, Math.max(1, Math.round(ih * scale)));
-        const tc = document.createElement("canvas"); tc.width = w; tc.height = h;
+        const tc = document.createElement("canvas");
+        tc.width = w;
+        tc.height = h;
         const ctx = tc.getContext("2d");
-        if (!ctx) { showToast(t("toast_image_process_failed"), "error"); return; }
+        if (!ctx) {
+          showToast(t("toast_image_process_failed"), "error");
+          return;
+        }
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
@@ -45,19 +57,20 @@ export function useFileDrop(
         const px = id.data;
         for (let i = 0; i < w * h; i++) {
           const off = i * 4;
-          const gray = Math.min(255, Math.round(
-            LUMA_R * px[off] + LUMA_G * px[off + 1] + LUMA_B * px[off + 2]
-          ));
+          const gray = Math.min(255, Math.round(LUMA_R * px[off] + LUMA_G * px[off + 1] + LUMA_B * px[off + 2]));
           nd[i] = GRAY_LUT[gray];
         }
         dispatch({ type: "load_image", w, h, data: nd });
-        setZoom(1); setPan({ x: 0, y: 0 });
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
         if (img.width > MAX_IMAGE_SIZE || img.height > MAX_IMAGE_SIZE) {
           showToast(t("toast_image_resized", img.width, img.height, w, h), "info");
         }
       };
-    img.src = url;
-  }, [showToast, dispatch, setZoom, setPan, t]);
+      img.src = url;
+    },
+    [showToast, dispatch, setZoom, setPan, t],
+  );
 
   const loadImgRef = useSyncRef(loadImg);
 
@@ -66,37 +79,68 @@ export function useFileDrop(
       // Skip paste when focus is inside an input, textarea, or contenteditable
       const active = document.activeElement;
       if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || (active as HTMLElement).isContentEditable)) return;
-      const it = e.clipboardData ? e.clipboardData.items : null; if (!it) return;
+      const it = e.clipboardData ? e.clipboardData.items : null;
+      if (!it) return;
       for (let i = 0; i < it.length; i++) {
-        if (it[i].type.startsWith("image/")) { const f = it[i].getAsFile(); if (f) { e.preventDefault(); loadImgRef.current(f); } break; }
+        if (ALLOWED_IMAGE_TYPES.has(it[i].type)) {
+          const f = it[i].getAsFile();
+          if (f) {
+            e.preventDefault();
+            loadImgRef.current(f);
+          }
+          break;
+        }
       }
     };
     window.addEventListener("paste", f);
     return () => window.removeEventListener("paste", f);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); dragCountRef.current++; setDragging(true); announce(t("drop_announce"));
-  }, [announce, t]);
+  const onDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      dragCountRef.current++;
+      setDragging(true);
+      announce(t("drop_announce"));
+    },
+    [announce, t],
+  );
 
   const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
   }, []);
 
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); dragCountRef.current--;
-    if (dragCountRef.current <= 0) { dragCountRef.current = 0; setDragging(false); announce(""); }
-  }, [announce]);
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); dragCountRef.current = 0; setDragging(false);
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      for (let i = 0; i < files.length; i++) {
-        if (files[i].type.startsWith("image/")) { loadImg(files[i]); break; }
+  const onDragLeave = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      dragCountRef.current--;
+      if (dragCountRef.current <= 0) {
+        dragCountRef.current = 0;
+        setDragging(false);
+        announce("");
       }
-    }
-  }, [loadImg]);
+    },
+    [announce],
+  );
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      dragCountRef.current = 0;
+      setDragging(false);
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          if (ALLOWED_IMAGE_TYPES.has(files[i].type)) {
+            loadImg(files[i]);
+            break;
+          }
+        }
+      }
+    },
+    [loadImg],
+  );
 
   return { dragging, loadImg, onDragEnter, onDragOver, onDragLeave, onDrop };
 }

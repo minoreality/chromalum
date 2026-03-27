@@ -5,8 +5,20 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "/chromalum/",
   plugins: [react()],
+  build: {
+    target: "es2020",
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
+    exclude: ["e2e/**", "node_modules/**"],
     setupFiles: ["./src/__tests__/setup.ts"],
     environmentMatchGlobs: [
       ["**/*.test.tsx", "jsdom"],
@@ -18,10 +30,10 @@ export default defineConfig({
       reporter: ["text", "html", "lcov"],
       reportsDirectory: "./coverage",
       thresholds: {
-        lines: 35,
-        functions: 30,
-        branches: 30,
-        statements: 35,
+        lines: 40,
+        functions: 35,
+        branches: 32,
+        statements: 40,
       },
     },
   },

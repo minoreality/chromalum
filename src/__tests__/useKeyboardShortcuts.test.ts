@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import type { KeyboardShortcutDeps } from "../hooks/useKeyboardShortcuts";
 import type { ToolId } from "../constants";
 
 function makeArgs() {
@@ -23,15 +24,42 @@ function makeArgs() {
   const onSave = vi.fn() as () => void;
   const onSaveAs = vi.fn() as () => void;
 
+  const deps: KeyboardShortcutDeps = {
+    setTool,
+    setBrushLevel,
+    setBrushSize,
+    dispatch,
+    announce,
+    endPan,
+    setShowHelp,
+    setCursorMode,
+    spaceRef,
+    panningRef,
+    brushSizeRef,
+    setShowNewCanvas,
+    t,
+    setZoom,
+    onSave,
+    onSaveAs,
+  };
+
   return {
-    args: [
-      setTool, setBrushLevel, setBrushSize, dispatch, announce,
-      endPan, setShowHelp, setCursorMode, spaceRef, panningRef,
-      brushSizeRef, setShowNewCanvas, t, setZoom, onSave, onSaveAs,
-    ] as const,
-    setTool, setBrushLevel, setBrushSize, dispatch, announce,
-    endPan, setShowHelp, setCursorMode, spaceRef, panningRef,
-    brushSizeRef, setShowNewCanvas, setZoom, onSave, onSaveAs,
+    deps,
+    setTool,
+    setBrushLevel,
+    setBrushSize,
+    dispatch,
+    announce,
+    endPan,
+    setShowHelp,
+    setCursorMode,
+    spaceRef,
+    panningRef,
+    brushSizeRef,
+    setShowNewCanvas,
+    setZoom,
+    onSave,
+    onSaveAs,
   };
 }
 
@@ -48,8 +76,8 @@ describe("useKeyboardShortcuts", () => {
   });
 
   it("can be called without error", () => {
-    const { args } = makeArgs();
-    const { unmount } = renderHook(() => useKeyboardShortcuts(...args));
+    const { deps } = makeArgs();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
     cleanup = unmount;
   });
 
@@ -65,8 +93,8 @@ describe("useKeyboardShortcuts", () => {
 
     toolKeys.forEach(([key, expectedTool]) => {
       it(`pressing '${key}' switches to ${expectedTool}`, () => {
-        const { args, setTool, announce } = makeArgs();
-        const { unmount } = renderHook(() => useKeyboardShortcuts(...args));
+        const { deps, setTool, announce } = makeArgs();
+        const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
         cleanup = unmount;
 
         fireKey(key);
@@ -80,8 +108,8 @@ describe("useKeyboardShortcuts", () => {
   describe("level shortcuts", () => {
     for (let level = 0; level <= 7; level++) {
       it(`pressing '${level}' sets brush level to ${level}`, () => {
-        const { args, setBrushLevel, announce } = makeArgs();
-        const { unmount } = renderHook(() => useKeyboardShortcuts(...args));
+        const { deps, setBrushLevel, announce } = makeArgs();
+        const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
         cleanup = unmount;
 
         fireKey(String(level));
@@ -94,8 +122,8 @@ describe("useKeyboardShortcuts", () => {
 
   describe("undo/redo shortcuts", () => {
     it("Ctrl+Z dispatches undo", () => {
-      const { args, dispatch } = makeArgs();
-      const { unmount } = renderHook(() => useKeyboardShortcuts(...args));
+      const { deps, dispatch } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
       cleanup = unmount;
 
       fireKey("z", { ctrlKey: true });
@@ -104,8 +132,8 @@ describe("useKeyboardShortcuts", () => {
     });
 
     it("Ctrl+Shift+Z dispatches redo", () => {
-      const { args, dispatch } = makeArgs();
-      const { unmount } = renderHook(() => useKeyboardShortcuts(...args));
+      const { deps, dispatch } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
       cleanup = unmount;
 
       fireKey("z", { ctrlKey: true, shiftKey: true });
@@ -115,8 +143,8 @@ describe("useKeyboardShortcuts", () => {
   });
 
   it("ignores keys when target is an input element", () => {
-    const { args, setTool } = makeArgs();
-    const { unmount } = renderHook(() => useKeyboardShortcuts(...args));
+    const { deps, setTool } = makeArgs();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
     cleanup = unmount;
 
     const input = document.createElement("input");

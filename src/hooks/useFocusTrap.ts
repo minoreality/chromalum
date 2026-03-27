@@ -1,33 +1,49 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Traps keyboard focus within a dialog element when active.
  * Handles Tab cycling and optional Escape to close.
  */
-export function useFocusTrap(
-  ref: React.RefObject<HTMLElement | null>,
-  active: boolean,
-  onEscape?: () => void,
-): void {
+export function useFocusTrap(ref: React.RefObject<HTMLElement | null>, active: boolean, onEscape?: () => void): void {
+  const previousActiveRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!active) return;
     const el = ref.current;
     if (!el) return;
-    const focusable = el.querySelectorAll<HTMLElement>(
-      'button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
+    const focusable = el.querySelectorAll<HTMLElement>('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    previousActiveRef.current = document.activeElement as HTMLElement | null;
     if (focusable.length) focusable[0].focus();
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && onEscape) { onEscape(); return; }
+      if (e.key === "Escape" && onEscape) {
+        onEscape();
+        return;
+      }
       if (e.key !== "Tab") return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
+      const first = focusable[0],
+        last = focusable[focusable.length - 1];
       if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
       } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     el.addEventListener("keydown", handler);
-    return () => el.removeEventListener("keydown", handler);
+    return () => {
+      el.removeEventListener("keydown", handler);
+      const prev = previousActiveRef.current;
+      if (prev && prev !== document.body && document.body.contains(prev)) {
+        try {
+          prev.focus();
+        } catch {
+          /* element may not be focusable */
+        }
+      }
+    };
   }, [ref, active, onEscape]);
 }

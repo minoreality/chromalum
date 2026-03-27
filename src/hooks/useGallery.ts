@@ -31,14 +31,17 @@ export function generateAllVariants(cc: number[], locked: boolean[], hist: numbe
     console.warn(`CHROMALUM: Variant count ${total} exceeds limit ${MAX_VARIANTS}, sampling randomly`);
     const results: number[][] = [];
     for (let i = 0; i < MAX_VARIANTS; i++) {
-      results.push(options.map(opts => opts[Math.random() * opts.length | 0]));
+      results.push(options.map((opts) => opts[(Math.random() * opts.length) | 0]));
     }
     return results;
   }
   // Cartesian product
   const results: number[][] = [];
   const recurse = (lv: number, current: number[]) => {
-    if (lv === 8) { results.push([...current]); return; }
+    if (lv === 8) {
+      results.push([...current]);
+      return;
+    }
     for (const idx of options[lv]) {
       current[lv] = idx;
       recurse(lv + 1, current);
@@ -50,24 +53,28 @@ export function generateAllVariants(cc: number[], locked: boolean[], hist: numbe
 
 /** Render a thumbnail ImageData for the given data + colorLUT, optionally with colorMap glaze. */
 export function renderThumbnail(
-  data: Uint8Array, w: number, h: number,
+  data: Uint8Array,
+  w: number,
+  h: number,
   lut: [number, number, number][],
-  thumbW: number, thumbH: number,
-  colorMap?: Uint8Array,
+  thumbW: number,
+  thumbH: number,
 ): ImageData {
   const img = new ImageData(thumbW, thumbH);
   const d = img.data;
-  const scaleX = w / thumbW, scaleY = h / thumbH;
+  const scaleX = w / thumbW,
+    scaleY = h / thumbH;
   for (let ty = 0; ty < thumbH; ty++) {
     const sy = Math.min(h - 1, (ty * scaleY) | 0);
     for (let tx = 0; tx < thumbW; tx++) {
       const sx = Math.min(w - 1, (tx * scaleX) | 0);
-      const srcIdx = sy * w + sx;
-      const lv = data[srcIdx] & LEVEL_MASK;
-      const cm = colorMap ? colorMap[srcIdx] : 0;
-      const rgb = (cm > 0 && LEVEL_CANDIDATES[lv][cm - 1]) ? LEVEL_CANDIDATES[lv][cm - 1].rgb : lut[lv];
+      const lv = data[sy * w + sx] & LEVEL_MASK;
+      const rgb = lut[lv];
       const di = (ty * thumbW + tx) * 4;
-      d[di] = rgb[0]; d[di + 1] = rgb[1]; d[di + 2] = rgb[2]; d[di + 3] = 255;
+      d[di] = rgb[0];
+      d[di + 1] = rgb[1];
+      d[di + 2] = rgb[2];
+      d[di + 3] = 255;
     }
   }
   return img;
@@ -81,7 +88,7 @@ function calcThumbSize(w: number, h: number): { tw: number; th: number } {
 // Cache shared across hook instances via ref-like pattern (survives tab switches)
 const _cache = { items: [] as GalleryItem[] };
 
-export function useGallery(cvs: CanvasData, cc: number[], locked: boolean[], hist: number[], showGlaze?: boolean) {
+export function useGallery(cvs: CanvasData, cc: number[], locked: boolean[], hist: number[]) {
   const [items, setItems] = useState<GalleryItem[]>(_cache.items);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -92,10 +99,8 @@ export function useGallery(cvs: CanvasData, cc: number[], locked: boolean[], his
     setGenerating(true);
     const variants = generateAllVariants(cc, locked, hist);
     const { tw, th } = calcThumbSize(cvs.w, cvs.h);
-    const cm = showGlaze ? cvs.colorMap : undefined;
-
     // Initialize items without thumbnails
-    const newItems: GalleryItem[] = variants.map(v => ({ cc: v, imageData: null }));
+    const newItems: GalleryItem[] = variants.map((v) => ({ cc: v, imageData: null }));
     _cache.items = newItems;
     setItems(newItems);
     setProgress({ current: 0, total: newItems.length });
@@ -103,11 +108,14 @@ export function useGallery(cvs: CanvasData, cc: number[], locked: boolean[], his
     // Generate thumbnails in chunks to avoid blocking
     let idx = 0;
     const processChunk = () => {
-      if (cancelRef.current) { setGenerating(false); return; }
+      if (cancelRef.current) {
+        setGenerating(false);
+        return;
+      }
       const end = Math.min(idx + CHUNK_SIZE, newItems.length);
       for (let i = idx; i < end; i++) {
         const lut = buildColorLUT(newItems[i].cc);
-        newItems[i].imageData = renderThumbnail(cvs.data, cvs.w, cvs.h, lut, tw, th, cm);
+        newItems[i].imageData = renderThumbnail(cvs.data, cvs.w, cvs.h, lut, tw, th);
       }
       idx = end;
       _cache.items = [...newItems];
@@ -120,15 +128,20 @@ export function useGallery(cvs: CanvasData, cc: number[], locked: boolean[], his
       }
     };
     processChunk();
-  }, [cvs, cc, locked, hist, showGlaze]);
+  }, [cvs, cc, locked, hist]);
 
-  const cancel = useCallback(() => { cancelRef.current = true; }, []);
+  const cancel = useCallback(() => {
+    cancelRef.current = true;
+  }, []);
 
   // Clear module-level cache on unmount to free memory
-  useEffect(() => () => {
-    cancelRef.current = true;
-    _cache.items = [];
-  }, []);
+  useEffect(
+    () => () => {
+      cancelRef.current = true;
+      _cache.items = [];
+    },
+    [],
+  );
 
   return { items, generating, generate, cancel, progress };
 }

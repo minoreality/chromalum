@@ -17,6 +17,7 @@ function makeProps(overrides?: Partial<Parameters<typeof HexDiag>[0]>) {
     total: 219,
     locked: [false, false, false, false, false, false, false, false],
     onToggleLock: vi.fn(),
+    onRandomize: vi.fn(),
     ...overrides,
   };
 }
@@ -38,9 +39,7 @@ describe("HexDiag", () => {
   it("has aria-pressed attributes on interactive groups", () => {
     render(<HexDiag {...makeProps()} />);
     const buttons = screen.getAllByRole("button");
-    const withAriaPressed = buttons.filter(
-      (b) => b.getAttribute("aria-pressed") !== null,
-    );
+    const withAriaPressed = buttons.filter((b) => b.getAttribute("aria-pressed") !== null);
     expect(withAriaPressed.length).toBe(buttons.length);
   });
 
@@ -50,8 +49,6 @@ describe("HexDiag", () => {
     const buttons = screen.getAllByRole("button");
     // Press Enter on the first button
     fireEvent.keyDown(buttons[0], { key: "Enter" });
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "set_color" }),
-    );
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "set_color" }));
   });
 });

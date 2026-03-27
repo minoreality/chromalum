@@ -17,15 +17,21 @@ export function buildGlazeLUT(hueAngle: number): Uint8Array {
 /** Build LUT for direct candidate mode: only levels in the map get values, rest are 0 (skip). */
 export function buildMultiDirectLUT(candidates: Map<number, number>): Uint8Array {
   const lut = new Uint8Array(8);
-  candidates.forEach((idx, level) => { lut[level] = idx + 1; });
+  candidates.forEach((idx, level) => {
+    lut[level] = idx + 1;
+  });
   return lut;
 }
 
 /** Paint a glaze circle: for each pixel, use pre-computed LUT to assign variant. */
 export function paintGlazeCircle(
-  colorMap: Uint8Array, data: Uint8Array,
-  cx: number, cy: number, r: number,
-  w: number, h: number,
+  colorMap: Uint8Array,
+  data: Uint8Array,
+  cx: number,
+  cy: number,
+  r: number,
+  w: number,
+  h: number,
   glazeLUT: Uint8Array,
 ): void {
   const write = (x: number, y: number) => {
@@ -37,63 +43,108 @@ export function paintGlazeCircle(
       colorMap[idx] = cmVal;
     }
   };
-  if (r <= 0) { write(cx, cy); return; }
+  if (r <= 0) {
+    write(cx, cy);
+    return;
+  }
   const fillRow = (y: number, x0: number, x1: number) => {
     if (y < 0 || y >= h) return;
-    const lo = Math.max(0, x0), hi = Math.min(w - 1, x1);
+    const lo = Math.max(0, x0),
+      hi = Math.min(w - 1, x1);
     for (let x = lo; x <= hi; x++) write(x, y);
   };
-  let x = 0, y = r, d = 1 - r;
+  let x = 0,
+    y = r,
+    d = 1 - r;
   while (x <= y) {
     fillRow(cy + y, cx - x, cx + x);
     fillRow(cy - y, cx - x, cx + x);
-    if (x !== y) { fillRow(cy + x, cx - y, cx + y); fillRow(cy - x, cx - y, cx + y); }
-    if (d < 0) d += 2 * x + 3; else { d += 2 * (x - y) + 5; y--; }
+    if (x !== y) {
+      fillRow(cy + x, cx - y, cx + y);
+      fillRow(cy - x, cx - y, cx + y);
+    }
+    if (d < 0) d += 2 * x + 3;
+    else {
+      d += 2 * (x - y) + 5;
+      y--;
+    }
     x++;
   }
 }
 
 /** Paint a glaze line with circular brush at each step. */
 export function paintGlazeLine(
-  colorMap: Uint8Array, data: Uint8Array,
-  x0: number, y0: number, x1: number, y1: number,
-  r: number, w: number, h: number,
+  colorMap: Uint8Array,
+  data: Uint8Array,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  r: number,
+  w: number,
+  h: number,
   glazeLUT: Uint8Array,
 ): void {
   if (w <= 0 || h <= 0) return;
-  const ax = Math.abs(x1 - x0), ay = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  const ax = Math.abs(x1 - x0),
+    ay = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1,
+    sy = y0 < y1 ? 1 : -1;
   let e = ax - ay;
+  const skipDist = Math.max(1, Math.floor(r / 2));
+  const skipDist2 = skipDist * skipDist;
+  let lastPX = x0,
+    lastPY = y0;
+  paintGlazeCircle(colorMap, data, x0, y0, r, w, h, glazeLUT);
   for (;;) {
-    paintGlazeCircle(colorMap, data, x0, y0, r, w, h, glazeLUT);
     if (x0 === x1 && y0 === y1) break;
     const e2 = 2 * e;
-    if (e2 > -ay) { e -= ay; x0 += sx; }
-    if (e2 < ax) { e += ax; y0 += sy; }
+    if (e2 > -ay) {
+      e -= ay;
+      x0 += sx;
+    }
+    if (e2 < ax) {
+      e += ax;
+      y0 += sy;
+    }
+    const dx = x0 - lastPX,
+      dy = y0 - lastPY;
+    if (dx * dx + dy * dy >= skipDist2) {
+      paintGlazeCircle(colorMap, data, x0, y0, r, w, h, glazeLUT);
+      lastPX = x0;
+      lastPY = y0;
+    }
   }
+  paintGlazeCircle(colorMap, data, x1, y1, r, w, h, glazeLUT);
 }
 
 /** Erase glaze circle: reset colorMap to 0 (default cc[]). */
-export function eraseGlazeCircle(
-  colorMap: Uint8Array,
-  cx: number, cy: number, r: number,
-  w: number, h: number,
-): void {
+export function eraseGlazeCircle(colorMap: Uint8Array, cx: number, cy: number, r: number, w: number, h: number): void {
   if (r <= 0) {
     if (cx >= 0 && cx < w && cy >= 0 && cy < h) colorMap[cy * w + cx] = 0;
     return;
   }
   const fillRow = (y: number, x0: number, x1: number) => {
     if (y < 0 || y >= h) return;
-    const lo = Math.max(0, x0), hi = Math.min(w - 1, x1);
+    const lo = Math.max(0, x0),
+      hi = Math.min(w - 1, x1);
     for (let x = lo; x <= hi; x++) colorMap[y * w + x] = 0;
   };
-  let x = 0, y = r, d = 1 - r;
+  let x = 0,
+    y = r,
+    d = 1 - r;
   while (x <= y) {
     fillRow(cy + y, cx - x, cx + x);
     fillRow(cy - y, cx - x, cx + x);
-    if (x !== y) { fillRow(cy + x, cx - y, cx + y); fillRow(cy - x, cx - y, cx + y); }
-    if (d < 0) d += 2 * x + 3; else { d += 2 * (x - y) + 5; y--; }
+    if (x !== y) {
+      fillRow(cy + x, cx - y, cx + y);
+      fillRow(cy - x, cx - y, cx + y);
+    }
+    if (d < 0) d += 2 * x + 3;
+    else {
+      d += 2 * (x - y) + 5;
+      y--;
+    }
     x++;
   }
 }
@@ -101,18 +152,43 @@ export function eraseGlazeCircle(
 /** Erase glaze line with circular eraser at each step. */
 export function eraseGlazeLine(
   colorMap: Uint8Array,
-  x0: number, y0: number, x1: number, y1: number,
-  r: number, w: number, h: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  r: number,
+  w: number,
+  h: number,
 ): void {
   if (w <= 0 || h <= 0) return;
-  const ax = Math.abs(x1 - x0), ay = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  const ax = Math.abs(x1 - x0),
+    ay = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1,
+    sy = y0 < y1 ? 1 : -1;
   let e = ax - ay;
+  const skipDist = Math.max(1, Math.floor(r / 2));
+  const skipDist2 = skipDist * skipDist;
+  let lastPX = x0,
+    lastPY = y0;
+  eraseGlazeCircle(colorMap, x0, y0, r, w, h);
   for (;;) {
-    eraseGlazeCircle(colorMap, x0, y0, r, w, h);
     if (x0 === x1 && y0 === y1) break;
     const e2 = 2 * e;
-    if (e2 > -ay) { e -= ay; x0 += sx; }
-    if (e2 < ax) { e += ax; y0 += sy; }
+    if (e2 > -ay) {
+      e -= ay;
+      x0 += sx;
+    }
+    if (e2 < ax) {
+      e += ax;
+      y0 += sy;
+    }
+    const dx = x0 - lastPX,
+      dy = y0 - lastPY;
+    if (dx * dx + dy * dy >= skipDist2) {
+      eraseGlazeCircle(colorMap, x0, y0, r, w, h);
+      lastPX = x0;
+      lastPY = y0;
+    }
   }
+  eraseGlazeCircle(colorMap, x1, y1, r, w, h);
 }

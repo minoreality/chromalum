@@ -16,7 +16,7 @@ if (typeof globalThis.ImageData === "undefined") {
         // ImageData(data, width, height?)
         this.data = sw;
         this.width = sh!;
-        this.height = _settings ?? (sw.length / 4 / sh!);
+        this.height = _settings ?? sw.length / 4 / sh!;
       }
     }
   };
@@ -111,8 +111,7 @@ if (typeof HTMLCanvasElement !== "undefined" && !(HTMLCanvasElement.prototype.ge
           createLinearGradient: () => ({ addColorStop: noop }),
           createRadialGradient: () => ({ addColorStop: noop }),
           createPattern: () => null,
-          getImageData: (_x: number, _y: number, w: number, h: number) =>
-            new ImageData(w, h),
+          getImageData: (_x: number, _y: number, w: number, h: number) => new ImageData(w, h),
           putImageData: noop,
           createImageData: (w: number, h: number) => new ImageData(w, h),
           setLineDash: noop,
@@ -131,3 +130,10 @@ if (typeof HTMLCanvasElement !== "undefined" && !(HTMLCanvasElement.prototype.ge
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tag as mocked
   (HTMLCanvasElement.prototype.getContext as any).__mocked = true;
 }
+
+import { beforeEach } from "vitest";
+
+beforeEach(() => {
+  if (typeof localStorage !== "undefined") localStorage.clear();
+  if (typeof sessionStorage !== "undefined") sessionStorage.clear();
+});

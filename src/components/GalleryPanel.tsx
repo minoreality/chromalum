@@ -7,7 +7,7 @@ import type { GalleryItem } from "../hooks/useGallery";
 import type { CanvasData } from "../types";
 import type { ColorAction } from "../color-reducer";
 import { useTranslation } from "../i18n";
-import { C, SP, FS, R, DUR, HUE_GRADIENT } from "../tokens";
+import { C, SP, FS, R, DUR, Z, HUE_GRADIENT } from "../tokens";
 
 interface GalleryPanelProps {
   cvs: CanvasData;
@@ -16,6 +16,9 @@ interface GalleryPanelProps {
   locked: boolean[];
   hist: number[];
   showToast: (message: string, type: "error" | "success" | "info") => void;
+  active?: boolean;
+  scrollToCurrent?: boolean;
+  onScrollDone?: () => void;
 }
 
 const BM_KEY = "chromalum_bookmarks";
@@ -29,11 +32,15 @@ function loadBookmarks(): number[][] {
     if (!Array.isArray(arr)) return [];
     return arr
       .filter((a: unknown) => Array.isArray(a) && a.length === 8 && a.every((v: unknown) => typeof v === "number" && Number.isFinite(v)))
-      .map((a: number[]) => a.map((v, lv) => {
-        const maxCand = LEVEL_CANDIDATES[lv]?.length ?? 1;
-        return (v >= 0 && v < maxCand) ? v : v >= 0 ? v % maxCand : 0;
-      }));
-  } catch { return []; }
+      .map((a: number[]) =>
+        a.map((v, lv) => {
+          const maxCand = LEVEL_CANDIDATES[lv]?.length ?? 1;
+          return v >= 0 && v < maxCand ? v : v >= 0 ? v % maxCand : 0;
+        }),
+      );
+  } catch {
+    return [];
+  }
 }
 
 function saveBookmarks(bms: number[][]) {
@@ -43,19 +50,23 @@ function saveBookmarks(bms: number[][]) {
 function ccEqual(a: number[], b: number[]): boolean {
   for (let i = 0; i < 8; i++) {
     const na = LEVEL_CANDIDATES[i].length;
-    if ((a[i] % na) !== (b[i] % na)) return false;
+    if (a[i] % na !== b[i] % na) return false;
   }
   return true;
 }
 
 /** Compute average hue angle for a pattern's cc[] (for sorting/display). */
 function patternHue(patternCc: number[]): number {
-  let sumAngle = 0, count = 0;
+  let sumAngle = 0,
+    count = 0;
   for (let lv = 0; lv < 8; lv++) {
     const cands = LEVEL_CANDIDATES[lv];
     if (cands.length <= 1) continue;
     const angle = cands[patternCc[lv] % cands.length].angle;
-    if (angle >= 0) { sumAngle += angle; count++; }
+    if (angle >= 0) {
+      sumAngle += angle;
+      count++;
+    }
   }
   return count > 0 ? sumAngle / count : 0;
 }
@@ -77,12 +88,13 @@ const ThumbCanvas = React.memo(function ThumbCanvas({ imageData, w, h }: { image
     const c = ref.current;
     if (!c || !imageData) return;
     if (c.width !== imageData.width || c.height !== imageData.height) {
-      c.width = imageData.width; c.height = imageData.height;
+      c.width = imageData.width;
+      c.height = imageData.height;
     }
     const ctx = c.getContext("2d");
     if (ctx) ctx.putImageData(imageData, 0, 0);
   }, [imageData]);
-  return <canvas ref={ref} style={{ width: w, height: h, display: "block", borderRadius: R.sm }} />;
+  return <canvas ref={ref} style={{ width: w, height: h, display: "block", borderRadius: R.sm, imageRendering: "auto" }} />;
 });
 
 type SortMode = "default" | "hue_asc" | "hue_desc" | "similar";
@@ -93,48 +105,74 @@ function ccDistance(a: number[], b: number[]): number {
   for (let i = 0; i < 8; i++) {
     const na = LEVEL_CANDIDATES[i].length;
     if (na <= 1) continue;
-    if ((a[i] % na) !== (b[i] % na)) dist++;
+    if (a[i] % na !== b[i] % na) dist++;
   }
   return dist;
 }
 
 const S_HUE_FILTER_TRACK: React.CSSProperties = {
-  width: 80, height: 14, borderRadius: R.md,
+  flex: "3 1 120px",
+  minWidth: 80,
+  height: 14,
+  borderRadius: R.md,
   background: HUE_GRADIENT,
-  position: "relative", display: "inline-block",
+  position: "relative",
 };
 const S_HUE_FILTER_INPUT: React.CSSProperties = {
-  position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  opacity: 0,
+  cursor: "pointer",
 };
 
 export const GalleryPanel = React.memo(function GalleryPanel({
-  cvs, cc, ccDispatch, locked, hist, showToast,
+  cvs,
+  cc,
+  ccDispatch,
+  locked,
+  hist,
+  showToast,
+  active,
+  scrollToCurrent,
+  onScrollDone,
 }: GalleryPanelProps) {
   const { t } = useTranslation();
-  const [showGlaze, setShowGlaze] = useState(false);
-  const { items, generating, generate, progress } = useGallery(cvs, cc, locked, hist, showGlaze);
+  const { items, generating, generate, progress } = useGallery(cvs, cc, locked, hist);
   const [bookmarks, setBookmarks] = useState<number[][]>(loadBookmarks);
   const [filter, setFilter] = useState<"all" | "bookmarks">("all");
   const [sortMode, setSortMode] = useState<SortMode>("default");
-  const [hoverItem, setHoverItem] = useState<GalleryItem | null>(null);
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const setHoverDebounced = useCallback((item: GalleryItem | null) => {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    if (!item) { setHoverItem(null); return; }
-    hoverTimerRef.current = setTimeout(() => setHoverItem(item), 100);
-  }, []);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const currentItemRef = useRef<HTMLDivElement>(null);
 
   // Hue filter state
   const [filterLevel, setFilterLevel] = useState<number | null>(null);
   const [filterHue, setFilterHue] = useState(180);
   const [filterRange, setFilterRange] = useState(60);
 
+  // Scroll to current pattern only when requested (e.g. from Diagram tab link)
+  useEffect(() => {
+    if (scrollToCurrent && active) {
+      setFilter("all");
+      requestAnimationFrame(() => {
+        if (currentItemRef.current) {
+          currentItemRef.current.scrollIntoView({ behavior: "instant", block: "center" });
+        }
+        onScrollDone?.();
+      });
+    }
+  }, [scrollToCurrent, active, onScrollDone]);
+
   // Auto-generate when canvas, colors, locks, or glaze toggle change
   const genKey = useMemo(() => {
-    const d = cvs.data, n = d.length;
+    const d = cvs.data,
+      n = d.length;
     const sample = n > 0 ? `${d[0]}_${d[n >> 2]}_${d[n >> 1]}_${d[(3 * n) >> 2]}_${d[n - 1]}` : "0";
-    return `${cvs.w}x${cvs.h}_${sample}_${n}_${cc.join(",")}_${locked.join(",")}_${showGlaze}`;
-  }, [cvs, cc, locked, showGlaze]);
+    return `${cvs.w}x${cvs.h}_${sample}_${n}_${cc.join(",")}_${locked.join(",")}`;
+  }, [cvs, cc, locked]);
 
   useEffect(() => {
     if (_genCache.key !== genKey) {
@@ -152,42 +190,46 @@ export const GalleryPanel = React.memo(function GalleryPanel({
     return total;
   }, [locked, hist]);
 
-  const isBookmarked = useCallback((itemCc: number[]) =>
-    bookmarks.some(b => ccEqual(b, itemCc)), [bookmarks]);
+  const isBookmarked = useCallback((itemCc: number[]) => bookmarks.some((b) => ccEqual(b, itemCc)), [bookmarks]);
 
-  const toggleBookmark = useCallback((itemCc: number[]) => {
-    setBookmarks(prev => {
-      const idx = prev.findIndex(b => ccEqual(b, itemCc));
-      let next: number[][];
-      if (idx >= 0) {
-        next = [...prev.slice(0, idx), ...prev.slice(idx + 1)];
-        showToast(t("gallery_unbookmark"), "info");
-      } else {
-        next = [...prev, [...itemCc]];
-        showToast(t("gallery_bookmark"), "success");
-      }
-      saveBookmarks(next);
-      return next;
-    });
-  }, [showToast, t]);
+  const toggleBookmark = useCallback(
+    (itemCc: number[]) => {
+      setBookmarks((prev) => {
+        const idx = prev.findIndex((b) => ccEqual(b, itemCc));
+        let next: number[][];
+        if (idx >= 0) {
+          next = [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+          showToast(t("toast_unbookmark"), "info");
+        } else {
+          next = [...prev, [...itemCc]];
+          showToast(t("toast_bookmark"), "success");
+        }
+        saveBookmarks(next);
+        return next;
+      });
+    },
+    [showToast, t],
+  );
 
-  const applyScheme = useCallback((itemCc: number[]) => {
-    ccDispatch({ type: "load_all", values: itemCc });
-    showToast(t("gallery_apply"), "success");
-  }, [ccDispatch, showToast, t]);
+  const applyScheme = useCallback(
+    (itemCc: number[]) => {
+      ccDispatch({ type: "load_all", values: itemCc });
+      showToast(t("gallery_apply"), "success");
+    },
+    [ccDispatch, showToast, t],
+  );
 
   // Bookmark thumbnails
   const bookmarkItems = useMemo(() => {
     if (bookmarks.length === 0) return [];
     const tw = Math.max(1, Math.min(128, cvs.w));
     const th = Math.max(1, Math.min(128, cvs.h));
-    const cm = showGlaze ? cvs.colorMap : undefined;
-    return bookmarks.map(bcc => {
+    return bookmarks.map((bcc) => {
       const lut = buildColorLUT(bcc);
-      const imageData = renderThumbnail(cvs.data, cvs.w, cvs.h, lut, tw, th, cm);
+      const imageData = renderThumbnail(cvs.data, cvs.w, cvs.h, lut, tw, th);
       return { cc: bcc, imageData } as GalleryItem;
     });
-  }, [bookmarks, cvs, showGlaze]);
+  }, [bookmarks, cvs]);
 
   // Apply sort + filter to display items
   const displayItems = useMemo(() => {
@@ -195,7 +237,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
 
     // Hue filter
     if (filterLevel !== null) {
-      list = list.filter(item => matchesHueFilter(item.cc, filterLevel, filterHue, filterRange));
+      list = list.filter((item) => matchesHueFilter(item.cc, filterLevel, filterHue, filterRange));
     }
 
     // Sort
@@ -205,7 +247,8 @@ export const GalleryPanel = React.memo(function GalleryPanel({
         sorted.sort((a, b) => ccDistance(a.cc, cc) - ccDistance(b.cc, cc));
       } else {
         sorted.sort((a, b) => {
-          const ha = patternHue(a.cc), hb = patternHue(b.cc);
+          const ha = patternHue(a.cc),
+            hb = patternHue(b.cc);
           return sortMode === "hue_asc" ? ha - hb : hb - ha;
         });
       }
@@ -214,29 +257,30 @@ export const GalleryPanel = React.memo(function GalleryPanel({
     return list;
   }, [filter, items, bookmarkItems, sortMode, filterLevel, filterHue, filterRange, cc]);
 
-  // Hover preview: render larger thumbnail
-  const hoverPreviewData = useMemo(() => {
-    if (!hoverItem) return null;
-    const size = 240;
-    const lut = buildColorLUT(hoverItem.cc);
-    const cm = showGlaze ? cvs.colorMap : undefined;
-    return renderThumbnail(cvs.data, cvs.w, cvs.h, lut, size, Math.round(size * cvs.h / cvs.w), cm);
-  }, [hoverItem, cvs, showGlaze]);
-
   const thumbDisplaySize = 120;
+  const expandedDisplaySize = 300;
+
+  // High-res thumbnail for expanded item
+  const expandedImageData = useMemo(() => {
+    if (expandedIndex === null || expandedIndex >= displayItems.length) return null;
+    const item = displayItems[expandedIndex];
+    const lut = buildColorLUT(item.cc);
+    return renderThumbnail(cvs.data, cvs.w, cvs.h, lut, expandedDisplaySize, Math.round((expandedDisplaySize * cvs.h) / cvs.w));
+  }, [expandedIndex, displayItems, cvs]);
 
   // Filter levels that have multiple candidates
-  const filterableLevels = useMemo(() =>
-    LEVEL_INFO.map((info, lv) => ({ lv, name: info.name, count: LEVEL_CANDIDATES[lv].length }))
-      .filter(l => l.count > 1),
-  []);
+  const filterableLevels = useMemo(
+    () => LEVEL_INFO.map((info, lv) => ({ lv, name: info.name, count: LEVEL_CANDIDATES[lv].length })).filter((l) => l.count > 1),
+    [],
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}>
+    <div ref={panelRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}>
       <div style={{ fontSize: FS.md, color: C.textDim, minHeight: 16 }}>{t("gallery_title")}</div>
 
       <div style={{ fontSize: FS.sm, color: C.textDimmer, textAlign: "center" }}>
-        {generating ? t("gallery_generating")
+        {generating
+          ? t("gallery_generating")
           : displayItems.length < items.length
             ? t("gallery_patterns_filtered", displayItems.length, patternCount)
             : t("gallery_patterns", patternCount)}
@@ -245,7 +289,15 @@ export const GalleryPanel = React.memo(function GalleryPanel({
       {generating && progress.total > 0 && (
         <div style={{ width: "100%", display: "flex", alignItems: "center", gap: SP.md }}>
           <div style={{ flex: 1, height: 4, background: C.bgSurface, borderRadius: R.sm, overflow: "hidden" }}>
-            <div style={{ width: `${progress.current / progress.total * 100}%`, height: "100%", background: C.accent, borderRadius: R.sm, transition: `width ${DUR.fast}` }} />
+            <div
+              style={{
+                width: `${(progress.current / progress.total) * 100}%`,
+                height: "100%",
+                background: C.accent,
+                borderRadius: R.sm,
+                transition: `width ${DUR.fast}`,
+              }}
+            />
           </div>
           <span style={{ fontSize: FS.xs, color: C.textDimmer, fontFamily: "monospace" }}>
             {progress.current}/{progress.total}
@@ -253,52 +305,155 @@ export const GalleryPanel = React.memo(function GalleryPanel({
         </div>
       )}
 
-      {/* Filter + Sort + Glaze toggle */}
-      <div style={{ display: "flex", gap: SP.xs, justifyContent: "center", flexWrap: "wrap" }}>
+      {/* Filter + Sort + Hue filter — single row */}
+      <div style={{ display: "flex", gap: SP.xs, justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
         <button onClick={() => setFilter("all")} style={filter === "all" ? S_BTN_ACTIVE : S_BTN}>
           {t("gallery_filter_all")}
         </button>
         <button onClick={() => setFilter("bookmarks")} style={filter === "bookmarks" ? S_BTN_ACTIVE : S_BTN}>
           {t("gallery_filter_bookmarks")} ({bookmarks.length})
         </button>
-        <button onClick={() => setSortMode(m => m === "default" ? "hue_asc" : m === "hue_asc" ? "hue_desc" : m === "hue_desc" ? "similar" : "default")}
+        <button
+          onClick={() =>
+            setSortMode((m) => (m === "default" ? "hue_asc" : m === "hue_asc" ? "hue_desc" : m === "hue_desc" ? "similar" : "default"))
+          }
           style={sortMode !== "default" ? S_BTN_ACTIVE : S_BTN}
-          title={t("gallery_sort_title")}>
-          {sortMode === "hue_asc" ? t("gallery_sort_hue_asc") : sortMode === "hue_desc" ? t("gallery_sort_hue_desc") : sortMode === "similar" ? t("gallery_sort_similar") : t("gallery_sort_default")}
+          title={t("gallery_sort_title")}
+        >
+          {sortMode === "hue_asc"
+            ? t("gallery_sort_hue_asc")
+            : sortMode === "hue_desc"
+              ? t("gallery_sort_hue_desc")
+              : sortMode === "similar"
+                ? t("gallery_sort_similar")
+                : t("gallery_sort_default")}
         </button>
-        <label style={{ fontSize: FS.sm, color: C.textDim, cursor: "pointer", display: "flex", alignItems: "center", gap: SP.sm }}>
-          <input type="checkbox" checked={showGlaze} onChange={e => setShowGlaze(e.target.checked)} />
-          {t("gallery_show_glaze")}
-        </label>
-      </div>
-
-      {/* Hue filter */}
-      <div style={{ display: "flex", gap: SP.md, alignItems: "center", flexWrap: "wrap", justifyContent: "center", fontSize: FS.sm, color: C.textDim }}>
-        <span>{t("gallery_filter_hue")}:</span>
-        <select value={filterLevel ?? ""} onChange={e => setFilterLevel(e.target.value === "" ? null : Number(e.target.value))}
-          style={{ fontSize: FS.sm, background: C.bgSurface, color: C.textPrimary, border: `1px solid ${C.border}`, borderRadius: R.md, padding: `1px ${SP.md}px` }}>
-          <option value="">{t("gallery_filter_none")}</option>
-          {filterableLevels.map(l => <option key={l.lv} value={l.lv}>L{l.lv} {l.name}</option>)}
+        <select
+          value={filterLevel ?? ""}
+          onChange={(e) => setFilterLevel(e.target.value === "" ? null : Number(e.target.value))}
+          aria-label={t("aria_gallery_filter_level")}
+          style={{
+            fontSize: FS.lg,
+            background: C.bgPanel,
+            color: C.textMuted,
+            border: `1px solid ${C.border}`,
+            borderRadius: R.lg,
+            padding: `${SP.xs}px ${SP.lg}px`,
+            cursor: "pointer",
+          }}
+        >
+          <option value="">{t("gallery_filter_hue")}</option>
+          {filterableLevels.map((l) => (
+            <option key={l.lv} value={l.lv}>
+              L{l.lv}
+            </option>
+          ))}
         </select>
-        {filterLevel !== null && (
-          <>
-            <div style={S_HUE_FILTER_TRACK}>
-              <input type="range" min={0} max={359} step={1} value={filterHue}
-                onChange={e => setFilterHue(Number(e.target.value))}
-                style={S_HUE_FILTER_INPUT} />
-            </div>
-            <span style={{ fontFamily: "monospace" }}>{filterHue}°±{filterRange}°</span>
-            <input type="range" min={10} max={180} step={5} value={filterRange}
-              onChange={e => setFilterRange(Number(e.target.value))}
-              style={{ width: 50, accentColor: C.accent }} />
-          </>
-        )}
       </div>
 
-      {/* Hover preview */}
-      {hoverPreviewData && (
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: R.lg, overflow: "hidden" }}>
-          <ThumbCanvas imageData={hoverPreviewData} w={240} h={Math.round(240 * cvs.h / cvs.w)} />
+      {/* Hue filter sliders — shown only when a level is selected */}
+      {filterLevel !== null && (
+        <div style={{ display: "flex", gap: SP.md, alignItems: "center", width: "100%", fontSize: FS.sm, color: C.textDim }}>
+          <div style={S_HUE_FILTER_TRACK}>
+            {/* Range boundary lines */}
+            {(() => {
+              const lo = (((filterHue - filterRange) % 360) + 360) % 360;
+              const hi = (((filterHue + filterRange) % 360) + 360) % 360;
+              const line: React.CSSProperties = {
+                position: "absolute",
+                top: 0,
+                width: 2,
+                height: "100%",
+                background: C.textPrimary,
+                pointerEvents: "none",
+              };
+              return (
+                <>
+                  <div style={{ ...line, left: `${(lo / 359) * 100}%` }} />
+                  <div style={{ ...line, left: `${(hi / 359) * 100}%` }} />
+                </>
+              );
+            })()}
+            {/* Current position indicator */}
+            <div
+              style={{
+                position: "absolute",
+                left: `${(filterHue / 359) * 100}%`,
+                bottom: -6,
+                transform: "translateX(-4px)",
+                width: 0,
+                height: 0,
+                borderLeft: "4px solid transparent",
+                borderRight: "4px solid transparent",
+                borderBottom: `5px solid ${C.textPrimary}`,
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              type="range"
+              min={0}
+              max={359}
+              step={1}
+              value={filterHue}
+              onChange={(e) => setFilterHue(Number(e.target.value))}
+              aria-label={t("aria_gallery_filter_hue")}
+              style={S_HUE_FILTER_INPUT}
+            />
+          </div>
+          <span style={{ fontFamily: "monospace", whiteSpace: "nowrap" }}>
+            {filterHue}°±{filterRange}°
+          </span>
+          <div style={{ position: "relative", flex: "1 1 80px", minWidth: 60, height: 14 }}>
+            {/* Tick marks at 45° intervals */}
+            {[45, 90, 135].map((deg) => (
+              <div
+                key={deg}
+                style={{
+                  position: "absolute",
+                  left: `${((deg - 10) / 170) * 100}%`,
+                  top: 0,
+                  width: 1,
+                  height: "100%",
+                  background: "rgba(255,255,255,0.2)",
+                  pointerEvents: "none",
+                }}
+              />
+            ))}
+            <input
+              type="range"
+              min={10}
+              max={180}
+              step={5}
+              value={filterRange}
+              onChange={(e) => setFilterRange(Number(e.target.value))}
+              aria-label={t("aria_gallery_filter_range")}
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", accentColor: C.accent }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Expanded preview modal */}
+      {expandedImageData && (
+        <div
+          onClick={() => setExpandedIndex(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: Z.galleryPreview,
+            background: C.bgOverlay,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ border: `2px solid ${C.accent}`, borderRadius: R.lg, overflow: "hidden", cursor: "default" }}
+          >
+            <ThumbCanvas imageData={expandedImageData} w={expandedDisplaySize} h={Math.round((expandedDisplaySize * cvs.h) / cvs.w)} />
+          </div>
         </div>
       )}
 
@@ -314,52 +469,105 @@ export const GalleryPanel = React.memo(function GalleryPanel({
       )}
 
       {/* Thumbnail grid */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(auto-fill, minmax(${thumbDisplaySize + 14}px, 1fr))`,
-        justifyContent: "center",
-        gap: SP.lg, width: "100%", padding: "2px 0",
-      }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(auto-fill, minmax(${thumbDisplaySize + 14}px, 1fr))`,
+          justifyContent: "center",
+          gap: SP.lg,
+          width: "100%",
+          padding: "2px 0",
+        }}
+      >
         {displayItems.map((item, i) => {
           const isCurrent = ccEqual(item.cc, cc);
           const starred = isBookmarked(item.cc);
           return (
-            <div key={i} style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs,
-              padding: 3, borderRadius: R.lg,
-              border: isCurrent ? `2px solid ${C.accent}` : `2px solid ${C.bgSurface}`,
-              background: isCurrent ? C.activeGlow : "transparent",
-              cursor: "pointer",
-            }}>
-              <div onClick={() => applyScheme(item.cc)}
-                onContextMenu={(e) => { e.preventDefault(); toggleBookmark(item.cc); }}
-                onMouseEnter={() => setHoverDebounced(item)}
-                onMouseLeave={() => setHoverDebounced(null)}
+            <div
+              key={i}
+              ref={isCurrent ? currentItemRef : undefined}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: SP.xs,
+                padding: 3,
+                borderRadius: R.lg,
+                border: isCurrent ? `2px solid ${C.accent}` : `2px solid ${C.bgSurface}`,
+                background: isCurrent ? C.activeGlow : "transparent",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                onClick={() => {
+                  if (filter === "bookmarks") {
+                    applyScheme(item.cc);
+                  } else {
+                    setExpandedIndex(expandedIndex === i ? null : i);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  toggleBookmark(item.cc);
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applyScheme(item.cc); }
-                  else if (e.key === "b" || e.key === "B") { e.preventDefault(); toggleBookmark(item.cc); }
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (filter === "bookmarks") {
+                      applyScheme(item.cc);
+                    } else {
+                      setExpandedIndex(expandedIndex === i ? null : i);
+                    }
+                  } else if (e.key === "b" || e.key === "B") {
+                    e.preventDefault();
+                    toggleBookmark(item.cc);
+                  } else if (e.key === "Escape") setExpandedIndex(null);
                 }}
                 tabIndex={0}
                 role="button"
-                aria-label={t("gallery_apply") + ` (${i + 1})`}
-                title={t("gallery_apply")}>
-                <ThumbCanvas imageData={item.imageData} w={thumbDisplaySize} h={Math.round(thumbDisplaySize * cvs.h / cvs.w)} />
+                aria-label={filter === "bookmarks" ? t("gallery_apply") + ` (${i + 1})` : t("gallery_preview") + ` (${i + 1})`}
+                title={filter === "bookmarks" ? t("gallery_apply") : t("gallery_preview")}
+                style={{
+                  outline: expandedIndex === i ? `2px solid ${C.accent}` : "none",
+                  borderRadius: R.sm,
+                }}
+              >
+                <ThumbCanvas imageData={item.imageData} w={thumbDisplaySize} h={Math.round((thumbDisplaySize * cvs.h) / cvs.w)} />
               </div>
               <div style={{ display: "flex", gap: SP.xs }}>
                 {item.cc.map((ci, lv) => {
                   const alts = LEVEL_CANDIDATES[lv];
                   if (hist[lv] === 0) return null; // skip unused levels
                   const rgb = alts[ci % alts.length]?.rgb ?? [128, 128, 128];
-                  return <div key={lv} style={{
-                    width: 10, height: 10, borderRadius: R.sm,
-                    background: rgbStr(rgb),
-                  }} />;
+                  return (
+                    <div
+                      key={lv}
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: R.sm,
+                        background: rgbStr(rgb),
+                      }}
+                    />
+                  );
                 })}
               </div>
-              <button onClick={(e) => { e.stopPropagation(); toggleBookmark(item.cc); }}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: FS.lg, padding: 2, lineHeight: 1,
-                  color: starred ? C.warning : C.textFaint }}
-                title={starred ? t("gallery_unbookmark") : t("gallery_bookmark")}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleBookmark(item.cc);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: FS.lg,
+                  padding: `${SP.xs}px ${SP.md}px 0`,
+                  lineHeight: 1,
+                  color: starred ? C.warning : C.textFaint,
+                }}
+                title={starred ? t("gallery_unbookmark") : t("gallery_bookmark")}
+              >
                 {starred ? "\u2605" : "\u2606"}
               </button>
             </div>
