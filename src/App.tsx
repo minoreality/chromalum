@@ -112,6 +112,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
     toggleLock,
     handleRandomize,
     handleUnlockAll,
+    canRandomize,
     patternInfo,
     requestFilename,
     handlePromptConfirm,
@@ -347,6 +348,13 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
       onDragOver={fileDrop.onDragOver}
       onDragLeave={fileDrop.onDragLeave}
       onDrop={fileDrop.onDrop}
+      onPointerDown={(e) => {
+        if (e.pointerType !== "touch") return;
+        const el = e.target as HTMLElement;
+        if (el.closest("button, a, canvas, input, select, textarea, [role='button'], [role='tab'], [role='radio'], [role='slider']"))
+          return;
+        panZoom.setPanZoomMode(true);
+      }}
     >
       <div ref={ariaLiveRef} role="status" aria-live="polite" aria-atomic="true" style={S_SR_ONLY} />
 
@@ -422,6 +430,11 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
               prvRef={prvRef}
               onNewCanvas={handleNewCanvas}
               requestFilename={requestFilename}
+              panZoomMode={panZoom.panZoomMode}
+              setPanZoomMode={panZoom.setPanZoomMode}
+              onPinchDown={panZoom.onPinchDown}
+              onPinchMove={panZoom.onPinchMove}
+              onPinchUp={panZoom.onPinchUp}
             />
           </div>
         )}
@@ -459,6 +472,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
               toggleLock={toggleLock}
               handleRandomize={handleRandomize}
               handleUnlockAll={handleUnlockAll}
+              canRandomize={canRandomize}
               patternInfo={patternInfo}
               t={t}
               onPatternClick={() => {
@@ -504,6 +518,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
                 undo={undo}
                 redo={redo}
                 zoom={panZoom.zoom}
+                brushLevel={brushLevel}
               />
             </GlazeContextProvider>
           </div>

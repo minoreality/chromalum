@@ -30,6 +30,11 @@ interface SourcePanelProps {
   prvRef: React.RefObject<HTMLCanvasElement | null>;
   onNewCanvas: () => void;
   requestFilename: (defaultValue: string) => Promise<string | null>;
+  panZoomMode: boolean;
+  setPanZoomMode: React.Dispatch<React.SetStateAction<boolean>>;
+  onPinchDown: (e: React.PointerEvent) => void;
+  onPinchMove: (e: React.PointerEvent) => void;
+  onPinchUp: (e: React.PointerEvent) => void;
 }
 
 export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelProps) {
@@ -53,6 +58,11 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     prvRef,
     onNewCanvas,
     requestFilename,
+    panZoomMode,
+    setPanZoomMode,
+    onPinchDown,
+    onPinchMove,
+    onPinchUp,
   } = props;
   const { tool, setTool, brushLevel, setBrushLevel, brushSize, setBrushSize } = props.toolState;
   const { zoom, setZoom, setPan, displayW, displayH, canvasTransform, canvasCursor } = props.viewState;
@@ -131,7 +141,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
           <div
             ref={srcWrapRef}
             style={{
-              border: `1px solid ${C.border}`,
+              border: panZoomMode ? `2px solid ${C.accentBright}` : `1px solid ${C.border}`,
               borderRadius: R.lg,
               overflow: "hidden",
               position: "relative",
@@ -144,11 +154,18 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
               role="application"
               aria-label={t("aria_drawing_canvas")}
               aria-roledescription={t("aria_drawing_canvas_desc")}
-              style={{ width: displayW, height: displayH, display: "block", ...canvasTransform, cursor: canvasCursor, touchAction: "none" }}
-              onPointerDown={onDown}
-              onPointerMove={onMove}
-              onPointerUp={onUp}
-              onPointerLeave={onPointerLeave}
+              style={{
+                width: displayW,
+                height: displayH,
+                display: "block",
+                ...canvasTransform,
+                cursor: panZoomMode ? "grab" : canvasCursor,
+                touchAction: "none",
+              }}
+              onPointerDown={panZoomMode ? onPinchDown : onDown}
+              onPointerMove={panZoomMode ? onPinchMove : onMove}
+              onPointerUp={panZoomMode ? onPinchUp : onUp}
+              onPointerLeave={panZoomMode ? onPinchUp : onPointerLeave}
               onContextMenu={handleContextMenu}
             />
             <canvas
@@ -187,6 +204,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                   key={tl.id}
                   onClick={() => {
                     setTool(tl.id);
+                    if (panZoomMode) setPanZoomMode(false);
                     announce(t("announce_" + tl.id));
                   }}
                   role="radio"
@@ -203,6 +221,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                   key={tl.id}
                   onClick={() => {
                     setTool(tl.id);
+                    if (panZoomMode) setPanZoomMode(false);
                     announce(t("announce_" + tl.id));
                   }}
                   role="radio"
@@ -235,12 +254,12 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
             <button
               onClick={handleZoomReset}
               onContextMenu={handleZoomPixelPerfect}
-              style={S_BTN}
+              style={{ ...S_BTN, lineHeight: 1, gap: SP.xs }}
               title={`${t("title_zoom_reset")} (${t("title_zoom_pixel")})`}
               aria-label={t("aria_zoom_reset", Math.round(zoom * 100))}
             >
-              {"\u229B"}
-              {Math.round(zoom * 100)}%
+              <span>{"\u229B"}</span>
+              <span>{Math.round(zoom * 100)}%</span>
             </button>
           </div>
 
@@ -285,7 +304,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
 
           {/* Level indicator + buttons (grouped) */}
           <div style={{ display: "flex", alignItems: "center", gap: SP.lg, justifyContent: "center", marginTop: SP.md }}>
-            <span style={{ fontSize: FS.sm, color: C.textDim }}>L{brushLevel}</span>
+            <span style={{ fontSize: FS.sm, color: C.textDim }}>{t("label_input")}</span>
             <div
               style={{
                 width: 24,
@@ -295,7 +314,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                 background: `rgb(${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray})`,
               }}
             />
-            <div style={{ fontSize: FS.md, color: C.textSecondary }}>{"\u2192"}</div>
+            <div style={{ fontSize: FS.md, color: C.textSecondary, lineHeight: 1, display: "flex", alignItems: "center" }}>{"\u2192"}</div>
             <div
               style={{
                 width: 24,
@@ -305,6 +324,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                 background: rgbStr(colorLUT[brushLevel]),
               }}
             />
+            <span style={{ fontSize: FS.sm, color: C.textDim }}>{t("label_output")}</span>
           </div>
 
           <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", maxWidth: "100%", marginTop: SP.md, marginBottom: SP.md }}>

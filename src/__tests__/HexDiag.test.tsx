@@ -18,6 +18,7 @@ function makeProps(overrides?: Partial<Parameters<typeof HexDiag>[0]>) {
     locked: [false, false, false, false, false, false, false, false],
     onToggleLock: vi.fn(),
     onRandomize: vi.fn(),
+    canRandomize: true,
     ...overrides,
   };
 }

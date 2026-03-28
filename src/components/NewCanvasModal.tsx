@@ -129,23 +129,27 @@ export const NewCanvasModal = React.memo(function NewCanvasModal({ open, onConfi
           {"\u00D7"}
           {MAX_IMAGE_SIZE}
         </div>
-        <div style={{ display: "flex", gap: SP.md, flexWrap: "wrap", justifyContent: "center", marginBottom: SP["2xl"] }}>
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => {
-                setW(p.w);
-                setH(p.h);
-              }}
-              style={{
-                ...S_BTN,
-                padding: "2px 8px",
-                fontSize: FS.sm,
-                ...(w === p.w && h === p.h ? { border: `1px solid ${C.accent}`, color: C.accentBright } : {}),
-              }}
-            >
-              {p.label}
-            </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.sm, alignItems: "center", marginBottom: SP["2xl"] }}>
+          {[presets.slice(0, 4), presets.slice(4)].map((row, ri) => (
+            <div key={ri} style={{ display: "flex", gap: SP.md, justifyContent: "center" }}>
+              {row.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => {
+                    setW(p.w);
+                    setH(p.h);
+                  }}
+                  style={{
+                    ...S_BTN,
+                    padding: "2px 8px",
+                    fontSize: FS.sm,
+                    ...(w === p.w && h === p.h ? { border: `1px solid ${C.accent}`, color: C.accentBright } : {}),
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           ))}
         </div>
         <div style={{ display: "flex", gap: SP.xl, justifyContent: "center" }}>

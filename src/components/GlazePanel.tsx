@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
+import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate, hue2rgb } from "../color-engine";
 import { BRUSH_MIN, BRUSH_MAX, BRUSH_STEP, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from "../constants";
 import type { GlazeToolId } from "../constants";
 import { S_BTN, S_BTN_ACTIVE } from "../styles";
@@ -25,6 +25,7 @@ interface GlazePanelProps {
   undo: () => void;
   redo: () => void;
   zoom: number;
+  brushLevel: number;
 }
 
 const S_HUE_WRAP: React.CSSProperties = { position: "relative", width: "100%", paddingTop: SP.xl };
@@ -68,6 +69,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
     undo,
     redo,
     zoom,
+    brushLevel,
   } = props;
   const { statusRef: glazeStatusRef, curRef: glazeCurRef } = glazeDrawing;
   const { hueAngle, setHueAngle, glazeTool, setGlazeTool, brushSize, setBrushSize, directCandidates, setDirectCandidates } =
@@ -556,7 +558,8 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
                       borderRadius: R.md,
                       cursor: "pointer",
                       background: `rgb(${cand.rgb.join(",")})`,
-                      border: isSelected ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+                      border: `2px solid ${isSelected ? C.accent : C.border}`,
+                      boxSizing: "border-box" as const,
                       boxShadow: isSelected ? SHADOW.glow(C.accent) : "none",
                       opacity: 1,
                     }}
@@ -564,16 +567,33 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
                 );
               };
 
+              const cycleCand = (dir: number) => {
+                setDirectCandidates((prev) => {
+                  const next = new Map(prev);
+                  const cur = next.has(lp.lv) ? next.get(lp.lv)! : autoIdx;
+                  next.set(lp.lv, (((cur + dir) % cands.length) + cands.length) % cands.length);
+                  return next;
+                });
+              };
+
               const handleWheel = hasCands
                 ? (e: React.WheelEvent) => {
                     e.preventDefault();
-                    const dir = e.deltaY > 0 ? 1 : -1;
-                    setDirectCandidates((prev) => {
-                      const next = new Map(prev);
-                      const cur = next.has(lp.lv) ? next.get(lp.lv)! : autoIdx;
-                      next.set(lp.lv, (((cur + dir) % cands.length) + cands.length) % cands.length);
-                      return next;
-                    });
+                    cycleCand(e.deltaY > 0 ? 1 : -1);
+                  }
+                : undefined;
+
+              // Touch swipe support for cycling candidates
+              const swipeStartRef = { current: 0 };
+              const handleTouchStart = hasCands
+                ? (e: React.TouchEvent) => {
+                    swipeStartRef.current = e.touches[0].clientY;
+                  }
+                : undefined;
+              const handleTouchEnd = hasCands
+                ? (e: React.TouchEvent) => {
+                    const dy = e.changedTouches[0].clientY - swipeStartRef.current;
+                    if (Math.abs(dy) > 20) cycleCand(dy > 0 ? 1 : -1);
                   }
                 : undefined;
 
@@ -581,24 +601,57 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
                 <div
                   key={lp.lv}
                   onWheel={handleWheel}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     gap: 2,
                     cursor: hasCands ? "pointer" : "default",
+                    touchAction: hasCands ? "none" : "auto",
                   }}
                 >
                   {/* Upper candidate */}
                   {hasCands ? makeSwatch(prevIdx, 20, false) : <div style={{ height: 20 }} />}
-                  {/* Current / main swatch */}
+                  {/* Current / main swatch — click to reset to auto */}
                   <div
+                    role={isDirect ? "button" : undefined}
+                    tabIndex={isDirect ? 0 : undefined}
+                    onClick={
+                      isDirect
+                        ? () => {
+                            setDirectCandidates((prev) => {
+                              const next = new Map(prev);
+                              next.delete(lp.lv);
+                              return next;
+                            });
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      isDirect
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setDirectCandidates((prev) => {
+                                const next = new Map(prev);
+                                next.delete(lp.lv);
+                                return next;
+                              });
+                            }
+                          }
+                        : undefined
+                    }
+                    title={isDirect ? t("title_reset_auto") : undefined}
                     style={{
                       width: 28,
                       height: 28,
                       borderRadius: R.md,
                       background: isDirect ? `rgb(${cands[directIdx!]?.rgb.join(",")})` : lp.hex,
-                      border: isDirect ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+                      border: `2px solid ${isDirect ? C.accent : C.border}`,
+                      boxSizing: "border-box" as const,
+                      cursor: isDirect ? "pointer" : "default",
                     }}
                   />
                   {/* Lower candidate */}
@@ -607,14 +660,296 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
               );
             })}
           </div>
-          {/* Direct mode status */}
-          {directCandidates.size > 0 && (
-            <div style={{ fontSize: FS.sm, color: C.accent, textAlign: "center", marginTop: SP.lg }}>
-              {Array.from(directCandidates.entries())
-                .map(([lv]) => `L${lv} ${LEVEL_INFO[lv].name}`)
-                .join(", ")}
-            </div>
-          )}
+
+          {/* ── Linked 3-View Visualization ── */}
+          {useMemo(() => {
+            // Layout: Wheel center + right Y-projection + bottom X-projection
+            const WR = 62,
+              WCX = 80,
+              WCY = 80,
+              WO = 10,
+              GAP = 12;
+            const WD = 160; // wheel diameter area
+            // Right graph: X=hue angle (0-360), Y=same as wheel Y axis
+            const RX = WO + WD + GAP,
+              RW = 160;
+            // Bottom graph: Y=hue angle (0-360), X=same as wheel X axis
+            const BY = WO + WD + GAP,
+              BH = 100;
+            const TW = RX + RW + 4,
+              TH = BY + BH + 4;
+            // Wheel absolute center
+            const CX = WO + WCX,
+              CY = WO + WCY;
+
+            const lumR = (lv: number) => (LEVEL_INFO[lv].gray / 255) * WR;
+            // Wheel dot position (absolute SVG coords)
+            const wP = (a: number, lv: number) => {
+              const rad = ((a - 90) * Math.PI) / 180,
+                r = lumR(lv);
+              return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+            };
+            // Right graph: X maps hue 0-360, Y is SAME as wheel Y
+            const rPx = (a: number) => RX + 10 + (a / 360) * (RW - 14);
+            // Bottom graph: Y maps hue 0-360, X is SAME as wheel X
+            const bPy = (a: number) => BY + 8 + (a / 360) * (BH - 16);
+
+            const dots: { lv: number; ci: number; a: number; rgb: [number, number, number]; act: boolean }[] = [];
+            for (let lv = 0; lv < LEVEL_CANDIDATES.length; lv++)
+              for (let ci = 0; ci < LEVEL_CANDIDATES[lv].length; ci++) {
+                const c = LEVEL_CANDIDATES[lv][ci];
+                if (c.angle < 0) continue;
+                dots.push({ lv, ci, a: c.angle, rgb: c.rgb, act: findClosestCandidate(lv, hueAngle) === ci });
+              }
+
+            return (
+              <div style={{ marginTop: SP.xl, textAlign: "center" }}>
+                <svg viewBox={`0 0 ${TW} ${TH}`} width="100%" style={{ maxWidth: TW }}>
+                  {/* ═══ WHEEL ═══ */}
+                  <g>
+                    {Array.from({ length: 360 }, (_, d) => {
+                      const r = ((d - 90) * Math.PI) / 180;
+                      const [cr, cg, cb] = hue2rgb(d);
+                      return (
+                        <line
+                          key={`h${d}`}
+                          x1={CX + 68 * Math.cos(r)}
+                          y1={CY + 68 * Math.sin(r)}
+                          x2={CX + 75 * Math.cos(r)}
+                          y2={CY + 75 * Math.sin(r)}
+                          stroke={`rgb(${cr},${cg},${cb})`}
+                          strokeWidth={1.5}
+                        />
+                      );
+                    })}
+                    {LEVEL_INFO.map((_, lv) => {
+                      const r = lumR(lv);
+                      return r > 1 ? (
+                        <circle key={`g${lv}`} cx={CX} cy={CY} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />
+                      ) : null;
+                    })}
+                    <circle cx={CX} cy={CY} r={3} fill="#000" stroke="rgba(255,255,255,0.3)" strokeWidth={0.5} />
+                    <circle cx={CX} cy={CY} r={WR} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} strokeDasharray="2,2" />
+                    {/* Current angle sweep line */}
+                    {(() => {
+                      const r = ((hueAngle - 90) * Math.PI) / 180;
+                      return (
+                        <line
+                          x1={CX}
+                          y1={CY}
+                          x2={CX + 65 * Math.cos(r)}
+                          y2={CY + 65 * Math.sin(r)}
+                          stroke="rgba(255,255,255,0.15)"
+                          strokeWidth={0.5}
+                        />
+                      );
+                    })()}
+                    {/* C2 symmetry */}
+                    {(
+                      [
+                        [1, 6],
+                        [2, 5],
+                        [3, 4],
+                      ] as [number, number][]
+                    ).flatMap(([a, b]) =>
+                      LEVEL_CANDIDATES[a].map((ca, ci) => {
+                        if (ca.angle < 0) return null;
+                        const comp = (ca.angle + 180) % 360;
+                        const ciB = LEVEL_CANDIDATES[b].findIndex((cb) => Math.abs(((cb.angle - comp + 540) % 360) - 180) < 1);
+                        if (ciB < 0) return null;
+                        const pA = wP(ca.angle, a),
+                          pB = wP(LEVEL_CANDIDATES[b][ciB].angle, b);
+                        return (
+                          <line
+                            key={`s${a}${ci}`}
+                            x1={pA.x}
+                            y1={pA.y}
+                            x2={pB.x}
+                            y2={pB.y}
+                            stroke="rgba(255,255,255,0.15)"
+                            strokeWidth={0.5}
+                            strokeDasharray="3,2"
+                          />
+                        );
+                      }),
+                    )}
+                    {/* Active connections */}
+                    {(() => {
+                      const p = dots.filter((d) => d.act).map((d) => wP(d.a, d.lv));
+                      return p.map((pt, i) =>
+                        i > 0 ? (
+                          <line
+                            key={`wc${i}`}
+                            x1={p[i - 1].x}
+                            y1={p[i - 1].y}
+                            x2={pt.x}
+                            y2={pt.y}
+                            stroke="rgba(255,255,255,0.2)"
+                            strokeWidth={0.5}
+                          />
+                        ) : null,
+                      );
+                    })()}
+                    {/* Dots */}
+                    {dots.map((d) => {
+                      const p = wP(d.a, d.lv);
+                      return (
+                        <circle
+                          key={`w${d.lv}${d.ci}`}
+                          cx={p.x}
+                          cy={p.y}
+                          r={d.act ? 5 : 2.5}
+                          fill={d.act ? `rgb(${d.rgb.join(",")})` : "#555"}
+                          stroke={d.act ? "#fff" : "none"}
+                          strokeWidth={d.act ? 1 : 0}
+                        />
+                      );
+                    })}
+                    {/* Angle marker */}
+                    {(() => {
+                      const r = ((hueAngle - 90) * Math.PI) / 180,
+                        x = CX + 75 * Math.cos(r),
+                        y = CY + 75 * Math.sin(r);
+                      return (
+                        <polygon
+                          points={`${x},${y} ${x + 4 * Math.cos(r + 2.5)},${y + 4 * Math.sin(r + 2.5)} ${x + 4 * Math.cos(r - 2.5)},${y + 4 * Math.sin(r - 2.5)}`}
+                          fill="#fff"
+                        />
+                      );
+                    })()}
+                  </g>
+
+                  {/* ═══ RIGHT: Y-projection (X=hue angle, Y=wheel Y coord) ═══ */}
+                  <g>
+                    <rect x={RX} y={CY - WR} width={RW} height={WR * 2} fill="rgba(255,255,255,0.02)" rx={4} />
+                    {/* Center horizontal line (wheel center Y) */}
+                    <line x1={RX} y1={CY} x2={RX + RW} y2={CY} stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />
+                    {/* X-axis hue labels */}
+                    {[0, 60, 120, 180, 240, 300].map((a) => (
+                      <text key={`ra${a}`} x={rPx(a)} y={CY + WR + 10} fontSize={4} fill="#555" textAnchor="middle">
+                        {a}°
+                      </text>
+                    ))}
+                    {/* Current hue vertical line */}
+                    <line
+                      x1={rPx(hueAngle)}
+                      y1={CY - WR}
+                      x2={rPx(hueAngle)}
+                      y2={CY + WR}
+                      stroke="rgba(255,255,255,0.2)"
+                      strokeWidth={0.5}
+                    />
+                    {/* Dot traces: for each dot, plot at (rPx(angle), wheel_y) */}
+                    {dots.map((d) => {
+                      const wy = wP(d.a, d.lv).y; // same Y as on wheel
+                      return (
+                        <circle
+                          key={`r${d.lv}${d.ci}`}
+                          cx={rPx(d.a)}
+                          cy={wy}
+                          r={d.act ? 4 : 2}
+                          fill={d.act ? `rgb(${d.rgb.join(",")})` : "#444"}
+                          stroke={d.act ? "#fff" : "none"}
+                          strokeWidth={d.act ? 0.5 : 0}
+                        />
+                      );
+                    })}
+                    {/* Connect active dots as wave */}
+                    {(() => {
+                      const sorted = dots.filter((d) => d.act).sort((a, b) => a.a - b.a);
+                      const pts = sorted.map((d) => ({ x: rPx(d.a), y: wP(d.a, d.lv).y }));
+                      return pts.map((pt, i) =>
+                        i > 0 ? (
+                          <line
+                            key={`rc${i}`}
+                            x1={pts[i - 1].x}
+                            y1={pts[i - 1].y}
+                            x2={pt.x}
+                            y2={pt.y}
+                            stroke="rgba(128,160,255,0.25)"
+                            strokeWidth={0.8}
+                          />
+                        ) : null,
+                      );
+                    })()}
+                  </g>
+
+                  {/* ═══ BOTTOM: X-projection (Y=hue angle, X=wheel X coord) ═══ */}
+                  <g>
+                    <rect x={CX - WR} y={BY} width={WR * 2} height={BH} fill="rgba(255,255,255,0.02)" rx={4} />
+                    {/* Center vertical line (wheel center X) */}
+                    <line x1={CX} y1={BY} x2={CX} y2={BY + BH} stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />
+                    {/* Y-axis hue labels */}
+                    {[0, 60, 120, 180, 240, 300].map((a) => (
+                      <text key={`ba${a}`} x={CX - WR - 6} y={bPy(a)} fontSize={4} fill="#555" textAnchor="end" dominantBaseline="middle">
+                        {a}°
+                      </text>
+                    ))}
+                    {/* Current hue horizontal line */}
+                    <line
+                      x1={CX - WR}
+                      y1={bPy(hueAngle)}
+                      x2={CX + WR}
+                      y2={bPy(hueAngle)}
+                      stroke="rgba(255,255,255,0.2)"
+                      strokeWidth={0.5}
+                    />
+                    {/* Dot traces: for each dot, plot at (wheel_x, bPy(angle)) */}
+                    {dots.map((d) => {
+                      const wx = wP(d.a, d.lv).x; // same X as on wheel
+                      return (
+                        <circle
+                          key={`b${d.lv}${d.ci}`}
+                          cx={wx}
+                          cy={bPy(d.a)}
+                          r={d.act ? 4 : 2}
+                          fill={d.act ? `rgb(${d.rgb.join(",")})` : "#444"}
+                          stroke={d.act ? "#fff" : "none"}
+                          strokeWidth={d.act ? 0.5 : 0}
+                        />
+                      );
+                    })}
+                    {/* Connect active dots as wave */}
+                    {(() => {
+                      const sorted = dots.filter((d) => d.act).sort((a, b) => a.a - b.a);
+                      const pts = sorted.map((d) => ({ x: wP(d.a, d.lv).x, y: bPy(d.a) }));
+                      return pts.map((pt, i) =>
+                        i > 0 ? (
+                          <line
+                            key={`bc${i}`}
+                            x1={pts[i - 1].x}
+                            y1={pts[i - 1].y}
+                            x2={pt.x}
+                            y2={pt.y}
+                            stroke="rgba(128,160,255,0.25)"
+                            strokeWidth={0.8}
+                          />
+                        ) : null,
+                      );
+                    })()}
+                  </g>
+
+                  {/* ═══ GUIDE LINES: horizontal (wheel→right) + vertical (wheel→bottom) ═══ */}
+                  <g opacity={0.15}>
+                    {dots
+                      .filter((d) => d.act)
+                      .map((d) => {
+                        const w = wP(d.a, d.lv);
+                        const col = `rgb(${d.rgb.join(",")})`;
+                        return (
+                          <React.Fragment key={`gl${d.lv}${d.ci}`}>
+                            {/* Horizontal: wheel dot → right graph (same Y) */}
+                            <line x1={w.x} y1={w.y} x2={rPx(d.a)} y2={w.y} stroke={col} strokeWidth={0.5} strokeDasharray="2,2" />
+                            {/* Vertical: wheel dot → bottom graph (same X) */}
+                            <line x1={w.x} y1={w.y} x2={w.x} y2={bPy(d.a)} stroke={col} strokeWidth={0.5} strokeDasharray="2,2" />
+                          </React.Fragment>
+                        );
+                      })}
+                  </g>
+                </svg>
+              </div>
+            );
+          }, [hueAngle, brushLevel])}
         </div>
         {/* panel-sidebar */}
       </div>

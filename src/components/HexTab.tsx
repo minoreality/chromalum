@@ -19,6 +19,7 @@ interface HexTabProps {
   toggleLock: (lv: number) => void;
   handleRandomize: () => void;
   handleUnlockAll: () => void;
+  canRandomize: boolean;
   patternInfo: { total: number; expanded: string; perLevel: number[] };
   t: TranslationFn;
   onPatternClick?: () => void;
@@ -40,6 +41,7 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
     toggleLock,
     handleRandomize,
     handleUnlockAll,
+    canRandomize,
     patternInfo,
     t,
     onPatternClick,
@@ -79,6 +81,7 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
             locked={locked}
             onToggleLock={toggleLock}
             onRandomize={handleRandomize}
+            canRandomize={canRandomize}
           />
           {/* Pattern info — 3 aligned rows: labels, dots, ∏ᵢcᵢ = counts × ... = total */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs, marginTop: -SP.lg }}>
@@ -103,7 +106,7 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
                 justifyContent: "center",
                 justifyItems: "center",
                 alignItems: "center",
-                rowGap: 2,
+                rowGap: 3,
                 columnGap: 0,
                 maxWidth: "100%",
                 overflowX: "auto",
@@ -149,7 +152,7 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
                 return (
                   <React.Fragment key={"l" + lv}>
                     {lv > 0 && <span />}
-                    <span style={{ fontSize: FS.xs, color: active ? C.accentBright : C.textDimmer, minWidth: 20, textAlign: "center" }}>
+                    <span style={{ fontSize: FS.sm, color: active ? C.accentBright : C.textDimmer, minWidth: 22, textAlign: "center" }}>
                       L{lv}
                     </span>
                   </React.Fragment>
@@ -168,8 +171,8 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
                     {lv > 0 && <span />}
                     <div
                       style={{
-                        width: 12,
-                        height: 12,
+                        width: 14,
+                        height: 14,
                         borderRadius: "50%",
                         justifySelf: "center",
                         ...(active
@@ -182,20 +185,21 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
               })}
               <span />
               {/* Row 3: ∏ᵢcᵢ = counts × ... = total */}
-              <span style={{ fontSize: FS.xs, color: C.accentBright, paddingRight: SP.xs, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: FS.sm, color: C.accentBright, paddingRight: SP.xs, whiteSpace: "nowrap" }}>
                 {"\u220F\u1D62c\u1D62 ="}
               </span>
               {patternInfo.perLevel.map((c, lv) => {
                 const active = hist[lv] > 0;
+                const mulActive = lv > 0 && hist[lv - 1] > 0 && hist.slice(lv).some((h) => h > 0);
                 return (
                   <React.Fragment key={"c" + lv}>
-                    {lv > 0 && <span style={{ fontSize: FS.xs, color: hist[lv - 1] > 0 ? C.accentBright : C.textDimmer }}>{"\u00d7"}</span>}
+                    {lv > 0 && <span style={{ fontSize: FS.sm, color: mulActive ? C.accentBright : C.textDimmer }}>{"\u00d7"}</span>}
                     <span
                       style={{
-                        fontSize: FS.sm,
+                        fontSize: FS.md,
                         color: active ? C.accentBright : C.textDimmer,
                         fontWeight: active ? 700 : 400,
-                        minWidth: 20,
+                        minWidth: 22,
                         textAlign: "center",
                       }}
                     >
@@ -204,7 +208,7 @@ export const HexTab = React.memo(function HexTab(props: HexTabProps) {
                   </React.Fragment>
                 );
               })}
-              <span style={{ fontSize: FS.xs, color: C.accentBright, paddingLeft: SP.sm, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: FS.sm, color: C.accentBright, paddingLeft: SP.sm, whiteSpace: "nowrap" }}>
                 = {t("random_patterns", patternInfo.total)}
               </span>
             </div>

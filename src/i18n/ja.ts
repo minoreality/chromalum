@@ -21,6 +21,8 @@ export const ja: Record<TranslationKey, string> = {
 
   // SourcePanel
   label_source: "CANVAS",
+  label_input: "入力",
+  label_output: "出力",
   aria_drawing_canvas: "描画キャンバス（グレースケール）",
   aria_drawing_canvas_desc: "ピクセルアート描画キャンバス",
   aria_drawing_tools: "描画ツール",
@@ -248,12 +250,13 @@ export const ja: Record<TranslationKey, string> = {
   label_glaze: "GLAZE",
   glaze_hue_angle: "色相角度",
   aria_hue_slider: "色相角度 (0-360度)",
-  glaze_preview: "レベルプレビュー",
+  glaze_preview: "カラーマッピング",
   tool_glaze_brush: "🖌️ブラシ",
   tool_glaze_eraser: "🧽消しゴム",
   tool_glaze_fill: "🪣塗りつぶし",
   btn_glaze_clear: "🗑️グレーズクリア",
   title_glaze_clear: "すべてのグレーズ色を削除",
+  title_reset_auto: "自動に戻す",
   toast_glaze_cleared: "グレーズをクリアしました (Ctrl+Zで戻せます)",
   announce_glaze_brush: "グレーズブラシ",
   announce_glaze_eraser: "グレーズ消しゴム",

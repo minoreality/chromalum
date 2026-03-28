@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, memo } from "react";
+import React, { useState, useMemo, useCallback, useRef, memo } from "react";
 import { LEVEL_CANDIDATES } from "../color-engine";
 import { NUM_VERTICES } from "../constants";
 import {
@@ -25,18 +25,21 @@ interface Props {
   locked: boolean[];
   onToggleLock: (lv: number) => void;
   onRandomize: () => void;
+  canRandomize: boolean;
 }
 
 export const HexDiag = memo(
-  function HexDiag({ cc, dispatch, hist, total, locked, onToggleLock, onRandomize }: Props) {
+  function HexDiag({ cc, dispatch, hist, total, locked, onToggleLock, onRandomize, canRandomize }: Props) {
     const { t } = useTranslation();
     const [hl, setHl] = useState<number | null>(null);
     const [focusedLv, setFocusedLv] = useState<number | null>(null);
     const [diceRolling, setDiceRolling] = useState(false);
+    const diceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const handleRandomize = useCallback(() => {
       onRandomize();
       setDiceRolling(true);
-      setTimeout(() => setDiceRolling(false), 400);
+      clearTimeout(diceTimer.current);
+      diceTimer.current = setTimeout(() => setDiceRolling(false), 400);
     }, [onRandomize]);
     const vp = HEX_VP;
     const sel = (lv: number, ai: number) => dispatch({ type: "set_color", lv, idx: ai });
@@ -83,10 +86,10 @@ export const HexDiag = memo(
     }, [cc, vp, isA]); // eslint-disable-line react-hooks/exhaustive-deps -- isA depends on cc
 
     return (
-      <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="hex-diag-wrap" style={{ display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
         <svg
           viewBox="-10 -25 420 445"
-          style={{ width: "100%", maxWidth: 420 }}
+          style={{ width: "100%", maxWidth: 462 }}
           role="img"
           aria-label={t("hex_diagram_label")}
           onMouseOver={onSvgMouseOver}
@@ -171,8 +174,13 @@ export const HexDiag = memo(
                   r = dR(v.lv, true, act);
                 allCircles.push({ key: "v" + i, lv: v.lv, ai, x: p.x, y: p.y, r, color: v.rgb, vertex: true, vertexIdx: i });
               });
-              // Sort descending by radius — large circles behind, small circles on top
-              allCircles.sort((a, b) => b.r - a.r);
+              // Sort: inactive first (large behind), then active on top
+              allCircles.sort((a, b) => {
+                const aAct = isA(a.lv, a.ai) ? 1 : 0;
+                const bAct = isA(b.lv, b.ai) ? 1 : 0;
+                if (aAct !== bAct) return aAct - bAct; // inactive before active
+                return b.r - a.r; // within same group, large behind
+              });
               return allCircles.map((item) => {
                 const { key, lv, ai, x, y, r, color, vertex, vertexIdx } = item;
                 const act = isA(lv, ai),
@@ -186,29 +194,49 @@ export const HexDiag = memo(
                     <g
                       key={key}
                       data-lv={lv}
-                      onFocus={() => {
-                        setHl(lv);
-                        setFocusedLv(lv);
-                      }}
-                      onBlur={() => {
-                        setHl(null);
-                        setFocusedLv(null);
-                      }}
-                      onClick={() => {
-                        if (!locked[lv]) sel(lv, ai);
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        onToggleLock(lv);
-                      }}
-                      style={{ cursor: "pointer" }}
-                      tabIndex={0}
-                      onKeyDown={(ev) => {
-                        if (ev.key === "Enter" || ev.key === " ") {
-                          ev.preventDefault();
-                          sel(lv, ai);
-                        }
-                      }}
+                      onFocus={
+                        act
+                          ? undefined
+                          : () => {
+                              setHl(lv);
+                              setFocusedLv(lv);
+                            }
+                      }
+                      onBlur={
+                        act
+                          ? undefined
+                          : () => {
+                              setHl(null);
+                              setFocusedLv(null);
+                            }
+                      }
+                      onClick={
+                        act
+                          ? undefined
+                          : () => {
+                              if (!locked[lv]) sel(lv, ai);
+                            }
+                      }
+                      onContextMenu={
+                        act
+                          ? undefined
+                          : (e) => {
+                              e.preventDefault();
+                              onToggleLock(lv);
+                            }
+                      }
+                      style={{ cursor: act ? "default" : "pointer", pointerEvents: act ? "none" : "auto" }}
+                      tabIndex={act ? -1 : 0}
+                      onKeyDown={
+                        act
+                          ? undefined
+                          : (ev) => {
+                              if (ev.key === "Enter" || ev.key === " ") {
+                                ev.preventDefault();
+                                sel(lv, ai);
+                              }
+                            }
+                      }
                       role="button"
                       aria-pressed={act}
                       aria-label={t("hex_vertex_label", v.c, lv)}
@@ -270,29 +298,49 @@ export const HexDiag = memo(
                   <g
                     key={key}
                     data-lv={lv}
-                    onFocus={() => {
-                      setHl(lv);
-                      setFocusedLv(lv);
-                    }}
-                    onBlur={() => {
-                      setHl(null);
-                      setFocusedLv(null);
-                    }}
-                    onClick={() => {
-                      if (!locked[lv]) sel(lv, ai);
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      onToggleLock(lv);
-                    }}
-                    style={{ cursor: "pointer" }}
-                    tabIndex={0}
-                    onKeyDown={(ev) => {
-                      if (ev.key === "Enter" || ev.key === " ") {
-                        ev.preventDefault();
-                        sel(lv, ai);
-                      }
-                    }}
+                    onFocus={
+                      act
+                        ? undefined
+                        : () => {
+                            setHl(lv);
+                            setFocusedLv(lv);
+                          }
+                    }
+                    onBlur={
+                      act
+                        ? undefined
+                        : () => {
+                            setHl(null);
+                            setFocusedLv(null);
+                          }
+                    }
+                    onClick={
+                      act
+                        ? undefined
+                        : () => {
+                            if (!locked[lv]) sel(lv, ai);
+                          }
+                    }
+                    onContextMenu={
+                      act
+                        ? undefined
+                        : (e) => {
+                            e.preventDefault();
+                            onToggleLock(lv);
+                          }
+                    }
+                    style={{ cursor: act ? "default" : "pointer", pointerEvents: act ? "none" : "auto" }}
+                    tabIndex={act ? -1 : 0}
+                    onKeyDown={
+                      act
+                        ? undefined
+                        : (ev) => {
+                            if (ev.key === "Enter" || ev.key === " ") {
+                              ev.preventDefault();
+                              sel(lv, ai);
+                            }
+                          }
+                    }
                     role="button"
                     aria-pressed={act}
                     aria-label={t("hex_edge_label", lv, color)}
@@ -340,18 +388,27 @@ export const HexDiag = memo(
             })()}
             {/* Dice button at center */}
             <g
-              onClick={handleRandomize}
-              style={{ cursor: "pointer" }}
-              tabIndex={0}
+              onClick={canRandomize ? handleRandomize : undefined}
+              style={{
+                cursor: canRandomize ? "pointer" : "default",
+                opacity: canRandomize ? 1 : 0.3,
+                pointerEvents: canRandomize ? "auto" : "none",
+              }}
+              tabIndex={canRandomize ? 0 : -1}
               role="button"
               aria-pressed={false}
+              aria-disabled={!canRandomize}
               aria-label={t("btn_random_color")}
-              onKeyDown={(ev) => {
-                if (ev.key === "Enter" || ev.key === " ") {
-                  ev.preventDefault();
-                  handleRandomize();
-                }
-              }}
+              onKeyDown={
+                canRandomize
+                  ? (ev) => {
+                      if (ev.key === "Enter" || ev.key === " ") {
+                        ev.preventDefault();
+                        handleRandomize();
+                      }
+                    }
+                  : undefined
+              }
             >
               <text
                 x={HEX_CX}

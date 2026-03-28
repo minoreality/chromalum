@@ -21,6 +21,8 @@ export const en = {
 
   // SourcePanel
   label_source: "CANVAS",
+  label_input: "Input",
+  label_output: "Output",
   aria_drawing_canvas: "Drawing canvas (grayscale)",
   aria_drawing_canvas_desc: "pixel art drawing canvas",
   aria_drawing_tools: "Drawing tools",
@@ -248,12 +250,13 @@ export const en = {
   label_glaze: "GLAZE",
   glaze_hue_angle: "Hue Angle",
   aria_hue_slider: "Hue angle (0-360 degrees)",
-  glaze_preview: "Level Preview",
+  glaze_preview: "COLOR MAPPING",
   tool_glaze_brush: "\uD83D\uDD8C\uFE0FBrush",
   tool_glaze_eraser: "\uD83E\uDDFDEraser",
   tool_glaze_fill: "\uD83E\uDEA3Fill",
   btn_glaze_clear: "\uD83D\uDDD1\uFE0FClear Glaze",
   title_glaze_clear: "Remove all glaze colors",
+  title_reset_auto: "Reset to auto",
   toast_glaze_cleared: "Glaze cleared (Ctrl+Z to undo)",
   announce_glaze_brush: "Glaze brush",
   announce_glaze_eraser: "Glaze eraser",

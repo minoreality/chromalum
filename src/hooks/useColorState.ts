@@ -16,12 +16,14 @@ export function useColorState(hist: number[]) {
   }, []);
 
   const handleRandomize = useCallback(() => {
-    ccDispatch({ type: "randomize", locked });
-  }, [ccDispatch, locked]);
+    ccDispatch({ type: "randomize", locked, hist });
+  }, [ccDispatch, locked, hist]);
 
   const handleUnlockAll = useCallback(() => {
     setLocked(new Array(LEVEL_COUNT).fill(false));
   }, []);
+
+  const canRandomize = useMemo(() => LEVEL_CANDIDATES.some((alts, lv) => hist[lv] > 0 && !locked[lv] && alts.length > 1), [hist, locked]);
 
   const colorLUT = useMemo(() => buildColorLUT(cc), [cc]);
 
@@ -44,6 +46,7 @@ export function useColorState(hist: number[]) {
     toggleLock,
     handleRandomize,
     handleUnlockAll,
+    canRandomize,
     colorLUT,
     patternInfo,
   };
