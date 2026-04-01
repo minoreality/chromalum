@@ -8,7 +8,9 @@ interface Props {
   onHover: (lv: number | null) => void;
 }
 
-/* ── Die net (2-2-2 staircase unfolding) ── */
+/* ── Die net (2-2-2 staircase unfolding) ──
+   Opposite faces when folded: 2↔5 (R↔C), 6↔1 (Y↔B), 4↔3 (G↔M).
+   Each pair satisfies a⊕b = 7 (XOR complement). ── */
 
 const NET_CELL = 52;
 const NET_GAP = 3;

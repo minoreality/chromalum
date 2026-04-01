@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
-import { SP, C, R, FS, SHADOW, HUE_GRADIENT } from "../tokens";
+import { LEVEL_INFO, LEVEL_CANDIDATES, DEFAULT_CC, findClosestCandidate } from "../color-engine";
+import { SP, C, R, FS, SHADOW, HUE_GRADIENT, FONT } from "../tokens";
+import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../styles";
 import { useTranslation } from "../i18n";
 import { LinkedViz, ACTIVE_LEVELS } from "./LinkedViz";
 import { useMusicEngine, type ScaleMode } from "../hooks/useMusicEngine";
@@ -19,32 +20,6 @@ import { LuminanceBars } from "./music/LuminanceBars";
 
 /* ── Style constants ── */
 
-const S_TOGGLE: React.CSSProperties = {
-  padding: "3px 10px",
-  fontSize: 11,
-  lineHeight: "14px",
-  borderRadius: R.md,
-  border: `1px solid ${C.border}`,
-  cursor: "pointer",
-  background: "transparent",
-  color: C.textSecondary,
-  transition: "all 0.15s",
-  whiteSpace: "nowrap",
-};
-
-const S_TOGGLE_ACTIVE: React.CSSProperties = {
-  padding: "3px 10px",
-  fontSize: 11,
-  lineHeight: "14px",
-  borderRadius: R.md,
-  border: `1px solid ${C.accent}`,
-  cursor: "pointer",
-  background: C.accent,
-  color: "#fff",
-  transition: "all 0.15s",
-  whiteSpace: "nowrap",
-};
-
 const S_ROW: React.CSSProperties = {
   display: "flex",
   gap: SP.sm,
@@ -52,9 +27,9 @@ const S_ROW: React.CSSProperties = {
   flexWrap: "wrap",
   justifyContent: "center",
 };
-const S_LABEL: React.CSSProperties = { fontSize: 11, color: C.textDim, whiteSpace: "nowrap" };
+const S_LABEL: React.CSSProperties = { fontSize: FS.lg, color: C.textDim, whiteSpace: "nowrap" };
 const S_SELECT: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: FS.lg,
   padding: "2px 4px",
   background: C.bgPanel,
   color: C.textPrimary,
@@ -63,6 +38,14 @@ const S_SELECT: React.CSSProperties = {
 };
 
 const S_HUE_WRAP: React.CSSProperties = { position: "relative", width: "100%", paddingTop: SP.xl };
+const S_ALPHA_TRACK: React.CSSProperties = {
+  width: "100%",
+  height: 16,
+  borderRadius: R.lg,
+  background: `linear-gradient(90deg, ${C.accent}33, ${C.accent}, ${C.accent}33)`,
+  cursor: "pointer",
+  border: `1px solid ${C.border}`,
+};
 const S_HUE_TRACK: React.CSSProperties = {
   width: "100%",
   height: 16,
@@ -83,6 +66,7 @@ const S_HUE_INPUT: React.CSSProperties = {
 
 const S_SECTION: React.CSSProperties = {
   background: "rgba(96, 128, 255, 0.06)",
+  border: "none",
   borderLeft: `2px solid ${C.accent}`,
   padding: "6px 12px",
   cursor: "pointer",
@@ -90,10 +74,11 @@ const S_SECTION: React.CSSProperties = {
   justifyContent: "space-between",
   alignItems: "center",
   userSelect: "none",
-  fontSize: 11,
-  letterSpacing: "0.15em",
+  fontSize: FS.lg,
+  letterSpacing: "0.08em",
   color: C.textDim,
-  fontFamily: "monospace",
+  fontFamily: FONT.mono,
+  width: "100%",
 };
 
 const S_CARD: React.CSSProperties = {
@@ -106,11 +91,13 @@ const S_CARD: React.CSSProperties = {
   border: `1px solid ${C.border}`,
   background: "rgba(255,255,255,0.02)",
 };
+const S_CARD_FANO: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #4060c0" };
+const S_CARD_GROUP: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #c0a040" };
 
 const S_CARD_GRID: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-  gap: SP.md,
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: SP.xl,
   width: "100%",
 };
 
@@ -129,7 +116,11 @@ export const MusicPanel = React.memo(function MusicPanel() {
 
   // Shared state (replaces GlazeContext for this tab)
   const [hueAngle, setHueAngle] = useState(0);
-  const [directCandidates, setDirectCandidates] = useState<Map<number, number>>(new Map());
+  const [directCandidates, setDirectCandidates] = useState<Map<number, number>>(() => {
+    const m = new Map<number, number>();
+    for (let lv = 1; lv <= 6; lv++) m.set(lv, DEFAULT_CC[lv]);
+    return m;
+  });
   const [hoveredCandidate, setHoveredCandidate] = useState<{ lv: number; ci: number } | null>(null);
 
   // Audio state — always enabled, initAudio called on first interaction
@@ -284,6 +275,12 @@ export const MusicPanel = React.memo(function MusicPanel() {
     setDirectCandidates(new Map());
   }, []);
 
+  const handleAlphaBarChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Number(e.target.value);
+    setAlpha0(v);
+    setAlpha7(v);
+  }, []);
+
   const handleBlockClick = useCallback(
     (lv: number, angle: number) => {
       ensureAudio();
@@ -331,6 +328,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
 
   // Hue marker position
   const hueMarkerLeft = `${((hueAngle % 360) / 360) * 100}%`;
+  const alphaMarkerLeft = `${((((alpha0 % 360) + 360) % 360) / 360) * 100}%`;
 
   // Candidate switch-point tick marks (memoized once)
   const hueTicks = useMemo(() => {
@@ -355,27 +353,24 @@ export const MusicPanel = React.memo(function MusicPanel() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: SP.md, padding: SP.md }}>
-      {/* Title — same style as other tabs */}
-      <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("music_title")}</div>
-      {/* Stop All + Reset */}
-      <div style={{ display: "flex", justifyContent: "center", gap: SP.sm }}>
-        <button type="button" style={S_TOGGLE} onClick={handleStopAll}>
-          {t("music_stop_all")}
-        </button>
-        <button type="button" style={S_TOGGLE} onClick={handleResetDefaults}>
-          {t("music_reset")}
-        </button>
-      </div>
+      <div className="panel-layout">
+        {/* ═══ Left Column: Visualizations ═══ */}
+        <div className="panel-canvas" style={{ "--display-max": "420px" } as React.CSSProperties}>
+          {/* Title — same style as other tabs */}
+          <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("music_title")}</div>
+          {/* Stop All + Reset */}
+          <div style={{ display: "flex", justifyContent: "center", gap: SP.sm, width: "100%", marginBottom: SP.sm }}>
+            <button type="button" style={{ ...S_BTN_SM, borderColor: C.error, color: C.error }} onClick={handleStopAll}>
+              {t("music_stop_all")}
+            </button>
+            <button type="button" style={S_BTN_SM} onClick={handleResetDefaults}>
+              {t("music_reset")}
+            </button>
+          </div>
 
-      {/* ═══ Section A: Sonification Engine ═══ */}
-      <div style={S_SECTION} onClick={() => toggleSection("engine")}>
-        {t("music_section_engine")} <span>{openSections.has("engine") ? "\u25BC" : "\u25B6"}</span>
-      </div>
-      {openSections.has("engine") && (
-        <div style={{ display: "flex", flexDirection: "column", gap: SP.md, alignItems: "center" }}>
           {/* Hue angle slider with marker */}
-          <div className="music-hue-section" style={{ width: "100%", display: "flex", flexDirection: "column", gap: SP.md }}>
-            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: "monospace" }}>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: SP.md }}>
+            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
               {t("glaze_hue_angle")}: {Math.round(hueAngle % 360)}&deg;
             </div>
             <div style={S_HUE_WRAP}>
@@ -395,13 +390,13 @@ export const MusicPanel = React.memo(function MusicPanel() {
                   pointerEvents: "none",
                 }}
               />
-              {/* Candidate switch-point tick marks */}
+              {/* Candidate switch-point tick marks (above the bar) */}
               {hueTicks.map((tick, i) => (
                 <div
                   key={i}
                   style={{
                     position: "absolute",
-                    top: 26,
+                    top: 3,
                     left: `${(tick.deg / 359) * 100}%`,
                     transform: "translateX(-0.5px)",
                     width: 1,
@@ -422,10 +417,58 @@ export const MusicPanel = React.memo(function MusicPanel() {
                 style={S_HUE_INPUT}
               />
             </div>
+            {/* Alpha angle bar */}
+            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
+              {"\u03b1"}: {Math.round(((alpha0 % 360) + 360) % 360)}&deg;
+            </div>
+            <div style={S_HUE_WRAP}>
+              <div style={S_ALPHA_TRACK} />
+              {/* Marker triangle */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 1,
+                  left: alphaMarkerLeft,
+                  transform: "translateX(-5px)",
+                  width: 0,
+                  height: 0,
+                  borderLeft: "5px solid transparent",
+                  borderRight: "5px solid transparent",
+                  borderTop: `6px solid ${C.textPrimary}`,
+                  pointerEvents: "none",
+                }}
+              />
+              {/* 60° interval tick marks */}
+              {[0, 60, 120, 180, 240, 300].map((deg) => (
+                <div
+                  key={deg}
+                  style={{
+                    position: "absolute",
+                    top: 3,
+                    left: `${(deg / 360) * 100}%`,
+                    transform: "translateX(-0.5px)",
+                    width: 1,
+                    height: 5,
+                    background: C.textDimmer,
+                    pointerEvents: "none",
+                  }}
+                />
+              ))}
+              <input
+                type="range"
+                min={0}
+                max={359}
+                step={1}
+                value={Math.round(((alpha0 % 360) + 360) % 360)}
+                onChange={handleAlphaBarChange}
+                aria-label="Alpha angle"
+                style={S_HUE_INPUT}
+              />
+            </div>
           </div>
 
           {/* Level preview — 2D candidate grid with tone burst */}
-          <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", alignItems: "center", marginTop: SP.sm }}>
             {levelPreview.map((lp) => {
               const cands = LEVEL_CANDIDATES[lp.lv];
               const hasCands = cands.length > 1;
@@ -548,19 +591,16 @@ export const MusicPanel = React.memo(function MusicPanel() {
                       <div
                         role={isDirect ? "button" : undefined}
                         tabIndex={isDirect ? 0 : undefined}
-                        onClick={
-                          isDirect
-                            ? () => {
-                                setDirectCandidates((prev) => {
-                                  const next = new Map(prev);
-                                  next.delete(lp.lv);
-                                  return next;
-                                });
-                              }
-                            : () => {
-                                if (mainCand) handleBlockClick(lp.lv, mainCand.angle);
-                              }
-                        }
+                        onClick={() => {
+                          if (isDirect) {
+                            setDirectCandidates((prev) => {
+                              const next = new Map(prev);
+                              next.delete(lp.lv);
+                              return next;
+                            });
+                          }
+                          if (mainCand) handleBlockClick(lp.lv, mainCand.angle);
+                        }}
                         onKeyDown={
                           isDirect
                             ? (e) => {
@@ -600,83 +640,6 @@ export const MusicPanel = React.memo(function MusicPanel() {
             })}
           </div>
 
-          {/* Audio controls row */}
-          <div style={{ display: "flex", gap: SP.sm, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-            <span style={{ fontSize: 11, color: C.textDim }}>{t("music_volume")}</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(volume * 100)}
-              onChange={(e) => setVolume(Number(e.target.value) / 100)}
-              style={{ width: 60 }}
-            />
-
-            {(["12tet", "ji", "octatonic"] as ScaleMode[]).map((m) => (
-              <button key={m} type="button" style={scaleMode === m ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setScaleMode(m)}>
-                {t(`music_scale_${m}`)}
-              </button>
-            ))}
-
-            <button type="button" style={fmEnabled ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setFmEnabled(!fmEnabled)}>
-              {fmEnabled ? t("music_fm_on") : t("music_fm_off")}
-            </button>
-
-            <button type="button" style={panEnabled ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setPanEnabled(!panEnabled)}>
-              {panEnabled ? t("music_panning_on") : t("music_panning_off")}
-            </button>
-          </div>
-
-          {/* Alpha/Hue rotation controls */}
-          <div style={{ display: "flex", gap: SP.sm, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-            <button
-              type="button"
-              style={alphaDir === -1 ? S_TOGGLE_ACTIVE : S_TOGGLE}
-              onClick={handleAlphaReverse}
-              title={t("linkedviz_alpha_reverse")}
-            >
-              {"\u03b1\u25C0"}
-            </button>
-            <button
-              type="button"
-              style={alphaDir === 1 ? S_TOGGLE_ACTIVE : S_TOGGLE}
-              onClick={handleAlphaPlay}
-              title={t("linkedviz_alpha_play")}
-            >
-              {"\u03b1\u25B6"}
-            </button>
-            <input
-              type="range"
-              min={10}
-              max={120}
-              value={alphaSpeed}
-              onChange={(e) => setAlphaSpeed(Number(e.target.value))}
-              style={{ width: 60 }}
-            />
-            <span style={{ fontSize: 11, color: C.textDim, fontVariantNumeric: "tabular-nums", width: 42 }}>{alphaSpeed}&deg;/s</span>
-
-            <button
-              type="button"
-              style={hueDir === -1 ? S_TOGGLE_ACTIVE : S_TOGGLE}
-              onClick={handleHueReverse}
-              title={t("linkedviz_hue_reverse")}
-            >
-              {"H\u25C0"}
-            </button>
-            <button type="button" style={hueDir === 1 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={handleHuePlay} title={t("linkedviz_hue_play")}>
-              {"H\u25B6"}
-            </button>
-            <input
-              type="range"
-              min={10}
-              max={120}
-              value={hueSpeed}
-              onChange={(e) => setHueSpeed(Number(e.target.value))}
-              style={{ width: 60 }}
-            />
-            <span style={{ fontSize: 11, color: C.textDim, fontVariantNumeric: "tabular-nums", width: 42 }}>{hueSpeed}&deg;/s</span>
-          </div>
-
           {/* LinkedViz */}
           <LinkedViz
             hueAngle={hueAngle}
@@ -696,317 +659,430 @@ export const MusicPanel = React.memo(function MusicPanel() {
           {/* Oscilloscope */}
           <Oscilloscope analyserNode={engine.analyserNode} />
         </div>
-      )}
 
-      {/* ═══ Section B: Fano Sequences ═══ */}
-      <div style={S_SECTION} onClick={() => toggleSection("sequences")}>
-        {t("music_section_sequences")} <span>{openSections.has("sequences") ? "\u25BC" : "\u25B6"}</span>
-      </div>
-      {openSections.has("sequences") && (
-        <div style={{ display: "flex", flexDirection: "column", gap: SP.md, alignItems: "center" }}>
-          <div
-            style={{
-              display: "flex",
-              gap: SP.lg,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-              justifyContent: "center",
-            }}
-          >
-            {/* Mini Fano Chord diagram */}
-            <div>
-              <div style={{ fontSize: 11, color: C.textDim, textAlign: "center", marginBottom: SP.sm }}>{t("music_fano_chord")}</div>
-              <MiniFanoChord hoveredLine={hoveredFanoLine} onLineHover={setHoveredFanoLine} activeLevels={activeLevels} />
+        {/* ═══ Right Column: Controls ═══ */}
+        <div className="panel-sidebar">
+          {/* Audio controls */}
+          <div style={{ display: "flex", flexDirection: "column", gap: SP.xs, width: "100%" }}>
+            <div style={{ display: "flex", gap: SP.sm, alignItems: "center", justifyContent: "center" }}>
+              <span style={S_LABEL}>{t("music_volume")}</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(volume * 100)}
+                onChange={(e) => setVolume(Number(e.target.value) / 100)}
+                aria-label={t("music_volume")}
+                style={{ flex: 1, minWidth: 60 }}
+              />
             </div>
-
-            {/* Sequencer controls */}
-            <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
-              <button type="button" style={grayStep !== null ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={handleGrayMelody}>
-                {grayStep !== null ? t("music_gray_stop") : t("music_gray_melody")}
-              </button>
-
-              <button type="button" style={rhythmPlaying ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={handleFanoRhythm}>
-                {rhythmPlaying ? t("music_rhythm_stop") : t("music_rhythm_start")}
-              </button>
-
-              <div style={{ display: "flex", gap: SP.xs, alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: C.textDim }}>{t("music_rhythm_tempo")}</span>
-                <input
-                  type="range"
-                  min={60}
-                  max={200}
-                  value={rhythmTempo}
-                  onChange={(e) => setRhythmTempo(Number(e.target.value))}
-                  style={{ width: 60 }}
-                />
-                <span style={{ fontSize: 11, color: C.textDim }}>{rhythmTempo}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ Section C: Algebraic Sonification ═══ */}
-      <div style={S_SECTION} onClick={() => toggleSection("algebra")}>
-        {t("music_section_algebra")} <span>{openSections.has("algebra") ? "\u25BC" : "\u25B6"}</span>
-      </div>
-      {openSections.has("algebra") && (
-        <div style={S_CARD_GRID}>
-          {/* Card 1: XOR Triple */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_xor_triple")}</span>
-              <select value={xorA ?? ""} onChange={(e) => setXorA(e.target.value ? Number(e.target.value) : null)} style={S_SELECT}>
-                <option value="">--</option>
-                {[1, 2, 3, 4, 5, 6, 7].map((lv) => (
-                  <option key={lv} value={lv}>
-                    {lv}
-                  </option>
-                ))}
-              </select>
-              <select value={xorB ?? ""} onChange={(e) => setXorB(e.target.value ? Number(e.target.value) : null)} style={S_SELECT}>
-                <option value="">--</option>
-                {[1, 2, 3, 4, 5, 6, 7].map((lv) => (
-                  <option key={lv} value={lv}>
-                    {lv}
-                  </option>
-                ))}
-              </select>
-              {xorA != null && xorB != null && <span style={{ fontSize: 11, color: C.accent }}>= {xorA ^ xorB}</span>}
-              <button
-                type="button"
-                style={{ ...S_TOGGLE }}
-                onClick={() => {
-                  if (xorA != null && xorB != null) {
-                    engine.initAudio();
-                    engine.playXorTriple?.(xorA, xorB, (lv) => setXorStep(lv));
-                  }
-                }}
-                disabled={xorA == null || xorB == null}
-              >
-                {t("music_xor_play")}
-              </button>
-            </div>
-            <XorFanoLine stepLv={xorStep} lvA={xorA} lvB={xorB} activeLevels={activeLevels} />
-          </div>
-
-          {/* Card 2: Parity Chords */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_parity_title")}</span>
-              {([0, 1, 2] as const).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  style={{ ...S_TOGGLE }}
-                  onClick={() => {
-                    setActiveParityGroup(p);
-                    engine.initAudio();
-                    engine.playParityChord?.(p);
-                    setTimeout(() => setActiveParityGroup(null), 500);
-                  }}
-                >
-                  {t(p === 0 ? "music_parity_p1" : p === 1 ? "music_parity_p2" : "music_parity_p4")}
+            <div style={{ display: "flex", gap: SP.sm, alignItems: "center", justifyContent: "center" }}>
+              <span style={S_LABEL}>{t("music_scale_mode")}</span>
+              {(["12tet", "ji", "octatonic"] as ScaleMode[]).map((m) => (
+                <button key={m} type="button" style={scaleMode === m ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={() => setScaleMode(m)}>
+                  {t(`music_scale_${m}`)}
                 </button>
               ))}
             </div>
-            <ParityGrid activeGroup={activeParityGroup} activeLevels={activeLevels} />
-          </div>
-
-          {/* Card 3: Line + Dual */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_dual_title")}</span>
-              <select value={hoveredFanoLine ?? 0} onChange={(e) => setHoveredFanoLine(Number(e.target.value))} style={S_SELECT}>
-                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                  <option key={i} value={i}>
-                    L{i + 1}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                style={{ ...S_TOGGLE }}
-                onClick={() => {
-                  setDualLineIndex(hoveredFanoLine ?? 0);
-                  engine.initAudio();
-                  engine.playLineAndDual?.(hoveredFanoLine ?? 0, (phase) => setDualPhase(phase));
-                }}
-              >
-                {t("music_dual_play")}
+            <div style={{ display: "flex", gap: SP.sm, alignItems: "center", justifyContent: "center" }}>
+              <span style={S_LABEL}>{t("music_effect_mode")}</span>
+              <button type="button" style={fmEnabled ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={() => setFmEnabled(!fmEnabled)}>
+                {t("music_fm_on")}
+              </button>
+              <button type="button" style={panEnabled ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={() => setPanEnabled(!panEnabled)}>
+                {t("music_panning")}
               </button>
             </div>
-            <LineDualPartition phase={dualPhase} lineIndex={dualLineIndex} activeLevels={activeLevels} />
           </div>
 
-          {/* Card 4: Error Correction */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_error_title")}</span>
-              <select value={errorPos} onChange={(e) => setErrorPos(Number(e.target.value))} style={S_SELECT}>
-                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
+          {/* Alpha/Hue rotation controls */}
+          <div style={{ display: "flex", flexDirection: "column", gap: SP.xs, width: "100%" }}>
+            <div style={{ display: "flex", gap: SP.sm, alignItems: "center" }}>
               <button
                 type="button"
-                style={{ ...(errorPhase ? S_TOGGLE_ACTIVE : S_TOGGLE) }}
-                onClick={() => {
-                  engine.initAudio();
-                  engine.playSyndromeDemo?.(errorPos, (p) => setErrorPhase(p));
+                style={alphaDir === -1 ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                onClick={handleAlphaReverse}
+                title={t("linkedviz_alpha_reverse")}
+              >
+                {"\u03b1\u25C0"}
+              </button>
+              <button
+                type="button"
+                style={alphaDir === 1 ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                onClick={handleAlphaPlay}
+                title={t("linkedviz_alpha_play")}
+              >
+                {"\u03b1\u25B6"}
+              </button>
+              <input
+                type="range"
+                min={10}
+                max={120}
+                value={alphaSpeed}
+                onChange={(e) => setAlphaSpeed(Number(e.target.value))}
+                aria-label="Alpha speed"
+                style={{ flex: 1, minWidth: 60 }}
+              />
+              <span style={{ fontSize: FS.lg, color: C.textDim, fontVariantNumeric: "tabular-nums", width: 42 }}>{alphaSpeed}&deg;/s</span>
+            </div>
+            <div style={{ display: "flex", gap: SP.sm, alignItems: "center" }}>
+              <button
+                type="button"
+                style={hueDir === -1 ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                onClick={handleHueReverse}
+                title={t("linkedviz_hue_reverse")}
+              >
+                {"H\u25C0"}
+              </button>
+              <button
+                type="button"
+                style={hueDir === 1 ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                onClick={handleHuePlay}
+                title={t("linkedviz_hue_play")}
+              >
+                {"H\u25B6"}
+              </button>
+              <input
+                type="range"
+                min={10}
+                max={120}
+                value={hueSpeed}
+                onChange={(e) => setHueSpeed(Number(e.target.value))}
+                aria-label="Hue speed"
+                style={{ flex: 1, minWidth: 60 }}
+              />
+              <span style={{ fontSize: FS.lg, color: C.textDim, fontVariantNumeric: "tabular-nums", width: 42 }}>{hueSpeed}&deg;/s</span>
+            </div>
+          </div>
+
+          {/* ═══ Fano Sequences ═══ */}
+          <button
+            type="button"
+            style={S_SECTION}
+            onClick={() => toggleSection("sequences")}
+            aria-expanded={openSections.has("sequences")}
+            aria-controls="music-sequences-panel"
+          >
+            {t("music_section_sequences")} <span aria-hidden="true">{openSections.has("sequences") ? "\u25BC" : "\u25B6"}</span>
+          </button>
+          {openSections.has("sequences") && (
+            <div
+              id="music-sequences-panel"
+              role="region"
+              style={{ display: "flex", flexDirection: "column", gap: SP.md, alignItems: "center" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: SP.lg,
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
                 }}
               >
-                {t("music_error_play")}
-              </button>
-              {errorPhase && <span style={{ fontSize: 10, color: C.accent }}>{errorPhase}</span>}
-            </div>
-            <SyndromeTimeline
-              phase={errorPhase as "original" | "corrupted" | "syndrome" | "corrected" | null}
-              errorPos={errorPos}
-              activeLevels={activeLevels}
-            />
-          </div>
+                {/* Mini Fano Chord diagram */}
+                <div>
+                  <div style={{ fontSize: FS.lg, color: C.textDim, textAlign: "center", marginBottom: SP.sm }}>{t("music_fano_chord")}</div>
+                  <MiniFanoChord hoveredLine={hoveredFanoLine} onLineHover={setHoveredFanoLine} activeLevels={activeLevels} />
+                </div>
 
-          {/* Card 5: Gray 3-Voice */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <button
-                type="button"
-                style={{ ...(gray3Playing ? S_TOGGLE_ACTIVE : S_TOGGLE) }}
-                onClick={() => {
-                  if (gray3Playing) {
-                    engine.stopAlgebra?.();
-                    setGray3Playing(false);
-                  } else {
-                    engine.initAudio();
-                    engine.playGray3Voice?.((lv: number | null) => {
-                      if (lv === null) setGray3Playing(false);
-                      setGray3Code(lv);
-                    });
-                    setGray3Playing(true);
-                  }
-                }}
-              >
-                {gray3Playing ? t("music_gray3v_stop") : t("music_gray3v_play")}
-              </button>
-            </div>
-            <GrayCube currentCode={gray3Code} activeLevels={activeLevels} />
-          </div>
+                {/* Sequencer controls */}
+                <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
+                  <button type="button" style={grayStep !== null ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={handleGrayMelody}>
+                    {grayStep !== null ? t("music_gray_stop") : t("music_gray_melody")}
+                  </button>
 
-          {/* Card 6: Weight Spectrum */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <button
-                type="button"
-                style={{ ...(weightPlaying ? S_TOGGLE_ACTIVE : S_TOGGLE) }}
-                onClick={() => {
-                  if (weightPlaying) {
-                    engine.stopAlgebra?.();
-                    setWeightPlaying(false);
-                    setWeightStep(null);
-                  } else {
-                    engine.initAudio();
-                    engine.playWeightSpectrum?.((pos, w) => {
-                      setWeightStep({ positions: pos, weight: w });
-                      if (pos.length === 0 && w === -1) {
+                  <button type="button" style={rhythmPlaying ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={handleFanoRhythm}>
+                    {rhythmPlaying ? t("music_rhythm_stop") : t("music_rhythm_start")}
+                  </button>
+
+                  <div style={{ display: "flex", gap: SP.xs, alignItems: "center" }}>
+                    <span style={{ fontSize: FS.lg, color: C.textDim }}>{t("music_rhythm_tempo")}</span>
+                    <input
+                      type="range"
+                      min={60}
+                      max={200}
+                      value={rhythmTempo}
+                      onChange={(e) => setRhythmTempo(Number(e.target.value))}
+                      aria-label={t("music_rhythm_tempo")}
+                      style={{ width: 80, minWidth: 60 }}
+                    />
+                    <span style={{ fontSize: FS.lg, color: C.textDim }}>{rhythmTempo}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ Algebraic Sonification ═══ */}
+          <button
+            type="button"
+            style={S_SECTION}
+            onClick={() => toggleSection("algebra")}
+            aria-expanded={openSections.has("algebra")}
+            aria-controls="music-algebra-panel"
+          >
+            {t("music_section_algebra")} <span aria-hidden="true">{openSections.has("algebra") ? "\u25BC" : "\u25B6"}</span>
+          </button>
+          {openSections.has("algebra") && (
+            <div id="music-algebra-panel" role="region" style={S_CARD_GRID}>
+              {/* Card 1: XOR Triple */}
+              <div style={S_CARD_FANO}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_xor_triple")}</span>
+                  <select value={xorA ?? ""} onChange={(e) => setXorA(e.target.value ? Number(e.target.value) : null)} style={S_SELECT}>
+                    <option value="">--</option>
+                    {[1, 2, 3, 4, 5, 6, 7].map((lv) => (
+                      <option key={lv} value={lv}>
+                        {lv}
+                      </option>
+                    ))}
+                  </select>
+                  <select value={xorB ?? ""} onChange={(e) => setXorB(e.target.value ? Number(e.target.value) : null)} style={S_SELECT}>
+                    <option value="">--</option>
+                    {[1, 2, 3, 4, 5, 6, 7].map((lv) => (
+                      <option key={lv} value={lv}>
+                        {lv}
+                      </option>
+                    ))}
+                  </select>
+                  {xorA != null && xorB != null && <span style={{ fontSize: FS.lg, color: C.accent }}>= {xorA ^ xorB}</span>}
+                  <button
+                    type="button"
+                    style={xorStep !== null ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                    onClick={() => {
+                      if (xorA != null && xorB != null) {
+                        engine.initAudio();
+                        engine.playXorTriple?.(xorA, xorB, (lv) => setXorStep(lv));
+                      }
+                    }}
+                    disabled={xorA == null || xorB == null}
+                  >
+                    {t("music_xor_play")}
+                  </button>
+                </div>
+                <XorFanoLine stepLv={xorStep} lvA={xorA} lvB={xorB} activeLevels={activeLevels} />
+              </div>
+
+              {/* Card 2: Parity Chords */}
+              <div style={S_CARD_FANO}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_parity_title")}</span>
+                  {([0, 1, 2] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      style={activeParityGroup === p ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                      onClick={() => {
+                        setActiveParityGroup(p);
+                        engine.initAudio();
+                        engine.playParityChord?.(p);
+                        setTimeout(() => setActiveParityGroup(null), 500);
+                      }}
+                    >
+                      {t(p === 0 ? "music_parity_p1" : p === 1 ? "music_parity_p2" : "music_parity_p4")}
+                    </button>
+                  ))}
+                </div>
+                <ParityGrid activeGroup={activeParityGroup} activeLevels={activeLevels} />
+              </div>
+
+              {/* Card 3: Line + Dual */}
+              <div style={S_CARD_FANO}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_dual_title")}</span>
+                  <select value={hoveredFanoLine ?? 0} onChange={(e) => setHoveredFanoLine(Number(e.target.value))} style={S_SELECT}>
+                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                      <option key={i} value={i}>
+                        L{i + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    style={dualPhase !== null ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                    onClick={() => {
+                      setDualLineIndex(hoveredFanoLine ?? 0);
+                      engine.initAudio();
+                      engine.playLineAndDual?.(hoveredFanoLine ?? 0, (phase) => setDualPhase(phase));
+                    }}
+                  >
+                    {t("music_dual_play")}
+                  </button>
+                </div>
+                <LineDualPartition phase={dualPhase} lineIndex={dualLineIndex} activeLevels={activeLevels} />
+              </div>
+
+              {/* Card 4: Error Correction */}
+              <div style={S_CARD}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_error_title")}</span>
+                  <select value={errorPos} onChange={(e) => setErrorPos(Number(e.target.value))} style={S_SELECT}>
+                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <option key={i} value={i}>
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    style={{ ...(errorPhase ? S_BTN_SM_ACTIVE : S_BTN_SM) }}
+                    onClick={() => {
+                      engine.initAudio();
+                      engine.playSyndromeDemo?.(errorPos, (p) => setErrorPhase(p));
+                    }}
+                  >
+                    {t("music_error_play")}
+                  </button>
+                  {errorPhase && <span style={{ fontSize: FS.md, color: C.accent }}>{errorPhase}</span>}
+                </div>
+                <SyndromeTimeline
+                  phase={errorPhase as "original" | "corrupted" | "syndrome" | "corrected" | null}
+                  errorPos={errorPos}
+                  activeLevels={activeLevels}
+                />
+              </div>
+
+              {/* Card 5: Gray 3-Voice */}
+              <div style={S_CARD_GROUP}>
+                <div style={S_ROW}>
+                  <button
+                    type="button"
+                    style={{ ...(gray3Playing ? S_BTN_SM_ACTIVE : S_BTN_SM) }}
+                    onClick={() => {
+                      if (gray3Playing) {
+                        engine.stopAlgebra?.();
+                        setGray3Playing(false);
+                      } else {
+                        engine.initAudio();
+                        engine.playGray3Voice?.((lv: number | null) => {
+                          if (lv === null) setGray3Playing(false);
+                          setGray3Code(lv);
+                        });
+                        setGray3Playing(true);
+                      }
+                    }}
+                  >
+                    {gray3Playing ? t("music_gray3v_stop") : t("music_gray3v_play")}
+                  </button>
+                </div>
+                <GrayCube currentCode={gray3Code} activeLevels={activeLevels} />
+              </div>
+
+              {/* Card 6: Weight Spectrum */}
+              <div style={S_CARD_GROUP}>
+                <div style={S_ROW}>
+                  <button
+                    type="button"
+                    style={{ ...(weightPlaying ? S_BTN_SM_ACTIVE : S_BTN_SM) }}
+                    onClick={() => {
+                      if (weightPlaying) {
+                        engine.stopAlgebra?.();
                         setWeightPlaying(false);
                         setWeightStep(null);
+                      } else {
+                        engine.initAudio();
+                        engine.playWeightSpectrum?.((pos, w) => {
+                          setWeightStep({ positions: pos, weight: w });
+                          if (pos.length === 0 && w === -1) {
+                            setWeightPlaying(false);
+                            setWeightStep(null);
+                          }
+                        });
+                        setWeightPlaying(true);
                       }
-                    });
-                    setWeightPlaying(true);
-                  }
-                }}
-              >
-                {weightPlaying ? t("music_weight_stop") : t("music_weight_play")}
-              </button>
-              {weightStep && <span style={{ fontSize: 10, color: C.accent }}>w={weightStep.weight}</span>}
-            </div>
-            <WeightHistogram currentWeight={weightStep?.weight ?? -1} currentIndex={0} activeLevels={activeLevels} />
-          </div>
+                    }}
+                  >
+                    {weightPlaying ? t("music_weight_stop") : t("music_weight_play")}
+                  </button>
+                  {weightStep && <span style={{ fontSize: FS.md, color: C.accent }}>w={weightStep.weight}</span>}
+                </div>
+                <WeightHistogram currentWeight={weightStep?.weight ?? -1} currentIndex={0} activeLevels={activeLevels} />
+              </div>
 
-          {/* Card 7: Cayley Table */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_cayley_title")}</span>
-              <select value={cayleyRow} onChange={(e) => setCayleyRow(Number(e.target.value))} style={S_SELECT}>
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                style={{ ...S_TOGGLE }}
-                onClick={() => {
-                  engine.initAudio();
-                  engine.playCayleyRow?.(cayleyRow, (col, _val) => setCayleyCol(col));
-                }}
-              >
-                {t("music_cayley_play")}
-              </button>
-            </div>
-            <CayleyGrid row={cayleyRow} activeCol={cayleyCol} activeLevels={activeLevels} />
-          </div>
+              {/* Card 7: Cayley Table */}
+              <div style={S_CARD_GROUP}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_cayley_title")}</span>
+                  <select value={cayleyRow} onChange={(e) => setCayleyRow(Number(e.target.value))} style={S_SELECT}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <option key={i} value={i}>
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    style={cayleyCol >= 0 ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                    onClick={() => {
+                      engine.initAudio();
+                      engine.playCayleyRow?.(cayleyRow, (col, _val) => setCayleyCol(col));
+                    }}
+                  >
+                    {t("music_cayley_play")}
+                  </button>
+                </div>
+                <CayleyGrid row={cayleyRow} activeCol={cayleyCol} activeLevels={activeLevels} />
+              </div>
 
-          {/* Card 8: Fano Rhythm */}
-          <div style={S_CARD}>
-            <FanoRhythmGrid playing={rhythmPlaying} currentBeat={rhythmBeat} activeLevels={activeLevels} />
-          </div>
+              {/* Card 8: Fano Rhythm */}
+              <div style={S_CARD_FANO}>
+                <FanoRhythmGrid playing={rhythmPlaying} currentBeat={rhythmBeat} activeLevels={activeLevels} />
+              </div>
 
-          {/* Card 9: GL(3,2) */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_gl32_title")}</span>
-              <button
-                type="button"
-                style={{ ...S_TOGGLE }}
-                onClick={() => {
-                  engine.initAudio();
-                  engine.applyGL32Transform?.("A");
-                }}
-              >
-                {t("music_gl32_a")}
-              </button>
-              <button
-                type="button"
-                style={{ ...S_TOGGLE }}
-                onClick={() => {
-                  engine.initAudio();
-                  engine.applyGL32Transform?.("B");
-                }}
-              >
-                {t("music_gl32_b")}
-              </button>
-            </div>
-            <GL32Arrows perm={gl32Perm} activeLevels={activeLevels} />
-          </div>
+              {/* Card 9: GL(3,2) */}
+              <div style={S_CARD_GROUP}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_gl32_title")}</span>
+                  <button
+                    type="button"
+                    style={{ ...S_BTN_SM }}
+                    onClick={() => {
+                      engine.initAudio();
+                      engine.applyGL32Transform?.("A");
+                    }}
+                  >
+                    {t("music_gl32_a")}
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...S_BTN_SM }}
+                    onClick={() => {
+                      engine.initAudio();
+                      engine.applyGL32Transform?.("B");
+                    }}
+                  >
+                    {t("music_gl32_b")}
+                  </button>
+                </div>
+                <GL32Arrows perm={gl32Perm} activeLevels={activeLevels} />
+              </div>
 
-          {/* Card 10: Luminance */}
-          <div style={S_CARD}>
-            <div style={S_ROW}>
-              <span style={S_LABEL}>{t("music_luminance_title")}</span>
-              <button
-                type="button"
-                style={luminanceMode === "symmetric" ? S_TOGGLE_ACTIVE : S_TOGGLE}
-                onClick={() => setLuminanceMode("symmetric")}
-              >
-                {t("music_luminance_sym")}
-              </button>
-              <button
-                type="button"
-                style={luminanceMode === "luminance" ? S_TOGGLE_ACTIVE : S_TOGGLE}
-                onClick={() => setLuminanceMode("luminance")}
-              >
-                {t("music_luminance_bt601")}
-              </button>
+              {/* Card 10: Luminance */}
+              <div style={S_CARD}>
+                <div style={S_ROW}>
+                  <span style={S_LABEL}>{t("music_luminance_title")}</span>
+                  <button
+                    type="button"
+                    style={luminanceMode === "symmetric" ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                    onClick={() => setLuminanceMode("symmetric")}
+                  >
+                    {t("music_luminance_sym")}
+                  </button>
+                  <button
+                    type="button"
+                    style={luminanceMode === "luminance" ? S_BTN_SM_ACTIVE : S_BTN_SM}
+                    onClick={() => setLuminanceMode("luminance")}
+                  >
+                    {t("music_luminance_bt601")}
+                  </button>
+                </div>
+                <LuminanceBars mode={luminanceMode} activeLevels={activeLevels} />
+              </div>
             </div>
-            <LuminanceBars mode={luminanceMode} activeLevels={activeLevels} />
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 });

@@ -148,6 +148,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           const cat = FANO_LINE_CATEGORIES[li];
           const baseOpacity = dim ? 0.12 : active ? 0.9 : 0.3;
           const strokeColor = cat === "primary" ? "#80a0ff" : cat === "complement" ? "#ffa060" : "#60ffa0";
+          const strokeDash = cat === "primary" ? "none" : cat === "complement" ? "6,4" : "2,3";
           const isCmyLine = li === 6; // The CMY circle/line
           const finalOpacity = isCmyLine ? baseOpacity : baseOpacity * lineOpacityMul;
 
@@ -210,6 +211,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
                 fill="none"
                 stroke={strokeColor}
                 strokeWidth={active ? 2 : 1.2}
+                strokeDasharray={strokeDash}
                 opacity={baseOpacity}
               />
             );
@@ -226,6 +228,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
               y2={p1.y}
               stroke={strokeColor}
               strokeWidth={active ? 2 : 1.2}
+              strokeDasharray={strokeDash}
               opacity={finalOpacity}
             />
           );
@@ -386,17 +389,17 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
       {!isCmyAnimating && (
         <div style={{ display: "flex", gap: SP.xl, justifyContent: "center", flexWrap: "wrap" }}>
           {[
-            { label: t("theory_fano_primary"), color: "#80a0ff" },
-            { label: t("theory_fano_complement"), color: "#ffa060" },
-            { label: t("theory_fano_secondary"), color: "#60ffa0" },
+            { label: t("theory_fano_primary"), color: "#80a0ff", dash: "none" },
+            { label: t("theory_fano_complement"), color: "#ffa060", dash: "6,4" },
+            { label: t("theory_fano_secondary"), color: "#60ffa0", dash: "2,3" },
           ].map((item, i) => (
             <span
               key={"lg" + i}
               className="theory-annotation"
               style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: FS.xs, fontFamily: "monospace", color: item.color }}
             >
-              <svg width={14} height={2}>
-                <line x1={0} y1={1} x2={14} y2={1} stroke={item.color} strokeWidth={2} />
+              <svg width={18} height={2}>
+                <line x1={0} y1={1} x2={18} y2={1} stroke={item.color} strokeWidth={2} strokeDasharray={item.dash} />
               </svg>
               {item.label}
             </span>
@@ -441,7 +444,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           }}
           onClick={() => setCmyMode((v) => !v)}
         >
-          {t("theory_fano_cmy_collapse")} {cmyMode ? "\u25c0" : "\u25b6"}
+          {t("theory_fano_cmy_collapse")} <span aria-hidden="true">{cmyMode ? "\u25c0" : "\u25b6"}</span>
         </button>
       </div>
     </div>

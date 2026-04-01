@@ -32,7 +32,7 @@ function pointColor(lv: number, activeLevels: ParityGridProps["activeLevels"]): 
 
 export const ParityGrid = React.memo(function ParityGrid({ activeGroup, activeLevels }: ParityGridProps) {
   return (
-    <svg width={180} height={90} viewBox="0 0 180 90">
+    <svg viewBox="0 0 180 90" style={{ width: "100%", maxWidth: 180, aspectRatio: "2" }}>
       <defs>
         <filter id="pg-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />

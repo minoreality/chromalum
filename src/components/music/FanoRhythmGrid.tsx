@@ -40,7 +40,10 @@ export const FanoRhythmGrid = React.memo(function FanoRhythmGrid({ playing, curr
   const gridY = HEADER_H;
 
   return (
-    <svg width={160} height={160} viewBox="0 0 160 160" style={{ borderRadius: R.md, border: `1px solid ${C.border}` }}>
+    <svg
+      viewBox="0 0 160 160"
+      style={{ width: "100%", maxWidth: 160, aspectRatio: "1", borderRadius: R.md, border: `1px solid ${C.border}` }}
+    >
       <rect width={160} height={160} fill={C.bgPanel} rx={R.md} />
 
       <defs>

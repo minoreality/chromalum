@@ -34,7 +34,10 @@ function lvColor(lv: number, activeLevels: LuminanceBarsProps["activeLevels"]): 
 
 export const LuminanceBars = React.memo(function LuminanceBars({ mode, activeLevels }: LuminanceBarsProps) {
   return (
-    <svg width={180} height={90} viewBox="0 0 180 90" style={{ borderRadius: R.md, border: `1px solid ${C.border}` }}>
+    <svg
+      viewBox="0 0 180 90"
+      style={{ width: "100%", maxWidth: 180, aspectRatio: "2", borderRadius: R.md, border: `1px solid ${C.border}` }}
+    >
       <rect width={180} height={90} fill={C.bgPanel} rx={R.md} />
 
       {/* Mode label */}

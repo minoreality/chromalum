@@ -502,7 +502,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
                   pointerEvents: "none",
                 }}
               />
-              {/* Candidate switch-point tick marks */}
+              {/* Candidate switch-point tick marks (above the bar) */}
               {useMemo(() => {
                 const ticks: { deg: number; color: string }[] = [];
                 for (let lv = 2; lv <= 5; lv++) {
@@ -523,7 +523,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
                   key={i}
                   style={{
                     position: "absolute",
-                    top: 26,
+                    top: 3,
                     left: `${(tick.deg / 359) * 100}%`,
                     transform: "translateX(-0.5px)",
                     width: 1,

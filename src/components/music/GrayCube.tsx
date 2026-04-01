@@ -58,7 +58,7 @@ export const GrayCube = React.memo(function GrayCube({ currentCode, activeLevels
   const currentIdx = currentCode !== null ? FULL_GRAY_CODE.indexOf(currentCode) : -1;
 
   return (
-    <svg width={160} height={150} viewBox="0 0 140 130">
+    <svg viewBox="0 0 140 130" style={{ width: "100%", maxWidth: 160, aspectRatio: "140/130" }}>
       <defs>
         <filter id="gc-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />

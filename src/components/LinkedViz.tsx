@@ -1218,13 +1218,20 @@ export const LinkedViz = React.memo(function LinkedViz({
           scaleMode &&
           (() => {
             const ix = BXright + 10;
-            const iy = BY + 14;
-            const ROW = 20;
-            const FS_TITLE = 12;
-            const FS_ROW = 11;
-            const LABEL_W = 28;
+            const iy = BY + 16;
+            const ROW = 24;
+            const FS_TITLE = 15;
+            const FS_ROW = 14;
+            const LABEL_W = 32;
 
-            type RatioEntry = { label: string; value: string; dim?: boolean };
+            type RatioEntry = {
+              label: string;
+              value: string;
+              dim?: boolean | undefined;
+              color?: string | undefined;
+              lv?: number | undefined;
+              ci?: number | undefined;
+            };
             let title = "";
             const rows: RatioEntry[] = [];
 
@@ -1232,8 +1239,18 @@ export const LinkedViz = React.memo(function LinkedViz({
               title = "Palindromic JI";
               const ratios = ["1:1", "8:7", "7:5", "8:5", "2:1"];
               const cents = ["0", "231", "583", "814", "1200"];
+              const jiLvs = [2, 3, 4, 5, 6];
               const labels = ["L2", "L3", "L4", "L5", "L6"];
-              for (let i = 0; i < 5; i++) rows.push({ label: labels[i], value: `${ratios[i]}  (${cents[i]}¢)` });
+              for (let i = 0; i < 5; i++) {
+                const d = dots.find((dd) => dd.lv === jiLvs[i]);
+                rows.push({
+                  label: labels[i],
+                  value: `${ratios[i]}  (${cents[i]}¢)`,
+                  color: d ? `rgb(${d.rgb.join(",")})` : undefined,
+                  lv: d?.lv,
+                  ci: d?.ci,
+                });
+              }
               rows.push({ label: "", value: "" });
               rows.push({ label: "\u2190", value: "palindrome \u2192", dim: true });
               rows.push({ label: "", value: "8:7 \u00b7 7:5 \u00b7 8:5 \u00b7 2:1", dim: true });
@@ -1245,7 +1262,14 @@ export const LinkedViz = React.memo(function LinkedViz({
               for (let i = 0; i < activeDeg.length; i++) {
                 const prev = i === 0 ? 0 : activeDeg[i - 1];
                 const diff = activeDeg[i] - prev;
-                rows.push({ label: `L${activeDots[i]?.lv ?? "?"}`, value: `${activeDeg[i]}¢  (\u0394${diff}¢)` });
+                const d = activeDots[i];
+                rows.push({
+                  label: `L${d?.lv ?? "?"}`,
+                  value: `${activeDeg[i]}¢  (\u0394${diff}¢)`,
+                  color: d ? `rgb(${d.rgb.join(",")})` : undefined,
+                  lv: d?.lv,
+                  ci: d?.ci,
+                });
               }
             } else {
               title = "Octatonic Scale";
@@ -1263,22 +1287,29 @@ export const LinkedViz = React.memo(function LinkedViz({
                 <text x={ix} y={iy} fontSize={FS_TITLE} fill={C.accent} fontWeight="bold">
                   {title}
                 </text>
-                {rows.map((r, i) => (
-                  <g key={i}>
-                    <text
-                      x={ix}
-                      y={iy + (i + 1) * ROW}
-                      fontSize={FS_ROW}
-                      fill={r.dim ? C.textDimmer : C.textDim}
-                      fontWeight={r.dim ? "normal" : "bold"}
+                {rows.map((r, i) => {
+                  const isHovered = hoveredDot !== null && r.lv != null && hoveredDot.lv === r.lv;
+                  const isDimmed = hoveredDot !== null && r.lv != null && !isHovered;
+                  const fill = r.dim ? C.textDimmer : isHovered ? "#fff" : (r.color ?? C.textDim);
+                  return (
+                    <g
+                      key={i}
+                      style={{ cursor: r.lv != null ? "pointer" : undefined }}
+                      opacity={isDimmed ? 0.3 : 1}
+                      onPointerEnter={r.lv != null && r.ci != null ? () => setHoveredDot({ lv: r.lv!, ci: r.ci! }) : undefined}
+                      onPointerLeave={r.lv != null ? () => setHoveredDot(null) : undefined}
                     >
-                      {r.label}
-                    </text>
-                    <text x={ix + LABEL_W} y={iy + (i + 1) * ROW} fontSize={FS_ROW} fill={r.dim ? C.textDimmer : C.textDim}>
-                      {r.value}
-                    </text>
-                  </g>
-                ))}
+                      {/* Hit area */}
+                      {r.lv != null && <rect x={ix - 2} y={iy + (i + 1) * ROW - FS_ROW} width={TW - ix} height={ROW} fill="transparent" />}
+                      <text x={ix} y={iy + (i + 1) * ROW} fontSize={FS_ROW} fill={fill} fontWeight={r.dim ? "normal" : "bold"}>
+                        {r.label}
+                      </text>
+                      <text x={ix + LABEL_W} y={iy + (i + 1) * ROW} fontSize={FS_ROW} fill={fill}>
+                        {r.value}
+                      </text>
+                    </g>
+                  );
+                })}
               </g>
             );
           })()}

@@ -87,7 +87,13 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xl, width: "100%" }}>
       {/* Part A: Trinity triangle */}
-      <svg viewBox={`0 0 ${TRI_W} ${TRI_H}`} className="theory-trinity-svg" style={{ width: "100%", maxWidth: TRI_W }}>
+      <svg
+        viewBox={`0 0 ${TRI_W} ${TRI_H}`}
+        className="theory-trinity-svg"
+        style={{ width: "100%", maxWidth: TRI_W }}
+        role="img"
+        aria-label={t("theory_conn_conclusion_1")}
+      >
         {/* Edges */}
         {EDGES.map((e, ei) => {
           const p0 = getVPos(e.from),

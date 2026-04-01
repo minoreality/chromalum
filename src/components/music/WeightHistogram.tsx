@@ -24,7 +24,10 @@ export const WeightHistogram = React.memo(function WeightHistogram({
   activeLevels: _activeLevels,
 }: WeightHistogramProps) {
   return (
-    <svg width={180} height={100} viewBox="0 0 180 100" style={{ borderRadius: R.md, border: `1px solid ${C.border}` }}>
+    <svg
+      viewBox="0 0 180 100"
+      style={{ width: "100%", maxWidth: 180, aspectRatio: "180/100", borderRadius: R.md, border: `1px solid ${C.border}` }}
+    >
       <rect width={180} height={100} fill={C.bgPanel} rx={R.md} />
 
       <defs>

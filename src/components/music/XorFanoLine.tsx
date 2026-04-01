@@ -60,7 +60,7 @@ export const XorFanoLine = React.memo(function XorFanoLine({ stepLv, lvA, lvB, a
   const labelC = xorResult !== null ? xorResult : "?";
 
   return (
-    <svg width={180} height={140} viewBox="0 0 180 140">
+    <svg viewBox="0 0 180 140" style={{ width: "100%", maxWidth: 180, aspectRatio: "180/140" }}>
       <defs>
         <filter id="xfl-pulse" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />

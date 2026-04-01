@@ -107,11 +107,15 @@ input[type="checkbox"]:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  max-width: var(--display-max, 420px);
 }
 .panel-sidebar {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  max-width: var(--display-max, 420px);
 }
 /* Vertical layout spacing for Glaze hue section */
 .glaze-hue-section {

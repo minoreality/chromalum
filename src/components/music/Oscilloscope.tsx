@@ -20,6 +20,12 @@ export const Oscilloscope = React.memo(function Oscilloscope({ analyserNode }: O
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // HiDPI scaling
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+
     const bufLen = analyserNode ? analyserNode.frequencyBinCount : 128;
     const dataArray = new Uint8Array(bufLen);
 
@@ -46,17 +52,20 @@ export const Oscilloscope = React.memo(function Oscilloscope({ analyserNode }: O
     };
 
     rafRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      // Reset scale for next mount
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    };
   }, [analyserNode]);
 
   return (
     <canvas
       ref={canvasRef}
-      width={W}
-      height={H}
       style={{
-        width: W,
-        height: H,
+        width: "100%",
+        maxWidth: W,
+        aspectRatio: `${W}/${H}`,
         borderRadius: R.md,
         border: `1px solid ${C.border}`,
       }}
