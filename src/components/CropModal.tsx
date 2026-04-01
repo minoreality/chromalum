@@ -13,7 +13,7 @@ interface CropModalProps {
 }
 
 const MIN_CROP = 4;
-const HANDLE_VISUAL = 12;
+const HANDLE_VISUAL = 10;
 const HANDLE_TOUCH = 44; // minimum recommended touch target
 
 type DragMode = "move" | "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w" | null;
@@ -170,21 +170,28 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
   const sw = cw * displayScale;
   const sh = ch * displayScale;
 
-  const pad = (HANDLE_TOUCH - HANDLE_VISUAL) / 2;
-  const mkHandle = (mode: DragMode): React.CSSProperties => ({
+  const mkHandle = (): React.CSSProperties => ({
     position: "absolute",
     width: HANDLE_TOUCH,
     height: HANDLE_TOUCH,
-    padding: pad,
-    backgroundClip: "content-box",
-    background: activeMode === mode ? C.accentBright : C.accent,
+    background: "transparent",
     border: "none",
-    borderRadius: 2,
-    boxShadow: activeMode === mode ? `0 0 8px 2px ${C.accentBright}` : "none",
-    transform: activeMode === mode ? "scale(1.3)" : "none",
-    transition: activeMode ? "none" : "transform 0.15s, box-shadow 0.15s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 2,
     touchAction: "none",
+  });
+
+  const mkHandleVisual = (mode: DragMode): React.CSSProperties => ({
+    width: HANDLE_VISUAL,
+    height: HANDLE_VISUAL,
+    background: activeMode === mode ? C.accentBright : C.accent,
+    borderRadius: 2,
+    boxShadow: activeMode === mode ? `0 0 6px 1px ${C.accentBright}` : `0 0 2px rgba(0,0,0,0.5)`,
+    transform: activeMode === mode ? "scale(1.3)" : "none",
+    transition: activeMode ? "none" : "transform 0.15s, box-shadow 0.15s",
+    pointerEvents: "none",
   });
 
   return (
@@ -265,41 +272,57 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
             onPointerDown={(e) => handlePointerDown(e, "move")}
           />
 
-          {/* Resize handles — 44px touch target, 12px visual square centered via padding+backgroundClip */}
+          {/* Resize handles — 44px touch target, 10px visual square */}
           {/* Corners */}
           <div
-            style={{ ...mkHandle("nw"), left: sx - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "nw-resize" }}
+            style={{ ...mkHandle(), left: sx - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "nw-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "nw")}
-          />
+          >
+            <div style={mkHandleVisual("nw")} />
+          </div>
           <div
-            style={{ ...mkHandle("ne"), left: sx + sw - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "ne-resize" }}
+            style={{ ...mkHandle(), left: sx + sw - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "ne-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "ne")}
-          />
+          >
+            <div style={mkHandleVisual("ne")} />
+          </div>
           <div
-            style={{ ...mkHandle("sw"), left: sx - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "sw-resize" }}
+            style={{ ...mkHandle(), left: sx - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "sw-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "sw")}
-          />
+          >
+            <div style={mkHandleVisual("sw")} />
+          </div>
           <div
-            style={{ ...mkHandle("se"), left: sx + sw - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "se-resize" }}
+            style={{ ...mkHandle(), left: sx + sw - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "se-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "se")}
-          />
+          >
+            <div style={mkHandleVisual("se")} />
+          </div>
           {/* Edges */}
           <div
-            style={{ ...mkHandle("n"), left: sx + sw / 2 - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "n-resize" }}
+            style={{ ...mkHandle(), left: sx + sw / 2 - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "n-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "n")}
-          />
+          >
+            <div style={mkHandleVisual("n")} />
+          </div>
           <div
-            style={{ ...mkHandle("s"), left: sx + sw / 2 - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "s-resize" }}
+            style={{ ...mkHandle(), left: sx + sw / 2 - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "s-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "s")}
-          />
+          >
+            <div style={mkHandleVisual("s")} />
+          </div>
           <div
-            style={{ ...mkHandle("w"), left: sx - HANDLE_TOUCH / 2, top: sy + sh / 2 - HANDLE_TOUCH / 2, cursor: "w-resize" }}
+            style={{ ...mkHandle(), left: sx - HANDLE_TOUCH / 2, top: sy + sh / 2 - HANDLE_TOUCH / 2, cursor: "w-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "w")}
-          />
+          >
+            <div style={mkHandleVisual("w")} />
+          </div>
           <div
-            style={{ ...mkHandle("e"), left: sx + sw - HANDLE_TOUCH / 2, top: sy + sh / 2 - HANDLE_TOUCH / 2, cursor: "e-resize" }}
+            style={{ ...mkHandle(), left: sx + sw - HANDLE_TOUCH / 2, top: sy + sh / 2 - HANDLE_TOUCH / 2, cursor: "e-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "e")}
-          />
+          >
+            <div style={mkHandleVisual("e")} />
+          </div>
         </div>
 
         {/* Info */}
