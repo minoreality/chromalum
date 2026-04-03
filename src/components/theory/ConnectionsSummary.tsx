@@ -281,24 +281,19 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
           <span>{t("theory_conn_polyhedra")}</span>
         </div>
         <div className="theory-conn-card-body" style={S_CARD_BODY}>
-          <svg viewBox="0 0 360 195" style={{ width: "100%", maxWidth: 360 }}>
+          <svg viewBox="0 0 360 170" style={{ width: "100%", maxWidth: 360 }}>
             {/* Node positions */}
             {(() => {
               const nodes = [
-                { id: "cube", label: "立方体 Q₃", x: 60, y: 30, color: "#ffa060" },
-                { id: "octa", label: "八面体", x: 300, y: 30, color: "#60ffa0" },
-                { id: "tetra", label: "T₀/T₁", x: 60, y: 100, color: "#ffcc60" },
-                { id: "trunc", label: "切頂四面体", x: 60, y: 160, color: "#ccaa60" },
-                { id: "cubocta", label: "立方八面体", x: 200, y: 100, color: "#60aaff" },
-                { id: "rhombic", label: "菱形十二面体", x: 310, y: 160, color: "#aa80ff" },
+                { id: "cube", label: "立方体 Q₃", x: 90, y: 30, color: "#ffa060" },
+                { id: "octa", label: "八面体", x: 270, y: 30, color: "#60ffa0" },
+                { id: "tetra", label: "T₀/T₁", x: 90, y: 100, color: "#ffcc60" },
+                { id: "trunc", label: "切頂四面体", x: 90, y: 155, color: "#ccaa60" },
               ];
               const edges = [
                 { from: "cube", to: "octa", label: "双対", dash: false, bidirectional: true },
                 { from: "cube", to: "tetra", label: "頂点交替", dash: true, bidirectional: false },
                 { from: "tetra", to: "trunc", label: "切頂(T₀)", dash: true, bidirectional: false },
-                { from: "cube", to: "cubocta", label: "整流化", dash: true, bidirectional: false },
-                { from: "octa", to: "cubocta", label: "整流化", dash: true, bidirectional: false },
-                { from: "cubocta", to: "rhombic", label: "双対", dash: false, bidirectional: true },
               ];
               const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
               return (
