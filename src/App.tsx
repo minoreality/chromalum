@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useMemo, useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useCallback, useMemo, useState } from "react";
 
 import { isShapeTool } from "./constants";
 import { LUMA_R, LUMA_G, LUMA_B, GRAY_LUT } from "./color-engine";
@@ -29,10 +29,13 @@ import { AnalyzePanel } from "./components/AnalyzePanel";
 import { GalleryPanel } from "./components/GalleryPanel";
 import { HexTab } from "./components/HexTab";
 import { TheoryPanel } from "./components/TheoryPanel";
-import { MusicPanel } from "./components/MusicPanel";
 import { useTranslation } from "./i18n";
 
 const APP_VERSION = "5.3.9";
+const MusicPanel = lazy(async () => {
+  const mod = await import("./components/MusicPanel");
+  return { default: mod.MusicPanel };
+});
 
 /* ═══════════════════════════════════════════
    LAYOUT STYLE CONSTANTS
@@ -72,6 +75,15 @@ const S_DROP_OVERLAY: React.CSSProperties = {
 };
 const S_DROP_TEXT: React.CSSProperties = { fontSize: FS.title, color: C.accentBright, fontWeight: FW.bold };
 const S_SR_ONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)" };
+const S_LAZY_PANEL_FALLBACK: React.CSSProperties = {
+  width: "100%",
+  minHeight: 240,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: C.textMuted,
+  fontSize: FS.sm,
+};
 
 interface AppContentProps {
   app: ReturnType<typeof useAppState>;
@@ -610,7 +622,9 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
         </div>
         {activeTab === 7 && (
           <div id="tabpanel-7" role="tabpanel" style={{ width: "100%" }}>
-            <MusicPanel />
+            <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
+              <MusicPanel />
+            </Suspense>
           </div>
         )}
       </div>
