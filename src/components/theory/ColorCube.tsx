@@ -5,8 +5,6 @@ import { usePinReset } from "./pin-reset";
 import { S_BTN } from "../../styles";
 import { useTranslation } from "../../i18n";
 
-const W = 300,
-  H = 250;
 const DOT_R = 14;
 
 function edgesOf(v: number): number[] {

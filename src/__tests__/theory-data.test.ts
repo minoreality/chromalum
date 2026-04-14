@@ -70,7 +70,7 @@ describe("theory-data invariants", () => {
   });
 
   it("keeps T0 closed under XOR", () => {
-    const t0 = new Set(TETRA_T0);
+    const t0 = new Set<number>(TETRA_T0);
     for (const a of TETRA_T0) {
       for (const b of TETRA_T0) {
         expect(t0.has(a ^ b)).toBe(true);
