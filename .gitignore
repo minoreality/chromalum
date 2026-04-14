@@ -6,6 +6,8 @@ dist/
 
 # Coverage reports
 coverage/
+playwright-report/
+test-results/
 
 # Vite cache
 .vite/

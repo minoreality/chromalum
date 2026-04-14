@@ -9,6 +9,7 @@
     "build:itch": "tsc --noEmit && vite build --base ./",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
@@ -16,12 +17,17 @@
     "format:check": "prettier --check src",
     "prepare": "husky"
   },
+  "volta": {
+    "node": "24.14.1",
+    "npm": "11.9.0"
+  },
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.57.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",
