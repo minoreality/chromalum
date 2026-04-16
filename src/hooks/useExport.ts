@@ -29,14 +29,18 @@ function downloadCanvas(
       document.body.removeChild(a);
       // iOS Safari ignores <a download> — open in new tab as last resort
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+      const isAndroid = /Android/i.test(navigator.userAgent);
       if (isIOS) {
         window.open(url, "_blank");
         showToast(t("toast_save_long_press"), "info");
+      } else if (isAndroid) {
+        showToast(t("toast_saved"), "success");
       }
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     };
     const file = new File([blob], name, { type: "image/png" });
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (!isAndroid && navigator.share && navigator.canShare?.({ files: [file] })) {
       navigator.share({ files: [file] }).catch(() => fallbackSave(blob));
     } else {
       fallbackSave(blob);
