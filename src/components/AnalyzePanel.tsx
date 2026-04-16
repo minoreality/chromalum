@@ -21,6 +21,7 @@ interface AnalyzePanelProps {
   active: boolean;
   mapMode: MapMode;
   setMapMode: (mode: MapMode) => void;
+  showToast?: (message: string, type: "error" | "success" | "info") => void;
 }
 
 /* ── Section title ── */
@@ -47,6 +48,7 @@ export const AnalyzePanel = React.memo(
     active,
     mapMode,
     setMapMode,
+    showToast,
   }: AnalyzePanelProps) {
     const { t } = useTranslation();
     const pixelMaps = usePixelMaps(cvs, mapMode, active);
@@ -56,7 +58,15 @@ export const AnalyzePanel = React.memo(
         <div className="panel-layout">
           <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
             <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("stats_title")}</div>
-            <MapCanvas mode={mapMode} pixelMaps={pixelMaps} colorLUT={colorLUT} cvs={cvs} displayW={displayW} displayH={displayH} />
+            <MapCanvas
+              mode={mapMode}
+              pixelMaps={pixelMaps}
+              colorLUT={colorLUT}
+              cvs={cvs}
+              displayW={displayW}
+              displayH={displayH}
+              {...(showToast ? { showToast } : {})}
+            />
             <div
               className="map-mode-buttons"
               style={{ display: "flex", flexWrap: "wrap", gap: SP.xs, justifyContent: "center", marginTop: SP.xs }}

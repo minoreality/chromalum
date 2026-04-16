@@ -598,6 +598,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
               active={activeTab === 4}
               mapMode={mapMode}
               setMapMode={setMapMode}
+              showToast={showToast}
             />
           </div>
         )}

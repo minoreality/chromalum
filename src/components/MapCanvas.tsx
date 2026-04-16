@@ -5,6 +5,7 @@ import type { CanvasData } from "../types";
 import type { MapMode } from "./analyze-types";
 import type { PixelMaps } from "../hooks/usePixelMaps";
 import { C, SP, FS, R } from "../tokens";
+import { useTranslation } from "../i18n";
 
 /* ── Scientific colormaps (32-stop LUTs, interpolated to 256) ── */
 function buildLUT(stops: [number, number, number][]): Uint8Array {
@@ -144,6 +145,7 @@ export function MapCanvas({
   cvs,
   displayW,
   displayH,
+  showToast,
 }: {
   mode: MapMode;
   pixelMaps: PixelMaps;
@@ -151,7 +153,9 @@ export function MapCanvas({
   cvs: CanvasData;
   displayW: number;
   displayH: number;
+  showToast?: (message: string, type: "error" | "success" | "info") => void;
 }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLCanvasElement>(null);
   const cw = cvs.w;
   const ch = cvs.h;
@@ -378,17 +382,24 @@ export function MapCanvas({
         a.click();
         document.body.removeChild(a);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-        if (isIOS) window.open(url, "_blank");
+        const androidUA = /Android/i.test(navigator.userAgent);
+        if (isIOS) {
+          window.open(url, "_blank");
+          showToast?.(t("toast_save_long_press"), "info");
+        } else if (androidUA) {
+          showToast?.(t("toast_saved"), "success");
+        }
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       };
       const file = new File([blob], name, { type: "image/png" });
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      if (!isAndroid && navigator.share && navigator.canShare?.({ files: [file] })) {
         navigator.share({ files: [file] }).catch(() => fallbackSave(blob));
       } else {
         fallbackSave(blob);
       }
     });
-  }, [mode]);
+  }, [mode, showToast, t]);
 
   const longPressOrigin = useRef<{ x: number; y: number } | null>(null);
 
