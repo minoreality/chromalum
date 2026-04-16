@@ -28,20 +28,6 @@ const NET_FACES: { lv: number; col: number; row: number }[] = [
   { lv: 3, col: 3, row: 2 },
 ];
 
-const NET_COMP_PAIRS: [number, number][] = [
-  [1, 6],
-  [2, 5],
-  [3, 4],
-];
-
-const NET_TOGGLES: { from: number; to: number; ch: string; color: string }[] = [
-  { from: 0, to: 1, ch: "G", color: "#00ff00" },
-  { from: 1, to: 2, ch: "R", color: "#ff0000" },
-  { from: 2, to: 3, ch: "B", color: "#0000ff" },
-  { from: 3, to: 4, ch: "G", color: "#00ff00" },
-  { from: 4, to: 5, ch: "R", color: "#ff0000" },
-];
-
 const PAIRS: [number, number][] = [
   [1, 6],
   [2, 5],

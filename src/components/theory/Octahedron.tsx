@@ -5,8 +5,6 @@ import { S_BTN } from "../../styles";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
-const W = 300,
-  H = 300;
 const DOT_R = 13;
 const CY = 150;
 
