@@ -382,8 +382,6 @@ function computeSurfaceFaces(pts2D: Record<number, Pt2>): SurfaceFace[] {
 const SURFACE_FACES_F = computeSurfaceFaces(CUBE_POINTS);
 
 /* Surface mode colors: warm for T0, cool for T1 */
-const T0_SURFACE_COLOR = "#ffaa44";
-const T1_SURFACE_COLOR = "#44aaff";
 
 /** Compute silhouette edges: edges where exactly one adjacent face is front-facing */
 interface SilhouetteEdge {
