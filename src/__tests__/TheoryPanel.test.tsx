@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { LanguageProvider } from "../i18n";
 import { TheoryPanel } from "../components/TheoryPanel";
 
@@ -54,5 +54,46 @@ describe("TheoryPanel", () => {
       expect(polyhedraLabels).toContain(label);
     }
     expect(polyhedraDiagram.querySelector('line[stroke-dasharray="4,3"]')).toBeTruthy();
+  });
+
+  it("keeps Color Tetra SVG definition ids unique across T0 and T1", () => {
+    renderWithLanguage();
+
+    const tetraSection = screen.getByText("Color Tetra").closest("section");
+    expect(tetraSection).toBeTruthy();
+
+    const ids = Array.from(tetraSection!.querySelectorAll("[id]")).map((node) => node.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.some((id) => id.startsWith("t0-tfg-"))).toBe(true);
+    expect(ids.some((id) => id.startsWith("t1-tfg-"))).toBe(true);
+  });
+
+  it("shows Color Star surface ridges and returns from K8 to surface mode", () => {
+    renderWithLanguage();
+
+    const starSection = screen.getByText("Color Star").closest("section");
+    expect(starSection).toBeTruthy();
+
+    const buttons = Array.from(starSection!.querySelectorAll("button"));
+    const surfaceButton = buttons.find((button) => button.textContent === "Surface");
+    const k8Button = buttons.find((button) => button.textContent === "K\u2088");
+    expect(surfaceButton).toBeTruthy();
+    expect(k8Button).toBeTruthy();
+
+    const compoundLineCount = starSection!.querySelectorAll("line").length;
+    fireEvent.click(surfaceButton!);
+
+    expect(starSection!.textContent).toContain("24 surface faces");
+    expect(surfaceButton!.getAttribute("aria-pressed")).toBe("true");
+    expect(starSection!.querySelectorAll("line").length).toBeGreaterThan(compoundLineCount);
+
+    fireEvent.click(k8Button!);
+    expect(starSection!.textContent).toContain("Q\u2083(12)");
+    expect(k8Button!.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(surfaceButton!);
+    expect(starSection!.textContent).toContain("24 surface faces");
+    expect(surfaceButton!.getAttribute("aria-pressed")).toBe("true");
   });
 });

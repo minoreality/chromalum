@@ -305,6 +305,13 @@ interface SurfaceFace {
   color: number; // parent face color
 }
 
+interface SurfaceRidgeEdge {
+  from: Pt2;
+  to: Pt2;
+  depth: number;
+  isFront: boolean;
+}
+
 function computeSurfaceFaces(pts2D: Record<number, Pt2>): SurfaceFace[] {
   const mid2D = (a: number, b: number): Pt2 => ({
     x: (pts2D[a].x + pts2D[b].x) / 2,
@@ -383,6 +390,37 @@ const SURFACE_FACES_F = computeSurfaceFaces(CUBE_POINTS);
 
 /* Surface mode colors: warm for T0, cool for T1 */
 
+function computeSurfaceRidgeEdges(faces: SurfaceFace[]): SurfaceRidgeEdge[] {
+  const edgeKey = (a: Pt2, b: Pt2) => {
+    const ax = a.x.toFixed(1),
+      ay = a.y.toFixed(1),
+      bx = b.x.toFixed(1),
+      by = b.y.toFixed(1);
+    return ax < bx || (ax === bx && ay < by) ? `${ax},${ay}-${bx},${by}` : `${bx},${by}-${ax},${ay}`;
+  };
+
+  const ridges = new Map<string, SurfaceRidgeEdge & { count: number }>();
+  for (const face of faces) {
+    const [from, to] = face.ridgeBase;
+    const depth = (face.ridgeDepths[0] + face.ridgeDepths[1]) / 2;
+    const key = edgeKey(from, to);
+    const existing = ridges.get(key);
+    if (existing) {
+      existing.depth += depth;
+      existing.count += 1;
+      existing.isFront ||= face.isFront;
+    } else {
+      ridges.set(key, { from, to, depth, isFront: face.isFront, count: 1 });
+    }
+  }
+
+  return Array.from(ridges.values())
+    .map(({ count: _count, ...ridge }) => ({ ...ridge, depth: ridge.depth / _count }))
+    .sort((a, b) => a.depth - b.depth);
+}
+
+const SURFACE_RIDGE_EDGES_F = computeSurfaceRidgeEdges(SURFACE_FACES_F);
+
 /** Compute silhouette edges: edges where exactly one adjacent face is front-facing */
 interface SilhouetteEdge {
   from: Pt2;
@@ -433,6 +471,7 @@ interface ViewData {
   edgeSegments: EdgeSegment[][];
   faceOcclusions: FaceOcclusion[][];
   surfaceFaces: SurfaceFace[];
+  surfaceRidgeEdges: SurfaceRidgeEdge[];
   silhouetteEdges: SilhouetteEdge[];
 }
 
@@ -444,6 +483,7 @@ const VIEW_FRONT: ViewData = {
   edgeSegments: EDGE_SEGMENTS_F,
   faceOcclusions: FACE_OCCLUSIONS_F,
   surfaceFaces: SURFACE_FACES_F,
+  surfaceRidgeEdges: SURFACE_RIDGE_EDGES_F,
   silhouetteEdges: SILHOUETTE_F,
 };
 
@@ -491,6 +531,21 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
 
   const anyHl = hl !== null || hlFace !== null;
 
+  const hlFaceVertexSet = new Set<number>();
+  const hlFaceBoundaryEdgeSet = new Set<number>();
+  let hlFaceOppositeLv: number | null = null;
+  if (hlFace !== null) {
+    const activeFace = STELLA_FACES.find((f) => f.color === hlFace);
+    if (activeFace) {
+      for (const lv of activeFace.verts) hlFaceVertexSet.add(lv);
+      hlFaceVertexSet.add(activeFace.color);
+      hlFaceOppositeLv = activeFace.color;
+      STELLA_EDGES.forEach(([a, b], ei) => {
+        if (activeFace.verts.includes(a) && activeFace.verts.includes(b)) hlFaceBoundaryEdgeSet.add(ei);
+      });
+    }
+  }
+
   const hlQ3 = new Set<number>();
   const hlStella = new Set<number>();
   const hlM4 = new Set<number>();
@@ -512,9 +567,11 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     [0, 1, 2, 3, 4, 5, 6, 7].map((lv) => {
       const p = v.pts[lv];
       const info = THEORY_LEVELS[lv];
-      const active = hl === lv || complementLv === lv;
+      const faceRelated = hlFaceVertexSet.has(lv);
+      const active = hl === lv || complementLv === lv || faceRelated;
       const dim = anyHl && !active;
       const isComplement = complementLv === lv;
+      const isFaceOpposite = hlFaceOppositeLv === lv;
       const t0 = TETRA_T0 as readonly number[];
       const t1 = TETRA_T1 as readonly number[];
       const sameTetra = hl !== null && ((t0.includes(hl) && t0.includes(lv)) || (t1.includes(hl) && t1.includes(lv)));
@@ -544,7 +601,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             stroke={isComplement ? "#fff" : active ? "#fff" : lv === 0 ? "#666" : info.color}
             strokeWidth={active ? 2 : 1}
             strokeOpacity={dim ? 0.2 : 0.3 + vDepth * 0.5}
-            strokeDasharray={isComplement ? "3 2" : "none"}
+            strokeDasharray={isComplement || isFaceOpposite ? "3 2" : "none"}
           />
           <text
             x={p.x}
@@ -652,7 +709,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
 
       {/* Stella edges — segment-based with cross-body occlusion */}
       {STELLA_EDGES.map(([a, b], ei) => {
-        const active = hlStellaEdgeSet.has(ei);
+        const active = hlStellaEdgeSet.has(ei) || hlFaceBoundaryEdgeSet.has(ei);
         const dim = anyHl && !active;
         const da = vertexDepth(a) / 3;
         const db = vertexDepth(b) / 3;
@@ -793,6 +850,37 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           );
         })}
 
+      {showSurface &&
+        v.surfaceRidgeEdges.map((edge, i) => {
+          const depthNorm = edge.depth / 3;
+          return (
+            <line
+              key={`${viewId}-ridge-${i}`}
+              x1={edge.from.x}
+              y1={edge.from.y}
+              x2={edge.to.x}
+              y2={edge.to.y}
+              stroke="rgba(255,255,255,0.75)"
+              strokeWidth={0.45 + depthNorm * 0.9}
+              opacity={edge.isFront ? 0.42 + depthNorm * 0.22 : 0.16}
+            />
+          );
+        })}
+
+      {showSurface &&
+        v.silhouetteEdges.map((edge, i) => (
+          <line
+            key={`${viewId}-sil-${i}`}
+            x1={edge.from.x}
+            y1={edge.from.y}
+            x2={edge.to.x}
+            y2={edge.to.y}
+            stroke="rgba(255,255,255,0.7)"
+            strokeWidth={1}
+            opacity={0.3}
+          />
+        ))}
+
       {renderVertices(v, viewId)}
     </>
   );
@@ -865,7 +953,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       <div style={{ minHeight: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {viewMode === "compound" ? (
           <p style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}>
-            {t("theory_stella_annotation")}
+            {showSurface ? t("theory_stella_surface_annotation") : t("theory_stella_annotation")}
           </p>
         ) : (
           <div style={{ textAlign: "center" }}>
@@ -887,10 +975,15 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
         <button
           style={{
             ...S_BTN,
-            borderColor: viewMode === "compound" ? C.accentBright : C.border,
-            color: viewMode === "compound" ? C.accentBright : C.textMuted,
+            borderColor: viewMode === "compound" && !showSurface ? C.accentBright : C.border,
+            color: viewMode === "compound" && !showSurface ? C.accentBright : C.textMuted,
           }}
-          onClick={() => setViewMode("compound")}
+          type="button"
+          aria-pressed={viewMode === "compound" && !showSurface}
+          onClick={() => {
+            setViewMode("compound");
+            setShowSurface(false);
+          }}
         >
           {t("theory_stella_compound")}
         </button>
@@ -901,9 +994,15 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             color: showSurface && viewMode === "compound" ? C.accentBright : C.textMuted,
             opacity: viewMode === "compound" ? 1 : 0.4,
           }}
+          type="button"
+          aria-pressed={viewMode === "compound" && showSurface}
           onClick={() => {
-            if (viewMode !== "compound") setViewMode("compound");
-            setShowSurface((v) => !v);
+            setViewMode("compound");
+            if (viewMode !== "compound") {
+              setShowSurface(true);
+            } else {
+              setShowSurface((v) => !v);
+            }
           }}
         >
           {t("theory_stella_surface")}
@@ -914,7 +1013,12 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             borderColor: viewMode === "k8" ? C.accentBright : C.border,
             color: viewMode === "k8" ? C.accentBright : C.textMuted,
           }}
-          onClick={() => setViewMode("k8")}
+          type="button"
+          aria-pressed={viewMode === "k8"}
+          onClick={() => {
+            setViewMode("k8");
+            setShowSurface(false);
+          }}
         >
           {t("theory_stella_k8")}
         </button>

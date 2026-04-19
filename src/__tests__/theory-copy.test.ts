@@ -72,9 +72,27 @@ describe("theory copy", () => {
   it("avoids claiming that octahedron gradients literally show the XOR color at the midpoint", () => {
     expect(en.theory_octa_desc.toLowerCase()).not.toContain("visible as the edge gradient’s midpoint");
     expect(en.theory_octa_desc.toLowerCase()).not.toContain("literal rgb midpoint");
+    expect(en.theory_octa_desc2.toLowerCase()).not.toContain("visible as the edge gradient’s midpoint");
+    expect(en.theory_octa_desc2.toLowerCase()).not.toContain("literal rgb midpoint");
 
     expect(ja.theory_octa_desc).not.toContain("中点色として描いているわけではありません");
     expect(ja.theory_octa_desc).not.toContain("中間点として視認できます");
+    expect(ja.theory_octa_desc2).not.toContain("中点色として描いているわけではありません");
+    expect(ja.theory_octa_desc2).not.toContain("中間点として視認できます");
+  });
+
+  it("describes the Color Diamond as the Color Cube dual with chromatic XOR edges", () => {
+    expect(en.theory_octa_desc).toContain("not a perceptually uniform color space");
+    expect(en.theory_octa_desc).toContain("B↔Y, R↔C, M↔G");
+    expect(en.theory_octa_desc2).toContain("6 chromatic XOR results appear exactly twice");
+    expect(en.theory_octa_desc2).toContain("dual to the Color Cube");
+    expect(en.theory_octa_desc2).not.toContain("dual to the Color Die");
+
+    expect(ja.theory_octa_desc).toContain("知覚均等色空間ではなく");
+    expect(ja.theory_octa_desc).toContain("B↔Y、R↔C、M↔G");
+    expect(ja.theory_octa_desc2).toContain("6つの有彩色 XOR 結果が各2回ずつ");
+    expect(ja.theory_octa_desc2).toContain("カラーダイヤはカラーキューブの双対");
+    expect(ja.theory_octa_desc2).not.toContain("カラーダイスの双対");
   });
 
   it("explains subtractive examples as Boolean AND identities instead of carry-corrected XOR", () => {
@@ -142,6 +160,8 @@ describe("theory copy", () => {
     expect(en.theory_dice_tetra_subgroup).not.toContain("T0 = {Black, M, C, Y}");
     expect(ja.theory_dice_tetra_subgroup).toContain("T0 = {K, M, C, Y}");
     expect(ja.theory_stella_desc).toContain("星形八面体");
+    expect(ja.theory_stella_desc).toContain("8色間の2チャンネル差だけを取り出した関係図");
+    expect(ja.theory_stella_desc).toContain("CMY+Black と RGB+White");
     expect(ja.theory_cube_desc).toContain("Black(0)");
     expect(ja.theory_hamming_desc2).toContain("Blue(1)");
     expect(ja.theory_hamming_desc2).not.toContain("青(1)");
@@ -160,7 +180,9 @@ describe("theory copy", () => {
     expect(en.theory_conn_polyhedra_desc).toContain("In this sense the diagram commutes");
     expect(en.theory_conn_polyhedra_svg_desc).toContain("common composition");
     expect(en.theory_conn_polyhedra_desc).not.toContain("§9");
-    expect(en.theory_stella_desc).toContain("edge set of K₈");
+    expect(en.theory_stella_desc).toContain("28 edges of K₈ split");
+    expect(en.theory_stella_desc).toContain("two-channel differences among the 8 colors");
+    expect(en.theory_stella_desc).toContain("CMY+Black and RGB+White");
     expect(en.theory_stella_desc).not.toContain("K₈ = Cube + Color Star + Complements");
   });
 });

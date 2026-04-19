@@ -7,6 +7,9 @@ import {
   FANO_LINES,
   GRAY_PATH,
   GRAY_TOGGLES,
+  OCTA_COMPLEMENT_AXES,
+  OCTA_EDGES,
+  OCTA_FACES,
   STELLA_EDGES,
   TETRA_T0,
   THEORY_LEVELS,
@@ -331,6 +334,53 @@ describe("theory-data invariants", () => {
       [2, 5],
       [3, 4],
     ]);
+  });
+
+  it("models the Color Diamond as the Color Cube dual with chromatic XOR edges", () => {
+    const chromatic = new Set([1, 2, 3, 4, 5, 6]);
+    const complementAxes = new Set(OCTA_COMPLEMENT_AXES.map(([a, b]) => edgeKey(a, b)));
+    const xorCounts = new Map<number, number>();
+
+    expect(OCTA_EDGES).toHaveLength(12);
+    expect(complementAxes).toEqual(new Set(["1-6", "2-5", "3-4"]));
+
+    for (const [a, b] of OCTA_EDGES) {
+      expect(chromatic.has(a)).toBe(true);
+      expect(chromatic.has(b)).toBe(true);
+      expect(complementAxes.has(edgeKey(a, b))).toBe(false);
+
+      const result = a ^ b;
+      expect(chromatic.has(result)).toBe(true);
+      xorCounts.set(result, (xorCounts.get(result) ?? 0) + 1);
+    }
+
+    expect(xorCounts.size).toBe(6);
+    for (const lv of chromatic) expect(xorCounts.get(lv)).toBe(2);
+
+    const faceColors = new Set(OCTA_FACES.map(({ color }) => color));
+    expect(faceColors).toEqual(new Set([0, 1, 2, 3, 4, 5, 6, 7]));
+
+    for (const face of OCTA_FACES) {
+      for (const axis of OCTA_COMPLEMENT_AXES) {
+        expect(axis.filter((lv) => face.verts.includes(lv)).length).toBe(1);
+      }
+
+      const expectedColor = (face.verts.includes(4) ? 4 : 0) | (face.verts.includes(2) ? 2 : 0) | (face.verts.includes(1) ? 1 : 0);
+      expect(face.color).toBe(expectedColor);
+    }
+
+    const faceAdjacency = new Set<string>();
+    for (let i = 0; i < OCTA_FACES.length; i++) {
+      for (let j = i + 1; j < OCTA_FACES.length; j++) {
+        const sharedVerts = OCTA_FACES[i].verts.filter((lv) => OCTA_FACES[j].verts.includes(lv));
+        if (sharedVerts.length === 2) {
+          expect(hammingDist(OCTA_FACES[i].color, OCTA_FACES[j].color)).toBe(1);
+          faceAdjacency.add(edgeKey(OCTA_FACES[i].color, OCTA_FACES[j].color));
+        }
+      }
+    }
+
+    expect(faceAdjacency).toEqual(new Set(CUBE_EDGES.map(([a, b]) => edgeKey(a, b))));
   });
 
   it("keeps T0 closed under XOR", () => {

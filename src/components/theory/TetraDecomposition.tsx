@@ -58,6 +58,7 @@ function tetraFaces(verts: readonly number[]): [number, number, number][] {
 function MiniTetra({
   verts,
   edges,
+  idPrefix,
   label,
   hl,
   onEnter,
@@ -65,6 +66,7 @@ function MiniTetra({
 }: {
   verts: readonly number[];
   edges: [number, number][];
+  idPrefix: string;
   label: string;
   hl: number | null;
   onEnter: (lv: number) => void;
@@ -114,8 +116,8 @@ function MiniTetra({
             const opMax = 0.02 + (maxD.d / 3) * 0.2;
             return (
               <linearGradient
-                key={`tfg-${i}`}
-                id={`tfg-${i}`}
+                key={`${idPrefix}-tfg-${i}`}
+                id={`${idPrefix}-tfg-${i}`}
                 gradientUnits="userSpaceOnUse"
                 x1={minD.p.x}
                 y1={minD.p.y}
@@ -140,7 +142,7 @@ function MiniTetra({
             <polygon
               key={`tf${i}`}
               points={pts}
-              fill={hasDepthDiff ? `url(#tfg-${i})` : info.color}
+              fill={hasDepthDiff ? `url(#${idPrefix}-tfg-${i})` : info.color}
               fillOpacity={hasDepthDiff ? 1 : 0.04 + d * 0.2}
               stroke={info.color}
               strokeWidth={0.5}
@@ -160,7 +162,15 @@ function MiniTetra({
             const opA = 0.15 + da * 0.6;
             const opB = 0.15 + db * 0.6;
             return (
-              <linearGradient key={`teg-${i}`} id={`teg-${i}`} gradientUnits="userSpaceOnUse" x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}>
+              <linearGradient
+                key={`${idPrefix}-teg-${i}`}
+                id={`${idPrefix}-teg-${i}`}
+                gradientUnits="userSpaceOnUse"
+                x1={pa.x}
+                y1={pa.y}
+                x2={pb.x}
+                y2={pb.y}
+              >
                 <stop offset="0%" stopColor="#fff" stopOpacity={opA} />
                 <stop offset="100%" stopColor="#fff" stopOpacity={opB} />
               </linearGradient>
@@ -193,7 +203,7 @@ function MiniTetra({
               <polygon
                 key={`te${i}`}
                 points={`${pa.x + nx * hwA},${pa.y + ny * hwA} ${pb.x + nx * hwB},${pb.y + ny * hwB} ${pb.x - nx * hwB},${pb.y - ny * hwB} ${pa.x - nx * hwA},${pa.y - ny * hwA}`}
-                fill={`url(#teg-${i})`}
+                fill={`url(#${idPrefix}-teg-${i})`}
               />
             );
           }
@@ -281,8 +291,24 @@ export const TetraDecomposition = React.memo(function TetraDecomposition({ hlLev
       </p>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
         <div style={{ display: "flex", gap: SP.xl, justifyContent: "center" }}>
-          <MiniTetra verts={TETRA_T0} edges={TETRA_T0_EDGES} label={t("theory_dice_tetra_t0")} hl={hl} onEnter={enter} onLeave={leave} />
-          <MiniTetra verts={TETRA_T1} edges={TETRA_T1_EDGES} label={t("theory_dice_tetra_t1")} hl={hl} onEnter={enter} onLeave={leave} />
+          <MiniTetra
+            idPrefix="t0"
+            verts={TETRA_T0}
+            edges={TETRA_T0_EDGES}
+            label={t("theory_dice_tetra_t0")}
+            hl={hl}
+            onEnter={enter}
+            onLeave={leave}
+          />
+          <MiniTetra
+            idPrefix="t1"
+            verts={TETRA_T1}
+            edges={TETRA_T1_EDGES}
+            label={t("theory_dice_tetra_t1")}
+            hl={hl}
+            onEnter={enter}
+            onLeave={leave}
+          />
         </div>
         <div style={{ maxWidth: 300, textAlign: "center" }}>
           <p className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textMuted, margin: `0 0 2px` }}>
