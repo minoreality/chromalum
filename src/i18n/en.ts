@@ -321,7 +321,9 @@ export const en = {
   // Octahedron (chromatic cross-polytope)
   theory_octa_title: "Color Diamond",
   theory_octa_desc:
-    "The most symmetric way to display 6 chromatic colors and their complement pairs: each complement axis (R\u2194C, G\u2194M, B\u2194Y) connects antipodal vertices, with primaries on +axes and CMY on \u2212axes. This is the dual of the color cube \u2014 6 vertices become 8 faces (one per GF(2)\u00b3 element), and the face-adjacency graph is the color cube itself. Unlike the cube (whose 12 edges yield only 3 XOR values), the octahedron\u2019s 12 edges cover all 6 chromatic XOR results exactly twice: each non-complementary pair {a,b} determines a third color a\u2295b.",
+    "The octahedron is the most symmetric shape for displaying the 6 chromatic colors and their complement symmetry. Its 6 vertices correspond to B, R, M, G, C, Y, and the three antipodal axes B↔Y, R↔C, M↔G represent the complement map c ↦ c⊕7. This is not a perceptually uniform color space; it geometrizes the discrete complement symmetry that comes from RGB channel on/off states.",
+  theory_octa_desc2:
+    "The octahedron's 12 edges connect only chromatic pairs that are not complements. Each edge {a,b} determines a third chromatic color a⊕b, and across all 12 edges the 6 chromatic XOR results appear exactly twice. Its 8 faces correspond to the 8 ways to choose one side from each of the three complement axes, so they represent the 8 elements of GF(2)³. The face-adjacency graph is the cube graph itself; in this sense the Color Diamond is dual to the Color Cube.",
   theory_octa_axes: "Complement axes",
 
   // §10 Color Tetra
@@ -331,7 +333,7 @@ export const en = {
 
   // §11 Color Star (Stella Octangula)
   theory_stella_desc:
-    "Compounding T0 and T1 yields the Color Star (Stella Octangula). Its 12 edges (all distance 2) produce CMY as XOR values, the cube\u2019s 12 edges (distance 1) produce RGB, and the 4 complement diagonals (distance 3) produce White (7). Thus the edge set of K\u2088 splits into the Color Cube\u2019s 12 edges (d=1), the Color Star\u2019s 12 edges (d=2), and the 4 complement diagonals (d=3).",
+    "Compounding T0 and T1 yields the Color Star (Stella Octangula). The Color Star is the relation diagram that extracts only the two-channel differences among the 8 colors. While the Color Cube's 12 edges (distance 1) represent RGB primary differences, the Color Star's 12 edges (distance 2) have CMY secondary colors as their XOR values. T0={K,M,C,Y} and T1={B,R,G,W} appear as two parity tetrahedra: CMY+Black and RGB+White. The 4 complement diagonals (distance 3) have White (7) as their XOR value, so the 28 edges of K\u2088 split into the Color Cube's 12 edges (d=1), the Color Star's 12 edges (d=2), and the 4 complement diagonals (d=3).",
 
   // ColorDice tetrahedra
   theory_dice_tetra: "T0/T1 Tetrahedra",
@@ -345,7 +347,7 @@ export const en = {
   theory_stella_compound: "Compound",
   theory_stella_k8: "K\u2088",
   theory_stella_surface: "Surface",
-  theory_stella_surface_annotation: "24 visible faces (3 per spike) with 12 ridge edges at octahedral intersections",
+  theory_stella_surface_annotation: "24 surface faces (3 per spike) with 12 ridge edges at octahedral intersections",
   theory_stella_annotation: "T0 \u222a T1 compound = first stellation of the octahedron \u2014 each edge is a 2-channel flip",
   theory_stella_k8_degree: "Degrees: 3 + 3 + 1 = 7 = deg(K\u2088)",
 
