@@ -211,7 +211,7 @@ export function MapCanvas({
         const lv = cvs.data[i] & LEVEL_MASK;
         const rgb = colorLUT[lv];
         const lumVal = (LUMA_R * rgb[0] + LUMA_G * rgb[1] + LUMA_B * rgb[2]) / 255;
-        const [r, g, b] = applyLUT(PLASMA, lumVal);
+        const [r, g, b] = applyLUT(INFERNO, lumVal);
         d32[i] = 0xff000000 | (b << 16) | (g << 8) | r;
       }
     } else if (mode === "gradient" && pixelMaps.gradMag.length >= n && pixelMaps.levelNorm.length >= n) {
