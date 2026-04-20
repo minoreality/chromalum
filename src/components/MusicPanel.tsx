@@ -1535,6 +1535,14 @@ export const MusicPanel = React.memo(function MusicPanel() {
             />
           </div>
 
+          <div style={S_CARD_LUMA}>
+            <ComplementPairsCard engine={engine} stopSignal={stopSignal} />
+          </div>
+
+          <div style={S_CARD_LUMA}>
+            <ZigzagCard engine={engine} stopSignal={stopSignal} />
+          </div>
+
           {/* ── F: Symmetry / Automorphism ── */}
 
           {/* 14. GL(3,2) */}
@@ -1588,14 +1596,6 @@ export const MusicPanel = React.memo(function MusicPanel() {
             </div>
             <GL32Arrows perm={gl32Perm} activeLevels={activeLevels} flash={gl32Flash} />
             <div style={{ fontSize: FS.sm, color: C.textDim, textAlign: "center" }}>{t("music_gl32_note")}</div>
-          </div>
-
-          <div style={S_CARD_LUMA}>
-            <ComplementPairsCard engine={engine} stopSignal={stopSignal} />
-          </div>
-
-          <div style={S_CARD_LUMA}>
-            <ZigzagCard engine={engine} stopSignal={stopSignal} />
           </div>
         </div>
       </div>
