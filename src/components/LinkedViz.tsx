@@ -325,16 +325,24 @@ export const LinkedViz = React.memo(function LinkedViz({
   const [alpha7Internal, setAlpha7Internal] = useState(0);
   const alpha0 = alpha0Prop ?? alpha0Internal;
   const alpha7 = alpha7Prop ?? alpha7Internal;
-  const setAlpha0: React.Dispatch<React.SetStateAction<number>> = onAlpha0Change
-    ? (v) => {
-        onAlpha0Change(typeof v === "function" ? (v as (prev: number) => number)(alpha0) : v);
-      }
-    : setAlpha0Internal;
-  const setAlpha7: React.Dispatch<React.SetStateAction<number>> = onAlpha7Change
-    ? (v) => {
-        onAlpha7Change(typeof v === "function" ? (v as (prev: number) => number)(alpha7) : v);
-      }
-    : setAlpha7Internal;
+  const setAlpha0 = useMemo<React.Dispatch<React.SetStateAction<number>>>(
+    () =>
+      onAlpha0Change
+        ? (v) => {
+            onAlpha0Change(typeof v === "function" ? (v as (prev: number) => number)(alpha0) : v);
+          }
+        : setAlpha0Internal,
+    [alpha0, onAlpha0Change],
+  );
+  const setAlpha7 = useMemo<React.Dispatch<React.SetStateAction<number>>>(
+    () =>
+      onAlpha7Change
+        ? (v) => {
+            onAlpha7Change(typeof v === "function" ? (v as (prev: number) => number)(alpha7) : v);
+          }
+        : setAlpha7Internal,
+    [alpha7, onAlpha7Change],
+  );
   const [localHoveredDot, setLocalHoveredDot] = useState<{ lv: number; ci: number } | null>(null);
   const hoveredDot = onHoverCandidate ? (hoveredCandidate ?? null) : localHoveredDot;
   const setHoveredDot = onHoverCandidate ?? setLocalHoveredDot;
@@ -445,7 +453,7 @@ export const LinkedViz = React.memo(function LinkedViz({
         onHueAngleChange?.(Math.round(hue));
       }
     },
-    [svgCoord, mode, onHueAngleChange],
+    [svgCoord, mode, setAlpha0, setAlpha7, onHueAngleChange],
   );
 
   const onPointerUp = useCallback(() => {

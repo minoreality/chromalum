@@ -40,7 +40,7 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): CanvasCo
       if (drawing.cursorRafRef.current) cancelAnimationFrame(drawing.cursorRafRef.current);
       if (glazeDrawing.cursorRafRef.current) cancelAnimationFrame(glazeDrawing.cursorRafRef.current);
     },
-    [],
+    [drawing.cursorRafRef, glazeDrawing.cursorRafRef],
   );
 
   // Wheel listener (non-passive)

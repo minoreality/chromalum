@@ -357,16 +357,18 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
     [saveColor, saveColorWithLUT, saveGlaze, shareColor, shareGlaze],
   );
 
+  const { setZoom, setPan } = panZoom;
+
   const handleNewCanvas = useCallback(() => setShowNewCanvas(true), [setShowNewCanvas]);
   const handleNewCanvasConfirm = useCallback(
     (w: number, h: number) => {
       dispatch({ type: "new_canvas", w, h });
-      panZoom.setZoom(1);
-      panZoom.setPan({ x: 0, y: 0 });
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
       setShowNewCanvas(false);
       showToast(t("toast_new_canvas_created", w, h), "success");
     },
-    [state.undoStack.length, panZoom.setZoom, panZoom.setPan, dispatch, setShowNewCanvas, showToast, t],
+    [setZoom, setPan, dispatch, setShowNewCanvas, showToast, t],
   );
   const handleNewCanvasCancel = useCallback(() => setShowNewCanvas(false), [setShowNewCanvas]);
 
