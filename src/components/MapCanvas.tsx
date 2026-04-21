@@ -390,18 +390,15 @@ export function MapCanvas({
 
   const longPressOrigin = useRef<{ x: number; y: number } | null>(null);
 
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.pointerType !== "touch") return;
-      longPressOrigin.current = { x: e.clientX, y: e.clientY };
-      longPressTimer.current = setTimeout(() => {
-        longPressTimer.current = null;
-        longPressOrigin.current = null;
-        setConfirmSaveOpen(true);
-      }, 1000);
-    },
-    [saveMap],
-  );
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType !== "touch") return;
+    longPressOrigin.current = { x: e.clientX, y: e.clientY };
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      longPressOrigin.current = null;
+      setConfirmSaveOpen(true);
+    }, 1000);
+  }, []);
 
   const cancelLongPress = useCallback(() => {
     if (longPressTimer.current) {

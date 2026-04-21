@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LEVEL_MASK } from "../constants";
 import type { CanvasData } from "../types";
@@ -110,7 +110,7 @@ export function usePixelMaps(cvs: CanvasData, mode: MapMode, preload = false): P
   const preloadRequestIdRef = useRef(0);
   const cacheRef = useRef<PixelMapsCache | null>(null);
 
-  const ensureCache = (): PixelMapsCache => {
+  const ensureCache = useCallback((): PixelMapsCache => {
     if (!isSameCanvas(cacheRef.current, cvs)) {
       cacheRef.current = {
         data: cvs.data,
@@ -121,7 +121,7 @@ export function usePixelMaps(cvs: CanvasData, mode: MapMode, preload = false): P
       };
     }
     return cacheRef.current;
-  };
+  }, [cvs]);
 
   useEffect(() => {
     return () => {
@@ -216,7 +216,7 @@ export function usePixelMaps(cvs: CanvasData, mode: MapMode, preload = false): P
       disposed = true;
       cleanup();
     };
-  }, [cvs, mode]);
+  }, [cvs, mode, ensureCache]);
 
   useEffect(() => {
     if (!preload) return;
@@ -304,7 +304,7 @@ export function usePixelMaps(cvs: CanvasData, mode: MapMode, preload = false): P
       cleanup();
       resetWorker();
     };
-  }, [cvs, mode, maps, preload]);
+  }, [cvs, mode, maps, preload, ensureCache]);
 
   return maps;
 }

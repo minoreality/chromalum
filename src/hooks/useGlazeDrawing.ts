@@ -274,12 +274,14 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
 
   const onDown = useCallback((e: React.PointerEvent) => {
     doDown(e);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doDown reads from sync refs
   }, []);
 
   const onMove = useCallback(
     (e: React.PointerEvent) => {
       doMove(e);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs
     [cursor.trackCursor],
   );
 

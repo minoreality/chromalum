@@ -263,6 +263,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     (e: React.PointerEvent) => {
       doMove(e, cursor.curRef.current, cursor.trackCursor);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs, cursor.curRef is stable
     [cursor.trackCursor],
   );
 
@@ -275,6 +276,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     (e: React.PointerEvent) => {
       doMove(e, cursor.prvCurRef.current, cursor.trackCursorPrv);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs, cursor.prvCurRef is stable
     [cursor.trackCursorPrv],
   );
 
