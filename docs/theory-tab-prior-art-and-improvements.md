@@ -1,11 +1,11 @@
-# Theoryタブ 先行研究調査と改善提案
+# Theoryタブ — 先行研究と改善提案
 
 調査日：2026-04-19
 
 ## Related Notes
 
-- 技術定義・定理・実装対応: [離散代数的色彩モデル 技術ノート](./algebraic-color-model.md)
-- 先行研究・新規性評価: [離散代数的色彩モデル 先行研究調査ノート](./prior-art-algebraic-color-model.md)
+- 技術定義・定理・実装対応: [離散代数的色彩モデル](./algebraic-color-model.md)
+- 先行研究・新規性評価: [離散代数的色彩モデル — 先行研究](./prior-art-algebraic-color-model.md)
 
 ## Executive Conclusion
 

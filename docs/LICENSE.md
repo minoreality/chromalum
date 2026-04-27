@@ -64,14 +64,14 @@ three parts of a single unified treatise on the discrete algebraic
 color model that underlies the CHROMALUM application:
 
 - **Pars I**: `algebraic-color-model.md`
-  English title: Algebraic Color Model: Technical Note
-  日本語タイトル: 離散代数的色彩モデル 技術ノート
+  English title: Algebraic Color Model
+  日本語タイトル: 離散代数的色彩モデル
 - **Pars II**: `prior-art-algebraic-color-model.md`
-  English title: Algebraic Color Model: Prior Art Survey
-  日本語タイトル: 離散代数的色彩モデル 先行研究調査ノート
+  English title: Algebraic Color Model — Prior Art
+  日本語タイトル: 離散代数的色彩モデル — 先行研究
 - **Pars III**: `theory-tab-prior-art-and-improvements.md`
-  English title: Theory Tab: Prior Art and Improvement Proposals
-  日本語タイトル: Theoryタブ 先行研究調査と改善提案
+  English title: Theory Tab — Prior Art and Improvement Proposals
+  日本語タイトル: Theoryタブ — 先行研究と改善提案
 
 When citing the corpus as a whole, *Tractatus Chromaticus* is the
 collective title. When citing a specific part, use the document title
@@ -111,7 +111,7 @@ TASL elements are present.
 ### Academic paper / journal (reference list)
 
 ```text
-Doctor Chromaticus, "Algebraic Color Model: Technical Note,"
+Doctor Chromaticus, "Algebraic Color Model,"
 in Tractatus Chromaticus, 2026.
 https://github.com/humannnnn1-bot/chromalum, licensed under
 CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
@@ -123,7 +123,7 @@ the mononym into "first name / last name"):
 ```bibtex
 @incollection{chromalum_acm_2026,
   author    = {{Doctor Chromaticus}},
-  title     = {Algebraic Color Model: Technical Note},
+  title     = {Algebraic Color Model},
   booktitle = {Tractatus Chromaticus},
   year      = {2026},
   url       = {https://github.com/humannnnn1-bot/chromalum},
@@ -139,7 +139,7 @@ In-text citation: `Doctor Chromaticus (2026)`.
 ```markdown
 > "<quoted text>"
 
-Source: "Algebraic Color Model: Technical Note," in
+Source: "Algebraic Color Model," in
 [Tractatus Chromaticus](https://github.com/humannnnn1-bot/chromalum),
 by Doctor Chromaticus, licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
@@ -148,7 +148,7 @@ by Doctor Chromaticus, licensed under
 ### Book / textbook (footnote or end-note)
 
 ```text
-Adapted from "Algebraic Color Model: Technical Note," in
+Adapted from "Algebraic Color Model," in
 Tractatus Chromaticus by Doctor Chromaticus, CC BY 4.0.
 Source: https://github.com/humannnnn1-bot/chromalum
 ```
@@ -164,7 +164,7 @@ CC BY 4.0, github.com/humannnnn1-bot/chromalum
 
 ```text
 This document is a <translation | summary | abridgment> of
-"Algebraic Color Model: Technical Note" in Tractatus Chromaticus
+"Algebraic Color Model" in Tractatus Chromaticus
 by Doctor Chromaticus, CC BY 4.0
 (https://github.com/humannnnn1-bot/chromalum).
 Changes: <e.g. translated from Japanese to English; sections 3-4 abridged>.
@@ -187,7 +187,7 @@ github.com/humannnnn1-bot/chromalum
 ### Japanese-language template (日本語の標準形)
 
 ```text
-出典: 「離散代数的色彩モデル 技術ノート」
+出典: 「離散代数的色彩モデル」
 （Tractatus Chromaticus, Doctor Chromaticus 作）
 ライセンス: CC BY 4.0
 https://github.com/humannnnn1-bot/chromalum

@@ -1,9 +1,9 @@
-# 離散代数的色彩モデル 技術ノート
+# 離散代数的色彩モデル
 
 ## Related Notes
 
-- 先行研究・新規性評価: [離散代数的色彩モデル 先行研究調査ノート](./prior-art-algebraic-color-model.md)
-- Theoryタブの改善提案: [Theoryタブ 先行研究調査と改善提案](./theory-tab-prior-art-and-improvements.md)
+- 先行研究・新規性評価: [離散代数的色彩モデル — 先行研究](./prior-art-algebraic-color-model.md)
+- Theoryタブの改善提案: [Theoryタブ — 先行研究と改善提案](./theory-tab-prior-art-and-improvements.md)
 
 ## Abstract
 

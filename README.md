@@ -150,9 +150,9 @@ The three documents in `docs/` form the _Tractatus Chromaticus_
 ("Chromatic Treatise"), a unified treatise on the discrete algebraic color
 model that underlies the application:
 
-- Pars I - [離散代数的色彩モデル 技術ノート](./docs/algebraic-color-model.md)
-- Pars II - [離散代数的色彩モデル 先行研究調査ノート](./docs/prior-art-algebraic-color-model.md)
-- Pars III - [Theoryタブ 先行研究調査と改善提案](./docs/theory-tab-prior-art-and-improvements.md)
+- Pars I - [離散代数的色彩モデル](./docs/algebraic-color-model.md)
+- Pars II - [離散代数的色彩モデル — 先行研究](./docs/prior-art-algebraic-color-model.md)
+- Pars III - [Theoryタブ — 先行研究と改善提案](./docs/theory-tab-prior-art-and-improvements.md)
 
 The corpus is attributed to the pseudonym **Doctor Chromaticus**.
 
