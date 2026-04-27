@@ -1,15 +1,94 @@
 # CHROMALUM
 
-CHROMALUM is a React/Vite pixel-art and color-theory application built around
-an 8-level BT.601 luma model. It includes drawing, color mapping, glaze
-variants, gallery/statistics views, and Theory/Music tabs that explore the same
-8-color system through `GF(2)^3`, RGB cube geometry, Fano planes, Hamming codes,
-and related polyhedral structures.
+[![Deploy to GitHub Pages](https://github.com/humannnnn1-bot/chromalum/actions/workflows/deploy.yml/badge.svg)](https://github.com/humannnnn1-bot/chromalum/actions/workflows/deploy.yml)
+[![PR Validation](https://github.com/humannnnn1-bot/chromalum/actions/workflows/pr-check.yml/badge.svg)](https://github.com/humannnnn1-bot/chromalum/actions/workflows/pr-check.yml)
+[![CodeQL](https://github.com/humannnnn1-bot/chromalum/actions/workflows/codeql.yml/badge.svg)](https://github.com/humannnnn1-bot/chromalum/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/source-MIT-blue.svg)](./LICENSE)
+[![Docs: CC BY 4.0](https://img.shields.io/badge/docs-CC%20BY%204.0-green.svg)](./docs/LICENSE.md)
+
+CHROMALUM is a React/Vite pixel-art and algebraic color-theory application
+built around an 8-level BT.601 luma model. It combines a canvas drawing tool,
+color remapping, glaze variants, gallery/statistics views, and Theory/Music
+tabs that explore the same 8-color system through `GF(2)^3`, RGB cube
+geometry, Fano planes, Hamming codes, and related polyhedral structures.
+
+**Demo:** [humannnnn1-bot.github.io/chromalum](https://humannnnn1-bot.github.io/chromalum/)
+
+## Screenshots
+
+| Source canvas                                                  | Glaze overlay                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------------- |
+| ![CHROMALUM source canvas](./docs/assets/chromalum-source.png) | ![CHROMALUM glaze overlay](./docs/assets/chromalum-glaze.png) |
+
+| Pattern gallery                                           | Theory tab                                                  |
+| --------------------------------------------------------- | ----------------------------------------------------------- |
+| ![CHROMALUM gallery](./docs/assets/chromalum-gallery.png) | ![CHROMALUM theory tab](./docs/assets/chromalum-theory.png) |
+
+## Features
+
+- Pixel-art drawing with brush, eraser, fill, line, rectangle, ellipse, undo,
+  redo, pan, zoom, import, export, and mobile touch support.
+- 8-level grayscale source model mapped into chromatic color variants.
+- Glaze layer for per-pixel color-variant overrides without changing the
+  source luma structure.
+- Gallery generation for color-pattern variants, bookmarks, previews, and
+  saved PNG exports.
+- Map/statistics views for composition, local diversity, edge depth, gradients,
+  regions, luminance, and chromatic luminance.
+- Theory tab explaining the color system through binary levels, XOR, cube
+  geometry, Fano planes, Hamming codes, tetrahedra, octahedra, and compound
+  polyhedra.
+- Music tab connecting the same algebraic structures to chords, parity,
+  Hamming decoding, rhythmic grids, and sonification.
+- English/Japanese UI text with persistent language selection.
+
+## Design Intent
+
+CHROMALUM keeps one compact data model at the center: every source pixel stores
+one of eight luma levels, and the chromatic layer selects a variant for that
+level. This lets the app treat drawing, gallery generation, analysis,
+mathematical diagrams, and sonification as different views of the same discrete
+structure instead of separate feature islands.
+
+The implementation favors browser-native primitives and explicit data
+structures over heavy runtime dependencies. Canvas buffers use typed arrays,
+large pixel operations can run in Web Workers, undo/redo stores compact diffs,
+and autosave uses IndexedDB.
+
+## Technical Highlights
+
+- **Canvas rendering:** direct pixel-buffer rendering with dirty-rect updates.
+- **Performance:** typed arrays, reusable buffers, scanline flood fill, and
+  worker-backed pixel analysis.
+- **Undo/redo:** compressed diffs with optional color-map deltas.
+- **Persistence:** debounced IndexedDB autosave with pagehide/visibility flush.
+- **Testing:** Vitest unit tests plus Playwright end-to-end checks that verify
+  canvas pixels, save flows, gallery previews, glaze clearing, Theory rendering,
+  and mobile touch input.
+- **Quality gates:** TypeScript strict mode, ESLint, Prettier, coverage
+  thresholds, CodeQL, Dependabot, pinned GitHub Actions, and GitHub Pages
+  deployment.
+
+## Architecture
+
+```text
+src/
+  components/  React panels, controls, diagrams, and visualizations
+  hooks/       UI state, canvas interaction, workers, export, pan/zoom, audio
+  drawing/     Paint primitives, flood fill, dirty rects, render buffers
+  state/       Canvas reducer, color reducer, contexts, undo diff logic
+  workers/     Flood fill and pixel-analysis worker entry points
+  utils/       IndexedDB persistence, pixel analysis, ring buffer, errors
+  data/        Theory, hex, and music data sets
+  i18n/        English/Japanese translations
+e2e/           Playwright browser flows
+docs/          Tractatus Chromaticus documentation corpus
+```
 
 ## Development
 
-This project uses Node.js and npm. The repository declares the expected
-toolchain through Volta:
+This project uses Node.js and npm. The expected toolchain is pinned through
+Volta:
 
 ```text
 node 24.14.1
@@ -40,10 +119,16 @@ Create an itch.io-style relative-path build:
 npm run build:itch
 ```
 
-Run tests:
+Run unit tests:
 
 ```bash
 npm test
+```
+
+Run coverage:
+
+```bash
+npm run test:coverage
 ```
 
 Run end-to-end tests:
@@ -52,38 +137,33 @@ Run end-to-end tests:
 npm run test:e2e
 ```
 
-Run linting:
+Run linting and formatting checks:
 
 ```bash
 npm run lint
-```
-
-Check formatting:
-
-```bash
 npm run format:check
 ```
 
 ## Documentation
 
-The three documents in `docs/` form the *Tractatus Chromaticus*
-("Chromatic Treatise"), a unified treatise on the discrete algebraic
-color model that underlies the application:
+The three documents in `docs/` form the _Tractatus Chromaticus_
+("Chromatic Treatise"), a unified treatise on the discrete algebraic color
+model that underlies the application:
 
-- Pars I — [離散代数的色彩モデル 技術ノート](./docs/algebraic-color-model.md)
-- Pars II — [離散代数的色彩モデル 先行研究調査ノート](./docs/prior-art-algebraic-color-model.md)
-- Pars III — [Theoryタブ 先行研究調査と改善提案](./docs/theory-tab-prior-art-and-improvements.md)
+- Pars I - [離散代数的色彩モデル 技術ノート](./docs/algebraic-color-model.md)
+- Pars II - [離散代数的色彩モデル 先行研究調査ノート](./docs/prior-art-algebraic-color-model.md)
+- Pars III - [Theoryタブ 先行研究調査と改善提案](./docs/theory-tab-prior-art-and-improvements.md)
 
 The corpus is attributed to the pseudonym **Doctor Chromaticus**.
 
 ## License
 
-- **Application source code, tests, build config, and non-scholarly app assets**:
+- **Application source code, tests, build config, and non-scholarly app assets:**
   [MIT License](./LICENSE)
-- **Scholarly/explanatory content**:
+- **Scholarly/explanatory content:**
   [Creative Commons Attribution 4.0 International (CC BY 4.0)](./docs/LICENSE.md)
 
-The CC BY 4.0 content includes the *Tractatus Chromaticus* documents in
+The CC BY 4.0 content includes the _Tractatus Chromaticus_ documents in
 `docs/` and the authored prose, labels, and rendered explanatory diagrams in
 the Theory tab. The code that implements those views remains MIT-licensed.
 
