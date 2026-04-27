@@ -11,7 +11,7 @@ import {
   eraseGlazeLine,
 } from "../drawing/glaze-paint";
 import { brushBBox, dirtyFromChanged, shapeBBox, unionBBox, restoreRect } from "../drawing/dirty-rect";
-import { computeGlazeDiff, buildDiffFromGlazeFill } from "../undo-diff";
+import { computeGlazeDiff, buildDiffFromGlazeFill } from "../state/undo-diff";
 import { useFloodFillWorker } from "./useFloodFillWorker";
 import { renderBuf } from "../drawing/render-buf";
 import { hexStr } from "../utils";

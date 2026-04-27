@@ -1,4 +1,4 @@
-import type { Diff, CompressedDiff } from "./types";
+import type { Diff, CompressedDiff } from "../types";
 
 /* ═══════════════════════════════════════════
    UNDO DIFF
@@ -8,16 +8,24 @@ export function computeDiff(oldD: Uint8Array, newD: Uint8Array): Diff {
   const len = Math.min(oldD.length, newD.length);
   let count = 0;
   for (let i = 0; i < len; i++) if (oldD[i] !== newD[i]) count++;
-  const idx = new Uint32Array(count), ov = new Uint8Array(count), nv = new Uint8Array(count);
+  const idx = new Uint32Array(count),
+    ov = new Uint8Array(count),
+    nv = new Uint8Array(count);
   let j = 0;
   for (let i = 0; i < len; i++) {
-    if (oldD[i] !== newD[i]) { idx[j] = i; ov[j] = oldD[i]; nv[j] = newD[i]; j++; }
+    if (oldD[i] !== newD[i]) {
+      idx[j] = i;
+      ov[j] = oldD[i];
+      nv[j] = newD[i];
+      j++;
+    }
   }
   return { idx, ov, nv };
 }
 
 export function applyDiff(data: Uint8Array, diff: Diff, reverse: boolean): Uint8Array {
-  const r = new Uint8Array(data), v = reverse ? diff.ov : diff.nv;
+  const r = new Uint8Array(data),
+    v = reverse ? diff.ov : diff.nv;
   const len = data.length;
   for (let i = 0; i < diff.idx.length; i++) {
     const idx = diff.idx[i];
@@ -56,14 +64,18 @@ export function computeGlazeDiff(oldCm: Uint8Array, newCm: Uint8Array, data: Uin
   let count = 0;
   for (let i = 0; i < len; i++) if (oldCm[i] !== newCm[i]) count++;
   const idx = new Uint32Array(count);
-  const ov = new Uint8Array(count), nv = new Uint8Array(count);
-  const cmOv = new Uint8Array(count), cmNv = new Uint8Array(count);
+  const ov = new Uint8Array(count),
+    nv = new Uint8Array(count);
+  const cmOv = new Uint8Array(count),
+    cmNv = new Uint8Array(count);
   let j = 0;
   for (let i = 0; i < len; i++) {
     if (oldCm[i] !== newCm[i]) {
       idx[j] = i;
-      ov[j] = data[i]; nv[j] = data[i];
-      cmOv[j] = oldCm[i]; cmNv[j] = newCm[i];
+      ov[j] = data[i];
+      nv[j] = data[i];
+      cmOv[j] = oldCm[i];
+      cmNv[j] = newCm[i];
       j++;
     }
   }
@@ -88,14 +100,20 @@ export function buildDiffFromGlazeFill(cmPre: Uint8Array, cmBuf: Uint8Array, dat
   let validCount = 0;
   for (let i = 0; i < changed.length; i++) if (changed[i] < bufLen) validCount++;
   const idx = new Uint32Array(validCount);
-  const ov = new Uint8Array(validCount), nv = new Uint8Array(validCount);
-  const cmOv = new Uint8Array(validCount), cmNv = new Uint8Array(validCount);
+  const ov = new Uint8Array(validCount),
+    nv = new Uint8Array(validCount);
+  const cmOv = new Uint8Array(validCount),
+    cmNv = new Uint8Array(validCount);
   let j = 0;
   for (let i = 0; i < changed.length; i++) {
     const ci = changed[i];
     if (ci < bufLen) {
-      idx[j] = ci; ov[j] = data[ci]; nv[j] = data[ci];
-      cmOv[j] = cmPre[ci]; cmNv[j] = cmBuf[ci]; j++;
+      idx[j] = ci;
+      ov[j] = data[ci];
+      nv[j] = data[ci];
+      cmOv[j] = cmPre[ci];
+      cmNv[j] = cmBuf[ci];
+      j++;
     }
   }
   return { idx, ov, nv, cmOv, cmNv };
@@ -113,7 +131,9 @@ export function compressDiff(diff: Diff): CompressedDiff {
     if (idx[i] !== idx[i - 1] + 1) runCount++;
   }
   const runs = new Uint32Array(runCount * 2);
-  let ri = 0, runStart = idx[0], runLen = 1;
+  let ri = 0,
+    runStart = idx[0],
+    runLen = 1;
   for (let i = 1; i < idx.length; i++) {
     if (idx[i] === idx[i - 1] + 1) {
       runLen++;
@@ -138,7 +158,8 @@ export function decompressDiff(cd: CompressedDiff): Diff {
   const idx = new Uint32Array(total);
   let j = 0;
   for (let i = 0; i < runs.length; i += 2) {
-    const start = runs[i], len = runs[i + 1];
+    const start = runs[i],
+      len = runs[i + 1];
     for (let k = 0; k < len; k++) idx[j++] = start + k;
   }
   return { idx, ov, nv, ...(cmOv !== undefined ? { cmOv } : {}), ...(cmNv !== undefined ? { cmNv } : {}) };

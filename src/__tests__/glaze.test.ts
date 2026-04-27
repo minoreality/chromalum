@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { findClosestCandidate, LEVEL_CANDIDATES } from "../color-engine";
-import { computeGlazeDiff, applyDiffToColorMap, buildDiffFromGlazeFill } from "../undo-diff";
+import { computeGlazeDiff, applyDiffToColorMap, buildDiffFromGlazeFill } from "../state/undo-diff";
 import { glazeFloodFill } from "../drawing/flood-fill";
 import { buildGlazeLUT, paintGlazeCircle, eraseGlazeCircle } from "../drawing/glaze-paint";
 import { renderBuf } from "../drawing/render-buf";

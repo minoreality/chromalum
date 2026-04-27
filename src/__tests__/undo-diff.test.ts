@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeDiff, applyDiff, buildDiffFromFill } from "../undo-diff";
+import { computeDiff, applyDiff, buildDiffFromFill } from "../state/undo-diff";
 
 describe("computeDiff", () => {
   it("returns empty diff for identical data", () => {

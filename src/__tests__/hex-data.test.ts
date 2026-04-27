@@ -1,9 +1,17 @@
 import { describe, it, expect } from "vitest";
 import {
-  HEX_ANGLES, HEX_VERTICES, HEX_EDGES, HEX_EDGE_COLORS,
-  HEX_VERTEX_ALTS, HEX_EDGE_ALTS, HEX_DOTS, HEX_VP,
-  HEX_CX, HEX_CY, HEX_R,
-} from "../hex-data";
+  HEX_ANGLES,
+  HEX_VERTICES,
+  HEX_EDGES,
+  HEX_EDGE_COLORS,
+  HEX_VERTEX_ALTS,
+  HEX_EDGE_ALTS,
+  HEX_DOTS,
+  HEX_VP,
+  HEX_CX,
+  HEX_CY,
+  HEX_R,
+} from "../data/hex-data";
 import { NUM_VERTICES } from "../constants";
 import { LEVEL_CANDIDATES } from "../color-engine";
 
@@ -19,7 +27,7 @@ describe("HEX_VERTICES", () => {
   });
 
   it("covers all 6 color names", () => {
-    const names = HEX_VERTICES.map(v => v.c).sort();
+    const names = HEX_VERTICES.map((v) => v.c).sort();
     expect(names).toEqual(["B", "C", "G", "M", "R", "Y"]);
   });
 
@@ -128,7 +136,7 @@ describe("HEX_DOTS", () => {
   });
 
   it("vertex dots have vi >= 0 and ei = -1", () => {
-    const vertexDots = HEX_DOTS.filter(d => d.vi >= 0);
+    const vertexDots = HEX_DOTS.filter((d) => d.vi >= 0);
     expect(vertexDots.length).toBe(6);
     for (const d of vertexDots) {
       expect(d.ei).toBe(-1);
@@ -137,7 +145,7 @@ describe("HEX_DOTS", () => {
   });
 
   it("edge dots have ei >= 0 and vi = -1", () => {
-    const edgeDots = HEX_DOTS.filter(d => d.ei >= 0);
+    const edgeDots = HEX_DOTS.filter((d) => d.ei >= 0);
     for (const d of edgeDots) {
       expect(d.vi).toBe(-1);
     }

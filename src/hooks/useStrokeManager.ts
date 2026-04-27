@@ -8,7 +8,7 @@ import { isShapeTool } from "../constants";
 import type { ToolId } from "../constants";
 import { paintCircle, paintLine, SHAPE_PAINTERS } from "../drawing/paint";
 import { shapeBBox, unionBBox, brushBBox, restoreRect } from "../drawing/dirty-rect";
-import { computeDiff, buildDiffFromFill } from "../undo-diff";
+import { computeDiff, buildDiffFromFill } from "../state/undo-diff";
 import type { DirtyRect, Point, StrokeState, Diff } from "../types";
 
 /* ── Buffer pool management ────────────────── */

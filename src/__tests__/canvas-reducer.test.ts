@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { canvasReducer, initialState } from "../state/canvas-reducer";
-import { computeDiff } from "../undo-diff";
+import { computeDiff } from "../state/undo-diff";
 import { MAX_UNDO } from "../constants";
 
 describe("canvasReducer", () => {

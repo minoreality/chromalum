@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { canvasReducer, initialState } from "../state/canvas-reducer";
-import { computeDiff, computeGlazeDiff } from "../undo-diff";
+import { computeDiff, computeGlazeDiff } from "../state/undo-diff";
 import { paintCircle, paintLine } from "../drawing/paint";
 
 /**

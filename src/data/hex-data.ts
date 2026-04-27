@@ -1,5 +1,5 @@
-import { hue2rgb, LEVEL_CANDIDATES } from "./color-engine";
-import { NUM_VERTICES } from "./constants";
+import { hue2rgb, LEVEL_CANDIDATES } from "../color-engine";
+import { NUM_VERTICES } from "../constants";
 
 /* ═══════════════════════════════════════════
    HEXAGON DIAGRAM DATA
