@@ -2,31 +2,45 @@ import React, { useState, useRef, useCallback, useMemo } from "react";
 import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate, hue2rgb } from "../color-engine";
 import { SP, C, R } from "../styles/tokens";
 import { useTranslation } from "../i18n";
-import { angleToFreq } from "../hooks/useMusicEngine";
-import { freqToNote } from "../data/music-data";
 
-interface LinkedVisualizationProps {
+export interface LinkedVisualizationHover {
+  lv: number;
+  ci: number;
+}
+
+export interface LinkedVisualizationDot {
+  lv: number;
+  ci: number;
+  a: number;
+  rgb: [number, number, number];
+  act: boolean;
+}
+
+export interface LinkedVisualizationOverlayContext {
+  activeDots: LinkedVisualizationDot[];
+  activeAlpha: number;
+  hoveredDot: LinkedVisualizationHover | null;
+  setHoveredDot: (d: LinkedVisualizationHover | null) => void;
+  x: number;
+  y: number;
+  rowHeight: number;
+  width: number;
+}
+
+export interface LinkedVisualizationProps {
   hueAngle: number;
   brushLevel: number;
   onHueAngleChange?: (angle: number) => void;
-  hoveredCandidate?: { lv: number; ci: number } | null;
-  onHoverCandidate?: (d: { lv: number; ci: number } | null) => void;
+  hoveredCandidate?: LinkedVisualizationHover | null;
+  onHoverCandidate?: (d: LinkedVisualizationHover | null) => void;
   directCandidates?: Map<number, number>;
-  /** External audio engine — when provided, LinkedVisualization shows audio toggle button */
-  externalAudio?: { initAudio: () => void; enabled: boolean; setEnabled: (b: boolean) => void };
-  /** Rotation speed in degrees/second (default 36) */
-  rotationSpeed?: number;
-  /** Hide the legend section and show interval ratios instead */
-  hideLegend?: boolean;
-  /** Scale mode for interval ratio display (only shown when hideLegend) */
-  scaleMode?: "12tet" | "ji" | "octatonic" | "diatonic7";
+  showLegend?: boolean;
+  bottomRightOverlay?: (ctx: LinkedVisualizationOverlayContext) => React.ReactNode;
   /** Controlled alpha state (for Music tab integration) */
   alpha0?: number;
   onAlpha0Change?: (a: number) => void;
   alpha7?: number;
   onAlpha7Change?: (a: number) => void;
-  /** Optional scale mode buttons to render above the interval ratio display */
-  scaleButtons?: React.ReactNode;
   /** Callback when L0/L7 origin mode changes */
   onOriginModeChange?: (mode: 0 | 7) => void;
 }
@@ -74,25 +88,16 @@ const C2_PAIR: Record<number, number> = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
 const lumR0 = (lv: number) => (LEVEL_INFO[lv].gray / 255) * WR;
 const lumR7 = (lv: number) => (1 - LEVEL_INFO[lv].gray / 255) * WR;
 
-/* ── Dot type ── */
-interface Dot {
-  lv: number;
-  ci: number;
-  a: number;
-  rgb: [number, number, number];
-  act: boolean;
-}
-
 /* ── Wheel rendering ── */
 interface WheelOpts {
   cx: number;
   cy: number;
   alpha: number;
   radiusFn: (lv: number) => number;
-  dots: Dot[];
+  dots: LinkedVisualizationDot[];
   hueAngle: number;
-  hoveredDot: { lv: number; ci: number } | null;
-  onHoverDot: (d: { lv: number; ci: number } | null) => void;
+  hoveredDot: LinkedVisualizationHover | null;
+  onHoverDot: (d: LinkedVisualizationHover | null) => void;
   mode: 0 | 7;
 }
 
@@ -303,9 +308,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   hoveredCandidate,
   onHoverCandidate,
   directCandidates,
-  externalAudio,
-  hideLegend,
-  scaleMode,
+  showLegend = true,
+  bottomRightOverlay,
   alpha0: alpha0Prop,
   onAlpha0Change,
   alpha7: alpha7Prop,
@@ -343,19 +347,18 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         : setAlpha7Internal,
     [alpha7, onAlpha7Change],
   );
-  const [localHoveredDot, setLocalHoveredDot] = useState<{ lv: number; ci: number } | null>(null);
+  const [localHoveredDot, setLocalHoveredDot] = useState<LinkedVisualizationHover | null>(null);
   const hoveredDot = onHoverCandidate ? (hoveredCandidate ?? null) : localHoveredDot;
   const setHoveredDot = onHoverCandidate ?? setLocalHoveredDot;
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ type: "wheel"; startAngle: number; startAlpha: number } | { type: "hue" } | { type: "hue-bottom" } | null>(null);
-  const audioEnabled = externalAudio?.enabled ?? false;
 
   const activeAlpha = mode === 0 ? alpha0 : alpha7;
   const activeRadiusFn = mode === 0 ? lumR0 : lumR7;
 
   // Compute dots
   const dots = useMemo(() => {
-    const result: Dot[] = [];
+    const result: LinkedVisualizationDot[] = [];
     for (let lv = 0; lv < LEVEL_CANDIDATES.length; lv++)
       for (let ci = 0; ci < LEVEL_CANDIDATES[lv].length; ci++) {
         const c = LEVEL_CANDIDATES[lv][ci];
@@ -367,12 +370,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- brushLevel triggers re-render for active dot updates
   }, [hueAngle, brushLevel, directCandidates]);
 
-  const handleAudioToggle = useCallback(() => {
-    if (externalAudio) {
-      if (!externalAudio.enabled) externalAudio.initAudio();
-      externalAudio.setEnabled(!externalAudio.enabled);
-    }
-  }, [externalAudio]);
+  const activeDots = useMemo(() => dots.filter((d) => d.act), [dots]);
 
   // Wheel dot position (for guide lines)
   const wP = useCallback(
@@ -508,19 +506,18 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   }, [cosinePath, alpha0, alpha7]);
 
   // Hover helpers
-  const isHovered = (d: Dot) => hoveredDot !== null && hoveredDot.lv === d.lv && hoveredDot.ci === d.ci;
-  const dotHandlers = (d: Dot) => ({
+  const isHovered = (d: LinkedVisualizationDot) => hoveredDot !== null && hoveredDot.lv === d.lv && hoveredDot.ci === d.ci;
+  const dotHandlers = (d: LinkedVisualizationDot) => ({
     onPointerEnter: () => setHoveredDot({ lv: d.lv, ci: d.ci }),
     onPointerLeave: () => setHoveredDot(null),
     style: { cursor: "pointer" as const },
   });
-  const dotOpacity = (d: Dot) => (hoveredDot === null ? 1 : isHovered(d) ? 1 : 0.25);
+  const dotOpacity = (d: LinkedVisualizationDot) => (hoveredDot === null ? 1 : isHovered(d) ? 1 : 0.25);
   const legendL0 = mode === 0 ? t("linkedviz_legend_l0_origin") : t("linkedviz_legend_l0_boundary");
   const legendL7 = mode === 0 ? t("linkedviz_legend_l7_boundary") : t("linkedviz_legend_l7_origin");
 
   // Main visualization content
   const vizContent = useMemo(() => {
-    const activeDots = dots.filter((d) => d.act);
     const lvColor = (lv: number) => {
       // Use hovered dot's color if hovering a specific candidate for this level
       if (hoveredDot && hoveredDot.lv === lv) {
@@ -1088,7 +1085,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         </g>
 
         {/* ═══ BOTTOM-RIGHT: Legend + Active color info ═══ */}
-        {!hideLegend && (
+        {showLegend && (
           <g>
             {/* Active color info with L0 legend above, L7 legend below */}
             {(() => {
@@ -1259,217 +1256,17 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
           </g>
         )}
 
-        {/* ═══ BOTTOM-RIGHT: Interval Ratios (when legend hidden) ═══ */}
-        {hideLegend &&
-          scaleMode &&
-          (() => {
-            const ix = BXright + 10;
-            const iy = BY + 16;
-            const ROW = 24;
-            const FS_TITLE = 15;
-            const FS_ROW = 14;
-            const LABEL_W = 32;
-
-            type RatioMember = { lv: number; rgb: [number, number, number]; ci: number };
-            type RatioEntry = {
-              label: string;
-              value: string;
-              dim?: boolean | undefined;
-              color?: string | undefined;
-              lv?: number | undefined;
-              ci?: number | undefined;
-              members?: RatioMember[] | undefined;
-            };
-            let title = "";
-            const rows: RatioEntry[] = [];
-
-            // Helper: live frequency for a level (chromatic L1–L6).
-            const levelFreq = (d: Dot) => angleToFreq(d.a + activeAlpha, scaleMode);
-
-            if (scaleMode === "ji") {
-              title = "Palindromic JI";
-              const jiRatios = [1, 8 / 7, 7 / 5, 8 / 5, 2];
-              const jiRatioLabels = ["1:1", "8:7", "7:5", "8:5", "2:1"];
-              const jiAngles = [0, 72, 144, 216, 288];
-              const NOTE_JI = ["C", "C\u266f", "D", "D\u266f", "E", "F", "F\u266f", "G", "G\u266f", "A", "A\u266f", "B"];
-              // Fixed-width "note" (3 chars, padded when no sharp) for row stability at snap transitions.
-              // Cents omitted — JI deviation from equal-tempered is implicit in the ratio label.
-              const notePad3 = (hz: number) => {
-                const midi = Math.round(69 + 12 * Math.log2(hz / 440));
-                const n = NOTE_JI[((midi % 12) + 12) % 12];
-                const oct = Math.floor(midi / 12) - 1;
-                return (n.length === 1 ? n + " " : n) + oct; // 3 chars
-              };
-              const chromatic = activeDots.filter((d) => d.lv !== 0 && d.lv !== 7).sort((a, b) => a.lv - b.lv);
-              for (const d of chromatic) {
-                const live = (((d.a + activeAlpha) % 360) + 360) % 360;
-                let snapIdx = 0;
-                let minDist = 360;
-                for (let j = 0; j < jiAngles.length; j++) {
-                  const di = Math.min(Math.abs(live - jiAngles[j]), 360 - Math.abs(live - jiAngles[j]));
-                  if (di < minDist) {
-                    minDist = di;
-                    snapIdx = j;
-                  }
-                }
-                const hz = 220 * jiRatios[snapIdx];
-                rows.push({
-                  label: `L${d.lv}`,
-                  value: `${notePad3(hz)} ${String(Math.round(hz)).padStart(3, " ")}Hz ${jiRatioLabels[snapIdx]}`,
-                  color: `rgb(${d.rgb.join(",")})`,
-                  lv: d.lv,
-                  ci: d.ci,
-                });
-              }
-              rows.push({ label: "", value: "" });
-              rows.push({ label: "\u2190", value: "palindrome \u2192", dim: true });
-              rows.push({ label: "", value: "8:7 \u00b7 7:5 \u00b7 8:5 \u00b7 2:1", dim: true });
-              rows.push({ label: "", value: "2:1 \u00b7 8:5 \u00b7 7:5 \u00b7 8:7", dim: true });
-            } else if (scaleMode === "12tet") {
-              title = "12-TET (Equal)";
-              // 12-TET is continuous → cents offset would change every frame (layout-shift noise).
-              // Display the snapped semitone only; Hz is always 3 digits in the 220–880 Hz range.
-              // Sort by L number (matches JI) for stable identity-based lookup;
-              // pitch ordering by canonical angle would only be correct at α=0 anyway.
-              const NOTE = ["C", "C\u266f", "D", "D\u266f", "E", "F", "F\u266f", "G", "G\u266f", "A", "A\u266f", "B"];
-              const sorted = [...activeDots].sort((a, b) => a.lv - b.lv);
-              for (let i = 0; i < sorted.length; i++) {
-                const d = sorted[i];
-                const f = levelFreq(d);
-                const hz = Math.round(f);
-                const midi = Math.round(69 + 12 * Math.log2(f / 440));
-                const name = NOTE[((midi % 12) + 12) % 12];
-                const octave = Math.floor(midi / 12) - 1;
-                // Pad to 3 chars (e.g., "A 4", "A\u266f4") for monospace column stability.
-                const noteStr = (name.length === 1 ? name + " " : name) + octave;
-                rows.push({
-                  label: `L${d.lv}`,
-                  value: `${noteStr}  ${hz}Hz`,
-                  color: `rgb(${d.rgb.join(",")})`,
-                  lv: d.lv,
-                  ci: d.ci,
-                });
-              }
-            } else if (scaleMode === "octatonic" || scaleMode === "diatonic7") {
-              const isOcta = scaleMode === "octatonic";
-              title = isOcta ? "Octatonic Scale" : "Diatonic (7-note)";
-              const steps = isOcta ? [0, 1, 3, 4, 6, 7, 9, 10] : [0, 2, 4, 5, 7, 9, 11];
-              const N = steps.length;
-              // Collect active chromatic L's per degree via angle → idx mapping
-              const perDegree: RatioMember[][] = steps.map(() => []);
-              for (const d of activeDots) {
-                if (d.lv === 0 || d.lv === 7) continue;
-                const norm = (((d.a + activeAlpha) % 360) + 360) % 360;
-                const idx = Math.round((norm / 360) * N) % N;
-                perDegree[idx].push({ lv: d.lv, rgb: d.rgb, ci: d.ci });
-              }
-              for (let i = 0; i < N; i++) {
-                const hz = 261.63 * Math.pow(2, steps[i] / 12);
-                const note = freqToNote(hz);
-                const next = steps[(i + 1) % N];
-                const diff = (next - steps[i] + 12) % 12;
-                rows.push({
-                  label: note,
-                  value: `${Math.round(hz)}Hz · \u0394${diff}`,
-                  members: perDegree[i].length > 0 ? perDegree[i] : undefined,
-                });
-              }
-            }
-
-            return (
-              <g>
-                <text
-                  x={ix}
-                  y={iy}
-                  fontSize={FS_TITLE}
-                  fill={C.accent}
-                  fontWeight="bold"
-                  fontFamily="'SF Mono','Cascadia Mono',Consolas,Menlo,monospace"
-                >
-                  {title}
-                </text>
-                {rows.map((r, i) => {
-                  const isHovered = hoveredDot !== null && r.lv != null && hoveredDot.lv === r.lv;
-                  const isDimmed = hoveredDot !== null && r.lv != null && !isHovered;
-                  const textFill = r.dim ? C.textDimmer : isHovered ? "#fff" : C.textDim;
-                  const SQ = FS_ROW - 2;
-                  const sqX = ix;
-                  const textX = r.color ? ix + SQ + 4 : ix;
-                  const memberSq = 12;
-                  const memberGap = 2;
-                  return (
-                    <g
-                      key={i}
-                      style={{ cursor: r.lv != null ? "pointer" : undefined }}
-                      opacity={isDimmed ? 0.3 : 1}
-                      onPointerEnter={r.lv != null && r.ci != null ? () => setHoveredDot({ lv: r.lv!, ci: r.ci! }) : undefined}
-                      onPointerLeave={r.lv != null ? () => setHoveredDot(null) : undefined}
-                    >
-                      {/* Hit area */}
-                      {r.lv != null && <rect x={ix - 2} y={iy + (i + 1) * ROW - FS_ROW} width={TW - ix} height={ROW} fill="transparent" />}
-                      {/* Color swatch */}
-                      {r.color && <rect x={sqX} y={iy + (i + 1) * ROW - SQ} width={SQ} height={SQ} rx={2} fill={r.color} />}
-                      <text
-                        x={textX}
-                        y={iy + (i + 1) * ROW}
-                        fontSize={FS_ROW}
-                        fill={textFill}
-                        fontWeight={r.dim ? "normal" : "bold"}
-                        fontFamily="system-ui, sans-serif"
-                      >
-                        {r.label}
-                      </text>
-                      <text
-                        x={textX + LABEL_W}
-                        y={iy + (i + 1) * ROW}
-                        fontSize={FS_ROW}
-                        fill={textFill}
-                        fontFamily="'SF Mono','Cascadia Mono',Consolas,Menlo,monospace"
-                        style={{ fontVariantNumeric: "tabular-nums" }}
-                      >
-                        {r.value}
-                      </text>
-                      {/* Degree members (Diatonic/Octatonic): which active L's land here */}
-                      {r.members?.map((m, mi) => {
-                        const mx = TW - 4 - (r.members!.length - mi) * (memberSq + memberGap);
-                        const my = iy + (i + 1) * ROW - memberSq;
-                        const isMHovered = hoveredDot !== null && hoveredDot.lv === m.lv;
-                        return (
-                          <g
-                            key={`m${mi}`}
-                            style={{ cursor: "pointer" }}
-                            onPointerEnter={() => setHoveredDot({ lv: m.lv, ci: m.ci })}
-                            onPointerLeave={() => setHoveredDot(null)}
-                          >
-                            <rect
-                              x={mx}
-                              y={my}
-                              width={memberSq}
-                              height={memberSq}
-                              rx={2}
-                              fill={`rgb(${m.rgb.join(",")})`}
-                              stroke={isMHovered ? "#fff" : C.border}
-                              strokeWidth={isMHovered ? 1.5 : 0.5}
-                            />
-                            <text
-                              x={mx + memberSq / 2}
-                              y={my - 1}
-                              fontSize={8}
-                              fill={C.textDim}
-                              textAnchor="middle"
-                              fontFamily="system-ui, sans-serif"
-                            >
-                              {m.lv}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </g>
-                  );
-                })}
-              </g>
-            );
-          })()}
+        {!showLegend &&
+          bottomRightOverlay?.({
+            activeDots,
+            activeAlpha,
+            hoveredDot,
+            setHoveredDot,
+            x: BXright + 10,
+            y: BY + 16,
+            rowHeight: 24,
+            width: TW,
+          })}
       </>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hoveredDot is intentionally reactive
@@ -1489,8 +1286,9 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     onHueBottomPointerDown,
     legendL0,
     legendL7,
-    hideLegend,
-    scaleMode,
+    showLegend,
+    bottomRightOverlay,
+    activeDots,
   ]);
 
   const deltaAlpha = Math.round((((alpha0 - alpha7) % 360) + 360) % 360);
@@ -1526,16 +1324,6 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         <button type="button" style={isInverted ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setAlpha7((alpha0 + 180) % 360)}>
           {t("linkedviz_anti_phase")}
         </button>
-        {externalAudio && (
-          <button
-            type="button"
-            style={audioEnabled ? S_TOGGLE_ACTIVE : S_TOGGLE}
-            onClick={handleAudioToggle}
-            title={t("linkedviz_sound_title")}
-          >
-            {audioEnabled ? t("linkedviz_sound_on") : t("linkedviz_sound_off")}
-          </button>
-        )}
       </div>
 
       <svg

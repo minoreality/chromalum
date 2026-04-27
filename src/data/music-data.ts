@@ -1,4 +1,5 @@
 import { FANO_LINES } from "./theory-data";
+export { freqToNote } from "./music-frequency";
 
 export const CHROMA_LEVELS = [1, 2, 3, 4, 5, 6] as const;
 
@@ -29,18 +30,4 @@ export function fanoLinesThrough(point: number): number[] {
     if (line.includes(point)) acc.push(i);
     return acc;
   }, []);
-}
-
-const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
-
-/** Frequency → "A4" or "A4 −12¢" style label (cents shown only when non-zero). */
-export function freqToNote(hz: number): string {
-  if (!isFinite(hz) || hz <= 0) return "—";
-  const midi = 69 + 12 * Math.log2(hz / 440);
-  const midiRound = Math.round(midi);
-  const cents = Math.round((midi - midiRound) * 100);
-  const name = NOTE_NAMES[((midiRound % 12) + 12) % 12];
-  const octave = Math.floor(midiRound / 12) - 1;
-  if (cents === 0) return `${name}${octave}`;
-  return `${name}${octave}${cents > 0 ? "+" : "−"}${Math.abs(cents)}¢`;
 }

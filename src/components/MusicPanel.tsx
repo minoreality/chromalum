@@ -3,8 +3,10 @@ import { LEVEL_INFO, LEVEL_CANDIDATES, DEFAULT_CC, findClosestCandidate } from "
 import { SP, C, R, FS, SHADOW, HUE_GRADIENT, FONT } from "../styles/tokens";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../styles/shared";
 import { useTranslation } from "../i18n";
-import { LinkedVisualization, ACTIVE_LEVELS } from "./LinkedVisualization";
-import { useMusicEngine, type ScaleMode } from "../hooks/useMusicEngine";
+import { ACTIVE_LEVELS } from "./LinkedVisualization";
+import { MusicLinkedVisualization } from "./music/MusicLinkedVisualization";
+import { useMusicEngine } from "../hooks/useMusicEngine";
+import type { ScaleMode } from "../data/music-frequency";
 import { Oscilloscope } from "./music/Oscilloscope";
 import { CayleyGrid } from "./music/CayleyGrid";
 import { GrayCube } from "./music/GrayCube";
@@ -885,7 +887,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
           </div>
 
           {/* LinkedVisualization */}
-          <LinkedVisualization
+          <MusicLinkedVisualization
             hueAngle={hueAngle}
             brushLevel={0}
             onHueAngleChange={(a) => {
@@ -908,7 +910,6 @@ export const MusicPanel = React.memo(function MusicPanel() {
             hoveredCandidate={hoveredCandidate}
             onHoverCandidate={setHoveredCandidate}
             directCandidates={directCandidates}
-            hideLegend
             scaleMode={scaleMode}
             alpha0={alpha0}
             onAlpha0Change={(a) => {

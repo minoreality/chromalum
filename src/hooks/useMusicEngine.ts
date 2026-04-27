@@ -1,6 +1,9 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { COMPLEMENT_EDGES, CUBE_EDGES, FANO_LINES, STELLA_EDGES, TETRA_T0, TETRA_T1 } from "../data/theory-data";
 import { COMPLEMENT_PAIRS, FANO_RHYTHM_PATTERNS, LUMA_VALUES, ZIGZAG_PATH, fanoLinesThrough } from "../data/music-data";
+import { BASE_FREQ, angleToFreq, type ScaleMode } from "../data/music-frequency";
+
+export type { ScaleMode } from "../data/music-frequency";
 
 /* ── Types ── */
 interface SonificationLevel {
@@ -8,8 +11,6 @@ interface SonificationLevel {
   angle: number; // hue angle in degrees (0-360)
   gray: number; // luminance 0-255
 }
-
-export type ScaleMode = "12tet" | "ji" | "octatonic" | "diatonic7";
 
 interface MusicEngineParams {
   enabled: boolean;
@@ -67,7 +68,6 @@ export interface MusicEngineReturn {
 }
 
 /* ── Constants ── */
-const BASE_FREQ = 220;
 const GAIN_SCALE = 0.15;
 const NOISE_GAIN = 0.005;
 const RAMP_TC = 0.02;
@@ -167,39 +167,6 @@ function extendedHammingCodewords(): { positions: number[]; weight: number }[] {
   }
   codewords.push({ positions: [0, ...ALL_POINTS], weight: 8 });
   return codewords;
-}
-
-/* ── Frequency mapping ── */
-export function angleToFreq(angle: number, mode: ScaleMode): number {
-  if (mode === "12tet") {
-    return BASE_FREQ * Math.pow(2, ((((angle % 360) + 360) % 360) / 360) * 2);
-  }
-  if (mode === "ji") {
-    const ratios = [1, 8 / 7, 7 / 5, 8 / 5, 2];
-    const angles = [0, 72, 144, 216, 288];
-    const norm = ((angle % 360) + 360) % 360;
-    let closest = 0;
-    let minDist = 360;
-    for (let i = 0; i < angles.length; i++) {
-      const d = Math.min(Math.abs(norm - angles[i]), 360 - Math.abs(norm - angles[i]));
-      if (d < minDist) {
-        minDist = d;
-        closest = i;
-      }
-    }
-    return BASE_FREQ * ratios[closest];
-  }
-  if (mode === "octatonic") {
-    const semitones = [0, 1, 3, 4, 6, 7, 9, 10];
-    const norm = ((angle % 360) + 360) % 360;
-    const idx = Math.round((norm / 360) * 8) % 8;
-    return 261.63 * Math.pow(2, semitones[idx] / 12);
-  }
-  // diatonic7
-  const semitones = [0, 2, 4, 5, 7, 9, 11];
-  const norm = ((angle % 360) + 360) % 360;
-  const idx = Math.round((norm / 360) * 7) % 7;
-  return 261.63 * Math.pow(2, semitones[idx] / 12);
 }
 
 /* ── Audio node refs ── */
