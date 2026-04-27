@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compressDiff, decompressDiff, computeGlazeDiff } from "../undo-diff";
+import { compressDiff, decompressDiff, computeGlazeDiff } from "../state/undo-diff";
 import type { Diff } from "../types";
 
 function makeDiff(indices: number[], oldVals: number[], newVals: number[]): Diff {

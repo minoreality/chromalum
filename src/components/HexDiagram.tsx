@@ -12,7 +12,7 @@ import {
   HEX_CY,
   HEX_R,
   HEX_VP,
-} from "../hex-data";
+} from "../data/hex-data";
 import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
 import { C, FS, FW, O } from "../styles/tokens";

@@ -6,7 +6,7 @@ import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
 import { C, SP, FS, R, DUR } from "../styles/tokens";
 import { THEORY_LEVELS } from "../data/theory-data";
-import { HEX_CANDIDATE_ANGLES } from "../hex-data";
+import { HEX_CANDIDATE_ANGLES } from "../data/hex-data";
 
 const MOBILE_BP = 600;
 

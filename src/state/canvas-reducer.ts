@@ -5,7 +5,7 @@
  * level change and any associated colorMap change together.
  */
 import { MAX_UNDO, LEVEL_MASK, MAX_IMAGE_SIZE } from "../constants";
-import { computeDiff, applyDiff, applyDiffToColorMap, compressDiff, decompressDiff } from "../undo-diff";
+import { computeDiff, applyDiff, applyDiffToColorMap, compressDiff, decompressDiff } from "./undo-diff";
 import { RingBuffer } from "../utils/ring-buffer";
 import type { AppState, CanvasAction, CompressedDiff } from "../types";
 import { W0, H0 } from "../constants";
