@@ -4,7 +4,7 @@ import type { CanvasData } from "../types";
 import type { CanvasDrawingResult } from "./useCanvasDrawing";
 import type { GlazeDrawingResult } from "./useGlazeDrawing";
 
-export interface CanvasCoordinationOptions {
+interface CanvasCoordinationOptions {
   cvs: CanvasData;
   colorLUT: [number, number, number][];
   activeTab: number;
@@ -19,7 +19,7 @@ export interface CanvasCoordinationOptions {
   onWheel: (e: WheelEvent) => void;
 }
 
-export interface CanvasCoordinationResult {
+interface CanvasCoordinationResult {
   sharedSchedCursorRef: React.MutableRefObject<(() => void) | null>;
 }
 

@@ -121,7 +121,7 @@ describe("theory copy", () => {
   });
 
   it("keeps reviewed Japanese copy precise and natural", () => {
-    expect(ja.theory_title).toBe("色彩理論");
+    expect(ja.theory_title).toBe("離散代数的色彩理論");
     expect(ja.color_detail_luma).toBe("ルマ");
     expect(ja.theory_intro).toContain("3ビットベクトル `[G,R,B]` として符号化します");
     expect(ja.theory_intro).toContain("ベクトルの加法はビットごとの XOR");
@@ -134,7 +134,8 @@ describe("theory copy", () => {
     expect(ja.theory_binary_desc).toContain("各色を3ビット整数 4x₂ + 2x₁ + x₀ として番号付け");
     expect(ja.theory_binary_desc).toContain("番号順と BT.601 luma 順が一致する割当");
     expect(ja.theory_binary_desc).toContain("bit2=Green, bit1=Red, bit0=Blue、つまり GRB だけ");
-    expect(ja.theory_binary_desc).toContain("人間の視覚感度に由来する BT.601 係数の不等式");
+    expect(ja.theory_binary_desc).toContain("BT.601 luma 係数の不等式");
+    expect(ja.theory_binary_desc).not.toContain("人間の視覚感度");
     expect(ja.theory_binary_desc).toContain("この8色モデルにおける最小の2進基底そのものです");
     expect(ja.theory_binary_desc).not.toContain("人間の色覚の帰結です");
     expect(en.theory_binary_desc).toContain("the eight RGB vertices where each channel is 0 or 255");
@@ -142,6 +143,8 @@ describe("theory copy", () => {
     expect(en.theory_binary_desc).toContain("numeric order and BT.601 luma order agree");
     expect(en.theory_binary_desc).toContain("bit2=Green, bit1=Red, bit0=Blue, namely GRB");
     expect(en.theory_binary_desc).toContain("the minimal binary basis for this 8-color model");
+    expect(en.theory_binary_desc).toContain("BT.601 luma coefficient inequalities");
+    expect(en.theory_binary_desc).not.toContain("human visual sensitivity");
     expect(en.theory_binary_desc).not.toContain("consequence of human color vision");
     expect(ja.theory_binary_desc).toContain("0.587 > 0.299 + 0.114");
     expect(ja.theory_binary_desc).toContain("0.299 > 0.114");

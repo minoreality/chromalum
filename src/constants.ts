@@ -4,7 +4,6 @@
 export const W0 = 320,
   H0 = 320;
 export const MAX_UNDO = 40;
-export const DISPLAY_MAX = 320; // legacy default, used as fallback
 export const DISPLAY_MIN = 280;
 export const DISPLAY_MAX_LIMIT = 1600;
 export const ZOOM_MIN = 0.25,
@@ -32,7 +31,7 @@ export const NUM_VERTICES = 6; /* hexagon vertex count */
    ═══════════════════════════════════════════ */
 export type ToolId = "brush" | "eraser" | "fill" | "line" | "rect" | "ellipse";
 
-export interface ToolDef {
+interface ToolDef {
   id: ToolId;
   key: string;
   shape: boolean;
@@ -47,7 +46,7 @@ export const TOOLS: ToolDef[] = [
   { id: "ellipse", key: "O", shape: true },
 ];
 
-export const SHAPE_TOOL_SET = new Set(TOOLS.filter((t) => t.shape).map((t) => t.id));
+const SHAPE_TOOL_SET = new Set(TOOLS.filter((t) => t.shape).map((t) => t.id));
 export const isShapeTool = (t: ToolId): boolean => SHAPE_TOOL_SET.has(t);
 
 export type GlazeToolId = "glaze_brush" | "glaze_eraser" | "glaze_fill";

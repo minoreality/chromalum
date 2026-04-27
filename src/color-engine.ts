@@ -16,9 +16,9 @@ export const LUMA_R = 0.299,
   LUMA_B = 0.114;
 export const lum = (r: number, g: number, b: number): number => LUMA_R * r + LUMA_G * g + LUMA_B * b;
 
-export const EIGHT_LEVELS = [0, lum(0, 0, 255), lum(255, 0, 0), lum(255, 0, 255), lum(0, 255, 0), lum(0, 255, 255), lum(255, 255, 0), 255];
+const EIGHT_LEVELS = [0, lum(0, 0, 255), lum(255, 0, 0), lum(255, 0, 255), lum(0, 255, 0), lum(0, 255, 255), lum(255, 255, 0), 255];
 
-export interface LevelInfo {
+interface LevelInfo {
   name: string;
   gray: number;
 }
@@ -69,7 +69,7 @@ export function rgb2hue(r: number, g: number, b: number): number {
  */
 const PURE_DUPL_THRESHOLD = 8;
 
-export interface ColorCandidate {
+interface ColorCandidate {
   angle: number;
   rgb: [number, number, number];
   hueLabel: string;

@@ -34,7 +34,7 @@ type PixelMapsCache = {
   byMode: Partial<Record<MapMode, PixelMaps>>;
 };
 
-export function emptyPixelMaps(w: number, h: number): PixelMaps {
+function emptyPixelMaps(w: number, h: number): PixelMaps {
   const n = w * h;
   return {
     noise: new Float32Array(n),
@@ -51,7 +51,7 @@ export function emptyPixelMaps(w: number, h: number): PixelMaps {
 }
 
 /** Synchronous fallback for pixel maps (used when Worker is unavailable). */
-export function computePixelMapsSync(cvs: CanvasData, mode: MapMode): PixelMaps {
+function computePixelMapsSync(cvs: CanvasData, mode: MapMode): PixelMaps {
   const { data, w, h } = cvs;
   const n = w * h;
   const maps = emptyPixelMaps(w, h);

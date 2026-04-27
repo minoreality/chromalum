@@ -396,8 +396,7 @@ These should not be treated as direct prior art unless CHROMALUM starts making c
 
 ### Sources
 
-- G. P. Wene, "A Little Color in Abstract Algebra", American Mathematical Monthly, DOI `10.1080/00029890.1982.11995467`.  
-  https://www.tandfonline.com/doi/abs/10.1080/00029890.1982.11995467
+- G. P. Wene, "A Little Color in Abstract Algebra", American Mathematical Monthly, DOI `10.1080/00029890.1982.11995467`.
 - Alberto Elduque and Hyo Chul Myung, "Colour algebras and Cayley-Dickson algebras", Proceedings of the Royal Society of Edinburgh Section A, DOI `10.1017/S0308210500030511`.  
   https://www.cambridge.org/core/services/aop-cambridge-core/content/view/7EA28510A8B5F24418346AC74F4C312C/S0308210500030511a.pdf/colour_algebras_and_cayleydickson_algebras.pdf
 - AMS Notices 1979 abstract mentioning Domokos and Kövesi-Domokos color algebra in hadron physics.  

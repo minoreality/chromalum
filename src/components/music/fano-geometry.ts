@@ -16,7 +16,7 @@ export const FANO_POINT_POSITIONS: Record<number, [number, number]> = {
 
 export const FANO_LINE_DUAL_POINTS = [4, 2, 1, 6, 5, 3, 7] as const;
 
-export const FANO_INSCRIBED_CIRCLE = (() => {
+const FANO_INSCRIBED_CIRCLE = (() => {
   const [x3, y3] = FANO_POINT_POSITIONS[3];
   const [x5, y5] = FANO_POINT_POSITIONS[5];
   const [x6, y6] = FANO_POINT_POSITIONS[6];
@@ -26,23 +26,14 @@ export const FANO_INSCRIBED_CIRCLE = (() => {
   return { cx, cy, r };
 })();
 
-export const FANO_LINE_ENDPOINTS: ([number, number] | null)[] = [[1, 2], [1, 4], [2, 4], [1, 6], [2, 5], [3, 4], null];
-
 const CIRCLE_LINE_INDEX = FANO_LINES.length - 1;
 
-export function lineIndicesThroughPoint(point: number): number[] {
-  return FANO_LINES.reduce<number[]>((acc, line, i) => {
-    if (line.includes(point)) acc.push(i);
-    return acc;
-  }, []);
-}
-
-export function fanoLinePath(line: readonly number[]): string {
+function fanoLinePath(line: readonly number[]): string {
   const pts = line.map((lv) => FANO_POINT_POSITIONS[lv]);
   return `M${pts[0][0]},${pts[0][1]} L${pts[1][0]},${pts[1][1]} L${pts[2][0]},${pts[2][1]}`;
 }
 
-export function fanoCirclePath(): string {
+function fanoCirclePath(): string {
   const [x3, y3] = FANO_POINT_POSITIONS[3];
   const [x5, y5] = FANO_POINT_POSITIONS[5];
   const [x6, y6] = FANO_POINT_POSITIONS[6];

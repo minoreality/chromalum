@@ -6,7 +6,7 @@
 
 import { LEVEL_MASK } from "../constants";
 
-export interface FloodFillResult {
+interface FloodFillResult {
   changed: Uint32Array;
   truncated: boolean;
 }

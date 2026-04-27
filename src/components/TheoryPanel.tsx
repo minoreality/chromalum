@@ -176,7 +176,7 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
         <hr style={S_DIVIDER} />
 
-        {/* §3 XOR Mixing */}
+        {/* §3 XOR Operation */}
         <Section title={t("theory_xor_title")} desc={t("theory_xor_desc")}>
           <XorDemo hlLevel={hlLevel} onHover={onHover} />
         </Section>

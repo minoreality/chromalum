@@ -1,6 +1,9 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+
+const reactVendorPackages = ["/node_modules/react/", "/node_modules/react-dom/"];
+
 export default defineConfig({
   base: "/chromalum/",
   plugins: [react()],
@@ -9,8 +12,12 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom"],
+        manualChunks(id) {
+          const normalizedId = id.replaceAll("\\", "/");
+          if (reactVendorPackages.some((pkg) => normalizedId.includes(pkg))) {
+            return "react";
+          }
+          return undefined;
         },
       },
     },
@@ -32,7 +39,6 @@ export default defineConfig({
         "src/components/music/**",
         "src/components/MusicPanel.tsx",
         "src/hooks/useMusicEngine.ts",
-        "src/hooks/useSonification.ts",
       ],
       reporter: ["text", "html", "lcov"],
       reportsDirectory: "./coverage",

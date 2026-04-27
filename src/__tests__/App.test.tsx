@@ -29,7 +29,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Theory" }));
 
-    expect(await screen.findByRole("heading", { name: "Color Theory" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Binary Levels" })).toBeTruthy();
   });
 });

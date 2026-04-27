@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from "react";
 import type { TranslationFn } from "../i18n";
 
-export interface DrawingContextValue {
+interface DrawingContextValue {
   zoom: number;
   pan: { x: number; y: number };
   panningRef: React.MutableRefObject<boolean>;

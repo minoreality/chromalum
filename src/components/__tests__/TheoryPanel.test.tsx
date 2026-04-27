@@ -17,7 +17,7 @@ describe("TheoryPanel", () => {
   it("renders the main theory sections and controls", () => {
     const { container } = renderWithLanguage();
 
-    expect(screen.getByText("Color Theory")).toBeTruthy();
+    expect(screen.getByText("Discrete Algebraic Color Theory")).toBeTruthy();
     expect(screen.getByText("FOUNDATIONS & NOTATION")).toBeTruthy();
     expect(screen.getByText("CUBE & CYCLES")).toBeTruthy();
     expect(screen.getByText("PROJECTIVE GEOMETRY & CODING")).toBeTruthy();
@@ -29,7 +29,7 @@ describe("TheoryPanel", () => {
     expect(Array.from(container.querySelectorAll(".theory-heading")).map((el) => el.textContent)).toEqual([
       "Venn Diagram",
       "Binary Levels",
-      "XOR Mixing",
+      "XOR Operation",
       "Color Cube",
       "Gray Code Cycle",
       "Luma Zigzag",

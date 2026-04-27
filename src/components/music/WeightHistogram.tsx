@@ -1,7 +1,7 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 
-export type HammingMode = "743" | "844";
+type HammingMode = "743" | "844";
 
 interface WeightHistogramProps {
   mode: HammingMode;
