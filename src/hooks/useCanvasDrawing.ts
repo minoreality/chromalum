@@ -48,7 +48,7 @@ export interface CanvasDrawingResult {
   clearCursorPrv: () => void;
 }
 
-export interface CanvasDrawingOptions {
+interface CanvasDrawingOptions {
   cvs: CanvasData;
   dispatch: React.Dispatch<CanvasAction>;
   colorLUT: [number, number, number][];

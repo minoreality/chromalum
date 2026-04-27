@@ -202,7 +202,7 @@ export const en = {
   // Theory panel — scholarly content (label_theory + theory_* keys below) is
   // CC BY 4.0 (Doctor Chromaticus); see docs/LICENSE.md.
   label_theory: "ALGEBRAIC COLOR THEORY",
-  theory_title: "Color Theory",
+  theory_title: "Discrete Algebraic Color Theory",
   theory_intro:
     "In CHROMALUM, the 8 vertices where each RGB channel is 0 or 255 are encoded as the 3-bit vector `[G,R,B]`. Each bit represents Green, Red, and Blue on/off states, and these 8 vectors correspond to the 8 colors.\n\nThis 8-point set can be read as the 3-dimensional vector space GF(2)\u00b3 over GF(2). GF(2) is the smallest finite field, consisting only of 0 and 1; since 1+1=0, vector addition becomes bitwise XOR.\n\nThe full 8-point set can be read as the Color Cube, the 6 chromatic colors as a Gray-code cycle, the 7 nonzero points as the Fano plane, and the same 7 points as position labels for the Hamming code. The Theory tab integrates these as multiple readings of the same 8-color model into an algebraic color system.",
   theory_venn_title: "Venn Diagram",
@@ -210,7 +210,7 @@ export const en = {
     "The 3 channels {G,R,B} admit 2\u00b3 = 8 subsets. The 8 regions formed by 3 overlapping circles correspond exactly to the 8 colors: the outside is the empty set \u2205 (Black); the triple overlap is the full set {G,R,B} (White). Each color is in one-to-one correspondence with a subset A \u2286 {G,R,B}, readable as a characteristic function \u03c7_A (1 if the channel is in A, else 0). Every section below views this same 8-element set through a different lens.",
   theory_binary_title: "Binary Levels",
   theory_binary_desc:
-    "Here we restrict the model to the eight RGB vertices where each channel is 0 or 255, number each color as the 3-bit integer 4x₂ + 2x₁ + x₀, and define levels 0..7.\n\nThere are 6 ways to assign the RGB channels to x₂, x₁, x₀. Among them, the only assignment where numeric order and BT.601 luma order agree is bit2=Green, bit1=Red, bit0=Blue, namely GRB. The reason is that the upper bit's weight exceeds the sum of the two lower bit weights, and the middle bit's weight exceeds the lower bit's weight. This is the consequence uniquely determined by the BT.601 coefficient inequalities derived from human visual sensitivity (0.587 > 0.299 + 0.114, 0.299 > 0.114).\n\nUnder this assignment, B=1, R=2, G=4, so the primary numbers are {1, 2, 4}. This set is the unique 3-element set whose elements, pairwise sums, and total sum (all under ordinary integer addition) fill {1, …, 7} without overlap, and is exactly the minimal binary basis for this 8-color model.",
+    "Here we restrict the model to the eight RGB vertices where each channel is 0 or 255, number each color as the 3-bit integer 4x₂ + 2x₁ + x₀, and define levels 0..7.\n\nThere are 6 ways to assign the RGB channels to x₂, x₁, x₀. Among them, the only assignment where numeric order and BT.601 luma order agree is bit2=Green, bit1=Red, bit0=Blue, namely GRB. The reason is that the upper bit's weight exceeds the sum of the two lower bit weights, and the middle bit's weight exceeds the lower bit's weight. This follows from the BT.601 luma coefficient inequalities in this finite RGB-vertex model (0.587 > 0.299 + 0.114, 0.299 > 0.114).\n\nUnder this assignment, B=1, R=2, G=4, so the primary numbers are {1, 2, 4}. This set is the unique 3-element set whose elements, pairwise sums, and total sum (all under ordinary integer addition) fill {1, …, 7} without overlap, and is exactly the minimal binary basis for this 8-color model.",
   theory_binary_color: "Color",
   theory_binary_luma_formula: "Luma (BT.601): Y = 0.299R + 0.587G + 0.114B",
   theory_binary_luma_complement: "Complement luma: Y\u2096 + Y\u2087\u208b\u2096 = 255 (universal for any coefficients summing to 1)",
@@ -252,7 +252,7 @@ export const en = {
   theory_gray_cw: "\u21bb Clockwise",
   theory_gray_ccw: "\u21ba Counter-clockwise",
   theory_gray_pause: "\u23f8 Pause",
-  theory_xor_title: "XOR Mixing",
+  theory_xor_title: "XOR Operation",
   theory_xor_desc:
     "XOR defines every color relationship in this system. The three primaries {G,R,B} are the basis: every color is their unique XOR combination, and for each color c, the XOR of c with its complement c \u2295 7 always equals 7 (White). Arithmetically, XOR is carry-free binary addition (1\u22951 = 0). For numbers whose bits do not overlap, integer addition agrees with XOR directly (1+4 = 5 = 1\u22954). In general, a + b = (a \u2295 b) + 2(a \u2227 b): the overlap term a \u2227 b is what ordinary arithmetic counts twice. When two operands jointly cover all three channels (a \u2228 b = 7), this reduces to a + b - 7 = a \u2227 b \u2014 the Boolean-AND identities underlying subtractive mixing (CMY).",
   theory_hamming_title: "Hamming Code",

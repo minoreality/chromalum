@@ -61,7 +61,7 @@ export interface Point {
   y: number;
 }
 
-export interface StrokeParams {
+interface StrokeParams {
   tool: import("./constants").ToolId;
   brushLevel: number;
   brushSize: number;

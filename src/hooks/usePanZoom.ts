@@ -3,7 +3,7 @@ import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from "../constants";
 import { useSyncRef } from "./useSyncRef";
 import type { CanvasData } from "../types";
 
-export interface PanZoomResult {
+interface PanZoomResult {
   zoom: number;
   pan: { x: number; y: number };
   cursorMode: null | "grab" | "grabbing";

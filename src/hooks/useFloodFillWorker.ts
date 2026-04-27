@@ -16,19 +16,19 @@ const FILL_TIMEOUT_MS = 10_000;
 /** Below this pixel count, use sync fill to avoid Worker overhead */
 const SYNC_THRESHOLD = 10_000;
 
-export interface CanvasFillResult {
+interface CanvasFillResult {
   data: Uint8Array;
   changed: Uint32Array;
   truncated: boolean;
 }
 
-export interface GlazeFillResult {
+interface GlazeFillResult {
   colorMap: Uint8Array;
   changed: Uint32Array;
   truncated: boolean;
 }
 
-export interface FloodFillWorkerHandle {
+interface FloodFillWorkerHandle {
   requestCanvasFill(buf: Uint8Array, sx: number, sy: number, newVal: number, w: number, h: number): Promise<CanvasFillResult>;
   requestGlazeFill(
     data: Uint8Array,

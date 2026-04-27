@@ -17,7 +17,7 @@ function isImageLoadDebugEnabled(): boolean {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debugImageLoad");
 }
 
-export interface FileDropResult {
+interface FileDropResult {
   dragging: boolean;
   loadImg: (file: File) => Promise<void>;
   onDragEnter: (e: React.DragEvent) => void;

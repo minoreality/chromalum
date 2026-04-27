@@ -2,7 +2,7 @@
    THEORY TAB — SHARED DATA & GEOMETRY
    ═══════════════════════════════════════════ */
 
-export interface TheoryLevel {
+interface TheoryLevel {
   lv: number;
   name: string;
   short: string; // single-letter abbreviation (K for Black to avoid clash with Blue's B)
@@ -152,17 +152,6 @@ export function isBackEdge(a: number, b: number): boolean {
   return a === 0 || b === 0;
 }
 
-/** White-pole projection: vertex v maps to where (v^7) sits in the standard view */
-export const CUBE_POINTS_WHITE: Record<number, { x: number; y: number }> = {};
-for (let i = 0; i < 8; i++) {
-  CUBE_POINTS_WHITE[i] = CUBE_POINTS[i ^ 7];
-}
-
-/** Back-edge test for White-pole view (edges connecting to vertex 7) */
-export function isBackEdgeWhite(a: number, b: number): boolean {
-  return a === 7 || b === 7;
-}
-
 /* ── Octahedron (dual of cube) geometry ──── */
 
 const OCTA_CX = 150,
@@ -282,7 +271,7 @@ export const COMPLEMENT_EDGES: [number, number][] = [
    Compound of T0 and T1 tetrahedra = first stellation of octahedron.
    8 vertices (all cube), 12 edges (STELLA_EDGES), 8 triangular faces.  */
 
-export interface StellaFace {
+interface StellaFace {
   verts: [number, number, number];
   color: number; // XOR of 3 vertices = opposite vertex
   tetra: 0 | 1;
@@ -365,72 +354,6 @@ export function stellaEdgeChannels(a: number, b: number): [string, string] {
   }
   return chs as [string, string];
 }
-
-/* ── Truncated Tetrahedron net layout ──────
-   8 faces: 4 triangles (T0 vertices) + 4 hexagons (T1 colors via complement)
-   Used in ColorDice expansion */
-
-export interface TruncTetraFace {
-  type: "tri" | "hex";
-  color: number; // GF(2)³ level
-  fromVertex: number; // T0 vertex that generated this face
-}
-
-/** Truncation of T0: triangles from vertices, hexagons from faces */
-export const TRUNC_TETRA_FACES: TruncTetraFace[] = [
-  // Triangles: one per T0 vertex (labeled by that vertex)
-  { type: "tri", color: 0, fromVertex: 0 },
-  { type: "tri", color: 3, fromVertex: 3 },
-  { type: "tri", color: 5, fromVertex: 5 },
-  { type: "tri", color: 6, fromVertex: 6 },
-  // Hexagons: one per T0 face (labeled by complement of opposite vertex)
-  { type: "hex", color: 7, fromVertex: 0 }, // face opp 000 → color 111
-  { type: "hex", color: 4, fromVertex: 3 }, // face opp 011 → color 100
-  { type: "hex", color: 2, fromVertex: 5 }, // face opp 101 → color 010
-  { type: "hex", color: 1, fromVertex: 6 }, // face opp 110 → color 001
-];
-
-/** The 4 missing edges in the triakis tetrahedron = complement pairs */
-export const TRUNC_MISSING_EDGES: [number, number][] = [
-  [0, 7],
-  [3, 4],
-  [5, 2],
-  [6, 1],
-];
-
-/* ── AG(3,2) Affine Planes ─────────────────
-   14 planes = 7 parallel classes × 2 cosets
-   Each plane is a 4-element subset of GF(2)³  */
-
-export interface AffinePlane {
-  elements: number[]; // 4 GF(2)³ elements
-  isSubspace: boolean; // true if contains 0
-  fanoLine: number; // index into FANO_LINES (0-6)
-}
-
-export const AG32_PLANES: AffinePlane[] = [
-  // Class 0: L={1,2,3}={B,R,M}
-  { elements: [0, 1, 2, 3], isSubspace: true, fanoLine: 0 },
-  { elements: [4, 5, 6, 7], isSubspace: false, fanoLine: 0 },
-  // Class 1: L={1,4,5}={B,G,C}
-  { elements: [0, 1, 4, 5], isSubspace: true, fanoLine: 1 },
-  { elements: [2, 3, 6, 7], isSubspace: false, fanoLine: 1 },
-  // Class 2: L={2,4,6}={R,G,Y}
-  { elements: [0, 2, 4, 6], isSubspace: true, fanoLine: 2 },
-  { elements: [1, 3, 5, 7], isSubspace: false, fanoLine: 2 },
-  // Class 3: L={1,6,7}={B,Y,W}
-  { elements: [0, 1, 6, 7], isSubspace: true, fanoLine: 3 },
-  { elements: [2, 3, 4, 5], isSubspace: false, fanoLine: 3 },
-  // Class 4: L={2,5,7}={R,C,W}
-  { elements: [0, 2, 5, 7], isSubspace: true, fanoLine: 4 },
-  { elements: [1, 3, 4, 6], isSubspace: false, fanoLine: 4 },
-  // Class 5: L={3,4,7}={M,G,W}
-  { elements: [0, 3, 4, 7], isSubspace: true, fanoLine: 5 },
-  { elements: [1, 2, 5, 6], isSubspace: false, fanoLine: 5 },
-  // Class 6: L={3,5,6}={C,M,Y}
-  { elements: [0, 3, 5, 6], isSubspace: true, fanoLine: 6 },
-  { elements: [1, 2, 4, 7], isSubspace: false, fanoLine: 6 },
-];
 
 /* ── Gray Code Hexagon geometry ──────────── */
 

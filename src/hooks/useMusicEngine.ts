@@ -3,7 +3,7 @@ import { COMPLEMENT_EDGES, CUBE_EDGES, FANO_LINES, STELLA_EDGES, TETRA_T0, TETRA
 import { COMPLEMENT_PAIRS, FANO_RHYTHM_PATTERNS, LUMA_VALUES, ZIGZAG_PATH, fanoLinesThrough } from "../data/music-data";
 
 /* ── Types ── */
-export interface SonificationLevel {
+interface SonificationLevel {
   lv: number;
   angle: number; // hue angle in degrees (0-360)
   gray: number; // luminance 0-255

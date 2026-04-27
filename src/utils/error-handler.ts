@@ -10,7 +10,7 @@
  *   loadState().catch(handle);
  */
 
-export type AnnounceCallback = (message: string) => void;
+type AnnounceCallback = (message: string) => void;
 
 export function createErrorHandler(context: string, onError?: AnnounceCallback) {
   return (err: unknown): void => {

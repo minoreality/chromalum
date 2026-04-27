@@ -3,7 +3,7 @@ import { GRID_ZOOM_THRESHOLD, isShapeTool } from "../constants";
 import type { ToolId } from "../constants";
 import { useRectCache } from "./useRectCache";
 
-export interface CursorOverlayRefs {
+interface CursorOverlayRefs {
   zoomRef: React.MutableRefObject<number>;
   panRef: React.MutableRefObject<{ x: number; y: number }>;
   cvsRef: React.MutableRefObject<{ w: number; h: number }>;
@@ -14,7 +14,7 @@ export interface CursorOverlayRefs {
   toolRef: React.MutableRefObject<ToolId>;
 }
 
-export interface CursorOverlayResult {
+interface CursorOverlayResult {
   curRef: React.MutableRefObject<HTMLCanvasElement | null>;
   prvCurRef: React.MutableRefObject<HTMLCanvasElement | null>;
   cursorRafRef: React.MutableRefObject<number | null>;

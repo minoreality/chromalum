@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { renderBuf } from "../drawing/render-buf";
 import type { CanvasData, ImgCache } from "../types";
 
-export interface ExportResult {
+interface ExportResult {
   saveColor: (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => void;
   saveColorWithLUT: (lut: [number, number, number][], name: string) => void;
   saveGlaze: (name: string) => void;

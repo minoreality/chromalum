@@ -7,7 +7,7 @@ import { NUM_VERTICES } from "../constants";
 
 export const HEX_ANGLES = [0, 60, 120, 180, 240, 300];
 
-export interface HexVertex {
+interface HexVertex {
   c: string;
   lv: number;
   rgb: string;
@@ -23,7 +23,7 @@ export const HEX_VERTICES: HexVertex[] = [
   { c: "M", lv: 3, rgb: "#ff00ff", a: 210 },
 ];
 
-export interface HexEdge {
+interface HexEdge {
   f: number;
   t: number;
   lv: number[];
@@ -39,7 +39,7 @@ export const HEX_EDGES: HexEdge[] = [
   { f: 5, t: 6, lv: [] },
 ];
 
-export interface EdgeColor {
+interface EdgeColor {
   hex: string;
   hue: number;
 }
@@ -81,7 +81,7 @@ function calcAlt(lv: number, hue: number): number {
 export const HEX_VERTEX_ALTS = HEX_VERTICES.map((v, i) => calcAlt(v.lv, HEX_ANGLES[i]));
 export const HEX_EDGE_ALTS = HEX_EDGES.map((e, ei) => e.lv.map((lv, li) => calcAlt(lv, HEX_EDGE_COLORS[ei][li].hue)));
 
-export interface HexDot {
+interface HexDot {
   lv: number;
   alt: number;
   vi: number;
@@ -108,7 +108,7 @@ export const HEX_CX = 200,
   HEX_CY = 175,
   HEX_R = 130;
 
-export interface HexVP {
+interface HexVP {
   x: number;
   y: number;
 }

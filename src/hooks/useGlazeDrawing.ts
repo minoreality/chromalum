@@ -22,7 +22,7 @@ import type { DrawingRefs } from "./useDrawingBase";
 import type { CanvasData, ImgCache, CanvasAction, DirtyRect } from "../types";
 import { useDrawingContext } from "../state/DrawingContext";
 
-export interface GlazeDrawingOptions {
+interface GlazeDrawingOptions {
   cvs: CanvasData;
   dispatch: React.Dispatch<CanvasAction>;
   colorLUT: [number, number, number][];
