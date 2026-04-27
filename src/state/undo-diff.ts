@@ -145,7 +145,7 @@ export function compressDiff(diff: Diff): CompressedDiff {
     }
   }
   runs[ri++] = runStart;
-  runs[ri++] = runLen;
+  runs[ri] = runLen;
   return { runs, ov, nv, ...(cmOv !== undefined ? { cmOv } : {}), ...(cmNv !== undefined ? { cmNv } : {}) };
 }
 

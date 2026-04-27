@@ -16,6 +16,7 @@ export default tseslint.config(
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/react-compiler": "off",
       "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/refs": "off",
       "no-empty": ["error", { allowEmptyCatch: true }],
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "error",
