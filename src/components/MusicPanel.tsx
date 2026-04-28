@@ -273,6 +273,14 @@ export const MusicPanel = React.memo(function MusicPanel() {
     originMode,
   });
 
+  const activeAlpha = originMode === 0 ? alpha0 : alpha7;
+  const triggerToneBurstAtActiveAlpha = useCallback(
+    (lv: number, angle: number) => {
+      engine.triggerToneBurst(lv, angle >= 0 ? angle + activeAlpha : angle);
+    },
+    [activeAlpha, engine],
+  );
+
   // Init audio on mount (tab click provides user gesture for AudioContext)
   useEffect(() => {
     engine.initAudio();
@@ -404,7 +412,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
     (lv: number, angle: number) => {
       ensureAudio();
       engine.initAudio();
-      engine.triggerToneBurst(lv, angle);
+      triggerToneBurstAtActiveAlpha(lv, angle);
       // Clear existing timer for this level (handles rapid re-trigger)
       const prev = burstTimersRef.current.get(lv);
       if (prev) clearTimeout(prev);
@@ -429,7 +437,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
         );
       });
     },
-    [engine, ensureAudio],
+    [engine, ensureAudio, triggerToneBurstAtActiveAlpha],
   );
 
   // Keyboard 1-6: trigger tone burst for corresponding level
@@ -893,13 +901,13 @@ export const MusicPanel = React.memo(function MusicPanel() {
             onHueAngleChange={(a) => {
               engine.initAudio();
               resumeDrone();
-              // Tone burst when candidate changes
+              // Tone burst when candidate changes; pitch follows the active alpha rotation.
               for (const lv of ACTIVE_LEVELS) {
                 const ci = findClosestCandidate(lv, a);
                 const prev = prevCandidatesRef.current.get(lv);
                 if (prev !== undefined && prev !== ci) {
                   const cand = LEVEL_CANDIDATES[lv][ci];
-                  if (cand && cand.angle >= 0) engine.triggerToneBurst(lv, cand.angle);
+                  if (cand && cand.angle >= 0) triggerToneBurstAtActiveAlpha(lv, cand.angle);
                 }
                 prevCandidatesRef.current.set(lv, ci);
               }

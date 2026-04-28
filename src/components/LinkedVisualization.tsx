@@ -57,14 +57,14 @@ const GRAPH_GAP = 8; // visual separation between ring and graph
 const CX = WO + WCX; // 86
 const CY = WO + WCY; // 86
 
-// Right graph (sine: Y-projection)
+// Right graph (screen Y-projection: -cos(theta-alpha))
 const RX = CX + RING_R + GRAPH_GAP; // 164
 const RW = 170;
 const RYtop = CY - WR - 4; // 24
 const RYbot = CY + WR + 4; // 148
 const RH = RYbot - RYtop; // 124
 
-// Bottom graph (cosine: X-projection)
+// Bottom graph (screen X-projection: sin(theta-alpha))
 const BY = CY + RING_R + GRAPH_GAP; // 164
 const BXleft = CX - WR - 4; // 24
 const BXright = CX + WR + 4; // 148
@@ -135,7 +135,7 @@ function renderWheel({ cx, cy, alpha, radiusFn, dots, hueAngle, hoveredDot, onHo
       {/* Coordinate axes — thin crosshair through center */}
       <line x1={cx - WR - 2} y1={cy} x2={cx + WR + 2} y2={cy} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />
       <line x1={cx} y1={cy - WR - 2} x2={cx} y2={cy + WR + 2} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />
-      {/* Axis tick marks — sin(y-axis) and cos(x-axis) projections of active dots */}
+      {/* Axis tick marks: screen-Y and screen-X projections of active dots */}
       {dots
         .filter((d) => d.act)
         .map((d) => {
@@ -458,7 +458,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     dragRef.current = null;
   }, []);
 
-  // Generate continuous sine path for right graph
+  // Generate continuous screen-Y projection path for right graph
   const sinePath = useCallback((lv: number, radiusFn: (lv: number) => number, alpha: number) => {
     const r = radiusFn(lv);
     if (r < 1) return "";
@@ -471,7 +471,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     return pts.join(" ");
   }, []);
 
-  // Generate continuous cosine path for bottom graph
+  // Generate continuous screen-X projection path for bottom graph
   const cosinePath = useCallback((lv: number, radiusFn: (lv: number) => number, alpha: number) => {
     const r = radiusFn(lv);
     if (r < 1) return "";
@@ -582,7 +582,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
             return <circle cx={gx} cy={gy} r={4} fill="none" stroke={col} strokeWidth={1.2} opacity={0.5} strokeDasharray="2,2" />;
           })()}
 
-        {/* ═══ RIGHT GRAPH: Sine (Y-projection) ═══ */}
+        {/* ═══ RIGHT GRAPH: Screen Y projection (-cos) ═══ */}
         <g>
           <rect
             x={RX}
@@ -834,7 +834,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
           })}
         </g>
 
-        {/* ═══ BOTTOM GRAPH: Cosine (X-projection) ═══ */}
+        {/* ═══ BOTTOM GRAPH: Screen X projection (sin) ═══ */}
         <g>
           <rect
             x={BXleft}
