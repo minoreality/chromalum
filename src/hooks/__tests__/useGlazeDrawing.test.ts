@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useGlazeDrawing } from "../useGlazeDrawing";
 import type { CanvasData } from "../../types";
@@ -69,28 +69,41 @@ function makeOpts(overrides?: Partial<Parameters<typeof useGlazeDrawing>[0]>) {
   };
 }
 
+function mockCanvasRect(canvas: HTMLCanvasElement) {
+  vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
+    left: 0,
+    top: 0,
+    right: 320,
+    bottom: 320,
+    width: 320,
+    height: 320,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+}
+
+function pointerEvent(overrides?: Partial<React.PointerEvent>): React.PointerEvent {
+  const clientX = overrides?.clientX ?? 160;
+  const clientY = overrides?.clientY ?? 160;
+  return {
+    button: 0,
+    pointerId: 1,
+    target: { setPointerCapture: vi.fn() },
+    clientX,
+    clientY,
+    preventDefault: vi.fn(),
+    nativeEvent: { clientX, clientY },
+    ...overrides,
+  } as unknown as React.PointerEvent;
+}
+
 /* ── Tests ──────────────────────────────────── */
 
 describe("useGlazeDrawing", () => {
-  it("returns all expected properties", () => {
-    const { result } = renderHook(() => useGlazeDrawing(makeOpts()));
-    const r = result.current;
-    expect(r.srcRef).toBeDefined();
-    expect(r.curRef).toBeDefined();
-    expect(r.statusRef).toBeDefined();
-    expect(r.imgCacheRef).toBeDefined();
-    expect(r.drawingRef).toBeDefined();
-    expect(typeof r.onDown).toBe("function");
-    expect(typeof r.onMove).toBe("function");
-    expect(typeof r.onUp).toBe("function");
-    expect(typeof r.pickHue).toBe("function");
-    expect(typeof r.trackCursor).toBe("function");
-    expect(typeof r.clearCursor).toBe("function");
-  });
-
-  it("drawingRef starts as false", () => {
-    const { result } = renderHook(() => useGlazeDrawing(makeOpts()));
-    expect(result.current.drawingRef.current).toBe(false);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPanningRef.current = false;
   });
 
   it("onUp during pan calls endPan", () => {
@@ -103,55 +116,52 @@ describe("useGlazeDrawing", () => {
     mockPanningRef.current = false;
   });
 
-  it("pickHue on achromatic pixel (L0) announces error", () => {
+  it("paints a glaze override and dispatches a color-map diff", () => {
     const cvs = makeCvs(10, 10);
-    // L0 at pixel (0,0)
-    cvs.data[0] = 0;
-    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ cvs })));
-    // Create a mock PointerEvent positioned at canvas origin
-    const canvas = result.current.curRef.current;
-    if (canvas) {
-      vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
-        left: 0,
-        top: 0,
-        right: 320,
-        bottom: 320,
-        width: 320,
-        height: 320,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
-    }
-    const mockEvent = new PointerEvent("pointerdown", { clientX: 0, clientY: 0 }) as unknown as React.PointerEvent;
+    const centerIndex = 5 * 10 + 5;
+    cvs.data[centerIndex] = 2;
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ cvs, dispatch, brushSize: 1 })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
     act(() => {
-      result.current.pickHue(mockEvent);
+      result.current.onDown(pointerEvent({ target: canvas }));
     });
-    expect(mockAnnounce).toHaveBeenCalledWith("announce_hue_achromatic");
+
+    expect(result.current.drawingRef.current).toBe(true);
+
+    act(() => {
+      result.current.onUp();
+    });
+
+    expect(result.current.drawingRef.current).toBe(false);
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "stroke_end",
+        finalColorMap: expect.any(Uint8Array),
+        diff: expect.objectContaining({
+          idx: expect.any(Uint32Array),
+          cmNv: expect.any(Uint8Array),
+        }),
+      }),
+    );
+    const action = dispatch.mock.calls[0][0];
+    expect(action.finalColorMap[centerIndex]).toBeGreaterThan(0);
+    expect(Array.from(action.diff.idx)).toContain(centerIndex);
   });
 
-  it("pickHue on achromatic pixel (L7) announces error", () => {
+  it.each([0, 7])("pickHue on achromatic level L%s announces an error", (level) => {
     const cvs = makeCvs(10, 10);
-    cvs.data[0] = 7;
+    cvs.data[0] = level;
     const { result } = renderHook(() => useGlazeDrawing(makeOpts({ cvs })));
-    const canvas = result.current.curRef.current;
-    if (canvas) {
-      vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
-        left: 0,
-        top: 0,
-        right: 320,
-        bottom: 320,
-        width: 320,
-        height: 320,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
-    }
-    const mockEvent = new PointerEvent("pointerdown", { clientX: 0, clientY: 0 }) as unknown as React.PointerEvent;
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
     act(() => {
-      result.current.pickHue(mockEvent);
+      result.current.pickHue(pointerEvent({ clientX: 0, clientY: 0, target: canvas }));
     });
+
     expect(mockAnnounce).toHaveBeenCalledWith("announce_hue_achromatic");
   });
 });

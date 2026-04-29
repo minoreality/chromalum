@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useCanvasDrawing } from "../useCanvasDrawing";
 import type { CanvasData } from "../../types";
@@ -74,25 +74,43 @@ function makeOpts(overrides?: Partial<Parameters<typeof useCanvasDrawing>[0]>) {
   };
 }
 
+function mockCanvasRect(canvas: HTMLCanvasElement) {
+  vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
+    left: 0,
+    top: 0,
+    right: 320,
+    bottom: 320,
+    width: 320,
+    height: 320,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+}
+
+function pointerEvent(overrides?: Partial<React.PointerEvent>): React.PointerEvent {
+  const clientX = overrides?.clientX ?? 160;
+  const clientY = overrides?.clientY ?? 160;
+  return {
+    button: 0,
+    altKey: false,
+    pointerId: 1,
+    target: { setPointerCapture: vi.fn() },
+    clientX,
+    clientY,
+    preventDefault: vi.fn(),
+    nativeEvent: { clientX, clientY },
+    ...overrides,
+  } as unknown as React.PointerEvent;
+}
+
 /* ── Tests ──────────────────────────────────── */
 
 describe("useCanvasDrawing", () => {
-  it("returns all expected properties", () => {
-    const { result } = renderHook(() => useCanvasDrawing(makeOpts()));
-    const r = result.current;
-    expect(r.srcRef).toBeDefined();
-    expect(r.curRef).toBeDefined();
-    expect(r.statusRef).toBeDefined();
-    expect(r.imgCacheRef).toBeDefined();
-    expect(r.strokeRef).toBeDefined();
-    expect(r.drawingRef).toBeDefined();
-    expect(typeof r.onDown).toBe("function");
-    expect(typeof r.onMove).toBe("function");
-    expect(typeof r.onUp).toBe("function");
-    expect(typeof r.onDownPrv).toBe("function");
-    expect(typeof r.onMovePrv).toBe("function");
-    expect(typeof r.trackCursor).toBe("function");
-    expect(typeof r.clearCursor).toBe("function");
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPanningRef.current = false;
+    mockSpaceRef.current = false;
   });
 
   it("onUp during pan calls endPan", () => {
@@ -105,13 +123,57 @@ describe("useCanvasDrawing", () => {
     mockPanningRef.current = false;
   });
 
-  it("drawingRef starts as false", () => {
-    const { result } = renderHook(() => useCanvasDrawing(makeOpts()));
+  it("paints a brush dot and dispatches the completed stroke", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ dispatch, brushLevel: 3, brushSize: 1 })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
+    const down = pointerEvent({ target: canvas });
+    act(() => {
+      result.current.onDown(down);
+    });
+
+    const centerIndex = 5 * 10 + 5;
+    expect(down.preventDefault).toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(true);
+    expect(result.current.strokeRef.current?.buf[centerIndex]).toBe(3);
+
+    act(() => {
+      result.current.onUp();
+    });
+
     expect(result.current.drawingRef.current).toBe(false);
+    expect(result.current.strokeRef.current).toBeNull();
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "stroke_end",
+        finalData: expect.any(Uint8Array),
+        diff: expect.objectContaining({
+          idx: expect.any(Uint32Array),
+          nv: expect.any(Uint8Array),
+        }),
+      }),
+    );
+    const action = dispatch.mock.calls[0][0];
+    expect(action.finalData[centerIndex]).toBe(3);
+    expect(Array.from(action.diff.idx)).toContain(centerIndex);
   });
 
-  it("strokeRef starts as null", () => {
-    const { result } = renderHook(() => useCanvasDrawing(makeOpts()));
-    expect(result.current.strokeRef.current).toBeNull();
+  it("right-click samples the source level instead of drawing", () => {
+    const cvs = makeCvs();
+    cvs.data[55] = 5;
+    const setBrushLevel = vi.fn();
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ cvs, setBrushLevel })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onDown(pointerEvent({ button: 2, target: canvas }));
+    });
+
+    expect(setBrushLevel).toHaveBeenCalledWith(5);
+    expect(mockAnnounce).toHaveBeenCalledWith("announce_level");
+    expect(result.current.drawingRef.current).toBe(false);
   });
 });

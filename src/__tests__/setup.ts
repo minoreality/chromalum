@@ -86,75 +86,80 @@ if (typeof globalThis.PointerEvent === "undefined" && typeof globalThis.MouseEve
   };
 }
 
-/* HTMLCanvasElement.prototype.getContext mock */
+function makeMock2dContext(canvas: HTMLCanvasElement) {
+  const noop = () => {};
+  return {
+    canvas,
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    font: "10px sans-serif",
+    textAlign: "start",
+    textBaseline: "alphabetic",
+    globalAlpha: 1,
+    globalCompositeOperation: "source-over",
+    imageSmoothingEnabled: true,
+    save: noop,
+    restore: noop,
+    beginPath: noop,
+    closePath: noop,
+    moveTo: noop,
+    lineTo: noop,
+    arc: noop,
+    arcTo: noop,
+    rect: noop,
+    fill: noop,
+    stroke: noop,
+    clip: noop,
+    clearRect: noop,
+    fillRect: noop,
+    strokeRect: noop,
+    fillText: noop,
+    strokeText: noop,
+    measureText: () => ({ width: 0 }),
+    scale: noop,
+    rotate: noop,
+    translate: noop,
+    transform: noop,
+    setTransform: noop,
+    resetTransform: noop,
+    drawImage: noop,
+    createLinearGradient: () => ({ addColorStop: noop }),
+    createRadialGradient: () => ({ addColorStop: noop }),
+    createPattern: () => null,
+    getImageData: (_x: number, _y: number, w: number, h: number) => new ImageData(w, h),
+    putImageData: noop,
+    createImageData: (w: number, h: number) => new ImageData(w, h),
+    setLineDash: noop,
+    getLineDash: () => [],
+    ellipse: noop,
+    quadraticCurveTo: noop,
+    bezierCurveTo: noop,
+    isPointInPath: () => false,
+    isPointInStroke: () => false,
+    getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+  };
+}
+
+/* HTMLCanvasElement mocks */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- checking custom __mocked flag on prototype
 if (typeof HTMLCanvasElement !== "undefined" && !(HTMLCanvasElement.prototype.getContext as any).__mocked) {
-  const origGetContext = HTMLCanvasElement.prototype.getContext;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock override
-  (HTMLCanvasElement.prototype as any).getContext = function (contextId: string, ...args: any[]) {
-    try {
-      return origGetContext.call(this, contextId, ...args);
-    } catch {
-      // jsdom does not support canvas contexts; return a mock 2d context
-      if (contextId === "2d") {
-        const noop = () => {};
-        return {
-          canvas: this,
-          fillStyle: "",
-          strokeStyle: "",
-          lineWidth: 1,
-          font: "10px sans-serif",
-          textAlign: "start",
-          textBaseline: "alphabetic",
-          globalAlpha: 1,
-          globalCompositeOperation: "source-over",
-          imageSmoothingEnabled: true,
-          save: noop,
-          restore: noop,
-          beginPath: noop,
-          closePath: noop,
-          moveTo: noop,
-          lineTo: noop,
-          arc: noop,
-          arcTo: noop,
-          rect: noop,
-          fill: noop,
-          stroke: noop,
-          clip: noop,
-          clearRect: noop,
-          fillRect: noop,
-          strokeRect: noop,
-          fillText: noop,
-          strokeText: noop,
-          measureText: () => ({ width: 0 }),
-          scale: noop,
-          rotate: noop,
-          translate: noop,
-          transform: noop,
-          setTransform: noop,
-          resetTransform: noop,
-          drawImage: noop,
-          createLinearGradient: () => ({ addColorStop: noop }),
-          createRadialGradient: () => ({ addColorStop: noop }),
-          createPattern: () => null,
-          getImageData: (_x: number, _y: number, w: number, h: number) => new ImageData(w, h),
-          putImageData: noop,
-          createImageData: (w: number, h: number) => new ImageData(w, h),
-          setLineDash: noop,
-          getLineDash: () => [],
-          ellipse: noop,
-          quadraticCurveTo: noop,
-          bezierCurveTo: noop,
-          isPointInPath: () => false,
-          isPointInStroke: () => false,
-          getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
-        };
-      }
-      return null;
-    }
+  (HTMLCanvasElement.prototype as any).getContext = function (contextId: string) {
+    return contextId === "2d" ? makeMock2dContext(this) : null;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tag as mocked
   (HTMLCanvasElement.prototype.getContext as any).__mocked = true;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- checking custom __mocked flag on prototype
+if (typeof HTMLCanvasElement !== "undefined" && !(HTMLCanvasElement.prototype.toBlob as any).__mocked) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock override
+  (HTMLCanvasElement.prototype as any).toBlob = function (callback: BlobCallback, type = "image/png") {
+    callback(new Blob([], { type }));
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tag as mocked
+  (HTMLCanvasElement.prototype.toBlob as any).__mocked = true;
 }
 
 import { beforeEach } from "vitest";
