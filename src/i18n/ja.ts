@@ -572,7 +572,6 @@ export const ja: Record<TranslationKey, string> = {
   music_duality_pitch: "音程",
   music_duality_rhythm: "リズム",
   music_luminance_title: "対称性",
-  music_luminance_lab_title: "ルマラボ",
   music_luminance_sym: "Flat",
   music_luminance_bt601: "Luma",
   music_stop_all: "全停止",
@@ -610,7 +609,6 @@ export const ja: Record<TranslationKey, string> = {
   music_k8_d1: "d=1",
   music_k8_d2: "d=2",
   music_k8_d3: "d=3",
-  music_hamming_decoder_title: "ハミング復号器",
 
   // Language switcher
   lang_switch: "EN",

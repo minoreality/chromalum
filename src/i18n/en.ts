@@ -571,7 +571,6 @@ export const en = {
   music_duality_pitch: "Pitch",
   music_duality_rhythm: "Rhythm",
   music_luminance_title: "Symmetry",
-  music_luminance_lab_title: "Luminance Lab",
   music_luminance_sym: "Flat",
   music_luminance_bt601: "Luma",
   music_stop_all: "Stop All",
@@ -609,7 +608,6 @@ export const en = {
   music_k8_d1: "d=1",
   music_k8_d2: "d=2",
   music_k8_d3: "d=3",
-  music_hamming_decoder_title: "Hamming Decoder",
 
   // Language switcher
   lang_switch: "JA",

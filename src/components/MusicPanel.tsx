@@ -20,7 +20,7 @@ import { K8Explorer } from "./music/K8Explorer";
 import { TetraSplitCard } from "./music/TetraSplitCard";
 import { ParityChordCard } from "./music/ParityChordCard";
 import { ErrorCorrectionCard } from "./music/ErrorCorrectionCard";
-import type { DecoderPhase } from "./music/HammingDecoder";
+import type { DecoderPhase } from "./music/types";
 import { MiniFanoChord } from "./music/MiniFanoChord";
 import { FANO_LINES } from "../data/theory-data";
 

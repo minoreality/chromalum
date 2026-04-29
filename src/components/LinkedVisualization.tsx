@@ -3,7 +3,7 @@ import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate, hue2rgb } from "../
 import { SP, C, R } from "../styles/tokens";
 import { useTranslation } from "../i18n";
 
-export interface LinkedVisualizationHover {
+interface LinkedVisualizationHover {
   lv: number;
   ci: number;
 }

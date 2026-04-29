@@ -4,7 +4,7 @@ import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
 import { C, FS, SP } from "../../styles/tokens";
 import { ParityGrid } from "./ParityGrid";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
-import type { DecoderPhase } from "./HammingDecoder";
+import type { DecoderPhase } from "./types";
 
 interface ParityChordCardProps {
   engine: MusicEngineReturn;
