@@ -1,4 +1,4 @@
-# Music Linked Visualization
+# Music-Linked Visualization
 
 作成日: 2026-04-28
 
@@ -7,7 +7,7 @@
 - 技術定義・定理・実装対応: [離散代数的色彩モデル](./algebraic-color-model.md)
 - 先行研究・新規性評価: [離散代数的色彩モデル — 先行研究](./prior-art-algebraic-color-model.md)
 - Theoryタブの改善提案: [Theoryタブ — 先行研究と改善提案](./theory-tab-prior-art-and-improvements.md)
-- Music Linked Visualization の先行研究・開発参考: [Music Linked Visualization — 先行研究と開発参考](./prior-art-music-linked-visualization.md)
+- Music-Linked Visualization の先行研究と設計ノート: [Music-Linked Visualization — 先行研究と設計ノート](./prior-art-music-linked-visualization.md)
 
 ## Purpose
 
@@ -28,7 +28,7 @@
 
 特に、色を音へ写す研究・装置には [See ColOr](https://icad.org/Proceedings/2010/BolognaDevillePun2010.pdf)、[Colorophone 2.0](https://www.mdpi.com/1424-8220/21/21/7351)、[Sonifyd:Colormatrics](https://nime.pubpub.org/pub/efyd2zra/release/1) などの先行例がある。また、色相と音高の対応は心理物理的に安定した普遍対応として扱うべきではない。この境界線については、色聴・カラーオルガン史を批判的に整理する Spence & Di Stefano のレビューを主要参考にする。
 
-CHROMALUM 側の固有性は、これらの標準要素を単独で使う点ではなく、BT.601 luma 順の 8 頂点 RGB アトラス、L0/L7 補色半径、`alpha0` / `alpha7` 位相、GRB bit order、Fano/Hamming/polyhedral などの代数的色彩構造と、Music タブのピッチ・ゲイン・位相写像を同じ操作系で連動させる点にある。詳細な先行研究と開発上の示唆は [Music Linked Visualization — 先行研究と開発参考](./prior-art-music-linked-visualization.md) に分離する。
+CHROMALUM 側の固有性は、これらの標準要素を単独で使う点ではなく、BT.601 luma 順の 8 頂点 RGB アトラス、L0/L7 補色半径、`alpha0` / `alpha7` 位相、GRB bit order、Fano/Hamming/polyhedral などの代数的色彩構造と、Music タブのピッチ・ゲイン・位相写像を同じ操作系で連動させる点にある。詳細な先行研究と設計上の示唆は [Music-Linked Visualization — 先行研究と設計ノート](./prior-art-music-linked-visualization.md) に分離する。
 
 ## Coordinate Model
 

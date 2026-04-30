@@ -27,12 +27,12 @@ The Music Appendix extends the same model into LinkedVisualization and
 sonification. These notes are companion documents to the core corpus rather
 than additional parts of _Tractatus Chromaticus_.
 
-1. [Appendix A - Music Linked Visualization](./music-linked-visualization.md)  
+1. [Appendix A - Music-Linked Visualization](./music-linked-visualization.md)  
    Describes the luma-radius hue graph, alpha rotation, complement phase
    behavior, pitch mapping, and bit-spectrum timbre layer.
-2. [Appendix B - Music Linked Visualization - Prior Art and Development Notes](./prior-art-music-linked-visualization.md)  
+2. [Appendix B - Music-Linked Visualization — 先行研究と設計ノート](./prior-art-music-linked-visualization.md)  
    Surveys related sonification, color-to-sound, luma, hue, and accessibility
-   references, and records development guidance for the Music tab.
+   references, and records design guidance for the Music tab.
 
 ## Suggested Reading Order
 

@@ -160,8 +160,8 @@ underlies the application:
 Two Music Appendix notes extend the same model into LinkedVisualization and
 sonification:
 
-- Appendix A - [Music Linked Visualization](./docs/music-linked-visualization.md)
-- Appendix B - [Music Linked Visualization — 先行研究と開発参考](./docs/prior-art-music-linked-visualization.md)
+- Appendix A - [Music-Linked Visualization](./docs/music-linked-visualization.md)
+- Appendix B - [Music-Linked Visualization — 先行研究と設計ノート](./docs/prior-art-music-linked-visualization.md)
 
 The research documents are attributed to the pseudonym **Doctor Chromaticus**.
 

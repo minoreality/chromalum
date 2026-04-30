@@ -93,11 +93,11 @@ extend the same discrete algebraic color model into LinkedVisualization and
 sonification, but they are not additional parts of _Tractatus Chromaticus_:
 
 - **Appendix A**: `music-linked-visualization.md`
-  English title: Music Linked Visualization
-  日本語タイトル: Music Linked Visualization
+  English title: Music-Linked Visualization
+  日本語タイトル: Music-Linked Visualization
 - **Appendix B**: `prior-art-music-linked-visualization.md`
-  English title: Music Linked Visualization — Prior Art and Development Notes
-  日本語タイトル: Music Linked Visualization — 先行研究と開発参考
+  English title: Music-Linked Visualization — Prior Art and Design Notes
+  日本語タイトル: Music-Linked Visualization — 先行研究と設計ノート
 
 When citing a Music Appendix note, use the document title above and identify
 it as a CHROMALUM Music Appendix note.

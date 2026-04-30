@@ -1,4 +1,4 @@
-# Music Linked Visualization — 重要先行研究と開発参考
+# Music-Linked Visualization — 先行研究と設計ノート
 
 作成日: 2026-04-28
 整理方針: 2026-04-29
