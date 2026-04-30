@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { useTranslation } from "../i18n";
 import { C, SP, FS, R } from "../styles/tokens";
 
 interface Props {
@@ -10,8 +9,14 @@ interface State {
   componentStack: string | null;
 }
 
+const ERROR_FALLBACK_COPY = {
+  title: "An error occurred",
+  retry: "Retry",
+  showDetails: "Show Details",
+  hideDetails: "Hide Details",
+};
+
 function ErrorFallback({ error, componentStack, onRetry }: { error: Error; componentStack: string | null; onRetry: () => void }) {
-  const { t } = useTranslation();
   const [showStack, setShowStack] = React.useState(false);
   return (
     <div
@@ -27,7 +32,7 @@ function ErrorFallback({ error, componentStack, onRetry }: { error: Error; compo
         justifyContent: "center",
       }}
     >
-      <h2 style={{ marginBottom: 12 }}>{t("error_occurred")}</h2>
+      <h2 style={{ marginBottom: 12 }}>{ERROR_FALLBACK_COPY.title}</h2>
       <p style={{ color: C.textSecondary, fontSize: FS["2xl"], marginBottom: SP["3xl"] }}>{error.message}</p>
       <div style={{ display: "flex", gap: 8 }}>
         <button
@@ -42,7 +47,7 @@ function ErrorFallback({ error, componentStack, onRetry }: { error: Error; compo
             fontSize: FS["2xl"],
           }}
         >
-          {t("btn_retry")}
+          {ERROR_FALLBACK_COPY.retry}
         </button>
         {componentStack && (
           <button
@@ -57,7 +62,7 @@ function ErrorFallback({ error, componentStack, onRetry }: { error: Error; compo
               fontSize: FS.xl,
             }}
           >
-            {showStack ? t("error_hide_details") : t("error_show_details")}
+            {showStack ? ERROR_FALLBACK_COPY.hideDetails : ERROR_FALLBACK_COPY.showDetails}
           </button>
         )}
       </div>

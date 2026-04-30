@@ -123,6 +123,18 @@ describe("pixel-analysis", () => {
       expect(gradMag[1]).toBeGreaterThan(0);
       expect(gradMag[2]).toBeGreaterThan(0);
     });
+
+    it("populates levelNorm even when the first pixel is black", () => {
+      const data = new Uint8Array([0, 2, 5, 7]);
+      const levelNorm = new Float32Array(4);
+      const gradAngle = new Float32Array(4);
+      const gradMag = new Float32Array(4);
+      computeGradient(data, 4, 1, levelNorm, gradAngle, gradMag);
+      expect(levelNorm[0]).toBe(0);
+      expect(levelNorm[1]).toBeCloseTo(2 / 7);
+      expect(levelNorm[2]).toBeCloseTo(5 / 7);
+      expect(levelNorm[3]).toBe(1);
+    });
   });
 
   describe("computeRegion", () => {

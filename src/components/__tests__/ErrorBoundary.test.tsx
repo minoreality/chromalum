@@ -3,21 +3,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ErrorBoundary } from "../ErrorBoundary";
 
-// Mock the i18n hook
-vi.mock("../../i18n", () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const map: Record<string, string> = {
-        error_occurred: "An error occurred",
-        btn_retry: "Retry",
-        error_show_details: "Show Details",
-        error_hide_details: "Hide Details",
-      };
-      return map[key] ?? key;
-    },
-  }),
-}));
-
 function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
   if (shouldThrow) throw new Error("Test error");
   return <div>Rendered OK</div>;
@@ -47,7 +32,7 @@ describe("ErrorBoundary", () => {
     spy.mockRestore();
   });
 
-  it("shows translated details toggle button", () => {
+  it("shows details toggle button without requiring i18n context", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(
       <ErrorBoundary>

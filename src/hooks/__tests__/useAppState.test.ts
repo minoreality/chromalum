@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // Mock idb-persistence so IndexedDB is not required
@@ -9,6 +9,7 @@ vi.mock("../../utils/idb-persistence", () => ({
 }));
 
 import { useAppState } from "../useAppState";
+import { saveState } from "../../utils/idb-persistence";
 import { W0, H0 } from "../../constants";
 
 // Minimal translation stub
@@ -17,6 +18,10 @@ const t = ((key: string) => key) as import("../../i18n").TranslationFn;
 describe("useAppState", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("composes the initial app state needed by the canvas UI", () => {
@@ -53,5 +58,46 @@ describe("useAppState", () => {
     expect(result.current.brushSize).toBe(24);
     expect(result.current.locked[2]).toBe(true);
     expect(result.current.locked[0]).toBe(false);
+  });
+
+  it("does not mark a failed autosave as saved", async () => {
+    vi.useFakeTimers();
+    const saveStateMock = vi.mocked(saveState);
+    let rejectFirst!: (reason?: unknown) => void;
+    saveStateMock.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectFirst = reject;
+        }),
+    );
+    const t2 = ((key: string) => key) as import("../../i18n").TranslationFn;
+
+    const { result, rerender, unmount } = renderHook(({ tr }) => useAppState(tr), { initialProps: { tr: t } });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loaded).toBe(true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(saveStateMock).toHaveBeenCalledTimes(1);
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await act(async () => {
+      rejectFirst(new Error("quota"));
+      await Promise.resolve();
+    });
+
+    rerender({ tr: t2 });
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(saveStateMock).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
+    unmount();
   });
 });

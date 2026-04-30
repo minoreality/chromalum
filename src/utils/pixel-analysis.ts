@@ -108,6 +108,7 @@ export function computeGradient(
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
+      levelNorm[i] = (data[i] & LEVEL_MASK) / 7;
       const l = x > 0 ? data[i - 1] & LEVEL_MASK : data[i] & LEVEL_MASK;
       const r2 = x + 1 < w ? data[i + 1] & LEVEL_MASK : data[i] & LEVEL_MASK;
       const u = y > 0 ? data[i - w] & LEVEL_MASK : data[i] & LEVEL_MASK;
@@ -123,10 +124,6 @@ export function computeGradient(
     if (gradMag[i] > maxGM) maxGM = gradMag[i];
   }
   for (let i = 0; i < n; i++) gradMag[i] /= maxGM;
-  // Populate levelNorm if not already done (needed for gradient dim background)
-  if (levelNorm[0] === 0 && n > 0 && (data[0] & LEVEL_MASK) !== 0) {
-    for (let i = 0; i < n; i++) levelNorm[i] = (data[i] & LEVEL_MASK) / 7;
-  }
 }
 
 export function computeRegion(data: Uint8Array, w: number, h: number, regionId: Int32Array, isEdge: Uint8Array, colorMap?: Uint8Array) {

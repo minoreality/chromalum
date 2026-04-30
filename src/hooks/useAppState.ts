@@ -22,6 +22,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushSaveRef = useRef<(() => void) | null>(null);
+  const saveRequestIdRef = useRef(0);
   const lastSavedRef = useRef<{ data: Uint8Array | null; colorMap: Uint8Array | null; cc: number[] | null; locked: boolean[] | null }>({
     data: null,
     colorMap: null,
@@ -62,7 +63,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
       _cc = cc,
       _locked = locked;
     const doSave = () => {
-      lastSavedRef.current = { data: _cvs.data, colorMap: _cvs.colorMap, cc: _cc, locked: _locked };
+      const requestId = ++saveRequestIdRef.current;
       saveState({
         w: _cvs.w,
         h: _cvs.h,
@@ -71,7 +72,13 @@ export function useAppState(t: import("../i18n").TranslationFn) {
         cc: [..._cc],
         locked: [..._locked],
         version: 1,
-      }).catch(createErrorHandler("AutoSave", () => showToast(t("toast_autosave_failed"), "error")));
+      })
+        .then(() => {
+          if (requestId === saveRequestIdRef.current) {
+            lastSavedRef.current = { data: _cvs.data, colorMap: _cvs.colorMap, cc: _cc, locked: _locked };
+          }
+        })
+        .catch(createErrorHandler("AutoSave", () => showToast(t("toast_autosave_failed"), "error")));
     };
     flushSaveRef.current = () => {
       if (saveTimerRef.current) {
