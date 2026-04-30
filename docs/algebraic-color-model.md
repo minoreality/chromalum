@@ -107,6 +107,63 @@ CHROMALUM のレベル順で書くと、
 
 であり、各ステップは 1 ビットだけを反転する。したがってこれは、立方体 Q3 の有彩色頂点上の 6-cycle であり、Gray code 的な巡回である。
 
+### Pure-Color Luma Intersections
+
+上の色相六角形は、純色条件
+
+```text
+max(R,G,B) = 255, min(R,G,B) = 0
+```
+
+を満たす RGB cube の境界閉路でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `255`、または `255` から `0` へ線形に変化し、他の 2 成分は `0` または `255` に固定される。
+
+BT.601 luma
+
+```text
+Y = 0.299 R + 0.587 G + 0.114 B
+```
+
+は RGB 成分の線形関数なので、色相六角形の各辺上では luma も単調な一次関数として変化する。したがって、隣接する 2 頂点のレベル差が `d` のとき、その辺は端点を含めて `d + 1` 個の離散 luma レベルを横切る。
+
+色相閉路
+
+```text
+2 -> 6 -> 4 -> 5 -> 1 -> 3 -> 2
+```
+
+について、閉路の始点 `2` を最後に重複させない形で通過レベルを列挙すると、
+
+```text
+2,3,4,5,6,5,4,5,4,3,2,1,2,3
+```
+
+となる。この列における出現回数は
+
+```text
+L1: 1
+L2: 3
+L3: 3
+L4: 3
+L5: 3
+L6: 1
+```
+
+である。ゆえに、純色条件のもとでは、有彩レベル `L2,L3,L4,L5` はそれぞれ 3 つの同一 luma 候補を持ち、端の有彩レベル `L1,L6` はそれぞれ 1 つだけを持つ。
+
+`L0` Black と `L7` White は色相六角形上の点ではなく、RGB cube の黒白軸の端点であるため、候補数はそれぞれ 1 として扱う。したがって CHROMALUM の Hex/Color タブで用いる候補数は
+
+```text
+1,1,3,3,3,3,1,1
+```
+
+であり、全レベルを使う場合の色パターン数は
+
+```text
+1 * 1 * 3 * 3 * 3 * 3 * 1 * 1 = 81
+```
+
+となる。
+
 ### Fano Plane PG(2,2)
 
 非零レベル `{1,...,7}` は、GF(2)^3 の非零ベクトルである。射影化すると、これらは Fano 平面 PG(2,2) の 7 点になる。
@@ -213,6 +270,8 @@ M(3) + G(4) = 7
 ### Contribution 4: Hue Gray Cycle, Luma Zigzag, and Die Net
 
 有彩色六角形 `R -> Y -> G -> C -> B -> M` は、各ステップが 1 ビット反転であるため、Gray code 的な巡回である。同じ経路は、BT.601 luma の 6 区間ジグザグを与える。
+
+さらに、このジグザグを純色境界上の同一 luma 交点として読むと、Hex/Color タブの候補数 `1,1,3,3,3,3,1,1` が得られる。これは一般的な連続色空間の自由な色選択ではなく、8 つの離散 luma レベルと純色境界の交点を有限個の候補として数える読みである。
 
 この経路をサイコロの面隣接木として要求すると、6 面の隣接 5 本がすべて使われるため、面隣接木全体がこの Hamilton path に固定される。そこから得られる自由立方体展開図は 2-2-2 型の階段形になる。
 
@@ -345,6 +404,7 @@ The distance 1 edges form Q3, the distance 2 edges form two inscribed tetrahedra
 | GF(2)^3 | 8 vectors | 8 color levels |
 | Q3 cube | Hamming distance 1 graph | single-channel toggles |
 | Gray cycle | chromatic 6-cycle | hue order R -> Y -> G -> C -> B -> M |
+| Pure-color luma intersections | hexagon boundary crossings | candidate counts 1,1,3,3,3,3,1,1 |
 | Fano plane PG(2,2) | 7 nonzero vectors | non-black colors |
 | Hamming(7,4) | 7 coordinate positions | nonzero color labels as syndrome positions |
 | Octahedron | 6 chromatic vertices | complement axes R-C, G-M, B-Y |
@@ -366,7 +426,7 @@ This model does not claim the following:
 
 The accurate claim is narrower:
 
-> This is a unified discrete algebraic color model for the 8 binary RGB vertices, combining known GF(2)^3, Fano, Hamming, and cube structures with a luma-induced GRB order, complement-die duality, hue Gray cycle, and polyhedral decomposition.
+> This is a unified discrete algebraic color model for the 8 binary RGB vertices, combining known GF(2)^3, Fano, Hamming, and cube structures with a luma-induced GRB order, complement-die duality, hue Gray cycle, pure-color luma intersections, and polyhedral decomposition.
 
 ## Implementation Notes
 
@@ -389,11 +449,12 @@ Important invariants currently tested include:
 3. Complementation `lv xor 7` reverses the six chromatic BT.601 luma ranks, so die-opposite rank sums are 7.
 4. CMY line is treated as an even-parity tetrahedron rather than a literal Euclidean plane slice.
 5. Gray cycle uses only one-bit flips.
-6. K8 edges partition by Hamming distance.
-7. T0 is closed under XOR.
-8. Subtractive CMY examples are Boolean AND identities, not XOR identities.
-9. Hamming labels are coordinate positions, not color codewords.
-10. Cube-face spanning trees enumerate the 11 free cube nets, and the hue-order die path uniquely unfolds as the displayed 2-2-2 staircase net.
+6. Pure-color luma intersections produce candidate counts `1,1,3,3,3,3,1,1`.
+7. K8 edges partition by Hamming distance.
+8. T0 is closed under XOR.
+9. Subtractive CMY examples are Boolean AND identities, not XOR identities.
+10. Hamming labels are coordinate positions, not color codewords.
+11. Cube-face spanning trees enumerate the 11 free cube nets, and the hue-order die path uniquely unfolds as the displayed 2-2-2 staircase net.
 
 ## References
 

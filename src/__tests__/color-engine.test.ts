@@ -118,6 +118,10 @@ describe("LEVEL_CANDIDATES", () => {
     });
   });
 
+  it("has the expected pure-color candidate counts per luma level", () => {
+    expect(LEVEL_CANDIDATES.map((alts) => alts.length)).toEqual([1, 1, 3, 3, 3, 3, 1, 1]);
+  });
+
   it("level 0 is black [0,0,0]", () => {
     expect(LEVEL_CANDIDATES[0][0].rgb).toEqual([0, 0, 0]);
   });
