@@ -31,5 +31,15 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Binary Levels" })).toBeTruthy();
+    expect(window.location.hash).toBe("#theory");
+  });
+
+  it("opens Theory directly from the URL hash", async () => {
+    window.history.replaceState(null, "", "/#theory");
+
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Theory" }).getAttribute("aria-selected")).toBe("true");
   });
 });

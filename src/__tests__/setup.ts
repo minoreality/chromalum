@@ -167,4 +167,5 @@ import { beforeEach } from "vitest";
 beforeEach(() => {
   if (typeof localStorage !== "undefined") localStorage.clear();
   if (typeof sessionStorage !== "undefined") sessionStorage.clear();
+  if (typeof window !== "undefined") window.history.replaceState(null, "", "/");
 });

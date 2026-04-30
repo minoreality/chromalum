@@ -1,19 +1,84 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { TOAST_DURATION } from "../constants";
+import { MAIN_TABS } from "../tabs";
 import type { MapMode } from "../types";
 import type { TranslationFn } from "../i18n";
 
 const LS_TAB = "chromalum-active-tab-v2";
 const LS_SCROLL = "chromalum-scroll-y";
+const DEFAULT_TAB = 2;
+const HISTORY_TAB_STATE_KEY = "chromalumActiveTab";
+const TAB_HASH_LOOKUP = new Map<string, number>(MAIN_TABS.map(({ hash }, tab) => [hash, tab]));
+TAB_HASH_LOOKUP.set("stats", 5);
+
+function isValidTab(tab: unknown): tab is number {
+  return typeof tab === "number" && Number.isInteger(tab) && tab >= 0 && tab < MAIN_TABS.length;
+}
+
+function normalizeHash(hash: string): string {
+  let value = hash.startsWith("#") ? hash.slice(1) : hash;
+  try {
+    value = decodeURIComponent(value);
+  } catch {
+    // Keep the raw value when the URL contains malformed percent escapes.
+  }
+  return value.trim().toLowerCase().replace(/^\/+/, "");
+}
+
+function readTabFromHash(): number | null {
+  if (typeof window === "undefined") return null;
+  return TAB_HASH_LOOKUP.get(normalizeHash(window.location.hash)) ?? null;
+}
+
+function readStoredTab(): number | null {
+  if (typeof localStorage === "undefined") return null;
+  const saved = localStorage.getItem(LS_TAB);
+  if (saved === null) return null;
+  const tab = Number(saved);
+  return isValidTab(tab) ? tab : null;
+}
+
+function writeStoredTab(tab: number): void {
+  if (typeof localStorage !== "undefined") localStorage.setItem(LS_TAB, String(tab));
+}
+
+function readInitialActiveTab(): number {
+  return readTabFromHash() ?? readStoredTab() ?? DEFAULT_TAB;
+}
+
+function getHistoryStateWithTab(tab: number): object {
+  const state = typeof window !== "undefined" ? window.history.state : null;
+  return state && typeof state === "object" ? { ...state, [HISTORY_TAB_STATE_KEY]: tab } : { [HISTORY_TAB_STATE_KEY]: tab };
+}
+
+function replaceCurrentHistoryState(tab: number): void {
+  if (typeof window === "undefined") return;
+  window.history.replaceState(getHistoryStateWithTab(tab), "", window.location.href);
+}
+
+function pushTabHash(tab: number): void {
+  if (typeof window === "undefined") return;
+  const hash = MAIN_TABS[tab].hash;
+  if (normalizeHash(window.location.hash) === hash) {
+    replaceCurrentHistoryState(tab);
+    return;
+  }
+  window.history.pushState(getHistoryStateWithTab(tab), "", `#${hash}`);
+}
+
+function readTabFromHistoryState(state: unknown): number | null {
+  if (!state || typeof state !== "object") return null;
+  const tab = (state as Record<string, unknown>)[HISTORY_TAB_STATE_KEY];
+  return isValidTab(tab) ? tab : null;
+}
 
 export function useUIState(_t: TranslationFn) {
-  const [activeTab, setActiveTabRaw] = useState(() => {
-    const saved = localStorage.getItem(LS_TAB);
-    return saved !== null ? Number(saved) : 2;
-  });
+  const [activeTab, setActiveTabRaw] = useState(readInitialActiveTab);
   const setActiveTab = useCallback((tab: number) => {
+    if (!isValidTab(tab)) return;
     setActiveTabRaw(tab);
-    localStorage.setItem(LS_TAB, String(tab));
+    writeStoredTab(tab);
+    pushTabHash(tab);
   }, []);
   const [showHelp, setShowHelp] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "info" } | null>(null);
@@ -23,6 +88,32 @@ export function useUIState(_t: TranslationFn) {
   const [directCandidates, setDirectCandidates] = useState<Map<number, number>>(new Map());
 
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialActiveTabRef = useRef(activeTab);
+
+  useEffect(() => {
+    replaceCurrentHistoryState(initialActiveTabRef.current);
+
+    const applyTab = (tab: number) => {
+      setActiveTabRaw(tab);
+      writeStoredTab(tab);
+      replaceCurrentHistoryState(tab);
+    };
+    const onPopState = (event: PopStateEvent) => {
+      const tab = readTabFromHistoryState(event.state) ?? readTabFromHash();
+      if (tab !== null) applyTab(tab);
+    };
+    const onHashChange = () => {
+      const tab = readTabFromHash();
+      if (tab !== null) applyTab(tab);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("hashchange", onHashChange);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("hashchange", onHashChange);
+    };
+  }, []);
 
   const showToast = useCallback((message: string, type: "error" | "success" | "info" = "info") => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);

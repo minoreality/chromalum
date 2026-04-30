@@ -18,6 +18,7 @@ import { timestamp } from "./utils";
 import { S_TAB_ACTIVE, S_TAB_INACTIVE } from "./styles/shared";
 import { C, Z, FS, FW, FONT } from "./styles/tokens";
 import { Toast } from "./components/Toast";
+import { MAIN_TABS } from "./tabs";
 import { SourcePanel } from "./components/SourcePanel";
 import { ColorPanel } from "./components/ColorPanel";
 import { GlazePanel } from "./components/GlazePanel";
@@ -39,8 +40,6 @@ const MusicPanel = lazy(async () => {
 /* ═══════════════════════════════════════════
    LAYOUT STYLE CONSTANTS
    ═══════════════════════════════════════════ */
-const TAB_KEYS = ["tab_gallery", "tab_hex", "tab_source", "tab_color", "tab_glaze", "tab_stats", "tab_theory", "tab_music"] as const;
-
 const S_ROOT: React.CSSProperties = { minHeight: "100vh", background: C.bgRoot, color: C.textPrimary, fontFamily: FONT.mono };
 const S_HEADER: React.CSSProperties = { textAlign: "center", marginBottom: "var(--sp-header-mb)" };
 const S_TITLE: React.CSSProperties = {
@@ -430,7 +429,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
       </div>
 
       <div role="tablist" aria-label={t("tablist_label")} style={S_TABLIST}>
-        {TAB_KEYS.map((key, i) => (
+        {MAIN_TABS.map(({ key }, i) => (
           <button
             key={key}
             role="tab"

@@ -10,6 +10,7 @@ const t = ((key: string) => key) as import("../../i18n").TranslationFn;
 describe("useUIState", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    window.history.replaceState(null, "", "/");
   });
 
   afterEach(() => {
@@ -21,12 +22,58 @@ describe("useUIState", () => {
     expect(result.current.activeTab).toBe(2);
   });
 
+  it("initial activeTab prefers a supported URL hash", () => {
+    window.history.replaceState(null, "", "/#theory");
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTab).toBe(6);
+  });
+
+  it("initial activeTab falls back to the stored tab when no hash is present", () => {
+    localStorage.setItem("chromalum-active-tab-v2", "7");
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTab).toBe(7);
+  });
+
   it("setActiveTab changes tab", () => {
     const { result } = renderHook(() => useUIState(t));
     act(() => {
-      result.current.setActiveTab(2);
+      result.current.setActiveTab(6);
     });
+    expect(result.current.activeTab).toBe(6);
+    expect(window.location.hash).toBe("#theory");
+    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("6");
+  });
+
+  it("syncs activeTab from manual hash changes", () => {
+    const { result } = renderHook(() => useUIState(t));
+
+    act(() => {
+      window.history.pushState(null, "", "#music");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(result.current.activeTab).toBe(7);
+    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("7");
+  });
+
+  it("syncs activeTab from browser history state", () => {
+    const { result } = renderHook(() => useUIState(t));
+
+    act(() => {
+      result.current.setActiveTab(6);
+    });
+    act(() => {
+      window.history.replaceState({ chromalumActiveTab: 2 }, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate", { state: { chromalumActiveTab: 2 } }));
+    });
+
     expect(result.current.activeTab).toBe(2);
+    expect(window.location.hash).toBe("");
+    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("2");
   });
 
   it("showToast sets toast and auto-clears after TOAST_DURATION", () => {
