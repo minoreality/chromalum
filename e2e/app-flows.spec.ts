@@ -79,6 +79,31 @@ test("glazes a chromatic source pixel and clears the glaze layer", async ({ page
   await expect(page.locator("text=/\\d+px/")).toHaveCount(0);
 });
 
+test("keeps the Hex preview canvas at the source image dimensions", async ({ page }) => {
+  await gotoSource(page);
+
+  const sourceCanvas = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
+  const sourceSize = await sourceCanvas.evaluate((node) => {
+    const canvas = node as HTMLCanvasElement;
+    return { width: canvas.width, height: canvas.height };
+  });
+
+  await selectLevel(page, 2, "Red");
+  await drawAtCenter(page, sourceCanvas);
+  await page.getByRole("tab", { name: "Hex" }).click();
+
+  const hexPreview = page.getByRole("img", { name: "CHROMATIC DIAGRAM" });
+  await expect(hexPreview).toBeVisible();
+  await expect
+    .poll(() =>
+      hexPreview.evaluate((node) => {
+        const canvas = node as HTMLCanvasElement;
+        return { width: canvas.width, height: canvas.height };
+      }),
+    )
+    .toEqual(sourceSize);
+});
+
 test("regenerates gallery variants from a drawing and opens preview actions", async ({ page }) => {
   await gotoSource(page);
 
@@ -92,9 +117,10 @@ test("regenerates gallery variants from a drawing and opens preview actions", as
   await expect(preview).toBeVisible();
   await preview.click();
 
-  await expect(page.getByRole("button", { name: "Apply", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Bookmark", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeVisible();
+  const previewDialog = page.getByRole("dialog", { name: "Pattern preview" });
+  await expect(previewDialog.getByRole("button", { name: "Apply", exact: true })).toBeVisible();
+  await expect(previewDialog.getByRole("button", { name: "Bookmark", exact: true })).toBeVisible();
+  await expect(previewDialog.getByRole("button", { name: "Save", exact: true })).toBeVisible();
 });
 
 test("opens music controls without a global tone-mode toggle", async ({ page }) => {

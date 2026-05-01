@@ -115,14 +115,6 @@ const S_CARD_POLY: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #40a
 const S_CARD_SYM: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #8040c0" };
 const S_CARD_LUMA: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #c04060" };
 
-const S_CARD_GRID: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-  gap: SP.xl,
-  width: "100%",
-  alignItems: "start",
-};
-
 /** Find Fano line index for a triple {a, b, a XOR b}, or -1 if not a Fano line */
 function findFanoLine(a: number, b: number): number {
   const c = a ^ b;
@@ -1279,13 +1271,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
         <div style={{ ...S_SECTION, marginTop: SP.sm }} role="heading" aria-level={3}>
           {t("music_section_algebra")}
         </div>
-        <div
-          id="music-algebra-panel"
-          role="region"
-          aria-label={t("music_section_algebra")}
-          className="music-algebra-scroll"
-          style={S_CARD_GRID}
-        >
+        <div id="music-algebra-panel" role="region" aria-label={t("music_section_algebra")} className="music-algebra-scroll">
           {/* ── A: Core Algebra (GF(2)³ operations) ── */}
 
           {/* 2. Cayley Table */}

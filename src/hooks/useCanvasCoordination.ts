@@ -88,13 +88,14 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): CanvasCo
       p.height = cvs.h;
       needReset = true;
     }
+    if (hp && (hp.width !== cvs.w || hp.height !== cvs.h)) {
+      hp.width = cvs.w;
+      hp.height = cvs.h;
+    }
     if (needReset) drawing.imgCacheRef.current = { src: null, prv: null, s32: null, p32: null };
-    renderBuf(cvs.data, cvs.w, cvs.h, colorLUT, s, p || hp, drawing.imgCacheRef.current);
-    if (hp) {
-      if (hp.width !== cvs.w || hp.height !== cvs.h) {
-        hp.width = cvs.w;
-        hp.height = cvs.h;
-      }
+    const previewCanvas = p || hp;
+    renderBuf(cvs.data, cvs.w, cvs.h, colorLUT, s, previewCanvas, drawing.imgCacheRef.current);
+    if (hp && p) {
       const hctx = hp.getContext("2d");
       if (hctx && drawing.imgCacheRef.current.prv) {
         hctx.putImageData(drawing.imgCacheRef.current.prv, 0, 0);

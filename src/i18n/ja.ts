@@ -433,6 +433,7 @@ export const ja: Record<TranslationKey, string> = {
   gallery_apply_btn: "適用する",
   gallery_save_btn: "保存する",
   gallery_preview: "クリックでプレビュー",
+  gallery_preview_dialog: "パターンプレビュー",
   gallery_close_preview: "クリックで閉じる",
   gallery_bookmark: "ブックマークする",
   gallery_unbookmark: "ブックマークを解除する",

@@ -27,15 +27,6 @@ const S_SECTION: React.CSSProperties = {
   width: "100%",
 };
 
-const S_HEADING: React.CSSProperties = {
-  fontSize: 16,
-  fontWeight: FW.bold,
-  fontFamily: "monospace",
-  color: C.accentBright,
-  textAlign: "center",
-  margin: 0,
-};
-
 const S_SUBHEADING: React.CSSProperties = {
   fontSize: 14,
   fontWeight: FW.bold,
@@ -44,17 +35,6 @@ const S_SUBHEADING: React.CSSProperties = {
   textAlign: "center",
   margin: 0,
   marginTop: SP.md,
-};
-
-const S_DESC: React.CSSProperties = {
-  fontSize: 13,
-  fontFamily: "monospace",
-  color: C.textMuted,
-  textAlign: "left",
-  maxWidth: 480,
-  lineHeight: 1.6,
-  margin: 0,
-  width: "100%",
 };
 
 const S_DIVIDER: React.CSSProperties = {
@@ -88,11 +68,9 @@ function Section({ title, desc, children }: SectionProps) {
   const descs = Array.isArray(desc) ? desc : splitParagraphs(desc);
   return (
     <section style={S_SECTION}>
-      <h3 className="theory-heading" style={S_HEADING}>
-        {title}
-      </h3>
+      <h3 className="theory-heading">{title}</h3>
       {descs.map((d, i) => (
-        <p key={i} className="theory-desc" style={S_DESC}>
+        <p key={i} className="theory-desc">
           {d}
         </p>
       ))}
@@ -116,46 +94,22 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
   return (
     <PinResetContext.Provider value={pinReset}>
-      <div
-        className="theory-container"
-        onClick={onBgClick}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: SP["3xl"],
-          width: "100%",
-          maxWidth: 560,
-          margin: "0 auto",
-          boxSizing: "border-box",
-          padding: `0 ${SP.lg}px ${SP["4xl"]}px`,
-        }}
-      >
+      <div className="theory-container" onClick={onBgClick}>
         {/* Subtitle */}
         <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("label_theory")}</div>
 
         {/* Page title */}
         <div style={{ textAlign: "center" }}>
-          <h2
-            className="theory-title"
-            style={{ fontSize: FS.title, fontWeight: FW.bold, fontFamily: "monospace", color: C.textPrimary, margin: 0, marginBottom: 12 }}
-          >
-            {t("theory_title")}
-          </h2>
+          <h2 className="theory-title">{t("theory_title")}</h2>
           {splitParagraphs(t("theory_intro")).map((paragraph, i) => (
-            <p key={i} className="theory-desc theory-intro" style={{ ...S_DESC, marginTop: i === 0 ? SP.xl : SP.md, textAlign: "center" }}>
+            <p key={i} className="theory-desc theory-intro" style={{ marginTop: i === 0 ? SP.xl : SP.md }}>
               {paragraph}
             </p>
           ))}
         </div>
 
         {/* Pin hint */}
-        <p
-          className="theory-hint"
-          style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}
-        >
-          {t("theory_pin_hint")}
-        </p>
+        <p className="theory-hint">{t("theory_pin_hint")}</p>
 
         {/* ═══════════════════════════════════════
            FOUNDATIONS & NOTATION (前提と記法)  §1-§2
@@ -190,9 +144,7 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
         <Section title={t("theory_cube_title")} desc={t("theory_cube_desc")}>
           <ColorCube hlLevel={hlLevel} onHover={onHover} />
           <h4 style={S_SUBHEADING}>{t("theory_cube_hasse")}</h4>
-          <p className="theory-desc" style={S_DESC}>
-            {t("theory_cube_desc2")}
-          </p>
+          <p className="theory-desc">{t("theory_cube_desc2")}</p>
         </Section>
 
         <hr style={S_DIVIDER} />

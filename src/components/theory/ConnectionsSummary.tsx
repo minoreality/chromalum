@@ -24,8 +24,8 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
       </ul>
 
       {/* Closing tagline */}
-      <div className="theory-conn-footer" style={{ textAlign: "center" }}>
-        <p style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.accentBright, margin: 0 }}>{t("theory_conn_conclusion_2")}</p>
+      <div className="theory-conn-footer">
+        <p>{t("theory_conn_conclusion_2")}</p>
       </div>
     </div>
   );

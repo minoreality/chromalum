@@ -13,11 +13,17 @@
   --c-accent-bright: #80a0ff;
   --c-text-primary: #c8c8d8;
   --c-text-secondary: #8a8aaa;
+  --c-text-muted: #9090b8;
+  --c-text-dim: #9090b0;
+  --c-text-dimmer: #8a8aaa;
   --c-text-faint: #8888b8;
   --c-border: #2a2a40;
   --c-border-hover: #3a3a5a;
   --c-warning: #ffd700;
   --c-active-glow: rgba(96, 128, 255, 0.06);
+  --font-mono: "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
+  --font-sans:
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Yu Gothic UI", "Meiryo", "Noto Sans CJK JP", system-ui, sans-serif;
 
   /* Responsive header spacing — mobile defaults */
   --sp-root-top: 6px;
@@ -205,17 +211,70 @@ input[type="checkbox"]:focus-visible {
   display: block;
 }
 
-/* Theory tab: sans-serif for body text (all breakpoints) */
-.theory-desc,
-.theory-conn-card-body,
-.theory-conn-summary {
-  font-family:
-    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Yu Gothic UI", "Meiryo", "Noto Sans CJK JP", system-ui, sans-serif !important;
+/* Theory tab */
+.theory-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0 6px 20px;
 }
-
-/* Theory body text: slightly brighter than the intro preface */
-.theory-desc:not(.theory-intro) {
-  color: #a8a8c8 !important;
+.theory-title {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--c-text-primary, #c8c8d8);
+  margin: 0 0 12px;
+}
+.theory-heading {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--c-accent-bright, #80a0ff);
+  text-align: center;
+  margin: 0;
+}
+.theory-desc {
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: #a8a8c8;
+  text-align: left;
+  max-width: 480px;
+  line-height: 1.6;
+  margin: 0;
+  width: 100%;
+}
+.theory-intro {
+  color: var(--c-text-muted, #9090b8);
+}
+.theory-hint {
+  font-size: 8px;
+  font-family: var(--font-mono);
+  color: var(--c-text-dimmer, #8a8aaa);
+  margin: 0;
+  text-align: center;
+}
+.theory-binary-svg {
+  width: 100%;
+  max-width: 480px;
+}
+.theory-zigzag-svg {
+  width: 100%;
+  max-width: 470px;
+}
+.theory-conn-footer {
+  text-align: center;
+  font-size: 9px;
+}
+.theory-conn-footer p {
+  font-size: inherit;
+  font-family: var(--font-mono);
+  color: var(--c-accent-bright, #80a0ff);
+  margin: 0;
 }
 
 [role="tablist"] {
@@ -246,6 +305,13 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* ── Algebra cards: center SVG/canvas vertically, keep header at top ── */
+.music-algebra-scroll {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  width: 100%;
+  align-items: start;
+}
 .music-algebra-scroll > div > svg,
 .music-algebra-scroll > div > canvas,
 .music-algebra-scroll > div > div > svg {
@@ -257,7 +323,7 @@ input[type="checkbox"]:focus-visible {
 /* ── Desktop: 5-column grid for Music algebra cards ── */
 @media (min-width: 1024px) and (orientation: landscape) {
   .music-algebra-scroll {
-    grid-template-columns: repeat(5, 1fr) !important;
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -315,8 +381,8 @@ input[type="checkbox"]:focus-visible {
     max-width: 480px;
     margin: 0 auto;
   }
-  [role="tab"] {
-    flex: 1 !important;
+  [role="tablist"] > button[role="tab"] {
+    flex: 1;
   }
   .glaze-hue-section {
     margin-top: 0;
@@ -327,66 +393,60 @@ input[type="checkbox"]:focus-visible {
   }
   /* Theory tab: enlarge diagrams on desktop horizontal layout */
   .theory-container {
-    max-width: 700px !important;
+    max-width: 700px;
   }
   .theory-binary-svg {
-    max-width: 540px !important;
+    max-width: 540px;
   }
   .theory-zigzag-svg {
-    max-width: 500px !important;
-  }
-  .theory-trinity-svg {
-    max-width: 400px !important;
+    max-width: 500px;
   }
   .theory-desc {
-    max-width: 620px !important;
-    font-size: 15px !important;
-    line-height: 1.8 !important;
+    max-width: 620px;
+    font-size: 15px;
+    line-height: 1.8;
   }
   .theory-intro {
-    max-width: 540px !important;
+    max-width: 540px;
   }
   .theory-title {
-    font-size: 24px !important;
+    font-size: 24px;
   }
   .theory-heading {
-    font-size: 18px !important;
+    font-size: 18px;
   }
   .theory-hint {
-    font-size: 9px !important;
+    font-size: 9px;
   }
   .theory-conn-card {
-    max-width: 620px !important;
+    max-width: 620px;
   }
   .theory-conn-card-header {
-    font-size: 13px !important;
-    padding: 6px 10px !important;
+    font-size: 13px;
+    padding: 6px 10px;
   }
   .theory-conn-card-body {
-    font-size: 12px !important;
-    padding: 0 10px 10px !important;
-    line-height: 1.7 !important;
+    font-size: 12px;
+    padding: 0 10px 10px;
+    line-height: 1.7;
   }
   .theory-conn-card-detail {
-    font-size: 10px !important;
+    font-size: 10px;
   }
   .theory-conn-summary {
-    max-width: 620px !important;
-    font-size: 12px !important;
-    padding: 10px !important;
-    line-height: 2 !important;
+    max-width: 620px;
+    font-size: 12px;
+    padding: 10px;
+    line-height: 2;
   }
   .theory-conn-summary-title {
-    font-size: 13px !important;
+    font-size: 13px;
   }
   .theory-conn-footer {
-    font-size: 11px !important;
+    font-size: 11px;
   }
   .theory-conn-footer p {
-    font-size: inherit !important;
-  }
-  .theory-polar-svg {
-    max-width: 240px !important;
+    font-size: inherit;
   }
   .theory-annotation {
     font-size: 11px !important;

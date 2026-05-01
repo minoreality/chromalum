@@ -84,13 +84,7 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "100%" }}>
-      <svg
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="theory-zigzag-svg"
-        style={{ width: "100%", maxWidth: VB_W }}
-        role="img"
-        aria-label={t("theory_zigzag_title")}
-      >
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="theory-zigzag-svg" role="img" aria-label={t("theory_zigzag_title")}>
         {/* Complement midline Y=127.5 */}
         <line
           x1={ML}

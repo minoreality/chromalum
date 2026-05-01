@@ -261,12 +261,7 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
       >
         {t("theory_dice_net_title")}
       </p>
-      <p
-        className="theory-desc"
-        style={{ fontSize: 13, fontFamily: "monospace", color: C.textMuted, textAlign: "left", maxWidth: 480, lineHeight: 1.6, margin: 0 }}
-      >
-        {t("theory_dice_desc3")}
-      </p>
+      <p className="theory-desc">{t("theory_dice_desc3")}</p>
       <svg viewBox={`0 0 ${NET_W} ${NET_H}`} style={{ width: "100%", maxWidth: NET_W }} role="img" aria-label={t("theory_dice_title")}>
         {DICE_NET_FACES.map(({ lv, col, row }) => {
           const info = THEORY_LEVELS[lv];

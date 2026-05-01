@@ -34,10 +34,18 @@ const _genCache = {
   data: null as Uint8Array | null,
   w: 0,
   h: 0,
-  cc: "",
+  variantKey: "",
   locked: "",
   hist: "",
 };
+
+function galleryVariantKey(cc: number[], locked: boolean[], hist: number[]): string {
+  return LEVEL_CANDIDATES.map((cands, lv) => {
+    const n = cands.length;
+    if (locked[lv] || hist[lv] === 0 || n <= 1) return String(cc[lv] % n);
+    return "*";
+  }).join(",");
+}
 
 function loadBookmarks(): number[][] {
   try {
@@ -171,7 +179,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
   onScrollDone,
 }: GalleryPanelProps) {
   const { t } = useTranslation();
-  const { items, generating, generate, progress } = useGallery(cvs, cc, locked, hist);
+  const { items, generating, generate, cancel, progress } = useGallery(cvs, cc, locked, hist);
   const [bookmarks, setBookmarks] = useState<number[][]>(loadBookmarks);
   const [filter, setFilter] = useState<"all" | "bookmarks">("all");
   const [sortMode, setSortMode] = useState<SortMode>("default");
@@ -196,28 +204,37 @@ export const GalleryPanel = React.memo(function GalleryPanel({
     }
   }, [scrollToCurrent, active, onScrollDone]);
 
-  // Auto-generate when canvas pixels, colors, locks, or histogram change.
+  // Auto-generate only while Gallery is visible; hidden generation is expensive
+  // and makes controls in other tabs feel sluggish.
   useEffect(() => {
-    const ccStr = cc.join(",");
+    if (!active) {
+      if (generating) {
+        _genCache.data = null;
+        _genCache.variantKey = "";
+      }
+      cancel();
+      return;
+    }
+    const variantKey = galleryVariantKey(cc, locked, hist);
     const lockedStr = locked.join(",");
     const histStr = hist.join(",");
     if (
       _genCache.data !== cvs.data ||
       _genCache.w !== cvs.w ||
       _genCache.h !== cvs.h ||
-      _genCache.cc !== ccStr ||
+      _genCache.variantKey !== variantKey ||
       _genCache.locked !== lockedStr ||
       _genCache.hist !== histStr
     ) {
       _genCache.data = cvs.data;
       _genCache.w = cvs.w;
       _genCache.h = cvs.h;
-      _genCache.cc = ccStr;
+      _genCache.variantKey = variantKey;
       _genCache.locked = lockedStr;
       _genCache.hist = histStr;
       generate();
     }
-  }, [cvs, cc, locked, hist, generate]);
+  }, [active, cancel, cvs, cc, locked, hist, generate, generating]);
 
   const patternCount = useMemo(() => {
     let total = 1;
@@ -489,6 +506,9 @@ export const GalleryPanel = React.memo(function GalleryPanel({
       {/* Expanded preview modal */}
       {expandedImageData && expandedIndex !== null && expandedIndex < displayItems.length && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("gallery_preview_dialog")}
           onClick={() => setExpandedIndex(null)}
           style={{
             position: "fixed",
@@ -630,7 +650,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
                   toggleBookmark(item.cc);
                 }}
                 className={starred ? "gallery-bookmark-button gallery-bookmark-button--starred" : "gallery-bookmark-button"}
-                aria-label={starred ? t("gallery_unbookmark") : t("gallery_bookmark")}
+                aria-label={starred ? `${t("gallery_unbookmark")} (${i + 1})` : `${t("gallery_bookmark")} (${i + 1})`}
                 aria-pressed={starred}
                 title={starred ? t("gallery_unbookmark") : t("gallery_bookmark")}
               >

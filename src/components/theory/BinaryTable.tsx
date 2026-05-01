@@ -33,13 +33,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: "100%" }}>
-      <svg
-        viewBox={`0 0 ${SVG_W} ${H}`}
-        className="theory-binary-svg"
-        style={{ width: "100%", maxWidth: 480 }}
-        role="img"
-        aria-label={t("theory_binary_title")}
-      >
+      <svg viewBox={`0 0 ${SVG_W} ${H}`} className="theory-binary-svg" role="img" aria-label={t("theory_binary_title")}>
         {/* Header */}
         <text x={COL.lv} y={HEADER_Y} textAnchor="middle" fontSize={FS.sm} fill={C.textMuted} fontFamily="monospace" fontWeight={FW.bold}>
           Lv
