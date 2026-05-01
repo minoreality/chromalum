@@ -82,3 +82,4 @@ export const S_TAB_INACTIVE: React.CSSProperties = {
   justifyContent: "center",
 };
 export const S_SWATCH: React.CSSProperties = { borderRadius: R.md, cursor: "pointer", padding: 0, background: "none" };
+export const S_CURSOR_POINTER: React.CSSProperties = { cursor: "pointer" };

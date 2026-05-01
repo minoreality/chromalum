@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { C, FS, FW } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 /* ── Zigzag geometry ── */
@@ -173,7 +174,7 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
                 fill="transparent"
                 onMouseEnter={() => enter(i)}
                 onMouseLeave={leave}
-                style={{ cursor: "pointer" }}
+                style={S_CURSOR_POINTER}
               />
             </g>
           );

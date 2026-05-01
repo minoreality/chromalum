@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { LEVEL_INFO, LEVEL_CANDIDATES, rgb2hue } from "../color-engine";
 import { rgbStr, hexStr } from "../utils";
-import { C, FS, SP } from "../styles/tokens";
+import { C, FS, SP, FONT } from "../styles/tokens";
+import { S_CURSOR_POINTER } from "../styles/shared";
 import { LEVEL_MASK } from "../constants";
 import type { CanvasData } from "../types";
 import { useTranslation } from "../i18n";
@@ -47,7 +48,7 @@ function drawRing(
         e.stopPropagation();
         onSelect(s.info, s.color);
       },
-      style: { cursor: "pointer" } as React.CSSProperties,
+      style: S_CURSOR_POINTER,
     };
 
     if (s.fraction > 0.999) {
@@ -270,7 +271,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
           marginTop: SP.xl,
           padding: `${SP.lg}px ${SP.xl}px`,
           fontSize: FS.sm,
-          fontFamily: "monospace",
+          fontFamily: FONT.mono,
           textAlign: "center",
           lineHeight: 1.6,
           visibility: hover ? "visible" : "hidden",

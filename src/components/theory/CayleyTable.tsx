@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, FW } from "../../styles/tokens";
+import { C, FS, FW, FONT } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const CELL = 40;
@@ -150,7 +151,7 @@ export const CayleyTable = React.memo(function CayleyTable({ hlLevel, onHover }:
             const dotR = isHoverCell ? DOT_R + 2 : DOT_R - 2;
 
             return (
-              <g key={`c${ri}_${ci}`} onMouseEnter={() => onCellEnter(ri, ci)} onMouseLeave={onCellLeave} style={{ cursor: "pointer" }}>
+              <g key={`c${ri}_${ci}`} onMouseEnter={() => onCellEnter(ri, ci)} onMouseLeave={onCellLeave} style={S_CURSOR_POINTER}>
                 {/* Cell background */}
                 <rect
                   x={x}
@@ -191,7 +192,7 @@ export const CayleyTable = React.memo(function CayleyTable({ hlLevel, onHover }:
           }),
         )}
       </svg>
-      <div style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.textMuted, textAlign: "center", minHeight: "1.2em", marginTop: 2 }}>
+      <div style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textMuted, textAlign: "center", minHeight: "1.2em", marginTop: 2 }}>
         {hoverCell && (
           <>
             {THEORY_LEVELS[hoverCell.r].name} ({hoverCell.r}) {"\u2295"} {THEORY_LEVELS[hoverCell.c].name} ({hoverCell.c}) ={" "}

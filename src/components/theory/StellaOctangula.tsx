@@ -13,8 +13,8 @@ import {
   vertexRadius,
   vertexDepth,
 } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
-import { S_BTN } from "../../styles/shared";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
+import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
@@ -588,7 +588,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           onMouseEnter={() => onEnter(lv)}
           onMouseLeave={onLeave}
           onClick={() => onTap(lv)}
-          style={{ cursor: "pointer" }}
+          style={S_CURSOR_POINTER}
         >
           <circle cx={p.x} cy={p.y} r={hitR} fill="transparent" />
           {neighbour && <circle cx={p.x} cy={p.y} r={r + 4} fill="none" stroke="#fff" strokeWidth={0.8} strokeOpacity={0.3} />}
@@ -952,12 +952,12 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       {/* Annotation below SVG — fixed height to prevent layout shift on mode toggle */}
       <div style={{ minHeight: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {viewMode === "compound" ? (
-          <p style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}>
+          <p style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}>
             {showSurface ? t("theory_stella_surface_annotation") : t("theory_stella_annotation")}
           </p>
         ) : (
           <div style={{ textAlign: "center" }}>
-            <p style={{ fontSize: FS.xxs, fontFamily: "monospace", margin: 0 }}>
+            <p style={{ fontSize: FS.xxs, fontFamily: FONT.mono, margin: 0 }}>
               <span style={{ color: K8_Q3_COLOR }}>Q&#x2083;(12)</span>
               <span style={{ color: "rgba(255,255,255,0.4)" }}> + </span>
               <span style={{ color: K8_STELLA_COLOR }}>&#x2606;(12)</span>
@@ -965,7 +965,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
               <span style={{ color: K8_M4_COLOR }}>M&#x2084;(4)</span>
               <span style={{ color: "rgba(255,255,255,0.5)" }}> = 28</span>
             </p>
-            <p style={{ fontSize: FS.xxs, fontFamily: "monospace", color: C.textDimmer, margin: 0 }}>{t("theory_stella_k8_degree")}</p>
+            <p style={{ fontSize: FS.xxs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0 }}>{t("theory_stella_k8_degree")}</p>
           </div>
         )}
       </div>

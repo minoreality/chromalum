@@ -8,7 +8,7 @@ import type { PanZoomHandlers, CanvasAction, CanvasData } from "../types";
 import type { GlazeDrawingResult } from "../hooks/useGlazeDrawing";
 import { useTranslation } from "../i18n";
 import { useGlazeContext } from "../state/GlazeContext";
-import { C, Z, SP, FS, R, SHADOW, HUE_GRADIENT } from "../styles/tokens";
+import { C, Z, SP, FS, R, SHADOW, HUE_GRADIENT, FONT } from "../styles/tokens";
 
 interface GlazePanelProps {
   prvRef: React.RefObject<HTMLCanvasElement | null>;
@@ -390,7 +390,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
             ref={glazeStatusRef}
             aria-live="polite"
             aria-atomic="true"
-            style={{ fontSize: FS.sm, color: C.textDimmer, fontFamily: "monospace", minHeight: 14, textAlign: "center" }}
+            style={{ fontSize: FS.sm, color: C.textDimmer, fontFamily: FONT.mono, minHeight: 14, textAlign: "center" }}
           >
             {"\u2014"}
           </div>
@@ -492,7 +492,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
 
           {/* Hue angle slider with marker */}
           <div className="glaze-hue-section" style={{ width: "100%", display: "flex", flexDirection: "column", gap: SP.md }}>
-            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: "monospace" }}>
+            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
               {t("glaze_hue_angle")}: {Math.round(hueAngle % 360)}°
             </div>
             <div style={S_HUE_WRAP}>

@@ -1371,7 +1371,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
               const right = ab ^ ac;
               const ok = left === right;
               return (
-                <div style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDim, textAlign: "center", lineHeight: 1.5 }}>
+                <div style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDim, textAlign: "center", lineHeight: 1.5 }}>
                   <div>{`${distA} \u2227 (${distB}\u2295${distC}) = ${distA}\u2227${bxc} = ${left}`}</div>
                   <div>
                     {`(${distA}\u2227${distB}) \u2295 (${distA}\u2227${distC}) = ${ab}\u2295${ac} = ${right}`}
@@ -1493,7 +1493,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
                   {weightPlaying ? t("music_weight_stop") : t("music_weight_play")}
                 </button>
                 {weightStep && weightStep.weight >= 0 && (
-                  <span style={{ fontSize: FS.md, color: C.accent, fontFamily: "monospace" }}>
+                  <span style={{ fontSize: FS.md, color: C.accent, fontFamily: FONT.mono }}>
                     {`w=${weightStep.weight} · {${weightStep.positions.join(",")}}`}
                   </span>
                 )}

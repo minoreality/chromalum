@@ -4,7 +4,7 @@ import { LEVEL_MASK } from "../constants";
 import type { CanvasData } from "../types";
 import type { MapMode } from "../types";
 import type { PixelMaps } from "../hooks/usePixelMaps";
-import { C, SP, FS, R } from "../styles/tokens";
+import { C, SP, FS, R, FONT } from "../styles/tokens";
 import { openBlobUrlInNewTab, timestamp } from "../utils";
 import { useTranslation } from "../i18n";
 import { ConfirmModal } from "./ConfirmModal";
@@ -455,14 +455,14 @@ export function MapCanvas({
             padding: `${SP.md}px ${SP.xl}px`,
             borderRadius: R.lg,
             fontSize: FS.sm,
-            fontFamily: "monospace",
+            fontFamily: FONT.mono,
             pointerEvents: "none",
           }}
         >
           Saving...
         </div>
       )}
-      <div style={{ fontSize: FS.xs, color: C.textDimmer, fontFamily: "monospace", textAlign: "center", minHeight: 14, marginTop: SP.xs }}>
+      <div style={{ fontSize: FS.xs, color: C.textDimmer, fontFamily: FONT.mono, textAlign: "center", minHeight: 14, marginTop: SP.xs }}>
         {hoverInfo ?? "\u00A0"}
       </div>
       <ConfirmModal

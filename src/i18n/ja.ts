@@ -459,7 +459,7 @@ export const ja: Record<TranslationKey, string> = {
   // Glaze tab
   label_glaze: "HUE GLAZE OVERLAY",
   glaze_hue_angle: "色相角度",
-  aria_hue_slider: "色相角度 (0-360度)",
+  aria_hue_slider: "色相角度 (0-359度)",
   glaze_preview: "カラーマッピング",
   tool_glaze_brush: "🖌️ブラシ",
   tool_glaze_eraser: "🧽消しゴム",

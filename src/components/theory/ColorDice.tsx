@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { DICE_NET_FACES, THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
@@ -130,13 +131,7 @@ function MiniCube({
           const dim = hl !== null && !active && !anyHl;
           const output = isOutput(lv);
           return (
-            <g
-              key={`f${lv}`}
-              onMouseEnter={() => onEnter(lv)}
-              onMouseLeave={onLeave}
-              onClick={() => onTap(lv)}
-              style={{ cursor: "pointer" }}
-            >
+            <g key={`f${lv}`} onMouseEnter={() => onEnter(lv)} onMouseLeave={onLeave} onClick={() => onTap(lv)} style={S_CURSOR_POINTER}>
               <polygon
                 points={pts}
                 fill={info.color}
@@ -176,7 +171,7 @@ function MiniCube({
         })}
       </svg>
       {/* Label */}
-      <div className="theory-annotation" style={{ fontSize: 9, fontFamily: "monospace", textAlign: "center", lineHeight: 1 }}>
+      <div className="theory-annotation" style={{ fontSize: 9, fontFamily: FONT.mono, textAlign: "center", lineHeight: 1 }}>
         {view.type === "identity" ? (
           <span style={{ color: C.textDimmer }}>
             {"{ "}
@@ -227,10 +222,10 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.sm }}>
         {/* Column headers */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.xl, width: "100%", maxWidth: 220, marginTop: SP.sm }}>
-          <div className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, textAlign: "center" }}>
+          <div className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, textAlign: "center" }}>
             {t("theory_dice_additive_col")}
           </div>
-          <div className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, textAlign: "center" }}>
+          <div className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, textAlign: "center" }}>
             {t("theory_dice_subtractive_col")}
           </div>
         </div>
@@ -244,7 +239,7 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
         {/* Footer annotation */}
         <p
           className="theory-annotation"
-          style={{ fontSize: 8, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center", lineHeight: 1.6 }}
+          style={{ fontSize: 8, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center", lineHeight: 1.6 }}
         >
           {t("theory_dice_footer_ops")}
           <br />
@@ -257,7 +252,7 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
       {/* Die net description + staircase unfolding */}
       <p
         className="theory-annotation"
-        style={{ fontSize: FS.xl, fontFamily: "monospace", color: C.accentBright, margin: `${SP.xl}px 0 0`, fontWeight: FW.bold }}
+        style={{ fontSize: FS.xl, fontFamily: FONT.mono, color: C.accentBright, margin: `${SP.xl}px 0 0`, fontWeight: FW.bold }}
       >
         {t("theory_dice_net_title")}
       </p>
@@ -273,7 +268,7 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
           const isActive = hl === lv || hl === comp;
           const isDim = hl !== null && !isActive;
           return (
-            <g key={`nf${lv}`} onMouseEnter={() => enter(lv)} onMouseLeave={leave} onClick={() => onTap(lv)} style={{ cursor: "pointer" }}>
+            <g key={`nf${lv}`} onMouseEnter={() => enter(lv)} onMouseLeave={leave} onClick={() => onTap(lv)} style={S_CURSOR_POINTER}>
               <rect
                 x={x}
                 y={y}
@@ -327,7 +322,7 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
               className="theory-annotation"
               style={{
                 fontSize: FS.xs,
-                fontFamily: "monospace",
+                fontFamily: FONT.mono,
                 color: isDim ? C.textDimmer : C.textMuted,
                 opacity: isDim ? 0.3 : isActive ? 1 : 0.6,
               }}
@@ -340,7 +335,7 @@ export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Pro
 
       <p
         className="theory-annotation"
-        style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}
+        style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}
       >
         {t("theory_dice_hint")}
       </p>

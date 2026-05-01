@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { S_BTN, S_BTN_ACTIVE } from "../styles/shared";
 import { useTranslation } from "../i18n";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { C, Z, SP, FS, R } from "../styles/tokens";
+import { C, Z, SP, FS, R, FONT } from "../styles/tokens";
 
 interface CropModalProps {
   img: HTMLImageElement;
@@ -326,7 +326,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
         </div>
 
         {/* Info */}
-        <div style={{ fontSize: FS.lg, color: C.textDim, fontFamily: "monospace" }}>
+        <div style={{ fontSize: FS.lg, color: C.textDim, fontFamily: FONT.mono }}>
           {cw} × {ch} px
         </div>
 

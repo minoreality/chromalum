@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, FW } from "../../styles/tokens";
+import { C, FS, FW, FONT } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const SVG_W = 390,
@@ -94,7 +95,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
               onMouseEnter={() => enter(lv.lv)}
               onMouseLeave={leave}
               onClick={() => onHover(lv.lv)}
-              style={{ cursor: "pointer" }}
+              style={S_CURSOR_POINTER}
               opacity={opacity}
             >
               <rect x={0} y={y - ROW_H / 2} width={SVG_W} height={ROW_H} fill="transparent" />
@@ -204,13 +205,13 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
       </svg>
       <p
         className="theory-annotation"
-        style={{ fontSize: FS.md, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}
+        style={{ fontSize: FS.md, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}
       >
         {t("theory_binary_luma_formula")}
       </p>
       <p
         className="theory-annotation"
-        style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}
+        style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}
       >
         {t("theory_binary_luma_complement")}
       </p>

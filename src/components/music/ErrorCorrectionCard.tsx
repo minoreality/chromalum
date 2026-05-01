@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import { C, FS, R, SP } from "../../styles/tokens";
+import { C, FS, R, SP, FONT } from "../../styles/tokens";
 import { SyndromeTimeline } from "./SyndromeTimeline";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 import type { DecoderPhase } from "./types";
@@ -77,7 +77,7 @@ export const ErrorCorrectionCard = React.memo(function ErrorCorrectionCard({
               </option>
             ))}
           </select>
-          <span style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.textDim, whiteSpace: "nowrap" }}>{`= ${bin}\u2082`}</span>
+          <span style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDim, whiteSpace: "nowrap" }}>{`= ${bin}\u2082`}</span>
           <button type="button" style={errorPhase ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={handlePlayDecode}>
             {t("music_error_play")}
           </button>
@@ -88,7 +88,7 @@ export const ErrorCorrectionCard = React.memo(function ErrorCorrectionCard({
       <div
         style={{
           fontSize: FS.xs,
-          fontFamily: "monospace",
+          fontFamily: FONT.mono,
           color: C.accent,
           textAlign: "center",
           lineHeight: 1.4,

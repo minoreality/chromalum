@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { THEORY_LEVELS, OCTA_POINTS, OCTA_EDGES, OCTA_FACES, OCTA_COMPLEMENT_AXES } from "../../data/theory-data";
 import { C, FS, FW, SP } from "../../styles/tokens";
-import { S_BTN } from "../../styles/shared";
+import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
@@ -414,13 +414,7 @@ function DiamondView({
         const isComplement = complementLv === lv;
 
         return (
-          <g
-            key={`v-${lv}`}
-            onMouseEnter={() => onEnter(lv)}
-            onMouseLeave={onLeave}
-            onClick={() => onTap(lv)}
-            style={{ cursor: "pointer" }}
-          >
+          <g key={`v-${lv}`} onMouseEnter={() => onEnter(lv)} onMouseLeave={onLeave} onClick={() => onTap(lv)} style={S_CURSOR_POINTER}>
             <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="transparent" />
             <circle
               cx={p.x}

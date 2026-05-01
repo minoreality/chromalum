@@ -1,9 +1,9 @@
 import React from "react";
-import { C, FS, SP } from "../../styles/tokens";
+import { C, FS, SP, FONT } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 
 const S_ITEM: React.CSSProperties = {
-  fontFamily: "monospace",
+  fontFamily: FONT.mono,
   fontSize: FS.sm,
   lineHeight: 1.7,
   color: C.textPrimary,
@@ -36,9 +36,7 @@ export const ScopeSummary = React.memo(function ScopeSummary() {
 
   return (
     <div style={{ width: "100%", maxWidth: 480, borderTop: `1px solid ${C.border}`, paddingTop: SP.lg }}>
-      <p style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.textDimmer, margin: 0, lineHeight: 1.6 }}>
-        {t("theory_conn_boundary")}
-      </p>
+      <p style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, lineHeight: 1.6 }}>{t("theory_conn_boundary")}</p>
     </div>
   );
 });
@@ -178,7 +176,7 @@ export const PolyhedraNetwork = React.memo(function PolyhedraNetwork() {
           );
         })()}
       </svg>
-      <p style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, margin: 0, textAlign: "center" }}>
+      <p style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}>
         {t("theory_conn_polyhedra_legend")}
       </p>
     </div>

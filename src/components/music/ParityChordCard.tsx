@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import { C, FS, SP } from "../../styles/tokens";
+import { C, FS, SP, FONT } from "../../styles/tokens";
 import { ParityGrid } from "./ParityGrid";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 import type { DecoderPhase } from "./types";
@@ -83,7 +83,7 @@ export const ParityChordCard = React.memo(function ParityChordCard({
         </div>
       </div>
       <ParityGrid activeGroups={activeGroups} activeLevels={activeLevels} />
-      <div style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDim, lineHeight: 1.5, textAlign: "center" }}>
+      <div style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDim, lineHeight: 1.5, textAlign: "center" }}>
         {PARITY_ROWS.map((r) => {
           const active = activeGroups.includes(r.group);
           return (

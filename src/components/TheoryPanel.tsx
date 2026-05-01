@@ -2,7 +2,7 @@
 // rendered diagrams (when reused as content) CC BY 4.0 (Doctor Chromaticus).
 // See docs/LICENSE.md.
 import React, { useState, useCallback } from "react";
-import { C, SP, FS, FW } from "../styles/tokens";
+import { C, SP, FS, FW, FONT } from "../styles/tokens";
 import { useTranslation } from "../i18n";
 import { PinResetContext } from "./theory/pin-reset";
 import { VennDiagram } from "./theory/VennDiagram";
@@ -30,7 +30,7 @@ const S_SECTION: React.CSSProperties = {
 const S_SUBHEADING: React.CSSProperties = {
   fontSize: 14,
   fontWeight: FW.bold,
-  fontFamily: "monospace",
+  fontFamily: FONT.mono,
   color: C.accent,
   textAlign: "center",
   margin: 0,
@@ -47,7 +47,7 @@ const S_DIVIDER: React.CSSProperties = {
 
 const S_GROUP_LABEL: React.CSSProperties = {
   fontSize: FS.sm,
-  fontFamily: "monospace",
+  fontFamily: FONT.mono,
   color: C.textDimmer,
   textAlign: "center",
   letterSpacing: "0.15em",

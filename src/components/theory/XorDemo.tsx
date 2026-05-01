@@ -1,6 +1,6 @@
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { CayleyTable } from "./CayleyTable";
 
@@ -45,7 +45,7 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
         <span
           style={{
             fontSize: compact ? FS.xl : FS["2xl"],
-            fontFamily: "monospace",
+            fontFamily: FONT.mono,
             color: C.textMuted,
             alignSelf: "flex-end",
             height: compact ? 20 : 32,
@@ -171,17 +171,17 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
       </svg>
 
       {/* Text summary */}
-      <div className="theory-annotation" style={{ fontSize: FS.md, fontFamily: "monospace", color: C.textMuted, textAlign: "center" }}>
+      <div className="theory-annotation" style={{ fontSize: FS.md, fontFamily: FONT.mono, color: C.textMuted, textAlign: "center" }}>
         {infoA.name} ({infoA.bits.join("")}) {"\u2295"} {infoB.name} ({infoB.bits.join("")}) = {infoR.name} ({infoR.bits.join("")})
       </div>
 
       {/* Complement pairs */}
       <div style={{ display: "flex", gap: SP["2xl"], justifyContent: "center", flexWrap: "wrap" }}>
-        <div className="theory-annotation" style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.textDimmer, textAlign: "center" }}>
+        <div className="theory-annotation" style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, textAlign: "center" }}>
           {t("theory_xor_complement", infoA.name, THEORY_LEVELS[complementA].name)}
         </div>
         {b !== a && (
-          <div className="theory-annotation" style={{ fontSize: FS.sm, fontFamily: "monospace", color: C.textDimmer, textAlign: "center" }}>
+          <div className="theory-annotation" style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, textAlign: "center" }}>
             {t("theory_xor_complement", infoB.name, THEORY_LEVELS[complementB].name)}
           </div>
         )}
@@ -208,7 +208,7 @@ function LevelSelector({
   const sz = compact ? 20 : 32;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs }}>
-      <span style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer }}>{label}</span>
+      <span style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer }}>{label}</span>
       <div style={{ display: "flex", gap: compact ? 2 : 3, justifyContent: "center" }}>
         {THEORY_LEVELS.map((lv) => {
           const active = lv.lv === value;
@@ -230,7 +230,7 @@ function LevelSelector({
                 padding: 0,
                 fontSize: compact ? FS.xxs : FS.xs,
                 fontWeight: FW.bold,
-                fontFamily: "monospace",
+                fontFamily: FONT.mono,
                 color: lv.lv >= 4 ? "#000" : "#fff",
                 opacity: active ? 1 : 0.5,
               }}

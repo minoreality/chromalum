@@ -9,9 +9,9 @@ import {
   STELLA_EDGES,
   COMPLEMENT_EDGES,
 } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
-import { S_BTN } from "../../styles/shared";
+import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const DOT_R = 11;
@@ -398,13 +398,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           const active = hlVerts.has(lv);
           const dim = hl !== null && !active;
           return (
-            <g
-              key={"cv" + lv}
-              onMouseEnter={() => onEnter(lv)}
-              onMouseLeave={onLeave}
-              onClick={() => onTap(lv)}
-              style={{ cursor: "pointer" }}
-            >
+            <g key={"cv" + lv} onMouseEnter={() => onEnter(lv)} onMouseLeave={onLeave} onClick={() => onTap(lv)} style={S_CURSOR_POINTER}>
               <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="transparent" />
               {active && <circle cx={p.x} cy={p.y} r={DOT_R + 4} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1.5} />}
               <circle
@@ -455,7 +449,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           fontSize: FS.xs,
           color: C.textDimmer,
           textAlign: "center",
-          fontFamily: "monospace",
+          fontFamily: FONT.mono,
           visibility: showK8 ? "visible" : "hidden",
         }}
       >

@@ -5,7 +5,7 @@ import { S_BTN, S_BTN_ACTIVE, S_CHECKERBOARD } from "../styles/shared";
 import { rgbStr, timestamp } from "../utils";
 import type { AppState, ToolState, ViewState, SaveActions } from "../types";
 import { useTranslation } from "../i18n";
-import { C, Z, SP, FS, FW, R, O } from "../styles/tokens";
+import { C, Z, SP, FS, FW, R, O, FONT } from "../styles/tokens";
 import { ConfirmModal } from "./ConfirmModal";
 
 interface SourcePanelProps {
@@ -329,7 +329,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
             ref={statusRef}
             aria-live="polite"
             aria-atomic="true"
-            style={{ fontSize: FS.sm, color: C.textDimmest, fontFamily: "monospace", minHeight: 14, textAlign: "center" }}
+            style={{ fontSize: FS.sm, color: C.textDimmest, fontFamily: FONT.mono, minHeight: 14, textAlign: "center" }}
           >
             {"\u2014"}
           </div>

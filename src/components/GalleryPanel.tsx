@@ -7,7 +7,7 @@ import type { GalleryItem } from "../hooks/useGallery";
 import type { CanvasData } from "../types";
 import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
-import { C, SP, FS, R, DUR, Z, HUE_GRADIENT } from "../styles/tokens";
+import { C, SP, FS, R, DUR, Z, HUE_GRADIENT, FONT } from "../styles/tokens";
 
 interface GalleryPanelProps {
   cvs: CanvasData;
@@ -355,7 +355,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
                 }}
               />
             </div>
-            <span style={{ fontSize: FS.xs, color: C.textDimmer, fontFamily: "monospace" }}>
+            <span style={{ fontSize: FS.xs, color: C.textDimmer, fontFamily: FONT.mono }}>
               {progress.current}/{progress.total}
             </span>
           </div>
@@ -470,7 +470,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
               style={S_HUE_FILTER_INPUT}
             />
           </div>
-          <span style={{ fontFamily: "monospace", whiteSpace: "nowrap", width: "9ch", flexShrink: 0, textAlign: "right" }}>
+          <span style={{ fontFamily: FONT.mono, whiteSpace: "nowrap", width: "9ch", flexShrink: 0, textAlign: "right" }}>
             {filterHue}°±{filterRange}°
           </span>
           <div style={{ position: "relative", flex: "0 1 140px", minWidth: 60, height: 20 }}>

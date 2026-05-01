@@ -4,7 +4,7 @@ import { rgbStr, hexStr } from "../utils";
 import { S_NAV_ARROW, S_SWATCH } from "../styles/shared";
 import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
-import { C, SP, FS, R, DUR } from "../styles/tokens";
+import { C, SP, FS, R, DUR, FONT } from "../styles/tokens";
 import { THEORY_LEVELS } from "../data/theory-data";
 import { HEX_CANDIDATE_ANGLES } from "../data/hex-data";
 
@@ -119,7 +119,7 @@ export const ColorMappingList = memo(
                   const ibs = { display: "inline-block" as const, textAlign: "right" as const };
                   const ibc = { display: "inline-block" as const, textAlign: "center" as const, width: 9 };
                   return (
-                    <span style={{ fontSize: FS.md, fontFamily: "monospace", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: FS.md, fontFamily: FONT.mono, whiteSpace: "nowrap" }}>
                       <span style={{ ...ibs, color: tl.color, width: 36 }}>
                         {"\u2B21"}
                         {canon}°
@@ -135,7 +135,7 @@ export const ColorMappingList = memo(
                   );
                 })()}
               {cur.hueLabel && CANONICAL_ANGLES[i] == null && (
-                <span style={{ fontSize: FS.sm, color: C.textDimmer, whiteSpace: "nowrap", fontFamily: "monospace" }}>{cur.hueLabel}</span>
+                <span style={{ fontSize: FS.sm, color: C.textDimmer, whiteSpace: "nowrap", fontFamily: FONT.mono }}>{cur.hueLabel}</span>
               )}
               {has && (
                 <div style={{ display: "flex", gap: mobile ? SP.xs : SP.sm, marginLeft: "auto" }}>

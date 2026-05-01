@@ -458,7 +458,7 @@ export const en = {
   // Glaze tab
   label_glaze: "HUE GLAZE OVERLAY",
   glaze_hue_angle: "Hue Angle",
-  aria_hue_slider: "Hue angle (0-360 degrees)",
+  aria_hue_slider: "Hue angle (0-359 degrees)",
   glaze_preview: "COLOR MAPPING",
   tool_glaze_brush: "\uD83D\uDD8C\uFE0FBrush",
   tool_glaze_eraser: "\uD83E\uDDFDEraser",

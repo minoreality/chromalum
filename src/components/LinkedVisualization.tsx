@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
 import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate, hue2rgb } from "../color-engine";
 import { SP, C, R } from "../styles/tokens";
+import { S_CURSOR_POINTER } from "../styles/shared";
 import { useTranslation } from "../i18n";
 
 interface LinkedVisualizationHover {
@@ -245,7 +246,7 @@ function renderWheel({ cx, cy, alpha, radiusFn, dots, hueAngle, hoveredDot, onHo
             }
           : undefined;
         return (
-          <g key={`w${d.lv}${d.ci}`} style={d.act || hov ? { cursor: "pointer" } : undefined} {...hoverHandlers}>
+          <g key={`w${d.lv}${d.ci}`} style={d.act || hov ? S_CURSOR_POINTER : undefined} {...hoverHandlers}>
             {d.act && <circle cx={p.x} cy={p.y} r={DOT_HIT_R} fill="transparent" pointerEvents="all" />}
             <circle
               cx={p.x}
@@ -513,7 +514,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const dotHandlers = (d: LinkedVisualizationDot) => ({
     onPointerEnter: () => setHoveredDot({ lv: d.lv, ci: d.ci }),
     onPointerLeave: () => setHoveredDot(null),
-    style: { cursor: "pointer" as const },
+    style: S_CURSOR_POINTER,
   });
   const legendL0 = mode === 0 ? t("linkedviz_legend_l0_origin") : t("linkedviz_legend_l0_boundary");
   const legendL7 = mode === 0 ? t("linkedviz_legend_l7_boundary") : t("linkedviz_legend_l7_origin");
@@ -1137,7 +1138,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
                         opacity={hovL0 ? 1 : hoveredDot !== null ? 0.3 : 0.8}
                         onPointerEnter={() => setHoveredDot({ lv: 0, ci: -1 })}
                         onPointerLeave={() => setHoveredDot(null)}
-                        style={{ cursor: "pointer" }}
+                        style={S_CURSOR_POINTER}
                       >
                         <rect x={ix - 2} y={l0y - 4} width={TW - ix} height={ROW_H} fill="transparent" pointerEvents="all" />
                         <rect
@@ -1182,7 +1183,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
                         opacity={hovL7 ? 1 : hoveredDot !== null ? 0.3 : 0.8}
                         onPointerEnter={() => setHoveredDot({ lv: 7, ci: -1 })}
                         onPointerLeave={() => setHoveredDot(null)}
-                        style={{ cursor: "pointer" }}
+                        style={S_CURSOR_POINTER}
                       >
                         <rect x={ix - 2} y={l7y - 4} width={TW - ix} height={ROW_H} fill="transparent" pointerEvents="all" />
                         <rect

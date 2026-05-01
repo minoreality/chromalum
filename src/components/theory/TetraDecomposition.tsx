@@ -12,7 +12,8 @@ import {
   isBackEdge,
   vertexDepth,
 } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
@@ -231,7 +232,7 @@ function MiniTetra({
           const r = vertexRadius(lv, 11);
           const hitR = vertexRadius(lv, 16);
           return (
-            <g key={`tv${lv}`} onMouseEnter={() => onEnter(lv)} onMouseLeave={onLeave} style={{ cursor: "pointer" }}>
+            <g key={`tv${lv}`} onMouseEnter={() => onEnter(lv)} onMouseLeave={onLeave} style={S_CURSOR_POINTER}>
               <circle cx={p.x} cy={p.y} r={hitR} fill="transparent" />
               <circle
                 cx={p.x}
@@ -260,7 +261,7 @@ function MiniTetra({
           );
         })}
       </svg>
-      <span style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer }}>{label}</span>
+      <span style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer }}>{label}</span>
     </div>
   );
 }
@@ -285,7 +286,7 @@ export const TetraDecomposition = React.memo(function TetraDecomposition({ hlLev
       {/* T0/T1 Tetrahedra — two inscribed tetrahedra in the cube */}
       <p
         className="theory-annotation"
-        style={{ fontSize: FS.xl, fontFamily: "monospace", color: C.accentBright, margin: 0, fontWeight: FW.bold }}
+        style={{ fontSize: FS.xl, fontFamily: FONT.mono, color: C.accentBright, margin: 0, fontWeight: FW.bold }}
       >
         {t("theory_dice_tetra")}
       </p>
@@ -311,10 +312,10 @@ export const TetraDecomposition = React.memo(function TetraDecomposition({ hlLev
           />
         </div>
         <div style={{ maxWidth: 300, textAlign: "center" }}>
-          <p className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textMuted, margin: `0 0 2px` }}>
+          <p className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textMuted, margin: `0 0 2px` }}>
             {t("theory_dice_tetra_subgroup")}
           </p>
-          <p className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, margin: 0 }}>
+          <p className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0 }}>
             {t("theory_dice_tetra_face_xor")}
           </p>
         </div>

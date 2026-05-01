@@ -1,5 +1,6 @@
 import React from "react";
 import { FANO_LINES } from "../../data/theory-data";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { FANO_LINE_DUAL_POINTS, FANO_POINT_POSITIONS, FANO_VIEWBOX_HEIGHT, FANO_VIEWBOX_WIDTH, fanoLineSvgPath } from "./fano-geometry";
 
 interface MiniFanoChordProps {
@@ -80,7 +81,7 @@ export const MiniFanoChord = React.memo(function MiniFanoChord({
               fill="none"
               stroke="transparent"
               strokeWidth={16}
-              style={{ cursor: "pointer" }}
+              style={S_CURSOR_POINTER}
               onPointerEnter={() => onLineHover(i)}
               onPointerLeave={() => onLineHover(null)}
               onClick={() => onLineClick?.(i)}

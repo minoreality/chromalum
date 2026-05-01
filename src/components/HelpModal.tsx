@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import { S_BTN } from "../styles/shared";
 import { useTranslation } from "../i18n";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { C, Z, SP, FS, FW, R } from "../styles/tokens";
+import { C, Z, SP, FS, FW, R, FONT } from "../styles/tokens";
 
 interface HelpModalProps {
   showHelp: boolean;
@@ -46,7 +46,7 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
           maxWidth: "min(360px, calc(100vw - 32px))",
           maxHeight: "80vh",
           overflowY: "auto",
-          fontFamily: "monospace",
+          fontFamily: FONT.mono,
           fontSize: FS.lg,
           color: C.textPrimary,
         }}

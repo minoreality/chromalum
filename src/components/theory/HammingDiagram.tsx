@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect, useRef } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
-import { S_BTN_SM } from "../../styles/shared";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
+import { S_BTN_SM, S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const W = 340,
@@ -73,7 +73,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
               onMouseEnter={() => enter(lv.lv)}
               onMouseLeave={leave}
               onClick={() => handleFlip(lv.lv)}
-              style={{ cursor: "pointer" }}
+              style={S_CURSOR_POINTER}
             >
               <circle
                 cx={x}
@@ -147,12 +147,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
               })}
 
               {/* Parity bit (left) */}
-              <g
-                onMouseEnter={() => enter(pg.parity)}
-                onMouseLeave={leave}
-                onClick={() => handleFlip(pg.parity)}
-                style={{ cursor: "pointer" }}
-              >
+              <g onMouseEnter={() => enter(pg.parity)} onMouseLeave={leave} onClick={() => handleFlip(pg.parity)} style={S_CURSOR_POINTER}>
                 <circle cx={30} cy={y} r={DOT_R + 4} fill="transparent" />
                 <circle
                   cx={30}
@@ -219,7 +214,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
                     onMouseEnter={() => enter(lv)}
                     onMouseLeave={leave}
                     onClick={() => handleFlip(lv)}
-                    style={{ cursor: "pointer" }}
+                    style={S_CURSOR_POINTER}
                   >
                     <circle cx={DATA_X[ci]} cy={y} r={DOT_R + 4} fill="transparent" />
                     <circle
@@ -287,7 +282,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
                   <tspan
                     key={`sb${parity}`}
                     fontWeight={FW.bold}
-                    style={{ cursor: "pointer" }}
+                    style={S_CURSOR_POINTER}
                     onMouseEnter={() => enter(parity)}
                     onMouseLeave={leave}
                     fill={bitActive ? "#fff" : bit ? parityColor : C.textDimmer}
@@ -319,10 +314,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
             )}
           </>
         ) : (
-          <span
-            className="theory-annotation"
-            style={{ fontSize: FS.xs, fontFamily: "monospace", color: C.textDimmer, alignSelf: "center" }}
-          >
+          <span className="theory-annotation" style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, alignSelf: "center" }}>
             {t("theory_hamming_flip")}
           </span>
         )}

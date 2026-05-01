@@ -1,5 +1,6 @@
 import { angleToFreq, freqToNote, type ScaleMode } from "../../data/music-frequency";
 import { C } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import type { LinkedVisualizationDot, LinkedVisualizationOverlayContext } from "../LinkedVisualization";
 
 interface RatioMember {
@@ -189,7 +190,7 @@ export function IntervalRatios({
               return (
                 <g
                   key={`m${mi}`}
-                  style={{ cursor: "pointer" }}
+                  style={S_CURSOR_POINTER}
                   onPointerEnter={() => setHoveredDot({ lv: m.lv, ci: m.ci })}
                   onPointerLeave={() => setHoveredDot(null)}
                 >

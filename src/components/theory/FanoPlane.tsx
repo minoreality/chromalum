@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { THEORY_LEVELS, FANO_LINES, FANO_LINE_CATEGORIES, FANO_LINE_ENDPOINTS, FANO_POINTS, FANO_CIRCLE } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
+import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
-import { S_BTN } from "../../styles/shared";
+import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const W = 300,
@@ -292,7 +292,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
               onMouseEnter={() => onEnter(lv)}
               onMouseLeave={onLeave}
               onClick={() => onTap(lv)}
-              style={{ cursor: "pointer" }}
+              style={S_CURSOR_POINTER}
               opacity={pointOpacity}
             >
               <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="transparent" />
@@ -406,7 +406,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           <span
             key={"lg" + i}
             className="theory-annotation"
-            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: FS.xs, fontFamily: "monospace", color: item.color }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: FS.xs, fontFamily: FONT.mono, color: item.color }}
           >
             <svg width={18} height={2} aria-hidden="true" focusable="false">
               <line x1={0} y1={1} x2={18} y2={1} stroke={item.color} strokeWidth={2} strokeDasharray={item.dash} />

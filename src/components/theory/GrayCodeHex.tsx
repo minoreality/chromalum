@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { THEORY_LEVELS, GRAY_PATH, GRAY_TOGGLES, GRAY_POINTS } from "../../data/theory-data";
 import { C, FS, FW, SP } from "../../styles/tokens";
-import { S_BTN } from "../../styles/shared";
+import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const W = 300,
@@ -132,7 +132,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }:
                 setStep(GRAY_PATH.indexOf(lv as (typeof GRAY_PATH)[number]));
                 onHover(lv);
               }}
-              style={{ cursor: "pointer" }}
+              style={S_CURSOR_POINTER}
             >
               {(isCurrent || isHl) && (
                 <circle

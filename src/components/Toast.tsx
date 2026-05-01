@@ -1,4 +1,4 @@
-import { C, Z, SP, FS, FW, R, SHADOW, DUR } from "../styles/tokens";
+import { C, Z, SP, FS, FW, R, SHADOW, DUR, FONT } from "../styles/tokens";
 
 interface ToastProps {
   message: string;
@@ -22,7 +22,7 @@ export function Toast({ message, type }: ToastProps) {
         background: bg,
         color: C.textWhite,
         fontSize: FS.xl,
-        fontFamily: "monospace",
+        fontFamily: FONT.mono,
         fontWeight: FW.bold,
         zIndex: Z.toast,
         boxShadow: SHADOW.toast,
