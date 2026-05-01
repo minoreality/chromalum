@@ -64,9 +64,13 @@ const S_HEADER_ACTION: React.CSSProperties = {
   background: "none",
   border: "none",
   padding: 0,
-  color: C.textDimmest,
+  color: C.textDim,
   cursor: "pointer",
   font: "inherit",
+  textDecoration: "underline",
+  textDecorationColor: C.textSubtle,
+  textUnderlineOffset: 1,
+  transition: "color 0.1s, text-decoration-color 0.1s",
 };
 const S_HEADER_SEPARATOR: React.CSSProperties = { color: C.textSubtle };
 const S_HEADER_LANGUAGE_SEPARATOR: React.CSSProperties = { color: C.textSubtle, marginLeft: 4, marginRight: 4 };
@@ -443,11 +447,11 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
       <div style={S_HEADER}>
         <h1 style={S_TITLE}>CHROMALUM</h1>
         <div style={S_STATUS}>
-          <button type="button" style={S_HEADER_ACTION} onClick={() => setShowAbout(true)}>
+          <button type="button" className="header-action-link" style={S_HEADER_ACTION} onClick={() => setShowAbout(true)}>
             {t("header_about")}
           </button>
           <span style={S_HEADER_SEPARATOR}>·</span>
-          <button type="button" style={S_HEADER_ACTION} onClick={() => setShowHelp(true)}>
+          <button type="button" className="header-action-link" style={S_HEADER_ACTION} onClick={() => setShowHelp(true)}>
             {t("header_shortcuts")}
           </button>
           <span style={S_HEADER_LANGUAGE_SEPARATOR}>|</span>

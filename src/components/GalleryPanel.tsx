@@ -544,8 +544,8 @@ export const GalleryPanel = React.memo(function GalleryPanel({
                 }}
                 style={{
                   ...S_BTN,
-                  padding: `${SP.lg}px ${SP.xl}px`,
-                  fontSize: FS["2xl"],
+                  padding: `${SP.md}px ${SP.lg}px`,
+                  fontSize: FS.xl,
                   background: C.accent,
                   color: C.textWhite,
                   border: `1px solid ${C.accentBright}`,
@@ -557,8 +557,8 @@ export const GalleryPanel = React.memo(function GalleryPanel({
                 onClick={() => toggleBookmark(displayItems[expandedIndex].cc)}
                 style={{
                   ...S_BTN,
-                  padding: `${SP.lg}px ${SP.xl}px`,
-                  fontSize: FS["2xl"],
+                  padding: `${SP.md}px ${SP.lg}px`,
+                  fontSize: FS.xl,
                   background: C.bgSurfaceAlt,
                   color: C.textPrimary,
                   border: `1px solid ${C.borderHover}`,
@@ -573,8 +573,8 @@ export const GalleryPanel = React.memo(function GalleryPanel({
                 }}
                 style={{
                   ...S_BTN,
-                  padding: `${SP.lg}px ${SP.xl}px`,
-                  fontSize: FS["2xl"],
+                  padding: `${SP.md}px ${SP.lg}px`,
+                  fontSize: FS.xl,
                   background: C.bgSurfaceAlt,
                   color: C.textPrimary,
                   border: `1px solid ${C.borderHover}`,

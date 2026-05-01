@@ -47,6 +47,13 @@ body {
   overflow-x: hidden;
 }
 
+/* Header action links (About / Shortcuts / language switcher) */
+.header-action-link:hover,
+.header-action-link:focus-visible {
+  color: var(--c-accent-bright, #80a0ff);
+  text-decoration-color: var(--c-accent-bright, #80a0ff);
+}
+
 /* Tab bar: mobile stretches to fill width */
 [role="tablist"] > button[role="tab"] {
   flex: 1;
@@ -334,7 +341,7 @@ input[type="checkbox"]:focus-visible {
     --sp-header-mb: 10px;
     --sp-tablist-mb: 8px;
     --sp-title-mb: 6px;
-    --sp-status-mt: 0px;
+    --sp-status-mt: -2px;
     --fs-tab: 11px;
     --sp-tab-v: 4px;
     --sp-tab-h: 8px;
