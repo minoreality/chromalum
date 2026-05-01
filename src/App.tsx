@@ -58,7 +58,7 @@ const S_STATUS: React.CSSProperties = {
   gap: 6,
   fontSize: FS.sm,
   color: C.textFaint,
-  marginTop: 2,
+  marginTop: "var(--sp-status-mt)",
 };
 const S_HEADER_ACTION: React.CSSProperties = {
   background: "none",

@@ -52,7 +52,9 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
         }}
         onClick={stopPropagation}
       >
-        <div style={{ fontSize: FS["2xl"], fontWeight: FW.bold, marginBottom: 12, color: C.accentBright }}>{t("help_title")}</div>
+        <div style={{ fontSize: FS["2xl"], fontWeight: FW.bold, marginBottom: 12, color: C.accentBright, textAlign: "center" }}>
+          {t("help_title")}
+        </div>
         {[
           // Drawing tools
           ["B", t("help_brush")],

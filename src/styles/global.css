@@ -30,6 +30,7 @@
   --sp-header-mb: 7px;
   --sp-tablist-mb: 6px;
   --sp-title-mb: 2px;
+  --sp-status-mt: 2px;
   --fs-tab: 11px;
   --sp-tab-v: 4px;
   --sp-tab-h: 4px;
@@ -333,6 +334,7 @@ input[type="checkbox"]:focus-visible {
     --sp-header-mb: 10px;
     --sp-tablist-mb: 8px;
     --sp-title-mb: 6px;
+    --sp-status-mt: 0px;
     --fs-tab: 11px;
     --sp-tab-v: 4px;
     --sp-tab-h: 8px;

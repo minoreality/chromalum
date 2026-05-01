@@ -541,14 +541,19 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
           </div>
 
           <div style={{ display: "flex", gap: SP.md, justifyContent: "center", flexWrap: "wrap", marginTop: SP["5xl"] }}>
-            <button onClick={handleSaveGray} onContextMenu={handleShareGray} style={S_BTN} title={t("title_save_gray")}>
+            <button
+              onClick={handleSaveGray}
+              onContextMenu={handleShareGray}
+              style={S_BTN}
+              title={`${t("title_save_gray")} (${t("title_share")})`}
+            >
               {t("btn_save_gray")}
             </button>
             <button
               onClick={handleSaveColor}
               onContextMenu={handleShareColor}
               style={{ ...S_BTN, color: C.saveColor }}
-              title={t("title_save_color")}
+              title={`${t("title_save_color")} (${t("title_share")})`}
             >
               {t("btn_save_color")}
             </button>
@@ -556,7 +561,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
               onClick={handleSaveGlaze}
               onContextMenu={handleShareGlaze}
               style={{ ...S_BTN, color: C.saveGlaze }}
-              title={t("title_save_glaze")}
+              title={`${t("title_save_glaze")} (${t("title_share")})`}
             >
               {t("btn_save_glaze")}
             </button>

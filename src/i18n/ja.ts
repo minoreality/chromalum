@@ -180,7 +180,7 @@ export const ja: Record<TranslationKey, string> = {
   help_link: "Shortcuts",
   header_about: "About",
   header_shortcuts: "Shortcuts",
-  about_title: "CHROMALUM",
+  about_title: "概要",
   about_body_1:
     "CHROMALUMは、光の三原色と色の三原色、そして白と黒からなる八色を出発点に、明るさを色の関係へ組み替えていくアートツールです。この色彩表現の奥には、八つの色をめぐる代数的な構造があります。",
   about_body_2:
@@ -491,11 +491,12 @@ export const ja: Record<TranslationKey, string> = {
   stats_level_tooltip: "L{0} {1}: {2} ({3}%)",
 
   // Hidden feature hints
-  title_save_gray: "グレースケールPNG保存",
-  title_save_color: "カラーPNG保存",
-  title_save_glaze: "グレーズPNG保存",
+  title_save_gray: "グレースケールPNGを保存",
+  title_save_color: "カラーPNGを保存",
+  title_save_glaze: "グレーズPNGを保存",
   title_level_btn: "レベル{0} {1} (ダブルクリック: ブラシ/消しゴム切替)",
   title_zoom_pixel: "右クリック: ピクセル等倍ズーム",
+  title_share: "右クリック: 共有",
 
   // Accessibility - canvas & gallery
   aria_canvas_width: "キャンバス幅",
@@ -522,10 +523,10 @@ export const ja: Record<TranslationKey, string> = {
   linkedviz_sound_on: "音声 ON",
   linkedviz_sound_off: "音声",
   linkedviz_sound_title: "音響化の切替",
-  linkedviz_alpha_play: "\u03b1 自動回転（正）",
-  linkedviz_alpha_reverse: "\u03b1 自動回転（逆）",
-  linkedviz_hue_play: "色相 自動回転（正）",
-  linkedviz_hue_reverse: "色相 自動回転（逆）",
+  linkedviz_alpha_play: "αを順方向に自動回転",
+  linkedviz_alpha_reverse: "αを逆方向に自動回転",
+  linkedviz_hue_play: "色相を順方向に自動回転",
+  linkedviz_hue_reverse: "色相を逆方向に自動回転",
 
   // Music tab
   tab_music: "Music",

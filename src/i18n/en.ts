@@ -180,7 +180,7 @@ export const en = {
   help_link: "Shortcuts",
   header_about: "About",
   header_shortcuts: "Shortcuts",
-  about_title: "CHROMALUM",
+  about_title: "Overview",
   about_body_1:
     "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, plus white and black. It rearranges brightness into relationships of color, supported by an algebraic structure behind the eight-color system.",
   about_body_2:
@@ -495,6 +495,7 @@ export const en = {
   title_save_glaze: "Save glaze PNG",
   title_level_btn: "Level {0} {1} (Double-click: switch to Brush/Eraser)",
   title_zoom_pixel: "Right-click: pixel-perfect zoom",
+  title_share: "Right-click: Share",
 
   // Accessibility - canvas & gallery
   aria_canvas_width: "Canvas width",
@@ -637,5 +638,5 @@ export const en = {
 
   // Language switcher
   lang_switch: "JA",
-  lang_switch_label: "Switch language to Japanese",
+  lang_switch_label: "Switch to Japanese",
 } as const satisfies Translations;
