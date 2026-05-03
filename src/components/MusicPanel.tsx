@@ -59,6 +59,7 @@ const S_MUSIC_MODE_BTN_ACTIVE: React.CSSProperties = {
 
 const S_HUE_WRAP: React.CSSProperties = { position: "relative", width: "100%", paddingTop: SP.xl };
 const S_ALPHA_TRACK: React.CSSProperties = {
+  boxSizing: "border-box",
   width: "100%",
   height: 16,
   borderRadius: R.lg,
@@ -67,6 +68,7 @@ const S_ALPHA_TRACK: React.CSSProperties = {
   border: `1px solid ${C.border}`,
 };
 const S_HUE_TRACK: React.CSSProperties = {
+  boxSizing: "border-box",
   width: "100%",
   height: 16,
   borderRadius: R.lg,
@@ -76,10 +78,12 @@ const S_HUE_TRACK: React.CSSProperties = {
 };
 const S_HUE_INPUT: React.CSSProperties = {
   position: "absolute",
+  boxSizing: "border-box",
   top: 8,
   left: 0,
   width: "100%",
   height: 16,
+  margin: 0,
   opacity: 0,
   cursor: "pointer",
 };

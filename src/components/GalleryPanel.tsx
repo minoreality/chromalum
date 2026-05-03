@@ -158,10 +158,12 @@ const S_HUE_FILTER_TRACK: React.CSSProperties = {
 };
 const S_HUE_FILTER_INPUT: React.CSSProperties = {
   position: "absolute",
+  boxSizing: "border-box",
   top: 0,
   left: 0,
   width: "100%",
   height: "100%",
+  margin: 0,
   opacity: 0,
   cursor: "pointer",
 };
@@ -482,7 +484,16 @@ export const GalleryPanel = React.memo(function GalleryPanel({
               value={filterRange}
               onChange={(e) => setFilterRange(Number(e.target.value))}
               aria-label={t("aria_gallery_filter_range")}
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 14, accentColor: C.accent }}
+              style={{
+                position: "absolute",
+                boxSizing: "border-box",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: 14,
+                margin: 0,
+                accentColor: C.accent,
+              }}
             />
             {/* Tick marks at 45° intervals — below the slider */}
             {[45, 90, 135].map((deg) => (
