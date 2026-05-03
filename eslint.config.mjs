@@ -11,11 +11,8 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // Relax rules that conflict with intentional patterns in this codebase
+      // Relax rules that conflict with intentional canvas/audio ref patterns in this codebase
       "react-hooks/immutability": "off",
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/react-compiler": "off",
-      "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/refs": "off",
       "no-empty": ["error", { allowEmptyCatch: true }],
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],

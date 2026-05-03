@@ -3,6 +3,7 @@ import { findClosestCandidate, LEVEL_CANDIDATES } from "../../color-engine";
 import { computeGlazeDiff, applyDiffToColorMap, buildDiffFromGlazeFill } from "../../state/undo-diff";
 import { glazeFloodFill } from "../flood-fill";
 import { buildGlazeLUT, paintGlazeCircle, eraseGlazeCircle } from "../glaze-paint";
+import { buildGlazeHighlightPixels, GLAZE_HIGHLIGHT_RGBA } from "../glaze-highlight";
 import { renderBuf } from "../render-buf";
 
 describe("findClosestCandidate", () => {
@@ -150,6 +151,27 @@ describe("paintGlazeCircle / eraseGlazeCircle", () => {
     expect(colorMap[0]).toBe(0);
     // Others should remain
     expect(colorMap[1]).toBe(5);
+  });
+});
+
+describe("buildGlazeHighlightPixels", () => {
+  it("returns a transparent overlay when no pixels are glazed", () => {
+    const pixels = buildGlazeHighlightPixels(new Uint8Array(9), 3, 3);
+    expect([...pixels].every((value) => value === 0)).toBe(true);
+  });
+
+  it("dims unglazed pixels and draws stronger edges around glazed pixels", () => {
+    const colorMap = new Uint8Array(25);
+    for (let y = 1; y <= 3; y++) {
+      for (let x = 1; x <= 3; x++) colorMap[y * 5 + x] = 1;
+    }
+    const pixels = buildGlazeHighlightPixels(colorMap, 5, 5);
+    const rgbaAt = (x: number, y: number) => [...pixels.slice((y * 5 + x) * 4, (y * 5 + x) * 4 + 4)];
+
+    expect(rgbaAt(2, 2)).toEqual(GLAZE_HIGHLIGHT_RGBA.fill);
+    expect(rgbaAt(1, 1)).toEqual(GLAZE_HIGHLIGHT_RGBA.edge);
+    expect(rgbaAt(2, 0)).toEqual(GLAZE_HIGHLIGHT_RGBA.dimEdge);
+    expect(rgbaAt(0, 0)).toEqual(GLAZE_HIGHLIGHT_RGBA.dim);
   });
 });
 

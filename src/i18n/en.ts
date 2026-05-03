@@ -472,7 +472,7 @@ export const en = {
   announce_glaze_fill: "Glaze fill",
   announce_hue_picked: "Hue picked: {0}\u00B0",
   announce_hue_achromatic: "No hue (achromatic)",
-  glaze_show_highlight: "Show glazed",
+  glaze_show_highlight: "Emphasize glazed area",
   glaze_level_limited: "L{0} {1} only",
   glaze_level_click_hint: "Click to show L{0} {1} candidates",
   glaze_click_to_expand: "Click to show all candidates",

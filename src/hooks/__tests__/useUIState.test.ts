@@ -30,6 +30,15 @@ describe("useUIState", () => {
     expect(result.current.activeTab).toBe(6);
   });
 
+  it("tracks whether the stats tab has been opened from the initial hash", () => {
+    window.history.replaceState(null, "", "/#map");
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTab).toBe(5);
+    expect(result.current.hasOpenedStats).toBe(true);
+  });
+
   it("initial activeTab falls back to the stored tab when no hash is present", () => {
     localStorage.setItem("chromalum-active-tab-v2", "7");
 
@@ -48,6 +57,21 @@ describe("useUIState", () => {
     expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("6");
   });
 
+  it("tracks whether the stats tab has been opened through tab changes", () => {
+    const { result } = renderHook(() => useUIState(t));
+    expect(result.current.hasOpenedStats).toBe(false);
+
+    act(() => {
+      result.current.setActiveTab(5);
+    });
+    expect(result.current.hasOpenedStats).toBe(true);
+
+    act(() => {
+      result.current.setActiveTab(2);
+    });
+    expect(result.current.hasOpenedStats).toBe(true);
+  });
+
   it("syncs activeTab from manual hash changes", () => {
     const { result } = renderHook(() => useUIState(t));
 
@@ -58,6 +82,19 @@ describe("useUIState", () => {
 
     expect(result.current.activeTab).toBe(7);
     expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("7");
+  });
+
+  it("tracks stats opening from manual hash changes", () => {
+    const { result } = renderHook(() => useUIState(t));
+    expect(result.current.hasOpenedStats).toBe(false);
+
+    act(() => {
+      window.history.pushState(null, "", "#map");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(result.current.activeTab).toBe(5);
+    expect(result.current.hasOpenedStats).toBe(true);
   });
 
   it("syncs activeTab from browser history state", () => {

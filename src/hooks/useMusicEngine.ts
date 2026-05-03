@@ -36,6 +36,7 @@ interface MusicEngineParams {
 
 export interface MusicEngineReturn {
   initAudio: () => void;
+  stopAudio: () => void;
   triggerToneBurst: (lv: number, angle: number) => void;
   playGrayMelody: (tempo: number, onStep: (lv: number | null) => void) => void;
   stopGrayMelody: () => void;
@@ -647,65 +648,51 @@ export function useMusicEngine({
     );
   }, []);
 
+  const stopAudio = useCallback(() => {
+    if (grayIntervalRef.current !== null) {
+      clearInterval(grayIntervalRef.current);
+      grayIntervalRef.current = null;
+    }
+    if (fanoIntervalRef.current !== null) {
+      clearInterval(fanoIntervalRef.current);
+      fanoIntervalRef.current = null;
+    }
+    if (zigzagIntervalRef.current !== null) {
+      clearInterval(zigzagIntervalRef.current);
+      zigzagIntervalRef.current = null;
+    }
+    if (gray3IntervalRef.current !== null) {
+      clearInterval(gray3IntervalRef.current);
+      gray3IntervalRef.current = null;
+    }
+    if (cayleyIntervalRef.current !== null) {
+      clearInterval(cayleyIntervalRef.current);
+      cayleyIntervalRef.current = null;
+    }
+    if (k8IntervalRef.current !== null) {
+      clearInterval(k8IntervalRef.current);
+      k8IntervalRef.current = null;
+    }
+    for (const t of algebraTimersRef.current) clearTimeout(t);
+    algebraTimersRef.current = [];
+    if (nodesRef.current) {
+      teardown(nodesRef.current);
+      nodesRef.current = null;
+    }
+    setAnalyserNode(null);
+  }, []);
+
   /* ── Teardown on unmount ── */
   useEffect(() => {
-    return () => {
-      if (grayIntervalRef.current !== null) {
-        clearInterval(grayIntervalRef.current);
-        grayIntervalRef.current = null;
-      }
-      if (fanoIntervalRef.current !== null) {
-        clearInterval(fanoIntervalRef.current);
-        fanoIntervalRef.current = null;
-      }
-      if (zigzagIntervalRef.current !== null) {
-        clearInterval(zigzagIntervalRef.current);
-        zigzagIntervalRef.current = null;
-      }
-      if (gray3IntervalRef.current !== null) {
-        clearInterval(gray3IntervalRef.current);
-        gray3IntervalRef.current = null;
-      }
-      if (cayleyIntervalRef.current !== null) {
-        clearInterval(cayleyIntervalRef.current);
-        cayleyIntervalRef.current = null;
-      }
-      if (k8IntervalRef.current !== null) {
-        clearInterval(k8IntervalRef.current);
-        k8IntervalRef.current = null;
-      }
-      for (const t of algebraTimersRef.current) clearTimeout(t);
-      algebraTimersRef.current = [];
-      if (nodesRef.current) {
-        teardown(nodesRef.current);
-        nodesRef.current = null;
-      }
-      setAnalyserNode(null);
-    };
-  }, []);
+    return stopAudio;
+  }, [stopAudio]);
 
   /* ── When disabled, teardown audio ── */
   useEffect(() => {
     if (!enabled && nodesRef.current) {
-      if (grayIntervalRef.current !== null) {
-        clearInterval(grayIntervalRef.current);
-        grayIntervalRef.current = null;
-      }
-      if (fanoIntervalRef.current !== null) {
-        clearInterval(fanoIntervalRef.current);
-        fanoIntervalRef.current = null;
-      }
-      if (zigzagIntervalRef.current !== null) {
-        clearInterval(zigzagIntervalRef.current);
-        zigzagIntervalRef.current = null;
-      }
-      for (const t of algebraTimersRef.current) clearTimeout(t);
-      algebraTimersRef.current = [];
-      teardown(nodesRef.current);
-      nodesRef.current = null;
-      setAnalyserNode(null);
+      stopAudio();
     }
-  }, [enabled]);
+  }, [enabled, stopAudio]);
 
   /* ── FM toggle ── */
   useEffect(() => {
@@ -1488,6 +1475,7 @@ export function useMusicEngine({
 
   return {
     initAudio,
+    stopAudio,
     triggerToneBurst,
     playGrayMelody,
     stopGrayMelody,

@@ -473,7 +473,7 @@ export const ja: Record<TranslationKey, string> = {
   announce_glaze_fill: "グレーズ塗りつぶし",
   announce_hue_picked: "色相取得: {0}°",
   announce_hue_achromatic: "色相なし（無彩色）",
-  glaze_show_highlight: "グレーズ範囲表示",
+  glaze_show_highlight: "グレーズ範囲を強調",
   glaze_level_limited: "L{0} {1} のみ",
   glaze_level_click_hint: "クリックでL{0} {1}の候補を表示",
   glaze_click_to_expand: "クリックで全候補を表示",

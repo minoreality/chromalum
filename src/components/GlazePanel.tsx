@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import { LinkedVisualization } from "./LinkedVisualization";
 import { BRUSH_MIN, BRUSH_MAX, BRUSH_STEP, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from "../constants";
+import { buildGlazeHighlightPixels } from "../drawing/glaze-highlight";
 import type { GlazeToolId } from "../constants";
 import { S_BTN, S_BTN_ACTIVE, S_CHECKERBOARD } from "../styles/shared";
 import type { PanZoomHandlers, CanvasAction, CanvasData } from "../types";
@@ -269,59 +270,30 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
   const hueMarkerLeft = `${((hueAngle % 360) / 360) * 100}%`;
 
   // Highlight overlay: debounced generation to avoid jank during rapid strokes
-  const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+  const highlightCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevHighlightUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!showHighlight) {
-      if (prevHighlightUrlRef.current) {
-        URL.revokeObjectURL(prevHighlightUrlRef.current);
-        prevHighlightUrlRef.current = null;
-      }
-      setHighlightUrl(null);
-      return;
-    }
-    let cancelled = false;
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    if (!showHighlight || glazeCount === 0) return;
+    let cancelled = false;
     highlightTimerRef.current = setTimeout(() => {
-      const c = document.createElement("canvas");
-      c.width = cvs.w;
-      c.height = cvs.h;
+      if (cancelled) return;
+      const c = highlightCanvasRef.current;
+      if (!c) return;
+      if (c.width !== cvs.w) c.width = cvs.w;
+      if (c.height !== cvs.h) c.height = cvs.h;
       const ctx = c.getContext("2d");
       if (!ctx) return;
       const img = ctx.createImageData(cvs.w, cvs.h);
-      const d = img.data;
-      for (let i = 0; i < cvs.colorMap.length; i++) {
-        if (cvs.colorMap[i] > 0) {
-          d[i * 4] = 255;
-          d[i * 4 + 1] = 255;
-          d[i * 4 + 2] = 0;
-          d[i * 4 + 3] = 80;
-        }
-      }
+      img.data.set(buildGlazeHighlightPixels(cvs.colorMap, cvs.w, cvs.h));
       ctx.putImageData(img, 0, 0);
-      c.toBlob((blob) => {
-        if (cancelled || !blob) return;
-        const url = URL.createObjectURL(blob);
-        if (cancelled) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-        if (prevHighlightUrlRef.current) URL.revokeObjectURL(prevHighlightUrlRef.current);
-        prevHighlightUrlRef.current = url;
-        setHighlightUrl(url);
-      });
-    }, 150);
+    }, 75);
     return () => {
       cancelled = true;
       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-      if (prevHighlightUrlRef.current) {
-        URL.revokeObjectURL(prevHighlightUrlRef.current);
-        prevHighlightUrlRef.current = null;
-      }
     };
-  }, [showHighlight, cvs.colorMap, cvs.w, cvs.h]);
+  }, [showHighlight, glazeCount, cvs.colorMap, cvs.w, cvs.h]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}>
@@ -354,10 +326,12 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
               onPointerLeave={handlePointerLeave}
               onContextMenu={handleContextMenu}
             />
-            {highlightUrl && (
-              <img
-                src={highlightUrl}
-                alt=""
+            {showHighlight && glazeCount > 0 && (
+              <canvas
+                ref={highlightCanvasRef}
+                width={cvs.w}
+                height={cvs.h}
+                aria-hidden="true"
                 style={{
                   position: "absolute",
                   top: 0,
@@ -438,7 +412,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
           </div>
 
           {/* Options + Clear */}
-          <div style={{ display: "flex", alignItems: "center", gap: SP.lg, flexWrap: "wrap", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: SP.lg, flexWrap: "wrap", justifyContent: "center", marginTop: SP.xl }}>
             <label style={{ fontSize: FS.sm, color: C.textDim, cursor: "pointer", display: "flex", alignItems: "center", gap: SP.sm }}>
               <input type="checkbox" checked={showHighlight} onChange={(e) => setShowHighlight(e.target.checked)} />
               {t("glaze_show_highlight")}
@@ -492,9 +466,6 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
 
           {/* Hue angle slider with marker */}
           <div className="glaze-hue-section" style={{ width: "100%", display: "flex", flexDirection: "column", gap: SP.md }}>
-            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
-              {t("glaze_hue_angle")}: {Math.round(hueAngle % 360)}°
-            </div>
             <div style={S_HUE_WRAP}>
               <div style={S_HUE_TRACK} />
               {/* Marker triangle */}

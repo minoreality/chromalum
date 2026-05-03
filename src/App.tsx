@@ -128,6 +128,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
     setTool,
     activeTab,
     setActiveTab,
+    hasOpenedStats,
     showHelp,
     setShowHelp,
     toast,
@@ -155,12 +156,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
 
   const hist = state.hist;
   const [scrollToGallery, setScrollToGallery] = useState(false);
-  const [hasOpenedStats, setHasOpenedStats] = useState(() => activeTab === 5);
   const [showAbout, setShowAbout] = useState(false);
-
-  useEffect(() => {
-    if (activeTab === 5) setHasOpenedStats(true);
-  }, [activeTab]);
 
   useEffect(() => {
     document.title = `CHROMALUM - ${t(MAIN_TABS[activeTab].key)}`;

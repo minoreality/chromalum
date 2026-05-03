@@ -7,9 +7,10 @@ import type { TranslationFn } from "../i18n";
 const LS_TAB = "chromalum-active-tab-v2";
 const LS_SCROLL = "chromalum-scroll-y";
 const DEFAULT_TAB = 2;
+const STATS_TAB = 5;
 const HISTORY_TAB_STATE_KEY = "chromalumActiveTab";
 const TAB_HASH_LOOKUP = new Map<string, number>(MAIN_TABS.map(({ hash }, tab) => [hash, tab]));
-TAB_HASH_LOOKUP.set("stats", 5);
+TAB_HASH_LOOKUP.set("stats", STATS_TAB);
 
 function isValidTab(tab: unknown): tab is number {
   return typeof tab === "number" && Number.isInteger(tab) && tab >= 0 && tab < MAIN_TABS.length;
@@ -74,9 +75,11 @@ function readTabFromHistoryState(state: unknown): number | null {
 
 export function useUIState(_t: TranslationFn) {
   const [activeTab, setActiveTabRaw] = useState(readInitialActiveTab);
+  const [hasOpenedStats, setHasOpenedStats] = useState(() => activeTab === STATS_TAB);
   const setActiveTab = useCallback((tab: number) => {
     if (!isValidTab(tab)) return;
     setActiveTabRaw(tab);
+    if (tab === STATS_TAB) setHasOpenedStats(true);
     writeStoredTab(tab);
     pushTabHash(tab);
   }, []);
@@ -95,6 +98,7 @@ export function useUIState(_t: TranslationFn) {
 
     const applyTab = (tab: number) => {
       setActiveTabRaw(tab);
+      if (tab === STATS_TAB) setHasOpenedStats(true);
       writeStoredTab(tab);
       replaceCurrentHistoryState(tab);
     };
@@ -141,6 +145,7 @@ export function useUIState(_t: TranslationFn) {
   return {
     activeTab,
     setActiveTab,
+    hasOpenedStats,
     showHelp,
     setShowHelp,
     toast,

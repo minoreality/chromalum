@@ -244,6 +244,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
   // Signals for explorer components to stop/reset
   const [stopSignal, setStopSignal] = useState(0);
   const [resetSignal, setResetSignal] = useState(0);
+  const backgroundStoppedRef = useRef(false);
 
   // Cross-card state: K8 layer ↔ TetraSplit phase
   const [k8Layer, setK8Layer] = useState<1 | 2 | 3 | null>(null);
@@ -331,6 +332,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
     // Fano plane sidebar state
     setGrayStep(null);
     setRhythmPlaying(false);
+    setRhythmFiringLines([]);
     setXorStep(null);
     setFanoContextLine(-1);
     setPartitionPhase(null);
@@ -344,11 +346,43 @@ export const MusicPanel = React.memo(function MusicPanel() {
     setDistPhase(null);
     setOctaPhase(null);
     setGl32Flash(false);
+    setK8Layer(null);
+    setTetraPhase(null);
+    setErrorPhase(null);
     // Signal explorer components to reset transient state
     setStopSignal((s) => s + 1);
     engine.setDroneMuted(true);
     setDroneMuted(true);
   }, [engine]);
+
+  const handleBackgroundStop = useCallback(() => {
+    if (backgroundStoppedRef.current) return;
+    backgroundStoppedRef.current = true;
+    handleStopAll();
+    engine.stopAudio();
+  }, [engine, handleStopAll]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handleBackgroundStop();
+      } else if (document.visibilityState === "visible") {
+        backgroundStoppedRef.current = false;
+      }
+    };
+    const onPageHide = () => handleBackgroundStop();
+    const onPageShow = () => {
+      backgroundStoppedRef.current = false;
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [handleBackgroundStop]);
 
   // Reset Defaults handler
   const handleResetDefaults = useCallback(() => {

@@ -140,6 +140,7 @@ class FakeAudioContext {
   }
 
   close() {
+    this.state = "closed";
     return Promise.resolve();
   }
 }
@@ -185,6 +186,51 @@ describe("useMusicEngine", () => {
     const noiseGain = ctx.gains[7];
     expect(noiseGain.gain.valueAssignments[0]).toBe(0);
     expect(noiseGain.gain.targetValues).toContain(0);
+
+    unmount();
+  });
+
+  it("releases the audio context and creates a fresh one on the next init", () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderHook(() =>
+      useMusicEngine({
+        enabled: true,
+        levels: [
+          { lv: 1, angle: 240, gray: 29 },
+          { lv: 2, angle: 0, gray: 76 },
+          { lv: 3, angle: 300, gray: 105 },
+          { lv: 4, angle: 120, gray: 150 },
+          { lv: 5, angle: 180, gray: 179 },
+          { lv: 6, angle: 60, gray: 226 },
+        ],
+        hoveredLv: null,
+        alpha0: 0,
+        alpha7: 0,
+        volume: 0.7,
+        scaleMode: "diatonic7",
+        fmEnabled: false,
+        panEnabled: true,
+        hoveredFanoLine: null,
+        luminanceMode: "symmetric",
+        originMode: 0,
+      }),
+    );
+
+    act(() => {
+      result.current.initAudio();
+    });
+    const firstCtx = FakeAudioContext.instances[0];
+
+    act(() => {
+      result.current.stopAudio();
+    });
+    expect(firstCtx.state).toBe("closed");
+
+    act(() => {
+      result.current.initAudio();
+    });
+    expect(FakeAudioContext.instances).toHaveLength(2);
 
     unmount();
   });
