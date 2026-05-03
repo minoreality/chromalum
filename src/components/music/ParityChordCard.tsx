@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import { C, FS, SP, FONT } from "../../styles/tokens";
+import { C, FS, FONT } from "../../styles/tokens";
 import { ParityGrid } from "./ParityGrid";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 import type { DecoderPhase } from "./types";
@@ -16,7 +16,7 @@ interface ParityChordCardProps {
 }
 
 const S_LABEL: React.CSSProperties = {
-  fontSize: FS.lg,
+  fontSize: "var(--music-card-label-fs, 11px)",
   color: C.textDim,
   whiteSpace: "nowrap",
 };
@@ -66,10 +66,10 @@ export const ParityChordCard = React.memo(function ParityChordCard({
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: SP.md, width: "100%", flex: 1 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: SP.sm, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-control-gap, 3px)", alignItems: "center" }}>
         <span style={S_LABEL}>{t("music_parity_title")}</span>
-        <div style={{ display: "flex", gap: SP.sm, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "var(--music-card-control-gap, 3px)", alignItems: "center" }}>
           {([0, 1, 2] as const).map((group) => (
             <button
               key={group}

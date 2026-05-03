@@ -32,13 +32,16 @@ export const S_BTN_ACTIVE: React.CSSProperties = {
   color: C.accentBright,
   fontWeight: FW.bold,
 };
-export const S_BTN_SM: React.CSSProperties = { ...S_BTN, padding: `${SP.xs}px ${SP.md}px`, fontSize: FS.md };
+const BTN_SM_PADDING = `var(--btn-sm-padding, ${SP.xs}px ${SP.md}px)`;
+const BTN_SM_FONT_SIZE = `var(--btn-sm-font-size, ${FS.md}px)`;
+
+export const S_BTN_SM: React.CSSProperties = { ...S_BTN, padding: BTN_SM_PADDING, fontSize: BTN_SM_FONT_SIZE };
 // SM-active drops the font-weight bold (kept on larger S_BTN_ACTIVE) so toggle buttons
 // don't reflow between play/stop states. Active is still clearly marked via color+border+bg.
 export const S_BTN_SM_ACTIVE: React.CSSProperties = {
   ...S_BTN_ACTIVE,
-  padding: `${SP.xs}px ${SP.md}px`,
-  fontSize: FS.md,
+  padding: BTN_SM_PADDING,
+  fontSize: BTN_SM_FONT_SIZE,
   fontWeight: FW.normal,
 };
 export const S_NAV_ARROW: React.CSSProperties = {

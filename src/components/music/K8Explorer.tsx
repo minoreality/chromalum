@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import { C, FS, SP } from "../../styles/tokens";
+import { C } from "../../styles/tokens";
 import { K8LayerGraph } from "./K8LayerGraph";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 
@@ -16,7 +16,7 @@ interface K8ExplorerProps {
 }
 
 const S_LABEL: React.CSSProperties = {
-  fontSize: FS.lg,
+  fontSize: "var(--music-card-label-fs, 11px)",
   color: C.textDim,
   whiteSpace: "nowrap",
 };
@@ -79,10 +79,18 @@ export const K8Explorer = React.memo(function K8Explorer({
   }, [resetSignal, onLayerChange]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: SP.md, width: "100%", flex: 1 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: SP.sm, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-control-gap, 3px)", alignItems: "center" }}>
         <span style={S_LABEL}>{t("music_k8_explorer_title")}</span>
-        <div style={{ display: "flex", gap: SP.sm, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--music-card-control-gap, 3px)",
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           <button type="button" style={activeLayer === 1 ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={() => handleLayerToggle(1)}>
             {`${activeLayer === 1 ? "\u23f9" : "\u25b6"} ${t("music_k8_d1")}`}
           </button>

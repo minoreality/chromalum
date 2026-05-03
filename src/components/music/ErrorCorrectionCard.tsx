@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import { C, FS, R, SP, FONT } from "../../styles/tokens";
+import { C, FS, R, FONT } from "../../styles/tokens";
 import { SyndromeTimeline } from "./SyndromeTimeline";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 import type { DecoderPhase } from "./types";
@@ -17,14 +17,14 @@ interface ErrorCorrectionCardProps {
 }
 
 const S_LABEL: React.CSSProperties = {
-  fontSize: FS.lg,
+  fontSize: "var(--music-card-label-fs, 11px)",
   color: C.textDim,
   whiteSpace: "nowrap",
 };
 
 const S_SELECT: React.CSSProperties = {
-  fontSize: FS.lg,
-  padding: "2px 4px",
+  fontSize: "var(--music-card-select-fs, 11px)",
+  padding: "var(--music-card-select-padding, 2px 4px)",
   background: C.bgPanel,
   color: C.textPrimary,
   border: `1px solid ${C.border}`,
@@ -61,10 +61,18 @@ export const ErrorCorrectionCard = React.memo(function ErrorCorrectionCard({
   const showSyndrome = errorPhase === "syndrome" || errorPhase === "corrected";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: SP.md, width: "100%", flex: 1 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: SP.sm, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-control-gap, 3px)", alignItems: "center" }}>
         <span style={S_LABEL}>{t("music_error_title")}</span>
-        <div style={{ display: "flex", gap: SP.sm, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--music-card-control-gap, 3px)",
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           <select
             value={errorPos}
             onChange={(e) => onErrorPosChange(Number(e.target.value))}
@@ -77,7 +85,9 @@ export const ErrorCorrectionCard = React.memo(function ErrorCorrectionCard({
               </option>
             ))}
           </select>
-          <span style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDim, whiteSpace: "nowrap" }}>{`= ${bin}\u2082`}</span>
+          <span style={{ fontSize: "var(--music-card-body-fs, 9px)", fontFamily: FONT.mono, color: C.textDim, whiteSpace: "nowrap" }}>
+            {`= ${bin}\u2082`}
+          </span>
           <button type="button" style={errorPhase ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={handlePlayDecode}>
             {t("music_error_play")}
           </button>

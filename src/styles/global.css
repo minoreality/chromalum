@@ -322,12 +322,56 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* ── Algebra cards: center SVG/canvas vertically, keep header at top ── */
+.linked-viz-controls {
+  --linked-viz-toggle-padding: 3px 10px;
+  --linked-viz-toggle-fs: 11px;
+  --linked-viz-toggle-line: 14px;
+  --linked-viz-control-gap: 3px;
+  --linked-viz-delta-width: 62px;
+}
+
+@media (max-width: 559px) {
+  .linked-viz-controls {
+    --linked-viz-toggle-padding: 2px 7px;
+    --linked-viz-toggle-fs: 10px;
+    --linked-viz-toggle-line: 13px;
+    --linked-viz-delta-width: 52px;
+  }
+}
+
+@media (max-width: 360px) {
+  .linked-viz-controls {
+    --linked-viz-toggle-padding: 2px 4px;
+    --linked-viz-toggle-fs: 9px;
+    --linked-viz-toggle-line: 12px;
+    --linked-viz-control-gap: 2px;
+    --linked-viz-delta-width: 44px;
+  }
+}
+
 .music-algebra-scroll {
+  --music-card-padding: 5px;
+  --music-card-gap: 3px;
+  --music-card-control-gap: 2px;
+  --music-card-label-fs: 10px;
+  --music-card-body-fs: 8px;
+  --music-card-select-fs: 10px;
+  --music-card-select-padding: 1px 3px;
+  --music-card-header-size: 34px;
+  --music-card-toggle-width: 64px;
+  --music-card-toggle-height: 18px;
+  --btn-sm-font-size: 9px;
+  --btn-sm-padding: 1px 3px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 8px;
   width: 100%;
   align-items: start;
+}
+.music-algebra-scroll > div {
+  min-width: 0;
+  height: 100%;
 }
 .music-algebra-scroll > div > svg,
 .music-algebra-scroll > div > canvas,
@@ -335,6 +379,41 @@ input[type="checkbox"]:focus-visible {
   margin-top: auto;
   margin-bottom: auto;
   align-self: stretch;
+}
+
+@media (max-width: 360px) {
+  .music-algebra-scroll {
+    --music-card-padding: 4px;
+    --music-card-gap: 2px;
+    --music-card-control-gap: 2px;
+    --music-card-label-fs: 9px;
+    --music-card-body-fs: 7px;
+    --music-card-select-fs: 9px;
+    --music-card-select-padding: 1px 2px;
+    --music-card-header-size: 30px;
+    --music-card-toggle-width: 58px;
+    --music-card-toggle-height: 17px;
+    --btn-sm-font-size: 8px;
+    --btn-sm-padding: 1px 2px;
+  }
+}
+
+@media (min-width: 560px) {
+  .music-algebra-scroll {
+    --music-card-padding: 6px;
+    --music-card-gap: 4px;
+    --music-card-control-gap: 3px;
+    --music-card-label-fs: 11px;
+    --music-card-body-fs: 9px;
+    --music-card-select-fs: 11px;
+    --music-card-select-padding: 2px 4px;
+    --music-card-header-size: 38px;
+    --music-card-toggle-width: 70px;
+    --music-card-toggle-height: 20px;
+    --btn-sm-font-size: 10px;
+    --btn-sm-padding: 2px 4px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
 }
 
 /* ── Desktop: 5-column grid for Music algebra cards ── */

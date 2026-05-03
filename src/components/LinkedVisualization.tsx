@@ -281,9 +281,9 @@ function renderWheel({ cx, cy, alpha, radiusFn, dots, hueAngle, hoveredDot, onHo
 
 /* ── Toggle button style ── */
 const S_TOGGLE: React.CSSProperties = {
-  padding: "3px 10px",
-  fontSize: 11,
-  lineHeight: "14px",
+  padding: "var(--linked-viz-toggle-padding, 3px 10px)",
+  fontSize: "var(--linked-viz-toggle-fs, 11px)",
+  lineHeight: "var(--linked-viz-toggle-line, 14px)",
   borderRadius: R.md,
   border: `1px solid ${C.border}`,
   cursor: "pointer",
@@ -293,9 +293,9 @@ const S_TOGGLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 const S_TOGGLE_ACTIVE: React.CSSProperties = {
-  padding: "3px 10px",
-  fontSize: 11,
-  lineHeight: "14px",
+  padding: "var(--linked-viz-toggle-padding, 3px 10px)",
+  fontSize: "var(--linked-viz-toggle-fs, 11px)",
+  lineHeight: "var(--linked-viz-toggle-line, 14px)",
   borderRadius: R.md,
   border: `1px solid ${C.accent}`,
   cursor: "pointer",
@@ -1276,7 +1276,19 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   return (
     <div className="linked-viz-root" style={{ marginTop: SP.xl, textAlign: "center" }}>
       {/* L0/L7 Toggle + Δα controls */}
-      <div style={{ marginBottom: SP.md, display: "flex", flexWrap: "wrap", gap: SP.sm, justifyContent: "center", alignItems: "center" }}>
+      <div
+        className="linked-viz-controls"
+        style={{
+          marginBottom: SP.md,
+          display: "flex",
+          flexWrap: "nowrap",
+          gap: "var(--linked-viz-control-gap, 3px)",
+          justifyContent: "center",
+          alignItems: "center",
+          maxWidth: "100%",
+          minWidth: 0,
+        }}
+      >
         <button type="button" style={mode === 0 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setMode(0)}>
           {t("linkedviz_mode_l0")}
         </button>
@@ -1286,8 +1298,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         <span
           style={{
             color: isInverted ? C.accent : C.textDim,
-            fontSize: 11,
-            width: 62,
+            fontSize: "var(--linked-viz-toggle-fs, 11px)",
+            width: "var(--linked-viz-delta-width, 62px)",
             textAlign: "right",
             display: "inline-block",
             flexShrink: 0,

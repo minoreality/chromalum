@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import { C, FS, SP } from "../../styles/tokens";
+import { C } from "../../styles/tokens";
 import { TetraSplitView } from "./TetraSplitView";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 
@@ -16,12 +16,12 @@ interface TetraSplitCardProps {
 const S_COL: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: SP.sm,
+  gap: "var(--music-card-control-gap, 3px)",
   alignItems: "center",
 };
 
 const S_TITLE: React.CSSProperties = {
-  fontSize: FS.lg,
+  fontSize: "var(--music-card-label-fs, 11px)",
   color: C.textDim,
   whiteSpace: "nowrap",
 };
@@ -67,7 +67,7 @@ export const TetraSplitCard = React.memo(function TetraSplitCard({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: SP.md,
+        gap: "var(--music-card-gap, 4px)",
         width: "100%",
         flex: 1,
         transition: "box-shadow .25s",
@@ -76,7 +76,7 @@ export const TetraSplitCard = React.memo(function TetraSplitCard({
     >
       <div style={S_COL}>
         <span style={S_TITLE}>{t("music_tetra_title")}</span>
-        <div style={{ display: "flex", gap: SP.lg }}>
+        <div style={{ display: "flex", gap: "var(--music-card-control-gap, 3px)" }}>
           <button type="button" style={tetraPhase === "t0" ? S_BTN_SM_ACTIVE : S_BTN_SM} onClick={handlePlayT0}>
             {"\u25b6 T0"}
           </button>

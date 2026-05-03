@@ -26,17 +26,24 @@ import { FANO_LINES } from "../data/theory-data";
 
 /* ── Style constants ── */
 
+const MUSIC_CARD_LABEL_FONT_SIZE = `var(--music-card-label-fs, ${FS.lg}px)`;
+const MUSIC_CARD_SELECT_FONT_SIZE = `var(--music-card-select-fs, ${FS.lg}px)`;
+const MUSIC_CARD_SELECT_PADDING = "var(--music-card-select-padding, 2px 4px)";
+const MUSIC_CARD_PADDING = "var(--music-card-padding, 6px)";
+const MUSIC_CARD_GAP = "var(--music-card-gap, 4px)";
+const MUSIC_CARD_CONTROL_GAP = `var(--music-card-control-gap, ${SP.sm}px)`;
+
 const S_ROW: React.CSSProperties = {
   display: "flex",
-  gap: SP.sm,
+  gap: MUSIC_CARD_CONTROL_GAP,
   alignItems: "center",
   flexWrap: "wrap",
   justifyContent: "center",
 };
-const S_LABEL: React.CSSProperties = { fontSize: FS.lg, color: C.textDim, whiteSpace: "nowrap" };
+const S_LABEL: React.CSSProperties = { fontSize: MUSIC_CARD_LABEL_FONT_SIZE, color: C.textDim, whiteSpace: "nowrap" };
 const S_SELECT: React.CSSProperties = {
-  fontSize: FS.lg,
-  padding: "2px 4px",
+  fontSize: MUSIC_CARD_SELECT_FONT_SIZE,
+  padding: MUSIC_CARD_SELECT_PADDING,
   background: C.bgPanel,
   color: C.textPrimary,
   border: `1px solid ${C.border}`,
@@ -105,12 +112,13 @@ const S_CARD: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 4,
-  padding: "6px",
+  gap: MUSIC_CARD_GAP,
+  padding: MUSIC_CARD_PADDING,
+  boxSizing: "border-box",
   borderRadius: R.lg,
   border: `1px solid ${C.border}`,
   background: "rgba(255,255,255,0.02)",
-  aspectRatio: "4 / 5",
+  aspectRatio: "3 / 4",
 };
 const S_CARD_ALGEBRA: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #c0a040" };
 const S_CARD_CODE: React.CSSProperties = { ...S_CARD, borderTop: "2px solid #4060c0" };

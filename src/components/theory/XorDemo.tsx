@@ -46,6 +46,8 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
           flexDirection: compact ? "column" : "row",
           gap: compact ? SP.sm : SP["3xl"],
           alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
           maxWidth: "100%",
         }}
       >
@@ -229,7 +231,7 @@ function LevelSelector({
 }) {
   const sz = compact ? 24 : 32;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs, flexShrink: 0 }}>
       <div style={{ display: "flex", gap: 3, justifyContent: "center" }}>
         {THEORY_LEVELS.map((lv) => {
           const active = lv.lv === value;

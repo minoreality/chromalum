@@ -14,9 +14,29 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
   const { t } = useTranslation();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xl, width: "100%", maxWidth: 480 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: SP.xl,
+        width: "100%",
+        maxWidth: 480,
+        boxSizing: "border-box",
+      }}
+    >
       {/* Flat bullet list */}
-      <ul style={{ margin: 0, paddingLeft: SP["2xl"], display: "flex", flexDirection: "column", gap: SP.lg, width: "100%" }}>
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: SP["2xl"],
+          display: "flex",
+          flexDirection: "column",
+          gap: SP.lg,
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
         <li style={S_ITEM}>{t("theory_conn_fano_hamming_hook")}</li>
         <li style={S_ITEM}>{t("theory_conn_cube_geometry_hook")}</li>
         <li style={S_ITEM}>{t("theory_conn_gray_hook")}</li>
@@ -35,7 +55,7 @@ export const ScopeSummary = React.memo(function ScopeSummary() {
   const { t } = useTranslation();
 
   return (
-    <div style={{ width: "100%", maxWidth: 480, borderTop: `1px solid ${C.border}`, paddingTop: SP.lg }}>
+    <div style={{ width: "100%", maxWidth: 480, borderTop: `1px solid ${C.border}`, paddingTop: SP.lg, boxSizing: "border-box" }}>
       <p style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, lineHeight: 1.6 }}>{t("theory_conn_boundary")}</p>
     </div>
   );
