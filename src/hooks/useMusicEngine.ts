@@ -1,14 +1,23 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { COMPLEMENT_EDGES, CUBE_EDGES, FANO_LINES, STELLA_EDGES, TETRA_T0, TETRA_T1 } from "../data/theory-data";
-import {
-  COMPLEMENT_PAIRS,
-  FANO_RHYTHM_PATTERNS,
-  LUMA_VALUES,
-  ZIGZAG_PATH,
-  bitSpectrumComponents,
-  fanoLinesThrough,
-} from "../data/music-data";
+import { FANO_LINES, TETRA_T0, TETRA_T1 } from "../data/theory-data";
+import { COMPLEMENT_PAIRS, FANO_RHYTHM_PATTERNS, LUMA_VALUES, ZIGZAG_PATH, bitSpectrumComponents } from "../data/music-data";
 import { BASE_FREQ, angleToFreq, type ScaleMode } from "../data/music-frequency";
+import {
+  ALL_POINTS,
+  AND_TRIADS,
+  BT601_LUMINANCE,
+  BT601_MAX,
+  FULL_GRAY_CODE,
+  GRAY_VOICE_FREQS,
+  K8_LAYER_EDGES,
+  PARITY_GROUPS,
+  extendedHammingCodewords,
+  gl32GenA,
+  gl32GenB,
+  gl32GenC,
+  linesThrough,
+  lumaToFreq,
+} from "../music/music-engine-core";
 
 export type { ScaleMode } from "../data/music-frequency";
 
@@ -88,95 +97,6 @@ const C2_PAIRS: [number, number][] = [
   [5, 2],
   [4, 3],
 ]; // carrier, modulator
-
-/* ── Algebra constants ── */
-const PARITY_GROUPS: number[][] = [
-  [1, 3, 5, 7],
-  [2, 3, 6, 7],
-  [4, 5, 6, 7],
-];
-const ALL_POINTS = [1, 2, 3, 4, 5, 6, 7];
-const FULL_GRAY_CODE = [0, 1, 3, 2, 6, 7, 5, 4];
-
-/** BT.601 luminance coefficients per level (L1-L6) */
-const BT601_LUMINANCE: Record<number, number> = {
-  1: 0.114, // B
-  2: 0.299, // R
-  3: 0.413, // M = B+R
-  4: 0.587, // G
-  5: 0.701, // C = G+B
-  6: 0.886, // Y = R+G
-};
-const BT601_MAX = Math.max(...Object.values(BT601_LUMINANCE));
-
-/** GL(3,2) generators operating on {1..7} via bit manipulation */
-// Gen A: [G,R,B] -> [B,G,R] (bit rotation left)
-function gl32GenA(lv: number): number {
-  const g = (lv >> 2) & 1,
-    r = (lv >> 1) & 1,
-    b = lv & 1;
-  return (b << 2) | (g << 1) | r;
-}
-// Gen B: [G,R,B] -> [G,B,R] (swap R and B)
-function gl32GenB(lv: number): number {
-  const g = (lv >> 2) & 1,
-    r = (lv >> 1) & 1,
-    b = lv & 1;
-  return (g << 2) | (b << 1) | r;
-}
-// Gen C: [G,R,B] -> [G,R,R⊕B] (true linear mix, not a channel permutation)
-function gl32GenC(lv: number): number {
-  const g = (lv >> 2) & 1,
-    r = (lv >> 1) & 1,
-    b = lv & 1;
-  return (g << 2) | (r << 1) | (r ^ b);
-}
-
-/**
- * 3-voice frequencies for Gray code decomposition. bit0=B, bit1=R, bit2=G.
- * Ratio 330:440:550 = 3:4:5 = just-intonation minor triad (E4, A4, C#5).
- * Assignment is NOT luma-ordered — chosen so the 8 possible bit-sum chords
- * form consonant subsets of the same triad, independent of per-bit luma.
- */
-const GRAY_VOICE_FREQS = [550, 440, 330];
-
-/* ── Extended algebra constants ── */
-const AND_TRIADS: [number, number, number][] = [
-  [3, 5, 1],
-  [5, 6, 4],
-  [6, 3, 2],
-];
-const K8_LAYER_EDGES = {
-  1: CUBE_EDGES,
-  2: STELLA_EDGES,
-  3: COMPLEMENT_EDGES,
-} as const;
-/** Luma value → frequency (distinct from angleToFreq: sonifies BT.601 luma theorem) */
-function lumaToFreq(gray: number): number {
-  return 220 + (gray / 255) * 660; // 220–880 Hz linear
-}
-
-/** Lines through a Fano point */
-function linesThrough(p: number): number[] {
-  return fanoLinesThrough(p);
-}
-
-/** [8,4,4] extended Hamming codewords (sorted by weight) */
-function extendedHammingCodewords(): { positions: number[]; weight: number }[] {
-  const codewords: { positions: number[]; weight: number }[] = [];
-  codewords.push({ positions: [], weight: 0 });
-  // w=4: Fano lines + Black
-  for (const line of FANO_LINES) {
-    codewords.push({ positions: [0, ...line], weight: 4 });
-  }
-  // w=4: complements of Fano lines (no Black)
-  for (const line of FANO_LINES) {
-    const lineSet = new Set(line);
-    codewords.push({ positions: ALL_POINTS.filter((lv) => !lineSet.has(lv)), weight: 4 });
-  }
-  codewords.push({ positions: [0, ...ALL_POINTS], weight: 8 });
-  return codewords;
-}
 
 /* ── Audio node refs ── */
 interface AudioNodes {
