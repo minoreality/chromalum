@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { MAX_FILE_BYTES } from "../../constants";
 import { useFileDrop } from "../useFileDrop";
 import type { CanvasAction } from "../../types";
@@ -43,6 +43,25 @@ function setup(onCropRequest?: (img: HTMLImageElement, w: number, h: number) => 
   const announce = vi.fn<(msg: string) => void>();
   const hook = renderHook(() => useFileDrop(dispatch, setZoom, setPan, showToast, announce, t, onCropRequest));
   return { ...hook, dispatch, setZoom, setPan, showToast, announce };
+}
+
+function makeDragEvent(files: File[] = []): React.DragEvent {
+  return {
+    preventDefault: vi.fn(),
+    dataTransfer: {
+      files,
+      dropEffect: "none",
+    },
+  } as unknown as React.DragEvent;
+}
+
+function makeClipboardEvent(items: Array<{ type: string; getAsFile: () => File | null }>): ClipboardEvent {
+  const event = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
+  Object.defineProperty(event, "clipboardData", {
+    configurable: true,
+    value: { items },
+  });
+  return event;
 }
 
 describe("useFileDrop", () => {
@@ -135,5 +154,94 @@ describe("useFileDrop", () => {
 
     expect(dispatch).not.toHaveBeenCalled();
     expect(showToast).toHaveBeenCalledWith("toast_image_process_failed", "error");
+  });
+
+  it("tracks nested drag state and announces entry and final leave", () => {
+    const { result, announce } = setup();
+    const enter = makeDragEvent();
+    const firstLeave = makeDragEvent();
+    const secondLeave = makeDragEvent();
+
+    act(() => {
+      result.current.onDragEnter(enter);
+      result.current.onDragEnter(makeDragEvent());
+    });
+
+    expect(enter.preventDefault).toHaveBeenCalled();
+    expect(result.current.dragging).toBe(true);
+    expect(announce).toHaveBeenCalledWith("drop_announce");
+
+    act(() => {
+      result.current.onDragLeave(firstLeave);
+    });
+    expect(result.current.dragging).toBe(true);
+    expect(announce).not.toHaveBeenCalledWith("");
+
+    act(() => {
+      result.current.onDragLeave(secondLeave);
+    });
+    expect(result.current.dragging).toBe(false);
+    expect(secondLeave.preventDefault).toHaveBeenCalled();
+    expect(announce).toHaveBeenCalledWith("");
+  });
+
+  it("marks drag-over as copy and drops the first supported image file", async () => {
+    installImageBitmap(2, 2);
+    const { result, dispatch } = setup();
+    const over = makeDragEvent();
+    const drop = makeDragEvent([
+      makeFile("text/plain", 4, "note.txt"),
+      makeFile("image/png", 4, "image.png"),
+      makeFile("image/jpeg", 4, "later.jpg"),
+    ]);
+
+    act(() => {
+      result.current.onDragEnter(makeDragEvent());
+      result.current.onDragOver(over);
+    });
+    expect(over.dataTransfer.dropEffect).toBe("copy");
+
+    act(() => {
+      result.current.onDrop(drop);
+    });
+
+    expect(drop.preventDefault).toHaveBeenCalled();
+    expect(result.current.dragging).toBe(false);
+    await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+    const action = dispatch.mock.calls[0][0] as CanvasAction;
+    expect(action.type).toBe("load_image");
+  });
+
+  it("loads pasted images unless focus is inside an editable field", async () => {
+    installImageBitmap(2, 2);
+    const { dispatch } = setup();
+    const pastedFile = makeFile("image/png", 4, "pasted.png");
+    const paste = makeClipboardEvent([
+      { type: "text/plain", getAsFile: () => makeFile("text/plain", 4, "note.txt") },
+      { type: "image/png", getAsFile: () => pastedFile },
+    ]);
+    const preventDefault = vi.spyOn(paste, "preventDefault");
+
+    act(() => {
+      window.dispatchEvent(paste);
+    });
+
+    expect(preventDefault).toHaveBeenCalled();
+    await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+
+    dispatch.mockClear();
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+    const ignoredPaste = makeClipboardEvent([{ type: "image/png", getAsFile: () => pastedFile }]);
+    const ignoredPreventDefault = vi.spyOn(ignoredPaste, "preventDefault");
+
+    act(() => {
+      window.dispatchEvent(ignoredPaste);
+    });
+
+    expect(ignoredPreventDefault).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+    document.body.removeChild(input);
   });
 });
