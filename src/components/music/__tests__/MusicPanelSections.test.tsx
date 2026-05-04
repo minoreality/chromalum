@@ -2,15 +2,20 @@
 import type { ComponentProps, ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { LEVEL_CANDIDATES } from "../../../color-engine";
 import { LanguageProvider } from "../../../i18n";
 import type { MusicEngineReturn } from "../../../hooks/useMusicEngine";
 import { MusicAlgebraPanel } from "../MusicAlgebraPanel";
 import { MusicFanoControls } from "../MusicFanoControls";
+import { MusicHueAlphaControls } from "../MusicHueAlphaControls";
+import { MusicLevelCandidateGrid } from "../MusicLevelCandidateGrid";
 import { MusicTransportControls } from "../MusicTransportControls";
 
 type TransportProps = ComponentProps<typeof MusicTransportControls>;
 type FanoProps = ComponentProps<typeof MusicFanoControls>;
 type AlgebraProps = ComponentProps<typeof MusicAlgebraPanel>;
+type HueAlphaProps = ComponentProps<typeof MusicHueAlphaControls>;
+type CandidateGridProps = ComponentProps<typeof MusicLevelCandidateGrid>;
 
 function renderWithLanguage(node: ReactNode) {
   localStorage.setItem("chromalum_lang", "en");
@@ -176,7 +181,80 @@ function makeAlgebraProps(overrides: Partial<AlgebraProps> = {}): AlgebraProps {
   };
 }
 
+function makeHueAlphaProps(overrides: Partial<HueAlphaProps> = {}): HueAlphaProps {
+  return {
+    hueAngle: 90,
+    alpha0: 45,
+    hueTicks: [{ deg: 30, color: "rgb(255,0,0)" }],
+    onHueChange: vi.fn(),
+    onAlphaChange: vi.fn(),
+    ...overrides,
+  };
+}
+
+function makeLevelPreview(lv: number) {
+  const cand = LEVEL_CANDIDATES[lv][0];
+  return {
+    lv,
+    name: `L${lv}`,
+    rgb: cand.rgb,
+    hex: `rgb(${cand.rgb.join(",")})`,
+  };
+}
+
+function makeCandidateGridProps(overrides: Partial<CandidateGridProps> = {}): CandidateGridProps {
+  return {
+    levelPreview: [makeLevelPreview(2)],
+    hueAngle: LEVEL_CANDIDATES[2][0].angle,
+    directCandidates: new Map([[2, 0]]),
+    selectedLevels: new Set(),
+    burstHighlight: new Set(),
+    hoveredCandidate: null,
+    onDirectCandidatesChange: mockFn<CandidateGridProps["onDirectCandidatesChange"]>(),
+    onSelectedLevelsChange: mockFn<CandidateGridProps["onSelectedLevelsChange"]>(),
+    onHoveredCandidateChange: mockFn<CandidateGridProps["onHoveredCandidateChange"]>(),
+    onBlockClick: vi.fn(),
+    ...overrides,
+  };
+}
+
 describe("MusicPanel section components", () => {
+  it("routes hue and alpha slider changes", () => {
+    const props = makeHueAlphaProps();
+    renderWithLanguage(<MusicHueAlphaControls {...props} />);
+
+    expect(screen.getByText("Hue Angle: 90°")).toBeTruthy();
+    expect(screen.getByText("\u03b1: 45°")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "120" } });
+    expect(props.onHueChange).toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Alpha angle"), { target: { value: "180" } });
+    expect(props.onAlphaChange).toHaveBeenCalled();
+  });
+
+  it("routes candidate grid click and keyboard activation", () => {
+    const props = makeCandidateGridProps();
+    renderWithLanguage(<MusicLevelCandidateGrid {...props} />);
+
+    const candidates = screen.getAllByRole("button", { name: /Level 2 color candidate/ });
+    fireEvent.click(candidates[0]);
+    expect(props.onDirectCandidatesChange).toHaveBeenCalled();
+    expect(props.onSelectedLevelsChange).toHaveBeenCalled();
+    expect(props.onHoveredCandidateChange).toHaveBeenCalledWith(null);
+    expect(props.onBlockClick).toHaveBeenCalledWith(2, expect.any(Number));
+
+    fireEvent.keyDown(candidates[0], { key: "Enter" });
+    expect(props.onBlockClick).toHaveBeenCalledTimes(2);
+  });
+
+  it("marks selected candidate grid levels as pressed", () => {
+    const props = makeCandidateGridProps({ selectedLevels: new Set([2]) });
+    renderWithLanguage(<MusicLevelCandidateGrid {...props} />);
+
+    expect(screen.getAllByRole("button", { pressed: true })[0]).toBeTruthy();
+  });
+
   it("routes transport scale, mode, rotation, mute, and volume callbacks", () => {
     const props = makeTransportProps();
     renderWithLanguage(<MusicTransportControls {...props} />);

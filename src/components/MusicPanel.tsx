@@ -1,16 +1,17 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { LEVEL_INFO, LEVEL_CANDIDATES, DEFAULT_CC, findClosestCandidate } from "../color-engine";
-import { SP, C, R, FS, SHADOW, FONT } from "../styles/tokens";
+import { SP, C, FS } from "../styles/tokens";
 import { useTranslation } from "../i18n";
 import { ACTIVE_LEVELS } from "./LinkedVisualization";
 import { MusicLinkedVisualization } from "./music/MusicLinkedVisualization";
 import { useMusicEngine, type ScaleMode } from "../hooks/useMusicEngine";
 import { Oscilloscope } from "./music/Oscilloscope";
-import type { DecoderPhase } from "./music/types";
+import type { DecoderPhase, MusicCandidateHover, MusicHueTick, MusicLevelPreview } from "./music/types";
 import { MusicAlgebraPanel } from "./music/MusicAlgebraPanel";
 import { MusicFanoControls } from "./music/MusicFanoControls";
+import { MusicHueAlphaControls } from "./music/MusicHueAlphaControls";
+import { MusicLevelCandidateGrid } from "./music/MusicLevelCandidateGrid";
 import { MusicTransportControls } from "./music/MusicTransportControls";
-import { S_ALPHA_TRACK, S_HUE_INPUT, S_HUE_TRACK, S_HUE_WRAP } from "./music/music-panel-styles";
 import { FANO_LINES } from "../data/theory-data";
 
 /** Find Fano line index for a triple {a, b, a XOR b}, or -1 if not a Fano line */
@@ -33,7 +34,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
     for (let lv = 1; lv <= 6; lv++) m.set(lv, DEFAULT_CC[lv]);
     return m;
   });
-  const [hoveredCandidate, setHoveredCandidate] = useState<{ lv: number; ci: number } | null>(null);
+  const [hoveredCandidate, setHoveredCandidate] = useState<MusicCandidateHover>(null);
   const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set());
 
   // Track candidate indices for hue-drag tone burst
@@ -495,7 +496,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
   }, []);
 
   // Level preview (same as GlazePanel)
-  const levelPreview = useMemo(() => {
+  const levelPreview = useMemo<MusicLevelPreview[]>(() => {
     return LEVEL_INFO.map((info, lv) => {
       const candidates = LEVEL_CANDIDATES[lv];
       const ci = directCandidates.has(lv) ? directCandidates.get(lv)! : findClosestCandidate(lv, hueAngle);
@@ -509,13 +510,9 @@ export const MusicPanel = React.memo(function MusicPanel() {
     [levelPreview],
   );
 
-  // Hue marker position
-  const hueMarkerLeft = `${((hueAngle % 360) / 360) * 100}%`;
-  const alphaMarkerLeft = `${((((alpha0 % 360) + 360) % 360) / 360) * 100}%`;
-
   // Candidate switch-point tick marks (memoized once)
-  const hueTicks = useMemo(() => {
-    const ticks: { deg: number; color: string }[] = [];
+  const hueTicks = useMemo<MusicHueTick[]>(() => {
+    const ticks: MusicHueTick[] = [];
     for (let lv = 2; lv <= 5; lv++) {
       const cands = LEVEL_CANDIDATES[lv];
       if (cands.length <= 1 || cands[0].angle < 0) continue;
@@ -552,283 +549,26 @@ export const MusicPanel = React.memo(function MusicPanel() {
             {t("music_title")}
           </div>
 
-          {/* Hue angle slider with marker */}
-          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: SP.md }}>
-            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
-              {t("glaze_hue_angle")}: {Math.round(hueAngle % 360)}&deg;
-            </div>
-            <div style={S_HUE_WRAP}>
-              <div style={S_HUE_TRACK} />
-              {/* Marker triangle */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 1,
-                  left: hueMarkerLeft,
-                  transform: "translateX(-5px)",
-                  width: 0,
-                  height: 0,
-                  borderLeft: "5px solid transparent",
-                  borderRight: "5px solid transparent",
-                  borderTop: `6px solid ${C.textPrimary}`,
-                  pointerEvents: "none",
-                }}
-              />
-              {/* Candidate switch-point tick marks (above the bar) */}
-              {hueTicks.map((tick, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    top: 3,
-                    left: `${(tick.deg / 359) * 100}%`,
-                    transform: "translateX(-0.5px)",
-                    width: 1,
-                    height: 5,
-                    background: C.textDimmer,
-                    pointerEvents: "none",
-                  }}
-                />
-              ))}
-              <input
-                type="range"
-                min={0}
-                max={359}
-                step={1}
-                value={Math.round(hueAngle) % 360}
-                onChange={handleHueChange}
-                aria-label={t("aria_hue_slider")}
-                style={S_HUE_INPUT}
-              />
-            </div>
-            {/* Alpha angle bar */}
-            <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
-              {"\u03b1"}: {Math.round(((alpha0 % 360) + 360) % 360)}&deg;
-            </div>
-            <div style={S_HUE_WRAP}>
-              <div style={S_ALPHA_TRACK} />
-              {/* Marker triangle */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 1,
-                  left: alphaMarkerLeft,
-                  transform: "translateX(-5px)",
-                  width: 0,
-                  height: 0,
-                  borderLeft: "5px solid transparent",
-                  borderRight: "5px solid transparent",
-                  borderTop: `6px solid ${C.textPrimary}`,
-                  pointerEvents: "none",
-                }}
-              />
-              {/* 60° interval tick marks */}
-              {[0, 60, 120, 180, 240, 300].map((deg) => (
-                <div
-                  key={deg}
-                  style={{
-                    position: "absolute",
-                    top: 3,
-                    left: `${(deg / 360) * 100}%`,
-                    transform: "translateX(-0.5px)",
-                    width: 1,
-                    height: 5,
-                    background: C.textDimmer,
-                    pointerEvents: "none",
-                  }}
-                />
-              ))}
-              <input
-                type="range"
-                min={0}
-                max={359}
-                step={1}
-                value={Math.round(((alpha0 % 360) + 360) % 360)}
-                onChange={handleAlphaBarChange}
-                aria-label={t("aria_alpha_angle")}
-                style={S_HUE_INPUT}
-              />
-            </div>
-          </div>
+          <MusicHueAlphaControls
+            hueAngle={hueAngle}
+            alpha0={alpha0}
+            hueTicks={hueTicks}
+            onHueChange={handleHueChange}
+            onAlphaChange={handleAlphaBarChange}
+          />
 
-          {/* Level preview — 2D candidate grid with tone burst */}
-          <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", alignItems: "center", marginTop: SP.lg }}>
-            {levelPreview.map((lp) => {
-              const cands = LEVEL_CANDIDATES[lp.lv];
-              const hasCands = cands.length > 1;
-              const isDirect = directCandidates.has(lp.lv);
-              const directIdx = directCandidates.get(lp.lv);
-              const autoIdx = hasCands ? findClosestCandidate(lp.lv, hueAngle) : 0;
-              const currentIdx = isDirect ? directIdx! : autoIdx;
-              const prevIdx = hasCands ? (currentIdx - 1 + cands.length) % cands.length : -1;
-              const nextIdx = hasCands ? (currentIdx + 1) % cands.length : -1;
-
-              const isTouchDevice = typeof window !== "undefined" && "ontouchstart" in window;
-
-              const makeSwatch = (ci: number, size: number) => {
-                const cand = cands[ci];
-                const candHex = `#${cand.rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
-                const isSwatchHovered = hoveredCandidate !== null && hoveredCandidate.lv === lp.lv && hoveredCandidate.ci === ci;
-                const swatchClick = () => {
-                  setDirectCandidates((prev) => {
-                    const next = new Map(prev);
-                    next.set(lp.lv, ci);
-                    return next;
-                  });
-                  setSelectedLevels((prev) => {
-                    const next = new Set(prev);
-                    next.delete(lp.lv);
-                    return next;
-                  });
-                  setHoveredCandidate(null);
-                  handleBlockClick(lp.lv, cand.angle);
-                };
-                return (
-                  <div
-                    key={ci}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={t("aria_color_candidate", lp.lv, candHex, `${Math.round(cand.angle)}°`)}
-                    onClick={swatchClick}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        swatchClick();
-                      }
-                    }}
-                    onPointerEnter={isTouchDevice ? undefined : () => setHoveredCandidate({ lv: lp.lv, ci })}
-                    onPointerLeave={isTouchDevice ? undefined : () => setHoveredCandidate(null)}
-                    title={`${candHex} ${Math.round(cand.angle)}\u00B0`}
-                    style={{
-                      width: size,
-                      height: size,
-                      borderRadius: R.md,
-                      cursor: "pointer",
-                      background: `rgb(${cand.rgb.join(",")})`,
-                      border: `2px solid ${C.border}`,
-                      boxSizing: "border-box" as const,
-                      boxShadow: isSwatchHovered ? SHADOW.glow(C.accent) : "none",
-                      transition: "background 0.4s, box-shadow 0.15s, border-color 0.15s",
-                    }}
-                  />
-                );
-              };
-
-              const cycleCand = (dir: number) => {
-                const cur = directCandidates.has(lp.lv) ? directCandidates.get(lp.lv)! : autoIdx;
-                const newIdx = (((cur + dir) % cands.length) + cands.length) % cands.length;
-                setDirectCandidates((prev) => {
-                  const next = new Map(prev);
-                  next.set(lp.lv, newIdx);
-                  return next;
-                });
-                setHoveredCandidate({ lv: lp.lv, ci: newIdx });
-              };
-
-              const handleWheel = hasCands
-                ? (e: React.WheelEvent) => {
-                    e.preventDefault();
-                    cycleCand(e.deltaY > 0 ? 1 : -1);
-                  }
-                : undefined;
-
-              const swipeStartRef = { current: 0, startX: 0 };
-              const handleTouchStart = hasCands
-                ? (e: React.TouchEvent) => {
-                    swipeStartRef.current = e.touches[0].clientY;
-                    swipeStartRef.startX = e.touches[0].clientX;
-                  }
-                : undefined;
-              const handleTouchEnd = hasCands
-                ? (e: React.TouchEvent) => {
-                    const dy = e.changedTouches[0].clientY - swipeStartRef.current;
-                    const dx = e.changedTouches[0].clientX - swipeStartRef.startX;
-                    // Only cycle if intentional vertical swipe (not a tap)
-                    if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) cycleCand(dy > 0 ? 1 : -1);
-                  }
-                : undefined;
-
-              return (
-                <div
-                  key={lp.lv}
-                  onWheel={handleWheel}
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 2,
-                    cursor: hasCands ? "pointer" : "default",
-                    touchAction: hasCands ? "none" : "auto",
-                  }}
-                >
-                  {/* Upper candidate */}
-                  {hasCands ? makeSwatch(prevIdx, 20) : <div style={{ height: 20 }} />}
-                  {/* Current / main swatch */}
-                  {(() => {
-                    const mainCi = currentIdx;
-                    const mainCand = cands[mainCi];
-                    const mainHex = mainCand ? `#${mainCand.rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}` : "";
-                    const isMainHovered = hoveredCandidate !== null && hoveredCandidate.lv === lp.lv && hoveredCandidate.ci === mainCi;
-                    const isSelected = selectedLevels.has(lp.lv);
-                    const isBurst = burstHighlight.has(lp.lv);
-                    return (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-label={mainCand ? t("aria_color_candidate", lp.lv, mainHex, `${Math.round(mainCand.angle)}°`) : undefined}
-                        aria-pressed={isSelected}
-                        onClick={() => {
-                          if (!mainCand) return;
-                          setSelectedLevels((prev) => {
-                            const next = new Set(prev);
-                            if (isSelected) next.delete(lp.lv);
-                            else next.add(lp.lv);
-                            return next;
-                          });
-                          handleBlockClick(lp.lv, mainCand.angle);
-                        }}
-                        onKeyDown={
-                          isTouchDevice
-                            ? undefined
-                            : (e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  if (!mainCand) return;
-                                  setSelectedLevels((prev) => {
-                                    const next = new Set(prev);
-                                    if (isSelected) next.delete(lp.lv);
-                                    else next.add(lp.lv);
-                                    return next;
-                                  });
-                                  handleBlockClick(lp.lv, mainCand.angle);
-                                }
-                              }
-                        }
-                        onPointerEnter={isTouchDevice ? undefined : () => setHoveredCandidate({ lv: lp.lv, ci: mainCi })}
-                        onPointerLeave={isTouchDevice ? undefined : () => setHoveredCandidate(null)}
-                        title={mainCand ? `${mainHex} ${Math.round(mainCand.angle)}\u00B0` : undefined}
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: R.md,
-                          background: isDirect ? `rgb(${cands[directIdx!]?.rgb.join(",")})` : lp.hex,
-                          border: `2px solid ${isBurst ? "#ffffff" : isMainHovered || isSelected ? C.accent : C.border}`,
-                          boxSizing: "border-box" as const,
-                          cursor: "pointer",
-                          boxShadow: isBurst ? SHADOW.glow("#ffffff") : isMainHovered ? SHADOW.glow(C.accent) : "none",
-                          transition: isBurst ? "none" : "background 0.4s, box-shadow 0.5s, border-color 0.5s",
-                        }}
-                      />
-                    );
-                  })()}
-                  {/* Lower candidate */}
-                  {hasCands ? makeSwatch(nextIdx, 20) : <div style={{ height: 20 }} />}
-                </div>
-              );
-            })}
-          </div>
+          <MusicLevelCandidateGrid
+            levelPreview={levelPreview}
+            hueAngle={hueAngle}
+            directCandidates={directCandidates}
+            selectedLevels={selectedLevels}
+            burstHighlight={burstHighlight}
+            hoveredCandidate={hoveredCandidate}
+            onDirectCandidatesChange={setDirectCandidates}
+            onSelectedLevelsChange={setSelectedLevels}
+            onHoveredCandidateChange={setHoveredCandidate}
+            onBlockClick={handleBlockClick}
+          />
 
           {/* LinkedVisualization */}
           <MusicLinkedVisualization

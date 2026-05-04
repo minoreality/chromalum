@@ -1,2 +1,5 @@
 export type DecoderPhase = "original" | "corrupted" | "syndrome" | "corrected" | null;
 export type ActiveMusicLevel = { lv: number; rgb: [number, number, number] };
+export type MusicCandidateHover = { lv: number; ci: number } | null;
+export type MusicHueTick = { deg: number; color: string };
+export type MusicLevelPreview = { lv: number; name: string; rgb: number[]; hex: string };
