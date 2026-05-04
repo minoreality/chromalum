@@ -1,16 +1,15 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
-import { LEVEL_INFO, LEVEL_CANDIDATES, hue2rgb } from "../color-engine";
 import { SP, C, R } from "../styles/tokens";
 import { S_CURSOR_POINTER } from "../styles/shared";
 import { useTranslation } from "../i18n";
+import { LinkedVisualizationGuides } from "./LinkedVisualizationGuides";
 import { LinkedVisualizationLegend } from "./LinkedVisualizationLegend";
 import { BottomProjectionGraph, RightProjectionGraph } from "./LinkedVisualizationProjectionGraphs";
+import { LinkedVisualizationWheel } from "./LinkedVisualizationWheel";
 import {
-  bottomProjectionY,
   buildLinkedVisualizationDots,
   BXright,
   BY,
-  C2_PAIR,
   clampHueFromBottomGraphY,
   clampHueFromRightGraphX,
   cosinePath,
@@ -19,23 +18,16 @@ import {
   lumR0,
   lumR7,
   LV_COLORS,
-  rightProjectionX,
   sinePath,
   TH,
   TW,
-  wheelPoint,
   WO,
-  WR,
   type LinkedVisualizationDot,
+  type LinkedVisualizationHover,
 } from "./linked-visualization-geometry";
 
 export { ACTIVE_LEVELS } from "./linked-visualization-geometry";
-export type { LinkedVisualizationDot } from "./linked-visualization-geometry";
-
-interface LinkedVisualizationHover {
-  lv: number;
-  ci: number;
-}
+export type { LinkedVisualizationDot, LinkedVisualizationHover } from "./linked-visualization-geometry";
 
 export interface LinkedVisualizationOverlayContext {
   activeDots: LinkedVisualizationDot[];
@@ -68,194 +60,6 @@ export interface LinkedVisualizationProps {
 
 const DOT_HIT_R = 10;
 const DOT_TRANSITION = "r 0.3s, opacity 0.3s, stroke 0.3s, stroke-width 0.3s, fill 0.3s";
-const rPx = rightProjectionX;
-const bPy = bottomProjectionY;
-
-/* ── Wheel rendering ── */
-interface WheelOpts {
-  cx: number;
-  cy: number;
-  alpha: number;
-  radiusFn: (lv: number) => number;
-  dots: LinkedVisualizationDot[];
-  hueAngle: number;
-  hoveredDot: LinkedVisualizationHover | null;
-  onHoverDot: (d: LinkedVisualizationHover | null) => void;
-  mode: 0 | 7;
-}
-
-function renderWheel({ cx, cy, alpha, radiusFn, dots, hueAngle, hoveredDot, onHoverDot, mode }: WheelOpts) {
-  const wP = (a: number, lv: number) => {
-    return wheelPoint(a, lv, alpha, radiusFn, cx, cy);
-  };
-  const sweepRad = ((hueAngle - alpha - 90) * Math.PI) / 180;
-
-  return (
-    <g>
-      {/* Hue ring (rotates with wheel) */}
-      {Array.from({ length: 360 }, (_, d) => {
-        const r = ((d - alpha - 90) * Math.PI) / 180;
-        const [cr, cg, cb] = hue2rgb(d);
-        return (
-          <line
-            key={`h${d}`}
-            x1={cx + 64 * Math.cos(r)}
-            y1={cy + 64 * Math.sin(r)}
-            x2={cx + 69 * Math.cos(r)}
-            y2={cy + 69 * Math.sin(r)}
-            stroke={`rgb(${cr},${cg},${cb})`}
-            strokeWidth={1.5}
-          />
-        );
-      })}
-      {/* Level circles */}
-      {LEVEL_INFO.map((_, lv) => {
-        const r = radiusFn(lv);
-        return r > 1 ? <circle key={`g${lv}`} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} /> : null;
-      })}
-      {/* Coordinate axes — thin crosshair through center */}
-      <line x1={cx - WR - 2} y1={cy} x2={cx + WR + 2} y2={cy} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />
-      <line x1={cx} y1={cy - WR - 2} x2={cx} y2={cy + WR + 2} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />
-      {/* Axis tick marks: screen-Y and screen-X projections of active dots */}
-      {dots
-        .filter((d) => d.act)
-        .map((d) => {
-          const p = wP(d.a, d.lv);
-          const col = `rgb(${d.rgb.join(",")})`;
-          const hov = hoveredDot !== null && hoveredDot.lv === d.lv && hoveredDot.ci === d.ci;
-          const tickLen = hov ? 5 : 3;
-          return (
-            <g key={`axt-${d.lv}-${d.ci}`}>
-              {/* Y-axis tick: horizontal mark at sin projection */}
-              <line
-                x1={cx - tickLen}
-                y1={p.y}
-                x2={cx + tickLen}
-                y2={p.y}
-                stroke={col}
-                strokeWidth={hov ? 1.6 : 1.0}
-                opacity={hov ? 1 : 0.6}
-              />
-              {/* X-axis tick: vertical mark at cos projection */}
-              <line
-                x1={p.x}
-                y1={cy - tickLen}
-                x2={p.x}
-                y2={cy + tickLen}
-                stroke={col}
-                strokeWidth={hov ? 1.6 : 1.0}
-                opacity={hov ? 1 : 0.6}
-              />
-            </g>
-          );
-        })}
-      {/* Center dot: fixed origin level (achromatic, no angle) */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={4}
-        fill={mode === 0 ? "#000" : "#fff"}
-        stroke={mode === 0 ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)"}
-        strokeWidth={0.8}
-      />
-      <circle cx={cx} cy={cy} r={WR} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} strokeDasharray="2,2" />
-      {/* C2 symmetry lines */}
-      {/* C2 symmetry */}
-      {(
-        [
-          [1, 6],
-          [2, 5],
-          [3, 4],
-        ] as [number, number][]
-      ).flatMap(([a, b]) =>
-        LEVEL_CANDIDATES[a].map((ca, ci) => {
-          if (ca.angle < 0) return null;
-          const comp = (ca.angle + 180) % 360;
-          const ciB = LEVEL_CANDIDATES[b].findIndex((cb) => Math.abs(((cb.angle - comp + 540) % 360) - 180) < 1);
-          if (ciB < 0) return null;
-          const pA = wP(ca.angle, a),
-            pB = wP(LEVEL_CANDIDATES[b][ciB].angle, b);
-          return (
-            <line
-              key={`s${a}${ci}`}
-              x1={pA.x}
-              y1={pA.y}
-              x2={pB.x}
-              y2={pB.y}
-              stroke={C.accent}
-              strokeWidth={0.5}
-              strokeDasharray="3,2"
-              opacity={0.2}
-            />
-          );
-        }),
-      )}
-      {/* Active connections (Catmull-Rom spline) */}
-      {(() => {
-        const p = dots.filter((d) => d.act).map((d) => wP(d.a, d.lv));
-        if (p.length < 2) return null;
-        const t = 0.5; // tension
-        let d = `M${p[0].x},${p[0].y}`;
-        for (let i = 0; i < p.length - 1; i++) {
-          const p0 = p[Math.max(0, i - 1)];
-          const p1 = p[i];
-          const p2 = p[i + 1];
-          const p3 = p[Math.min(p.length - 1, i + 2)];
-          const cp1x = p1.x + (p2.x - p0.x) / (6 / t);
-          const cp1y = p1.y + (p2.y - p0.y) / (6 / t);
-          const cp2x = p2.x - (p3.x - p1.x) / (6 / t);
-          const cp2y = p2.y - (p3.y - p1.y) / (6 / t);
-          d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-        }
-        return <path d={d} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={0.8} />;
-      })()}
-      {/* Dots */}
-      {dots.map((d) => {
-        const p = wP(d.a, d.lv);
-        const hov = d.act && hoveredDot !== null && hoveredDot.lv === d.lv && hoveredDot.ci === d.ci;
-        const dimmed = d.act && hoveredDot !== null && !hov;
-        const hoverHandlers = d.act
-          ? {
-              onPointerEnter: (e: React.PointerEvent) => {
-                e.stopPropagation();
-                onHoverDot({ lv: d.lv, ci: d.ci });
-              },
-              onPointerLeave: () => onHoverDot(null),
-            }
-          : undefined;
-        return (
-          <g key={`w${d.lv}${d.ci}`} style={d.act || hov ? S_CURSOR_POINTER : undefined} {...hoverHandlers}>
-            {d.act && <circle cx={p.x} cy={p.y} r={DOT_HIT_R} fill="transparent" pointerEvents="all" />}
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={d.act ? (hov ? 5.5 : 4) : hov ? 4 : 1.8}
-              fill={`rgb(${d.rgb.join(",")})`}
-              stroke={d.act ? "#fff" : hov ? "#fff" : "rgba(255,255,255,0.15)"}
-              strokeWidth={d.act ? (hov ? 1.4 : 1.0) : hov ? 1.0 : 0.5}
-              opacity={d.act ? (dimmed ? 0.25 : 1) : hov ? 0.9 : 0.3}
-              filter={hov ? "url(#dot-glow)" : undefined}
-              style={{
-                transition: DOT_TRANSITION,
-              }}
-            />
-          </g>
-        );
-      })}
-      {/* Angle marker */}
-      {(() => {
-        const x = cx + 69 * Math.cos(sweepRad),
-          y = cy + 69 * Math.sin(sweepRad);
-        return (
-          <polygon
-            points={`${x},${y} ${x + 4 * Math.cos(sweepRad + 2.5)},${y + 4 * Math.sin(sweepRad + 2.5)} ${x + 4 * Math.cos(sweepRad - 2.5)},${y + 4 * Math.sin(sweepRad - 2.5)}`}
-            fill="#fff"
-          />
-        );
-      })()}
-    </g>
-  );
-}
 
 /* ── Toggle button style ── */
 const S_TOGGLE: React.CSSProperties = {
@@ -346,14 +150,6 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
 
   const activeDots = useMemo(() => dots.filter((d) => d.act), [dots]);
   const projectionDots = useMemo(() => [...dots].sort((a, b) => Number(a.act) - Number(b.act)), [dots]);
-
-  // Wheel dot position (for guide lines)
-  const wP = useCallback(
-    (a: number, lv: number) => {
-      return wheelPoint(a, lv, activeAlpha, activeRadiusFn);
-    },
-    [activeAlpha, activeRadiusFn],
-  );
 
   // SVG coordinate conversion
   const svgCoord = useCallback((clientX: number, clientY: number) => {
@@ -471,57 +267,16 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
 
     return (
       <>
-        {/* ═══ GUIDE LINES — inactive dots (thin, highlight on hover) ═══ */}
-        {dots
-          .filter((d) => !d.act)
-          .map((d) => {
-            const w = wP(d.a, d.lv);
-            const rad = ((d.a - activeAlpha - 90) * Math.PI) / 180;
-            const ry = CY + activeRadiusFn(d.lv) * Math.sin(rad);
-            const bx = CX + activeRadiusFn(d.lv) * Math.cos(rad);
-            const col = `rgb(${d.rgb.join(",")})`;
-            const hov = hoveredDot !== null && hoveredDot.lv === d.lv && hoveredDot.ci === d.ci;
-            return (
-              <g key={`gli-${d.lv}-${d.ci}`} opacity={hov ? 0.6 : 0.2}>
-                <line x1={w.x} y1={w.y} x2={rPx(d.a)} y2={ry} stroke={col} strokeWidth={hov ? 0.7 : 0.4} strokeDasharray="2,3" />
-                <line x1={w.x} y1={w.y} x2={bx} y2={bPy(d.a)} stroke={col} strokeWidth={hov ? 0.7 : 0.4} strokeDasharray="2,3" />
-              </g>
-            );
-          })}
-        {/* ═══ GUIDE LINES — active dots (prominent) ═══ */}
-        {activeDots.map((d) => {
-          const w = wP(d.a, d.lv);
-          const rad = ((d.a - activeAlpha - 90) * Math.PI) / 180;
-          const ry = CY + activeRadiusFn(d.lv) * Math.sin(rad);
-          const bx = CX + activeRadiusFn(d.lv) * Math.cos(rad);
-          const col = `rgb(${d.rgb.join(",")})`;
-          const hov = hoveredDot !== null && hoveredDot.lv === d.lv && hoveredDot.ci === d.ci;
-          return (
-            <g key={`gl-${d.lv}-${d.ci}`} opacity={hov ? 0.7 : 0.4}>
-              <line x1={w.x} y1={w.y} x2={rPx(d.a)} y2={ry} stroke={col} strokeWidth={hov ? 0.8 : 0.6} strokeDasharray="3,2" />
-              <line x1={w.x} y1={w.y} x2={bx} y2={bPy(d.a)} stroke={col} strokeWidth={hov ? 0.8 : 0.6} strokeDasharray="3,2" />
-            </g>
-          );
-        })}
-
-        {/* ═══ C2 GHOST DOT — show C2 pair's position in other system on hover ═══ */}
-        {hoveredDot &&
-          hoveredDot.lv >= 1 &&
-          hoveredDot.lv <= 6 &&
-          (() => {
-            const pairLv = C2_PAIR[hoveredDot.lv];
-            const pairDot = activeDots.find((d) => d.lv === pairLv);
-            if (!pairDot) return null;
-            // Show the C2 pair's position in the OTHER system (lumR0(L) = lumR7(7-L))
-            const otherRadiusFn = mode === 0 ? lumR7 : lumR0;
-            const otherAlpha = mode === 0 ? alpha7 : alpha0;
-            const rad = ((pairDot.a - otherAlpha - 90) * Math.PI) / 180;
-            const r = otherRadiusFn(pairLv);
-            const gx = CX + r * Math.cos(rad);
-            const gy = CY + r * Math.sin(rad);
-            const col = `rgb(${pairDot.rgb.join(",")})`;
-            return <circle cx={gx} cy={gy} r={4} fill="none" stroke={col} strokeWidth={1.2} opacity={0.5} strokeDasharray="2,2" />;
-          })()}
+        <LinkedVisualizationGuides
+          dots={dots}
+          activeDots={activeDots}
+          hoveredDot={hoveredDot}
+          activeAlpha={activeAlpha}
+          activeRadiusFn={activeRadiusFn}
+          alpha0={alpha0}
+          alpha7={alpha7}
+          mode={mode}
+        />
 
         <RightProjectionGraph
           mode={mode}
@@ -587,7 +342,6 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hoveredDot is intentionally reactive
   }, [
     dots,
-    wP,
     hueAngle,
     alpha0,
     alpha7,
@@ -674,21 +428,16 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         </defs>
         {vizContent}
 
-        {/* ═══ WHEEL (single, toggleable) ═══ */}
-        <g style={{ cursor: "grab" }} onPointerDown={onWheelPointerDown}>
-          <circle cx={CX} cy={CY} r={WR + 14} fill="transparent" />
-          {renderWheel({
-            cx: CX,
-            cy: CY,
-            alpha: activeAlpha,
-            radiusFn: activeRadiusFn,
-            dots,
-            hueAngle,
-            hoveredDot,
-            onHoverDot: setHoveredDot,
-            mode,
-          })}
-        </g>
+        <LinkedVisualizationWheel
+          alpha={activeAlpha}
+          radiusFn={activeRadiusFn}
+          dots={dots}
+          hueAngle={hueAngle}
+          hoveredDot={hoveredDot}
+          onHoverDot={setHoveredDot}
+          mode={mode}
+          onPointerDown={onWheelPointerDown}
+        />
 
         {/* Label with rotation angle */}
         <text x={CX} y={WO - 2} fontSize={8} fill={C.textDimmer} textAnchor="middle">

@@ -8,6 +8,11 @@ export interface LinkedVisualizationDot {
   act: boolean;
 }
 
+export interface LinkedVisualizationHover {
+  lv: number;
+  ci: number;
+}
+
 export interface LinkedVisualizationPoint {
   x: number;
   y: number;
