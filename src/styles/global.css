@@ -21,10 +21,10 @@
   --c-border-hover: #3a3a5a;
   --c-warning: #ffd700;
   --c-active-glow: rgba(96, 128, 255, 0.06);
-  --font-mono: "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
+  --font-mono: "SF Mono", "Cascadia Mono", Consolas, Menlo, "BIZ UDGothic", "Noto Sans Mono CJK JP", monospace;
   --font-sans:
     "Segoe UI", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo",
-    "Noto Sans CJK JP", system-ui, sans-serif;
+    "Noto Sans JP", "Noto Sans CJK JP", system-ui, sans-serif;
 
   /* Responsive header spacing — mobile defaults */
   --sp-root-top: 6px;

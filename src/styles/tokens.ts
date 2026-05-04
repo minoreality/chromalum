@@ -111,8 +111,8 @@ export const FW = {
 } as const;
 
 export const FONT = {
-  mono: '"SF Mono", "Cascadia Mono", Consolas, Menlo, monospace',
-  sans: '"Segoe UI", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans CJK JP", system-ui, sans-serif',
+  mono: '"SF Mono", "Cascadia Mono", Consolas, Menlo, "BIZ UDGothic", "Noto Sans Mono CJK JP", monospace',
+  sans: '"Segoe UI", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", "Noto Sans CJK JP", system-ui, sans-serif',
 } as const;
 
 /* ── Border Radius ── */
