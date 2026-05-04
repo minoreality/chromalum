@@ -4,9 +4,17 @@ import reactHooks from "eslint-plugin-react-hooks";
 import prettierConfig from "eslint-config-prettier";
 
 export default tseslint.config(
-  { ignores: ["dist/", "node_modules/"] },
+  { ignores: ["coverage/", "dist/", "node_modules/", "playwright-report/", "test-results/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    files: ["*.config.{js,mjs,ts}", "eslint.config.mjs", "scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+      },
+    },
+  },
   {
     plugins: { "react-hooks": reactHooks },
     rules: {

@@ -6,8 +6,6 @@ import { computeNoiseLevelNorm, computeDiversity, computeEdgeDepth, computeGradi
 import type { WorkerRequest, WorkerResponse } from "../workers/pixel-analysis.worker";
 
 // Lazy worker constructor — Vite ?worker import
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — Vite worker import
 import PixelAnalysisWorker from "../workers/pixel-analysis.worker?worker";
 
 const WORKER_MODES = new Set<MapMode>(["noise", "entropy", "depth", "gradient", "region"]);

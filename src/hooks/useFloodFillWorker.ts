@@ -8,8 +8,6 @@ import { floodFill, glazeFloodFill } from "../drawing/flood-fill";
 import type { FloodFillWorkerRequest, FloodFillWorkerResponse } from "../workers/flood-fill.worker";
 
 // Lazy worker constructor — Vite ?worker import
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — Vite worker import
 import FloodFillWorker from "../workers/flood-fill.worker?worker";
 
 const FILL_TIMEOUT_MS = 10_000;
