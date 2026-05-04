@@ -1,20 +1,50 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
-import { LEVEL_INFO, LEVEL_CANDIDATES, findClosestCandidate, hue2rgb } from "../color-engine";
+import { LEVEL_INFO, LEVEL_CANDIDATES, hue2rgb } from "../color-engine";
 import { SP, C, R } from "../styles/tokens";
 import { S_CURSOR_POINTER } from "../styles/shared";
 import { useTranslation } from "../i18n";
+import {
+  ACTIVE_LEVELS,
+  BH,
+  bottomProjectionY,
+  buildLinkedVisualizationDots,
+  BXleft,
+  BXright,
+  BW,
+  BY,
+  C2_PAIR,
+  clampHueFromBottomGraphY,
+  clampHueFromRightGraphX,
+  compositeCosinePath,
+  compositeSinePath,
+  cosinePath,
+  CX,
+  CY,
+  HUE_LABELS,
+  lumR0,
+  lumR7,
+  LV_COLORS,
+  RH,
+  rightProjectionX,
+  RX,
+  RYbot,
+  RYtop,
+  sinePath,
+  TH,
+  TW,
+  wheelPoint,
+  WO,
+  WR,
+  RW,
+  type LinkedVisualizationDot,
+} from "./linked-visualization-geometry";
+
+export { ACTIVE_LEVELS } from "./linked-visualization-geometry";
+export type { LinkedVisualizationDot } from "./linked-visualization-geometry";
 
 interface LinkedVisualizationHover {
   lv: number;
   ci: number;
-}
-
-export interface LinkedVisualizationDot {
-  lv: number;
-  ci: number;
-  a: number;
-  rgb: [number, number, number];
-  act: boolean;
 }
 
 export interface LinkedVisualizationOverlayContext {
@@ -46,50 +76,10 @@ export interface LinkedVisualizationProps {
   onOriginModeChange?: (mode: 0 | 7) => void;
 }
 
-/* ── Layout constants ── */
-const WR = 58;
-const WO = 18; // left/top margin for axis labels
-const WCX = 68;
-const WCY = 68;
-const RING_R = 70; // hue ring outer edge + margin
-const GRAPH_GAP = 8; // visual separation between ring and graph
-
-// Single wheel center
-const CX = WO + WCX; // 86
-const CY = WO + WCY; // 86
-
-// Right graph (screen Y-projection: -cos(theta-alpha))
-const RX = CX + RING_R + GRAPH_GAP; // 164
-const RW = 170;
-const RYtop = CY - WR - 4; // 24
-const RYbot = CY + WR + 4; // 148
-const RH = RYbot - RYtop; // 124
-
-// Bottom graph (screen X-projection: sin(theta-alpha))
-const BY = CY + RING_R + GRAPH_GAP; // 164
-const BXleft = CX - WR - 4; // 24
-const BXright = CX + WR + 4; // 148
-const BW = BXright - BXleft; // 124
-const BH = 170;
-
-// Total SVG
-const TW = RX + RW + 4; // 332
-const TH = BY + BH + 16; // 344
-
-// Active levels (skip black=0, white=7)
-export const ACTIVE_LEVELS = [1, 2, 3, 4, 5, 6];
-const HUE_LABELS = [0, 60, 120, 180, 240, 300, 360];
-
-// Level display colors
-const LV_COLORS = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", ""];
-
-// C2 symmetry pairs: level a + level b = 7
-const C2_PAIR: Record<number, number> = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
 const DOT_HIT_R = 10;
 const DOT_TRANSITION = "r 0.3s, opacity 0.3s, stroke 0.3s, stroke-width 0.3s, fill 0.3s";
-
-const lumR0 = (lv: number) => (LEVEL_INFO[lv].gray / 255) * WR;
-const lumR7 = (lv: number) => (1 - LEVEL_INFO[lv].gray / 255) * WR;
+const rPx = rightProjectionX;
+const bPy = bottomProjectionY;
 
 /* ── Wheel rendering ── */
 interface WheelOpts {
@@ -106,9 +96,7 @@ interface WheelOpts {
 
 function renderWheel({ cx, cy, alpha, radiusFn, dots, hueAngle, hoveredDot, onHoverDot, mode }: WheelOpts) {
   const wP = (a: number, lv: number) => {
-    const rad = ((a - alpha - 90) * Math.PI) / 180;
-    const r = radiusFn(lv);
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    return wheelPoint(a, lv, alpha, radiusFn, cx, cy);
   };
   const sweepRad = ((hueAngle - alpha - 90) * Math.PI) / 180;
 
@@ -362,15 +350,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
 
   // Compute dots
   const dots = useMemo(() => {
-    const result: LinkedVisualizationDot[] = [];
-    for (let lv = 0; lv < LEVEL_CANDIDATES.length; lv++)
-      for (let ci = 0; ci < LEVEL_CANDIDATES[lv].length; ci++) {
-        const c = LEVEL_CANDIDATES[lv][ci];
-        if (c.angle < 0) continue;
-        const activeCI = directCandidates?.has(lv) ? directCandidates.get(lv)! : findClosestCandidate(lv, hueAngle);
-        result.push({ lv, ci, a: c.angle, rgb: c.rgb, act: activeCI === ci });
-      }
-    return result;
+    return buildLinkedVisualizationDots(hueAngle, directCandidates);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- brushLevel triggers re-render for active dot updates
   }, [hueAngle, brushLevel, directCandidates]);
 
@@ -380,16 +360,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   // Wheel dot position (for guide lines)
   const wP = useCallback(
     (a: number, lv: number) => {
-      const rad = ((a - activeAlpha - 90) * Math.PI) / 180;
-      const r = activeRadiusFn(lv);
-      return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+      return wheelPoint(a, lv, activeAlpha, activeRadiusFn);
     },
     [activeAlpha, activeRadiusFn],
   );
-
-  // Graph mapping
-  const rPx = (a: number) => RX + 10 + (a / 360) * (RW - 14);
-  const bPy = (a: number) => BY + 8 + (a / 360) * (BH - 16);
 
   // SVG coordinate conversion
   const svgCoord = useCallback((clientX: number, clientY: number) => {
@@ -418,7 +392,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       svgRef.current?.setPointerCapture(e.pointerId);
       // Immediately update hue
       const pt = svgCoord(e.clientX, e.clientY);
-      const hue = Math.max(0, Math.min(360, ((pt.x - RX - 10) / (RW - 14)) * 360));
+      const hue = clampHueFromRightGraphX(pt.x);
       onHueAngleChange?.(Math.round(hue));
     },
     [svgCoord, onHueAngleChange],
@@ -431,7 +405,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       dragRef.current = { type: "hue-bottom" };
       svgRef.current?.setPointerCapture(e.pointerId);
       const pt = svgCoord(e.clientX, e.clientY);
-      const hue = Math.max(0, Math.min(360, ((pt.y - BY - 8) / (BH - 16)) * 360));
+      const hue = clampHueFromBottomGraphY(pt.y);
       onHueAngleChange?.(Math.round(hue));
     },
     [svgCoord, onHueAngleChange],
@@ -449,10 +423,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         if (mode === 0) setAlpha0(newAlpha);
         else setAlpha7(newAlpha);
       } else if (drag.type === "hue") {
-        const hue = Math.max(0, Math.min(360, ((pt.x - RX - 10) / (RW - 14)) * 360));
+        const hue = clampHueFromRightGraphX(pt.x);
         onHueAngleChange?.(Math.round(hue));
       } else if (drag.type === "hue-bottom") {
-        const hue = Math.max(0, Math.min(360, ((pt.y - BY - 8) / (BH - 16)) * 360));
+        const hue = clampHueFromBottomGraphY(pt.y);
         onHueAngleChange?.(Math.round(hue));
       }
     },
@@ -461,32 +435,6 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
 
   const onPointerUp = useCallback(() => {
     dragRef.current = null;
-  }, []);
-
-  // Generate continuous screen-Y projection path for right graph
-  const sinePath = useCallback((lv: number, radiusFn: (lv: number) => number, alpha: number) => {
-    const r = radiusFn(lv);
-    if (r < 1) return "";
-    const pts: string[] = [];
-    for (let h = 0; h <= 360; h += 2) {
-      const rad = ((h - alpha - 90) * Math.PI) / 180;
-      const y = CY + r * Math.sin(rad);
-      pts.push(`${h === 0 ? "M" : "L"}${rPx(h).toFixed(1)},${y.toFixed(1)}`);
-    }
-    return pts.join(" ");
-  }, []);
-
-  // Generate continuous screen-X projection path for bottom graph
-  const cosinePath = useCallback((lv: number, radiusFn: (lv: number) => number, alpha: number) => {
-    const r = radiusFn(lv);
-    if (r < 1) return "";
-    const pts: string[] = [];
-    for (let h = 0; h <= 360; h += 2) {
-      const rad = ((h - alpha - 90) * Math.PI) / 180;
-      const x = CX + r * Math.cos(rad);
-      pts.push(`${h === 0 ? "M" : "L"}${x.toFixed(1)},${bPy(h).toFixed(1)}`);
-    }
-    return pts.join(" ");
   }, []);
 
   // Pre-compute all sine/cosine paths so vizContent doesn't recalculate them
@@ -498,7 +446,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       r7[lv] = sinePath(lv, lumR7, alpha7);
     }
     return { r0, r7 };
-  }, [sinePath, alpha0, alpha7]);
+  }, [alpha0, alpha7]);
 
   const cosinePaths = useMemo(() => {
     const r0: Record<number, string> = {};
@@ -508,7 +456,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       r7[lv] = cosinePath(lv, lumR7, alpha7);
     }
     return { r0, r7 };
-  }, [cosinePath, alpha0, alpha7]);
+  }, [alpha0, alpha7]);
 
   // Hover helpers
   const dotHandlers = (d: LinkedVisualizationDot) => ({
@@ -758,24 +706,16 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
           ).map(([a, b]) => {
             const rA = lumR0(a);
             if (rA < 1) return null;
-            const avgAlpha = (alpha0 + alpha7) / 2;
-            const deltaAlpha = alpha7 - alpha0;
-            const amp = 2 * rA * Math.cos(((deltaAlpha / 2) * Math.PI) / 180);
             const colA = activeDots.find((d) => d.lv === a);
             const colB = activeDots.find((d) => d.lv === b);
             const col =
               colA && colB
                 ? `rgb(${Math.round((colA.rgb[0] + colB.rgb[0]) / 2)},${Math.round((colA.rgb[1] + colB.rgb[1]) / 2)},${Math.round((colA.rgb[2] + colB.rgb[2]) / 2)})`
                 : "rgba(255,255,255,0.5)";
-            const pts: string[] = [];
-            for (let h = 0; h <= 360; h += 2) {
-              const y = CY + amp * Math.sin(((h - avgAlpha - 90) * Math.PI) / 180);
-              pts.push(`${h === 0 ? "M" : "L"}${rPx(h).toFixed(1)},${y.toFixed(1)}`);
-            }
             return (
               <path
                 key={`comp-s-${a}-${b}`}
-                d={pts.join(" ")}
+                d={compositeSinePath(rA, alpha0, alpha7)}
                 fill="none"
                 stroke={col}
                 strokeWidth={1.2}
@@ -1007,24 +947,16 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
           ).map(([a, b]) => {
             const rA = lumR0(a);
             if (rA < 1) return null;
-            const avgAlpha = (alpha0 + alpha7) / 2;
-            const deltaAlpha = alpha7 - alpha0;
-            const amp = 2 * rA * Math.cos(((deltaAlpha / 2) * Math.PI) / 180);
             const colA = activeDots.find((d) => d.lv === a);
             const colB = activeDots.find((d) => d.lv === b);
             const col =
               colA && colB
                 ? `rgb(${Math.round((colA.rgb[0] + colB.rgb[0]) / 2)},${Math.round((colA.rgb[1] + colB.rgb[1]) / 2)},${Math.round((colA.rgb[2] + colB.rgb[2]) / 2)})`
                 : "rgba(255,255,255,0.5)";
-            const pts: string[] = [];
-            for (let h = 0; h <= 360; h += 2) {
-              const x = CX + amp * Math.cos(((h - avgAlpha - 90) * Math.PI) / 180);
-              pts.push(`${h === 0 ? "M" : "L"}${x.toFixed(1)},${bPy(h).toFixed(1)}`);
-            }
             return (
               <path
                 key={`comp-c-${a}-${b}`}
-                d={pts.join(" ")}
+                d={compositeCosinePath(rA, alpha0, alpha7)}
                 fill="none"
                 stroke={col}
                 strokeWidth={1.2}
