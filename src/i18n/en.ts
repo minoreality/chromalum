@@ -144,6 +144,7 @@ export const en = {
 
   // App - toast messages
   toast_restore_failed: "Failed to restore saved data",
+  toast_restore_invalid: "Saved data could not be used. Started with a blank canvas without overwriting the saved data.",
   toast_autosave_failed: "Auto-save failed",
   toast_image_gen_failed: "Failed to generate image (possibly out of memory)",
   toast_save_long_press: "Long-press to save: {0}",

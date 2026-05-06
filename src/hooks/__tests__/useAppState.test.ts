@@ -4,13 +4,15 @@ import { renderHook, act } from "@testing-library/react";
 
 // Mock idb-persistence so IndexedDB is not required
 vi.mock("../../utils/idb-persistence", () => ({
+  SAVED_STATE_VERSION: 1,
   loadState: vi.fn(() => Promise.resolve(null)),
+  loadStateWithStatus: vi.fn(() => Promise.resolve({ status: "empty", state: null })),
   saveState: vi.fn(() => Promise.resolve()),
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
 import { useAppState } from "../useAppState";
-import { requestPersistentStorage, saveState } from "../../utils/idb-persistence";
+import { loadStateWithStatus, requestPersistentStorage, saveState } from "../../utils/idb-persistence";
 import { W0, H0 } from "../../constants";
 
 // Minimal translation stub
@@ -19,6 +21,8 @@ const t = ((key: string) => key) as import("../../i18n").TranslationFn;
 describe("useAppState", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    vi.mocked(loadStateWithStatus).mockResolvedValue({ status: "empty", state: null });
   });
 
   afterEach(() => {
@@ -99,6 +103,46 @@ describe("useAppState", () => {
 
     expect(saveStateMock).toHaveBeenCalledTimes(2);
     errorSpy.mockRestore();
+    unmount();
+  });
+
+  it("does not overwrite an invalid saved state with the baseline autosave", async () => {
+    vi.useFakeTimers();
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({
+      status: "invalid",
+      state: null,
+      reason: "saved state has an unsupported shape",
+    });
+    const saveStateMock = vi.mocked(saveState);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const { result, unmount } = renderHook(() => useAppState(t));
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loaded).toBe(true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+
+    expect(saveStateMock).not.toHaveBeenCalled();
+    expect(result.current.toast).toEqual({ message: "toast_restore_invalid", type: "error" });
+    expect(warnSpy).toHaveBeenCalledWith("CHROMALUM: saved state was ignored:", "saved state has an unsupported shape");
+
+    act(() => {
+      result.current.dispatch({ type: "new_canvas", w: 16, h: 16 });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+
+    expect(saveStateMock).toHaveBeenCalledTimes(1);
+    warnSpy.mockRestore();
     unmount();
   });
 

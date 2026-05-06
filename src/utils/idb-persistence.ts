@@ -5,6 +5,8 @@ const STORE_NAME = "state";
 const KEY = "current";
 /** Increment when schema changes; add migration logic in onupgradeneeded. */
 const DB_VERSION = 2;
+/** Increment when the serialized SavedState shape changes. */
+export const SAVED_STATE_VERSION = 1;
 
 export interface SavedState {
   w: number;
@@ -16,6 +18,14 @@ export interface SavedState {
   locked?: boolean[];
 }
 
+export type LoadStateStatus = "loaded" | "empty" | "invalid";
+
+export interface LoadStateResult {
+  status: LoadStateStatus;
+  state: SavedState | null;
+  reason?: string;
+}
+
 interface PersistentStorageResult {
   supported: boolean;
   persisted: boolean;
@@ -23,6 +33,18 @@ interface PersistentStorageResult {
 }
 
 const _db = { conn: null as IDBDatabase | null };
+
+function emptyResult(): LoadStateResult {
+  return { status: "empty", state: null };
+}
+
+function invalidResult(reason: string): LoadStateResult {
+  return { status: "invalid", state: null, reason };
+}
+
+function loadedResult(state: SavedState): LoadStateResult {
+  return { status: "loaded", state };
+}
 
 /** Detect quota-exceeded errors across browsers (Chrome/Safari name + Firefox name + legacy code). */
 function isQuotaError(err: unknown): boolean {
@@ -111,46 +133,76 @@ export async function requestPersistentStorage(): Promise<PersistentStorageResul
   return { supported: true, persisted, requested: true };
 }
 
-export async function loadState(): Promise<SavedState | null> {
+function normalizeLoadedState(val: unknown): LoadStateResult {
+  if (!val) return emptyResult();
+  if (typeof val !== "object") return invalidResult("saved state is not an object");
+
+  const saved = val as Partial<SavedState>;
+  if (
+    typeof saved.w !== "number" ||
+    typeof saved.h !== "number" ||
+    typeof saved.version !== "number" ||
+    !(saved.data instanceof Uint8Array) ||
+    !Array.isArray(saved.cc) ||
+    saved.cc.length !== 8
+  ) {
+    return invalidResult("saved state has an unsupported shape");
+  }
+
+  if (!Number.isInteger(saved.version) || saved.version < 1) {
+    return invalidResult("saved state version is invalid");
+  }
+
+  if (saved.version > SAVED_STATE_VERSION) {
+    return invalidResult(`saved state version ${saved.version} is newer than supported version ${SAVED_STATE_VERSION}`);
+  }
+
+  if (
+    !Number.isInteger(saved.w) ||
+    !Number.isInteger(saved.h) ||
+    saved.data.length !== saved.w * saved.h ||
+    saved.w <= 0 ||
+    saved.h <= 0 ||
+    saved.w > MAX_IMAGE_SIZE ||
+    saved.h > MAX_IMAGE_SIZE
+  ) {
+    return invalidResult("saved state canvas dimensions are invalid");
+  }
+
+  // Clamp pixel data to valid range [0, 7] and cc indices to valid bounds.
+  for (let i = 0; i < saved.data.length; i++) {
+    if (saved.data[i] > 7) saved.data[i] = saved.data[i] & 7;
+  }
+  for (let i = 0; i < saved.cc.length; i++) {
+    if (typeof saved.cc[i] !== "number" || saved.cc[i] < 0) saved.cc[i] = 0;
+  }
+  if (saved.locked && (!Array.isArray(saved.locked) || saved.locked.length !== 8)) {
+    delete saved.locked;
+  }
+  if (saved.colorMap && (!(saved.colorMap instanceof Uint8Array) || saved.colorMap.length !== saved.w * saved.h)) {
+    delete saved.colorMap;
+  }
+
+  return loadedResult(saved as SavedState);
+}
+
+export async function loadStateWithStatus(): Promise<LoadStateResult> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
     const req = tx.objectStore(STORE_NAME).get(KEY);
     req.onsuccess = () => {
-      const val = req.result;
-      if (
-        !val ||
-        typeof val.w !== "number" ||
-        typeof val.h !== "number" ||
-        typeof val.version !== "number" ||
-        !(val.data instanceof Uint8Array) ||
-        !Array.isArray(val.cc) ||
-        val.cc.length !== 8 ||
-        val.data.length !== val.w * val.h ||
-        val.w <= 0 ||
-        val.h <= 0 ||
-        val.w > MAX_IMAGE_SIZE ||
-        val.h > MAX_IMAGE_SIZE
-      ) {
-        resolve(null);
-        return;
-      }
-      // Clamp pixel data to valid range [0, 7] and cc indices to valid bounds
-      for (let i = 0; i < val.data.length; i++) {
-        if (val.data[i] > 7) val.data[i] = val.data[i] & 7;
-      }
-      for (let i = 0; i < val.cc.length; i++) {
-        if (typeof val.cc[i] !== "number" || val.cc[i] < 0) val.cc[i] = 0;
-      }
-      if (val.locked && (!Array.isArray(val.locked) || val.locked.length !== 8)) {
-        val.locked = undefined;
-      }
-      // Validate colorMap (optional, backward compatible)
-      if (val.colorMap && (!(val.colorMap instanceof Uint8Array) || val.colorMap.length !== val.w * val.h)) {
-        val.colorMap = undefined;
-      }
-      resolve(val as SavedState);
+      resolve(normalizeLoadedState(req.result));
     };
     req.onerror = () => reject(req.error);
   });
+}
+
+export async function loadState(): Promise<SavedState | null> {
+  return (await loadStateWithStatus()).state;
+}
+
+export function resetPersistenceConnectionForTests(): void {
+  _db.conn?.close();
+  _db.conn = null;
 }

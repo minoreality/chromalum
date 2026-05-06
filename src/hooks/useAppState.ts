@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useReducer, useMemo } from "react";
 import { DISPLAY_MIN, DISPLAY_MAX_LIMIT } from "../constants";
 import { canvasReducer, initialState } from "../state/canvas-reducer";
-import { saveState, loadState, requestPersistentStorage } from "../utils/idb-persistence";
+import { SAVED_STATE_VERSION, saveState, loadStateWithStatus, requestPersistentStorage } from "../utils/idb-persistence";
 import { createErrorHandler } from "../utils/error-handler";
 import { useToolState } from "./useToolState";
 import { useUIState } from "./useUIState";
@@ -53,23 +53,31 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   useEffect(() => {
     if (loadedOnceRef.current) return;
     loadedOnceRef.current = true;
-    loadState()
-      .then((saved) => {
-        if (saved) {
+    loadStateWithStatus()
+      .then((result) => {
+        if (result.state) {
           dispatch({
             type: "load_image",
-            w: saved.w,
-            h: saved.h,
-            data: saved.data,
-            ...(saved.colorMap ? { colorMap: saved.colorMap } : {}),
+            w: result.state.w,
+            h: result.state.h,
+            data: result.state.data,
+            ...(result.state.colorMap ? { colorMap: result.state.colorMap } : {}),
           });
-          ccDispatch({ type: "load_all", values: saved.cc });
-          if (saved.locked) setLocked(saved.locked);
+          ccDispatch({ type: "load_all", values: result.state.cc });
+          if (result.state.locked) setLocked(result.state.locked);
+          return;
+        }
+
+        if (result.status === "invalid") {
+          console.warn("CHROMALUM: saved state was ignored:", result.reason ?? "unknown reason");
+          showToast(t("toast_restore_invalid"), "error");
+          lastSavedRef.current = { data: cvs.data, colorMap: cvs.colorMap, cc, locked };
+          baselineSaveCompleteRef.current = true;
         }
       })
       .catch(createErrorHandler("Restore", () => showToast(t("toast_restore_failed"), "error")))
       .finally(() => setLoaded(true));
-  }, [showToast, t, ccDispatch, setLocked]);
+  }, [showToast, t, ccDispatch, setLocked, cvs.data, cvs.colorMap, cc, locked]);
 
   // Auto-save to IndexedDB on changes (debounced, skip if unchanged)
   useEffect(() => {
@@ -89,7 +97,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
         colorMap: new Uint8Array(_cvs.colorMap),
         cc: [..._cc],
         locked: [..._locked],
-        version: 1,
+        version: SAVED_STATE_VERSION,
       })
         .then(() => {
           if (requestId === saveRequestIdRef.current) {

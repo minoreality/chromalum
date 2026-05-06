@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import "fake-indexeddb/auto";
-import { saveState, loadState, checkStorageQuota, requestPersistentStorage } from "../idb-persistence";
+import {
+  SAVED_STATE_VERSION,
+  saveState,
+  loadState,
+  loadStateWithStatus,
+  checkStorageQuota,
+  requestPersistentStorage,
+  resetPersistenceConnectionForTests,
+} from "../idb-persistence";
 import type { SavedState } from "../idb-persistence";
 
 /**
@@ -22,12 +30,22 @@ function makeState(overrides?: Partial<SavedState>): SavedState {
 // Reset the IDB between tests by clearing the cached connection
 const originalStorage = navigator.storage;
 
-beforeEach(() => {
-  // Force fresh DB connection by clearing the module-level cache
-  // fake-indexeddb resets automatically between test files
+function deleteTestDb(): Promise<void> {
+  resetPersistenceConnectionForTests();
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase("chromalum");
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error("deleteDatabase blocked"));
+  });
+}
+
+beforeEach(async () => {
+  await deleteTestDb();
 });
 
 afterEach(() => {
+  resetPersistenceConnectionForTests();
   Object.defineProperty(navigator, "storage", { configurable: true, value: originalStorage });
 });
 
@@ -83,11 +101,12 @@ describe("saveState / loadState roundtrip", () => {
 
 describe("loadState validation", () => {
   it("returns null for empty DB", async () => {
-    // First call before any save — uses fresh DB from fake-indexeddb
     const loaded = await loadState();
-    // May be null or may return the state saved in a previous test (same module-level conn)
-    // This test primarily verifies the function doesn't throw
-    expect(loaded === null || typeof loaded === "object").toBe(true);
+    expect(loaded).toBeNull();
+  });
+
+  it("reports empty status for empty DB", async () => {
+    await expect(loadStateWithStatus()).resolves.toEqual({ status: "empty", state: null });
   });
 
   it("clamps pixel data > 7 to valid range", async () => {
@@ -144,6 +163,29 @@ describe("loadState validation", () => {
     await saveState(state);
     const loaded = await loadState();
     expect(loaded).toBeNull();
+  });
+
+  it("reports invalid status for unsupported saved-state versions", async () => {
+    const state = makeState({ version: SAVED_STATE_VERSION + 1 });
+    await saveState(state);
+
+    const result = await loadStateWithStatus();
+
+    expect(result.status).toBe("invalid");
+    expect(result.state).toBeNull();
+    expect(result.reason).toContain("newer than supported");
+    await expect(loadState()).resolves.toBeNull();
+  });
+
+  it("reports invalid status for corrupted persisted shapes", async () => {
+    const state = makeState({ cc: [0, 0, 0] as unknown as number[] });
+    await saveState(state);
+
+    const result = await loadStateWithStatus();
+
+    expect(result.status).toBe("invalid");
+    expect(result.state).toBeNull();
+    expect(result.reason).toContain("unsupported shape");
   });
 });
 

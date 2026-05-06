@@ -94,6 +94,18 @@ The stored state includes:
 - locked color levels;
 - persistence schema version.
 
+Two version numbers have separate roles. `DB_VERSION` controls the IndexedDB
+database structure and should change when object stores or indexes need an
+IndexedDB upgrade. `SAVED_STATE_VERSION` controls the serialized canvas state
+shape stored under the current key and should change when saved state needs a
+data migration.
+
+Restore treats an empty database and an invalid saved record differently. Empty
+storage starts from the default canvas. Invalid or unsupported saved data is
+reported to the UI and ignored for the session, but the first baseline autosave
+does not immediately overwrite it. A later explicit user change can then create
+a fresh valid save.
+
 ## Workers
 
 Two worker paths keep expensive pixel operations away from the main thread:
