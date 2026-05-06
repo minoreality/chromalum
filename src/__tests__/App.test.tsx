@@ -6,8 +6,11 @@ import { LanguageProvider } from "../i18n";
 import { PWA_UPDATE_READY_EVENT } from "../pwa";
 
 vi.mock("../utils/idb-persistence", () => ({
+  SAVED_STATE_VERSION: 1,
   loadState: vi.fn(() => Promise.resolve(null)),
+  loadStateWithStatus: vi.fn(() => Promise.resolve({ status: "empty", state: null })),
   saveState: vi.fn(() => Promise.resolve()),
+  requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
 function renderApp() {

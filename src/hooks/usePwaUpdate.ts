@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { PWA_UPDATE_READY_EVENT, type PwaUpdateReadyDetail } from "../pwa";
 
-export function usePwaUpdate() {
+export function usePwaUpdate(reloadWindow: () => void = () => window.location.reload()) {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [reloading, setReloading] = useState(false);
 
@@ -21,7 +21,7 @@ export function usePwaUpdate() {
   const reload = useCallback(() => {
     const waitingWorker = registration?.waiting;
     if (!waitingWorker || !("serviceWorker" in navigator)) {
-      window.location.reload();
+      reloadWindow();
       return;
     }
 
@@ -30,13 +30,13 @@ export function usePwaUpdate() {
     const reloadPage = () => {
       if (didReload) return;
       didReload = true;
-      window.location.reload();
+      reloadWindow();
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", reloadPage, { once: true });
     waitingWorker.postMessage({ type: "SKIP_WAITING" });
     window.setTimeout(reloadPage, 4000);
-  }, [registration]);
+  }, [registration, reloadWindow]);
 
   const dismiss = useCallback(() => {
     setRegistration(null);

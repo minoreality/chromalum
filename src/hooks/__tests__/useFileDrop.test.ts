@@ -35,6 +35,17 @@ class AutoLoadImage {
   }
 }
 
+class AutoErrorImage {
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  width = 3;
+  height = 2;
+
+  set src(_value: string) {
+    queueMicrotask(() => this.onerror?.());
+  }
+}
+
 function setup(onCropRequest?: (img: HTMLImageElement, w: number, h: number) => void) {
   const dispatch = vi.fn<React.Dispatch<CanvasAction>>();
   const setZoom = vi.fn<React.Dispatch<React.SetStateAction<number>>>();
@@ -89,6 +100,20 @@ describe("useFileDrop", () => {
     expect(showToast).not.toHaveBeenCalled();
   });
 
+  it("does not accept SVG files as image imports", async () => {
+    const createImageBitmap = vi.fn();
+    Object.defineProperty(window, "createImageBitmap", { value: createImageBitmap, configurable: true, writable: true });
+    const { result, dispatch, showToast } = setup();
+
+    await act(async () => {
+      await result.current.loadImg(makeFile("image/svg+xml", 8, "vector.svg"));
+    });
+
+    expect(createImageBitmap).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
   it("rejects files above the size limit before decoding", async () => {
     const { result, dispatch, showToast } = setup();
 
@@ -98,6 +123,27 @@ describe("useFileDrop", () => {
 
     expect(dispatch).not.toHaveBeenCalled();
     expect(showToast).toHaveBeenCalledWith("toast_image_too_large", "error");
+  });
+
+  it("does not expose file names in image decode failure toasts", async () => {
+    Object.defineProperty(window, "createImageBitmap", {
+      value: vi.fn().mockRejectedValue(new Error("decode failed")),
+      configurable: true,
+      writable: true,
+    });
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:http://localhost/fake");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    window.Image = AutoErrorImage as unknown as typeof Image;
+    const maliciousName = '<img src=x onerror="alert(1)">.png';
+    const { result, dispatch, showToast } = setup();
+
+    await act(async () => {
+      await result.current.loadImg(makeFile("image/png", 8, maliciousName));
+    });
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith("toast_image_load_failed", "error");
+    expect(showToast.mock.calls.every(([message]) => !String(message).includes(maliciousName))).toBe(true);
   });
 
   it("loads a supported image into canvas state and resets pan/zoom", async () => {
