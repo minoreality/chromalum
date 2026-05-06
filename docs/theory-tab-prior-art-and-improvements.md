@@ -101,7 +101,7 @@ Theory タブ末尾または各セクションに References drawer を置く場
 1. `GRB` is unique for BT.601 luma monotonicity.
 2. Complement luma theorem: `Y(c) + Y(c xor 7) = 255`.
 3. Die rank theorem: order-reversing involution pairs rank `k` with `7-k`.
-4. Fano line theorem: `{a,b,c}` is a line iff `a xor b xor c = 0`.
+4. Fano line theorem: `{a,b,c}` is a line iff `a ⊕ b ⊕ c = 0`.
 5. `K8` edge partition by Hamming distance.
 
 ### P2: Coefficient Switcher

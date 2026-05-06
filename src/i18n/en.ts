@@ -249,7 +249,7 @@ export const en = {
   theory_fano_desc:
     "The 7 nonzero levels {1, …, 7} form PG(2,2) (the smallest projective plane: 7 points, 7 lines, 3 points per line, 3 lines per point) and the Steiner triple system S(2,3,7), unique up to isomorphism (every pair of points lies on exactly one line). Under projectivization, the zero vector is not a point, so Black (0) does not appear here.",
   theory_fano_desc2:
-    "In the triangle: vertices = RGB (primaries), midpoints = CMY (each is XOR of adjacent vertices), center = White (the intersection of lines RC, GM, BY). The 3 sides are additive mixing, the 3 medians are complementary pairs, and the inscribed circle is the line through the 3 secondary colors. For any line {a, b, c}, a \u2295 b \u2295 c = 0.",
+    "In the triangle: vertices = RGB (primaries), midpoints = CMY (each is XOR of adjacent vertices), center = White (the intersection of lines RC, GM, BY). The 3 sides are additive mixing, the 3 medians are complementary pairs, and the inscribed circle is the line through the 3 secondary colors. For any line {a, b, c}, a \u2295 b \u2295 c = 0. In particular, the CMY line reads 011\u2295101\u2295110 = 000, i.e. M\u2295C\u2295Y = K. K is the zero vector, not a Fano point.",
   theory_fano_xor: "{0} \u2295 {1} = {2}",
   theory_fano_primary: "Primary mixing",
   theory_fano_complement: "Complementary",
@@ -299,7 +299,7 @@ export const en = {
   theory_cube_hasse: "Hasse",
   theory_conn_conclusion_2: "GF(2)\u00b3 \u2014 the common algebraic source",
   theory_conn_fano_hamming_hook:
-    "Fano \u2194 Hamming: the nonzero levels 1..7 are both the seven points of the Fano plane and the seven columns (position labels) of the Hamming(7,4) parity-check matrix. Each Fano line {a,b,c} can be read as a dependency among three columns satisfying a⊕b⊕c=0. Projective geometry and coding theory are two readings of this same seven-point structure.",
+    "Fano \u2194 Hamming: the nonzero levels 1..7 are both the seven points of the Fano plane and the seven columns (position labels) of the Hamming(7,4) parity-check matrix. Each Fano line {a,b,c} can be read as a dependency among three columns satisfying a⊕b⊕c=0. On the CMY line, 011⊕101⊕110=000, i.e. M⊕C⊕Y=K. Projective geometry and coding theory are two readings of this same seven-point structure.",
   theory_conn_cube_geometry_hook:
     "Cube geometry: adding Black(0) to a Fano line {a,b,c} gives the two-dimensional subspace {0,a,b,c} of GF(2)\u00b3. Six of the seven appear as actual four-vertex planes in the RGB cube (the three coordinate planes G=0, R=0, B=0 and three diagonal planes). The remaining CMY line corresponds to the even-parity tetrahedron {K,M,C,Y}, not a Euclidean plane. The coordinate planes are the kernels where each parity check is 0, and their opposite sides are the checked positions.",
   theory_conn_gray_hook:
@@ -375,7 +375,7 @@ export const en = {
 
   theory_fano_cmy_collapse: "CMY line",
   theory_fano_cmy_eq: "M\u2295C\u2295Y = K \u2192 collinear!",
-  theory_fano_cmy_why: "M=G\u2032 C=R\u2032 \u2192 M\u2295C = G\u2295R = Y (complement mirror)",
+  theory_fano_cmy_why: "011\u2295101\u2295110=000; K=000 is the zero vector (not a Fano point)",
 
   // Stats panel
   stats_title: "PIXEL MAP ANALYSIS",

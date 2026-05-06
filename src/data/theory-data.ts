@@ -22,15 +22,15 @@ export const THEORY_LEVELS: TheoryLevel[] = [
   { lv: 7, name: "White", short: "W", bits: [1, 1, 1], color: "#ffffff", hamming: "D4" },
 ];
 
-/** 7 Fano plane lines — each [a, b, c] satisfies a XOR b = c */
+/** 7 Fano plane lines — each [a, b, c] satisfies a XOR b XOR c = 0 */
 export const FANO_LINES: [number, number, number][] = [
-  [1, 2, 3], // B + R = M  (primary mixing)
-  [1, 4, 5], // B + G = C
-  [2, 4, 6], // R + G = Y
-  [1, 6, 7], // B + Y = W  (complementary)
-  [2, 5, 7], // R + C = W
-  [3, 4, 7], // M + G = W
-  [3, 5, 6], // M + C = Y  (CMY circle)
+  [1, 2, 3], // B⊕R=M  (primary mixing)
+  [1, 4, 5], // B⊕G=C
+  [2, 4, 6], // R⊕G=Y
+  [1, 6, 7], // B⊕Y=W  (complementary)
+  [2, 5, 7], // R⊕C=W
+  [3, 4, 7], // M⊕G=W
+  [3, 5, 6], // M⊕C⊕Y=K  (CMY circle)
 ];
 
 /** Line category for display */

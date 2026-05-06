@@ -251,7 +251,7 @@ export const ja: Record<TranslationKey, string> = {
   theory_fano_desc:
     "7つの非零レベル {1, …, 7} は、PG(2,2)（最小の射影平面：7点、7線、各線 3 点、各点 3 線）と、同型を除いて唯一のシュタイナー三重系 S(2,3,7)（任意の2点がちょうど1本の線上にあります）を形成します。射影化では零ベクトルは点にならないため、Black(0) はここには現れません。",
   theory_fano_desc2:
-    "図では、頂点は RGB（原色）、辺の中点は CMY（隣接頂点のXOR）、中心は White(7)（RC・GM・BY 各線の交点）です。3辺は加法混色、3中線は補色ペア、内接円は 3 つの二次色を通る線に対応します。各線 {a, b, c} では a \u2295 b \u2295 c = 0 が成り立ちます。",
+    "図では、頂点は RGB（原色）、辺の中点は CMY（隣接頂点のXOR）、中心は White(7)（RC・GM・BY 各線の交点）です。3辺は加法混色、3中線は補色ペア、内接円は 3 つの二次色を通る線に対応します。各線 {a, b, c} では a \u2295 b \u2295 c = 0 が成り立ちます。特に CMY 線は 011\u2295101\u2295110 = 000、すなわち M\u2295C\u2295Y = K と読めます。K は零ベクトルであり、ファノ平面上の点ではありません。",
   theory_fano_xor: "{0} \u2295 {1} = {2}",
   theory_fano_primary: "原色混合",
   theory_fano_complement: "補色ペア",
@@ -300,7 +300,7 @@ export const ja: Record<TranslationKey, string> = {
   theory_cube_hasse: "\u30cf\u30c3\u30bb\u56f3",
   theory_conn_conclusion_2: "GF(2)\u00b3 \u2014 共通の代数的源泉",
   theory_conn_fano_hamming_hook:
-    "Fano \u2194 Hamming：非零レベル 1..7 は、ファノ平面の7点であると同時に、Hamming(7,4) のパリティ検査行列の7列（位置ラベル）でもあります。各ファノ線 {a,b,c} は a⊕b⊕c=0 を満たす3列の依存関係として読めます。射影幾何と符号理論は、この同じ7点構造の二つの読み方です。",
+    "Fano \u2194 Hamming：非零レベル 1..7 は、ファノ平面の7点であると同時に、Hamming(7,4) のパリティ検査行列の7列（位置ラベル）でもあります。各ファノ線 {a,b,c} は a⊕b⊕c=0 を満たす3列の依存関係として読めます。CMY 線では 011⊕101⊕110=000、つまり M⊕C⊕Y=K です。射影幾何と符号理論は、この同じ7点構造の二つの読み方です。",
   theory_conn_cube_geometry_hook:
     "立方体の幾何：ファノ線 {a,b,c} に Black(0) を加えると、GF(2)³ の2次元部分空間 {0,a,b,c} になります。7つのうち6つは、RGB立方体の実際の4頂点平面として現れます（3つの座標平面 G=0, R=0, B=0 と、3つの対角平面）。残る CMY 線は {K,M,C,Y} という偶数パリティ四面体に対応し、ユークリッド平面ではありません。座標平面は各パリティ検査で 0 になる核であり、その反対側が検査対象になります。",
   theory_conn_gray_hook:
@@ -376,7 +376,7 @@ export const ja: Record<TranslationKey, string> = {
 
   theory_fano_cmy_collapse: "CMY\u5171\u7dda",
   theory_fano_cmy_eq: "M\u2295C\u2295Y = K \u2192 共線！",
-  theory_fano_cmy_why: "M=G\u2032 C=R\u2032 \u2192 M\u2295C = G\u2295R = Y（補色の鏡像）",
+  theory_fano_cmy_why: "011\u2295101\u2295110=000；K=000 は零ベクトル（ファノ点ではない）",
 
   // Stats panel
   stats_title: "PIXEL MAP ANALYSIS",
