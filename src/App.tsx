@@ -1,7 +1,6 @@
 import React, { Suspense, lazy, useEffect, useRef, useCallback, useMemo, useState } from "react";
 
 import { isShapeTool } from "./constants";
-import { LUMA_R, LUMA_G, LUMA_B, GRAY_LUT } from "./color-engine";
 import { useSyncRef } from "./hooks/useSyncRef";
 import { usePanZoom } from "./hooks/usePanZoom";
 import { useCanvasDrawing } from "./hooks/useCanvasDrawing";
@@ -9,6 +8,7 @@ import { useGlazeDrawing } from "./hooks/useGlazeDrawing";
 import { useCanvasCoordination } from "./hooks/useCanvasCoordination";
 import { useStablePanZoomHandlers, useStableDrawingHandlers } from "./hooks/useStableHandlers";
 import { useFileDrop } from "./hooks/useFileDrop";
+import { useImageImportCrop } from "./hooks/useImageImportCrop";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useExport } from "./hooks/useExport";
 import { useAppState } from "./hooks/useAppState";
@@ -16,11 +16,11 @@ import { usePwaUpdate } from "./hooks/usePwaUpdate";
 import { DrawingContextProvider } from "./state/DrawingContext";
 import { GlazeContextProvider } from "./state/GlazeContext";
 import { timestamp } from "./utils";
-import { S_TAB_ACTIVE, S_TAB_INACTIVE } from "./styles/shared";
 import { C, Z, FS, FW, FONT } from "./styles/tokens";
 import { Toast } from "./components/Toast";
 import { PwaUpdateToast } from "./components/PwaUpdateToast";
 import { MAIN_TABS } from "./tabs";
+import { AppTabBar } from "./components/AppTabBar";
 import { SourcePanel } from "./components/SourcePanel";
 import { ColorPanel } from "./components/ColorPanel";
 import { GlazePanel } from "./components/GlazePanel";
@@ -76,13 +76,6 @@ const S_HEADER_ACTION: React.CSSProperties = {
 };
 const S_HEADER_SEPARATOR: React.CSSProperties = { color: C.textSubtle };
 const S_HEADER_LANGUAGE_SEPARATOR: React.CSSProperties = { color: C.textSubtle, marginLeft: 4, marginRight: 4 };
-const S_TABLIST: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "center",
-  gap: 0,
-  marginBottom: "var(--sp-tablist-mb)",
-  width: "100%",
-};
 const S_TAB_CENTER: React.CSSProperties = { display: "flex", justifyContent: "center", width: "100%" };
 const S_DROP_OVERLAY: React.CSSProperties = {
   position: "fixed",
@@ -213,39 +206,11 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
 
   const brushSizeRef = useSyncRef(brushSize);
 
-  // Crop modal state
-  const [cropImage, setCropImage] = useState<{ img: HTMLImageElement; w: number; h: number } | null>(null);
-  const handleCropRequest = useCallback((img: HTMLImageElement, w: number, h: number) => {
-    setCropImage({ img, w, h });
-  }, []);
-  const handleCropConfirm = useCallback(
-    (x: number, y: number, w: number, h: number) => {
-      const ci = cropImage;
-      if (!ci) return;
-      const tc = document.createElement("canvas");
-      tc.width = w;
-      tc.height = h;
-      const ctx = tc.getContext("2d");
-      if (!ctx) return;
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(ci.img, x, y, w, h, 0, 0, w, h);
-      const id = ctx.getImageData(0, 0, w, h);
-      const nd = new Uint8Array(w * h);
-      const px = id.data;
-      for (let i = 0; i < w * h; i++) {
-        const off = i * 4;
-        const gray = Math.min(255, Math.round(LUMA_R * px[off] + LUMA_G * px[off + 1] + LUMA_B * px[off + 2]));
-        nd[i] = GRAY_LUT[gray];
-      }
-      dispatch({ type: "load_image", w, h, data: nd });
-      panZoom.setZoom(1);
-      panZoom.setPan({ x: 0, y: 0 });
-      setCropImage(null);
-    },
-    [cropImage, dispatch, panZoom],
-  );
-  const handleCropCancel = useCallback(() => setCropImage(null), []);
+  const { cropImage, handleCropRequest, handleCropConfirm, handleCropCancel } = useImageImportCrop({
+    dispatch,
+    setZoom: panZoom.setZoom,
+    setPan: panZoom.setPan,
+  });
 
   const fileDrop = useFileDrop(dispatch, panZoom.setZoom, panZoom.setPan, showToast, announce, t, handleCropRequest);
 
@@ -460,21 +425,7 @@ function AppContent({ app, panZoom, announce, ariaLiveRef, t }: AppContentProps)
         </div>
       </div>
 
-      <div role="tablist" aria-label={t("tablist_label")} style={S_TABLIST}>
-        {MAIN_TABS.map(({ key }, i) => (
-          <button
-            key={key}
-            id={`tab-${i}`}
-            role="tab"
-            aria-selected={activeTab === i}
-            aria-controls={`tabpanel-${i}`}
-            onClick={() => setActiveTab(i)}
-            style={activeTab === i ? S_TAB_ACTIVE : S_TAB_INACTIVE}
-          >
-            {t(key)}
-          </button>
-        ))}
-      </div>
+      <AppTabBar activeTab={activeTab} onTabChange={setActiveTab} t={t} />
 
       <div style={S_TAB_CENTER}>
         {activeTab === 2 && (
