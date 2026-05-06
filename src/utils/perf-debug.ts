@@ -27,7 +27,7 @@ function percentile(sorted: number[], ratio: number): number {
   return sorted[index];
 }
 
-export function isDebugPerfEnabled(): boolean {
+function isDebugPerfEnabled(): boolean {
   if (enabledCache !== null) return enabledCache;
   if (typeof window === "undefined") {
     enabledCache = false;

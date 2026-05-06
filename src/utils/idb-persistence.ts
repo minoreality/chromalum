@@ -18,9 +18,9 @@ export interface SavedState {
   locked?: boolean[];
 }
 
-export type LoadStateStatus = "loaded" | "empty" | "invalid";
+type LoadStateStatus = "loaded" | "empty" | "invalid";
 
-export interface LoadStateResult {
+interface LoadStateResult {
   status: LoadStateStatus;
   state: SavedState | null;
   reason?: string;
