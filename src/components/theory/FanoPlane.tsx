@@ -226,7 +226,13 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
             const ox = anchor.x + (dx / dist) * push,
               oy = anchor.y + (dy / dist) * push;
             const labelColor = cat === "primary" ? "#80a0ff" : cat === "complement" ? "#ffa060" : "#60ffa0";
-            const mixLabel = `${COLOR_NAMES[line[0]]} + ${COLOR_NAMES[line[1]]} = ${COLOR_NAMES[line[2]]}`;
+            const isSecondary = cat === "secondary";
+            const algebraLabel = isSecondary
+              ? `${line.map((lv) => THEORY_LEVELS[lv].bits.join("")).join("\u2295")} = 000`
+              : t("theory_fano_xor", String(line[0]), String(line[1]), String(line[2]));
+            const mixLabel = isSecondary
+              ? `${COLOR_NAMES[line[0]]}\u2295${COLOR_NAMES[line[1]]}\u2295${COLOR_NAMES[line[2]]} = K`
+              : `${COLOR_NAMES[line[0]]} + ${COLOR_NAMES[line[1]]} = ${COLOR_NAMES[line[2]]}`;
             return (
               <g key={"eq" + li}>
                 <text
@@ -239,7 +245,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
                   fill={labelColor}
                   fontWeight={FW.bold}
                 >
-                  {t("theory_fano_xor", String(line[0]), String(line[1]), String(line[2]))}
+                  {algebraLabel}
                 </text>
                 <text
                   x={ox}
@@ -359,34 +365,6 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
                 opacity={Math.min(1, (animT - 0.3) * 3)}
               >
                 {info.bits.join("")}
-              </text>
-            );
-          })}
-
-        {/* XOR decomposition labels above each CMY point */}
-        {isCmyAnimating &&
-          animT > 0.65 &&
-          (
-            [
-              [3, "M = C⊕Y"],
-              [5, "C = M⊕Y"],
-              [6, "Y = M⊕C"],
-            ] as const
-          ).map(([lv, eq]) => {
-            const p = getPos(lv);
-            const info = THEORY_LEVELS[lv];
-            return (
-              <text
-                key={"xq" + lv}
-                x={p.x}
-                y={p.y - DOT_R - 6}
-                textAnchor="middle"
-                fontSize={FS.xs}
-                fontFamily="var(--font-mono)"
-                fill={info.color}
-                opacity={Math.min(1, (animT - 0.65) * 3) * 0.85}
-              >
-                {eq}
               </text>
             );
           })}

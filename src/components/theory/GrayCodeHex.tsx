@@ -160,12 +160,12 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }:
                 y={p.y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={FS.xl}
+                fontSize={FS.md}
                 fontWeight={900}
                 fontFamily="var(--font-mono)"
                 fill={lv >= 4 ? "#000" : "#fff"}
               >
-                {lv}
+                {info.bits.join("")}
               </text>
               {(() => {
                 const angle = Math.atan2(p.y - 150, p.x - 150);

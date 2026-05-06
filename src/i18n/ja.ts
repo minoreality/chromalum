@@ -375,7 +375,7 @@ export const ja: Record<TranslationKey, string> = {
   theory_group_synthesis: "総括と限界",
 
   theory_fano_cmy_collapse: "CMY\u5171\u7dda",
-  theory_fano_cmy_eq: "M\u2295C\u2295Y = 0 \u2192 共線！",
+  theory_fano_cmy_eq: "M\u2295C\u2295Y = K \u2192 共線！",
   theory_fano_cmy_why: "M=G\u2032 C=R\u2032 \u2192 M\u2295C = G\u2295R = Y（補色の鏡像）",
 
   // Stats panel

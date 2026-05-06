@@ -17,6 +17,7 @@ const PARITY_GROUPS: { parity: number; checks: number[]; label: string }[] = [
 const DOT_R = 12;
 const ROW_Y = [50, 100, 150];
 const DATA_X = [80, 140, 200, 260]; // Positions for 4 data bits per row
+const SYNDROME_PARITIES = [4, 2, 1] as const;
 
 interface Props {
   hlLevel: number | null;
@@ -47,6 +48,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
 
   // The demo injects a single position error, so the syndrome is that position in binary.
   const syndrome = corrected ? 0 : errorPosition !== null ? errorPosition : 0;
+  const syndromeBits = THEORY_LEVELS[syndrome].bits;
   const parityResults = PARITY_GROUPS.map((pg) => ({
     ...pg,
     failed: (syndrome & pg.parity) !== 0,
@@ -274,8 +276,8 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
               fill={C.textDimmer}
             >
               {"syndrome = "}
-              {[4, 2, 1].map((parity) => {
-                const bit = (syndrome >> Math.log2(parity)) & 1;
+              {SYNDROME_PARITIES.map((parity, bi) => {
+                const bit = syndromeBits[bi];
                 const bitActive = hlLevel === parity;
                 const parityColor = THEORY_LEVELS[parity].color;
                 return (

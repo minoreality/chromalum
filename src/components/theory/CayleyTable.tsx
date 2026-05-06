@@ -12,6 +12,10 @@ const N = 8;
 const SVG_W = HDR + N * (CELL + GAP);
 const SVG_H = HDR + N * (CELL + GAP);
 
+function bitLabel(lv: number): string {
+  return THEORY_LEVELS[lv].bits.join("");
+}
+
 interface Props {
   hlLevel: number | null;
   onHover: (lv: number | null) => void;
@@ -193,12 +197,21 @@ export const CayleyTable = React.memo(function CayleyTable({ hlLevel, onHover }:
         )}
       </svg>
       <div style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textMuted, textAlign: "center", minHeight: "1.2em", marginTop: 2 }}>
-        {hoverCell && (
-          <>
-            {THEORY_LEVELS[hoverCell.r].name} ({hoverCell.r}) {"\u2295"} {THEORY_LEVELS[hoverCell.c].name} ({hoverCell.c}) ={" "}
-            {THEORY_LEVELS[hoverCell.r ^ hoverCell.c].name} ({hoverCell.r ^ hoverCell.c})
-          </>
-        )}
+        {hoverCell &&
+          (() => {
+            const row = THEORY_LEVELS[hoverCell.r];
+            const col = THEORY_LEVELS[hoverCell.c];
+            const resultLv = hoverCell.r ^ hoverCell.c;
+            const result = THEORY_LEVELS[resultLv];
+            const rowLabel = `${row.name} (${row.lv}/${bitLabel(row.lv)})`;
+            const colLabel = `${col.name} (${col.lv}/${bitLabel(col.lv)})`;
+            const resultLabel = `${result.name} (${result.lv}/${bitLabel(result.lv)})`;
+            return (
+              <>
+                {rowLabel} {"\u2295"} {colLabel} = {resultLabel}
+              </>
+            );
+          })()}
       </div>
     </div>
   );

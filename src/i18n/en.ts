@@ -374,7 +374,7 @@ export const en = {
   theory_group_synthesis: "SYNTHESIS & LIMITS",
 
   theory_fano_cmy_collapse: "CMY line",
-  theory_fano_cmy_eq: "M\u2295C\u2295Y = 0 \u2192 collinear!",
+  theory_fano_cmy_eq: "M\u2295C\u2295Y = K \u2192 collinear!",
   theory_fano_cmy_why: "M=G\u2032 C=R\u2032 \u2192 M\u2295C = G\u2295R = Y (complement mirror)",
 
   // Stats panel
