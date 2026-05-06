@@ -297,16 +297,20 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         )}
       </svg>
 
-      <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", justifyContent: "center", minHeight: 28 }}>
+      <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", justifyContent: "center", minHeight: 22 }}>
         {errorPosition !== null ? (
           <>
-            <button className="theory-annotation" style={S_BTN_SM} onClick={() => setErrorPosition(null)}>
+            <button
+              className="theory-annotation theory-diagram-button"
+              style={{ ...S_BTN_SM, fontSize: FS.lg }}
+              onClick={() => setErrorPosition(null)}
+            >
               {t("theory_hamming_reset")} {"\u21ba"}
             </button>
             {!corrected && (
               <button
-                className="theory-annotation"
-                style={{ ...S_BTN_SM, color: C.success, borderColor: "rgba(64,204,96,0.4)" }}
+                className="theory-annotation theory-diagram-button"
+                style={{ ...S_BTN_SM, fontSize: FS.lg, color: C.success, borderColor: "rgba(64,204,96,0.4)" }}
                 onClick={handleCorrect}
               >
                 {t("theory_hamming_correct")}

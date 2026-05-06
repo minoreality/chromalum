@@ -11,14 +11,14 @@ import {
 } from "../../data/theory-data";
 import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
-import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const DOT_R = 11;
 
 const theoryToggleStyle = (active: boolean): React.CSSProperties => ({
-  ...S_BTN,
-  borderColor: active ? C.accent : C.border,
+  ...(active ? S_BTN_ACTIVE : S_BTN),
+  fontWeight: FW.normal,
 });
 
 function edgesOf(v: number): number[] {
@@ -463,7 +463,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
 
       <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", justifyContent: "center" }}>
         <button
-          className="theory-annotation"
+          className="theory-annotation theory-diagram-button"
           style={theoryToggleStyle(equatorMode)}
           onClick={() => setEquatorMode((v) => !v)}
           aria-pressed={equatorMode}
@@ -471,18 +471,23 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           {t("theory_cube_equator")}
         </button>
         <button
-          className="theory-annotation"
+          className="theory-annotation theory-diagram-button"
           style={theoryToggleStyle(showComplements)}
           onClick={() => setShowComplements((v) => !v)}
           aria-pressed={showComplements}
         >
           {t("theory_cube_complements")}
         </button>
-        <button className="theory-annotation" style={theoryToggleStyle(showK8)} onClick={() => setShowK8((v) => !v)} aria-pressed={showK8}>
+        <button
+          className="theory-annotation theory-diagram-button"
+          style={theoryToggleStyle(showK8)}
+          onClick={() => setShowK8((v) => !v)}
+          aria-pressed={showK8}
+        >
           {"K\u2088"}
         </button>
         <button
-          className="theory-annotation"
+          className="theory-annotation theory-diagram-button"
           style={theoryToggleStyle(hasseMode)}
           onClick={() => setHasseMode((v) => !v)}
           aria-pressed={hasseMode}

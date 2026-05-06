@@ -528,6 +528,7 @@ export const Octahedron = React.memo(function Octahedron({ hlLevel, onHover }: P
       {/* Toggle buttons */}
       <div style={{ display: "flex", gap: SP.md, flexWrap: "wrap", justifyContent: "center" }}>
         <button
+          className="theory-annotation theory-diagram-button"
           style={{
             ...S_BTN,
             borderColor: showAxes ? C.accentBright : C.border,

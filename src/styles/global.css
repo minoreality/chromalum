@@ -278,8 +278,13 @@ html:lang(en) .theory-title {
   margin: 0;
   text-align: center;
 }
-.theory-annotation {
+.theory-annotation:not(button) {
   opacity: 1 !important;
+}
+button.theory-diagram-button {
+  box-sizing: border-box;
+  height: 22px;
+  min-height: 22px;
 }
 .theory-binary-svg {
   width: 100%;

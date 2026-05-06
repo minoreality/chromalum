@@ -514,6 +514,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       {/* Toggle buttons */}
       <div style={{ display: "flex", gap: SP.md }}>
         <button
+          className="theory-annotation theory-diagram-button"
           style={{
             ...S_BTN,
             borderColor: viewMode === "compound" && !showSurface ? C.accentBright : C.border,
@@ -529,6 +530,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           {t("theory_stella_compound")}
         </button>
         <button
+          className="theory-annotation theory-diagram-button"
           style={{
             ...S_BTN,
             borderColor: showSurface && viewMode === "compound" ? C.accentBright : C.border,
@@ -549,6 +551,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           {t("theory_stella_surface")}
         </button>
         <button
+          className="theory-annotation theory-diagram-button"
           style={{
             ...S_BTN,
             borderColor: viewMode === "k8" ? C.accentBright : C.border,

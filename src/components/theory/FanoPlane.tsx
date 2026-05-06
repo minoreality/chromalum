@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { THEORY_LEVELS, FANO_LINES, FANO_LINE_CATEGORIES, FANO_LINE_ENDPOINTS, FANO_POINTS, FANO_CIRCLE } from "../../data/theory-data";
 import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
-import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const W = 300,
@@ -17,8 +17,8 @@ const COLOR_NAMES: Record<number, string> = { 1: "B", 2: "R", 3: "M", 4: "G", 5:
 type LineFilter = "all" | "primary" | "complement" | "secondary";
 
 const theoryToggleStyle = (active: boolean): React.CSSProperties => ({
-  ...S_BTN,
-  borderColor: active ? C.accent : C.border,
+  ...(active ? S_BTN_ACTIVE : S_BTN),
+  fontWeight: FW.normal,
 });
 
 function linesThrough(point: number): number[] {
@@ -435,7 +435,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           return (
             <button
               key={f}
-              className="theory-annotation"
+              className="theory-annotation theory-diagram-button"
               style={{
                 ...theoryToggleStyle(lineFilter === f),
                 visibility: cmyMode ? "hidden" : "visible",
@@ -452,7 +452,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           );
         })}
         <button
-          className="theory-annotation"
+          className="theory-annotation theory-diagram-button"
           style={{
             ...S_BTN,
             opacity: cmyMode ? 1 : 0.5,
