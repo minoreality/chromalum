@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect } from "react";
-import { LEVEL_INFO, LEVEL_CANDIDATES } from "../color-engine";
+import { LEVEL_INFO, LEVEL_CANDIDATES, hue2rgb } from "../color-engine";
 import { rgbStr, hexStr } from "../utils";
 import { S_NAV_ARROW, S_SWATCH } from "../styles/shared";
 import type { ColorAction } from "../state/color-reducer";
@@ -116,10 +116,11 @@ export const ColorMappingList = memo(
                   const d = hueDelta(hexAngle, canon);
                   const ibs = { display: "inline-block" as const, textAlign: "right" as const };
                   const ibc = { display: "inline-block" as const, textAlign: "center" as const, width: 9 };
-                  const angleTextColor = C.textDimmer;
+                  const canonicalColor = rgbStr(hue2rgb(canon));
+                  const outputColor = rgbStr(cur.rgb);
                   return (
                     <span style={{ fontSize: FS.md, fontFamily: FONT.mono, whiteSpace: "nowrap" }}>
-                      <span style={{ ...ibs, color: angleTextColor, width: 36 }}>
+                      <span style={{ ...ibs, color: canonicalColor, width: 36 }}>
                         {"\u2B21"}
                         {canon}°
                       </span>
@@ -129,7 +130,7 @@ export const ColorMappingList = memo(
                         {Math.abs(d)}°
                       </span>
                       <span style={{ ...ibc, color: C.textDim }}>=</span>
-                      <span style={{ ...ibs, color: angleTextColor, width: 32 }}>{hexAngle}°</span>
+                      <span style={{ ...ibs, color: outputColor, width: 32 }}>{hexAngle}°</span>
                     </span>
                   );
                 })()}

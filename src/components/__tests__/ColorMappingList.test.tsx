@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ColorMappingList } from "../ColorMappingList";
 import { LEVEL_CANDIDATES } from "../../color-engine";
+import { HEX_CANDIDATE_ANGLES } from "../../data/hex-data";
 
 vi.mock("../../i18n", () => ({
   useTranslation: () => ({
@@ -51,5 +52,17 @@ describe("ColorMappingList", () => {
       fireEvent.click(nextButtons[0]);
       expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "cycle_color", dir: 1 }));
     }
+  });
+
+  it("colors the hue equation endpoints with canonical and selected output colors", () => {
+    const edgeCandidateIndex = HEX_CANDIDATE_ANGLES[3].findIndex((angle) => angle === 210);
+    expect(edgeCandidateIndex).toBeGreaterThanOrEqual(0);
+
+    const cc = [0, 0, 0, edgeCandidateIndex, 0, 0, 0, 0];
+    render(<ColorMappingList {...makeProps({ cc })} />);
+
+    const outputRgb = LEVEL_CANDIDATES[3][edgeCandidateIndex].rgb;
+    expect(screen.getByText("⬡300°").style.color).toBe("rgb(255, 0, 255)");
+    expect(screen.getByText("210°").style.color).toBe(`rgb(${outputRgb.join(", ")})`);
   });
 });

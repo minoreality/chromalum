@@ -16,6 +16,11 @@ const COLOR_NAMES: Record<number, string> = { 1: "B", 2: "R", 3: "M", 4: "G", 5:
 
 type LineFilter = "all" | "primary" | "complement" | "secondary";
 
+const theoryToggleStyle = (active: boolean): React.CSSProperties => ({
+  ...S_BTN,
+  borderColor: active ? C.accent : C.border,
+});
+
 function linesThrough(point: number): number[] {
   return FANO_LINES.map((line, i) => (line.includes(point) ? i : -1)).filter((i) => i >= 0);
 }
@@ -432,15 +437,14 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
               key={f}
               className="theory-annotation"
               style={{
-                ...S_BTN,
-                opacity: lineFilter === f ? 1 : 0.5,
-                borderColor: lineFilter === f ? "rgba(255,255,255,0.5)" : undefined,
+                ...theoryToggleStyle(lineFilter === f),
                 visibility: cmyMode ? "hidden" : "visible",
                 marginLeft: f === "primary" ? SP.xl : undefined,
               }}
               onClick={() => setLineFilter(f)}
               disabled={cmyMode}
               aria-hidden={cmyMode || undefined}
+              aria-pressed={lineFilter === f}
               tabIndex={cmyMode ? -1 : undefined}
             >
               {label}
@@ -452,7 +456,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           style={{
             ...S_BTN,
             opacity: cmyMode ? 1 : 0.5,
-            borderColor: cmyMode ? "rgba(255,100,100,0.6)" : undefined,
+            borderColor: cmyMode ? "rgba(255,100,100,0.6)" : C.border,
             color: cmyMode ? "#ff6644" : C.textMuted,
             marginLeft: SP.xl,
           }}

@@ -16,6 +16,11 @@ import { useTranslation } from "../../i18n";
 
 const DOT_R = 11;
 
+const theoryToggleStyle = (active: boolean): React.CSSProperties => ({
+  ...S_BTN,
+  borderColor: active ? C.accent : C.border,
+});
+
 function edgesOf(v: number): number[] {
   return CUBE_EDGES.map((e, i) => (e[0] === v || e[1] === v ? i : -1)).filter((i) => i >= 0);
 }
@@ -459,29 +464,28 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
       <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", justifyContent: "center" }}>
         <button
           className="theory-annotation"
-          style={{ ...S_BTN, opacity: equatorMode ? 1 : 0.5, borderColor: equatorMode ? "rgba(255,255,255,0.5)" : undefined }}
+          style={theoryToggleStyle(equatorMode)}
           onClick={() => setEquatorMode((v) => !v)}
+          aria-pressed={equatorMode}
         >
           {t("theory_cube_equator")}
         </button>
         <button
           className="theory-annotation"
-          style={{ ...S_BTN, opacity: showComplements ? 1 : 0.5, borderColor: showComplements ? "rgba(255,255,255,0.5)" : undefined }}
+          style={theoryToggleStyle(showComplements)}
           onClick={() => setShowComplements((v) => !v)}
+          aria-pressed={showComplements}
         >
           {t("theory_cube_complements")}
         </button>
-        <button
-          className="theory-annotation"
-          style={{ ...S_BTN, opacity: showK8 ? 1 : 0.5, borderColor: showK8 ? "rgba(255,255,255,0.5)" : undefined }}
-          onClick={() => setShowK8((v) => !v)}
-        >
+        <button className="theory-annotation" style={theoryToggleStyle(showK8)} onClick={() => setShowK8((v) => !v)} aria-pressed={showK8}>
           {"K\u2088"}
         </button>
         <button
           className="theory-annotation"
-          style={{ ...S_BTN, opacity: hasseMode ? 1 : 0.5, borderColor: hasseMode ? "rgba(255,255,255,0.5)" : undefined }}
+          style={theoryToggleStyle(hasseMode)}
           onClick={() => setHasseMode((v) => !v)}
+          aria-pressed={hasseMode}
         >
           {t("theory_cube_hasse")}
         </button>
