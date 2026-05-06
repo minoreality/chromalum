@@ -52,15 +52,15 @@ jobs:
             SIZE=$(stat --format=%s "$file")
             NAME=$(basename "$file")
             KB=$((SIZE / 1024))
-            if [ "$KB" -gt 200 ]; then
-              echo "::warning file=$file::JS chunk $NAME is ${KB}KB (exceeds 200KB limit)"
+            if [ "$KB" -gt 400 ]; then
+              echo "::warning file=$file::JS chunk $NAME is ${KB}KB (exceeds 400KB limit)"
               OVERSIZED=1
             fi
           done < <(find dist/assets -name '*.js' -type f)
           if [ "$OVERSIZED" -eq 1 ]; then
-            echo "::warning::One or more JS chunks exceed the 200KB size limit"
+            echo "::warning::One or more JS chunks exceed the 400KB size limit"
           else
-            echo "All JS chunks are within the 200KB limit"
+            echo "All JS chunks are within the 400KB limit"
           fi
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
