@@ -510,9 +510,9 @@ export const ja: Record<TranslationKey, string> = {
   aria_gallery_filter_hue: "フィルタ色相角度",
   aria_gallery_filter_range: "フィルタ色相範囲",
   aria_gallery_thumb_size: "サムネイルサイズ {0}",
-  aria_alpha_angle: "Alpha角度",
+  aria_alpha_angle: "色相位相",
   aria_hue_speed: "色相回転速度",
-  aria_alpha_speed: "Alpha回転速度",
+  aria_alpha_speed: "色相位相回転速度",
 
   // LinkedVisualization (i18n key prefix kept as `linkedviz_` to avoid touching 17 keys × callsites)
   linkedviz_mode_l0: "L0=原点",
@@ -528,8 +528,8 @@ export const ja: Record<TranslationKey, string> = {
   linkedviz_sound_on: "音声 ON",
   linkedviz_sound_off: "音声",
   linkedviz_sound_title: "音響化の切替",
-  linkedviz_alpha_play: "αを順方向に自動回転",
-  linkedviz_alpha_reverse: "αを逆方向に自動回転",
+  linkedviz_alpha_play: "色相位相を順方向に自動回転",
+  linkedviz_alpha_reverse: "色相位相を逆方向に自動回転",
   linkedviz_hue_play: "色相を順方向に自動回転",
   linkedviz_hue_reverse: "色相を逆方向に自動回転",
 
@@ -537,6 +537,7 @@ export const ja: Record<TranslationKey, string> = {
   tab_music: "Music",
   tab_music_short: "Music",
   music_title: "CHROMATIC MUSIC",
+  music_hue_phase: "色相位相",
   music_volume: "音量",
   music_unmute: "ミュート解除",
   music_scale_mode: "音律",

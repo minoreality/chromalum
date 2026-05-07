@@ -270,12 +270,12 @@ describe("MusicPanel section components", () => {
     renderWithLanguage(<MusicHueAlphaControls {...props} />);
 
     expect(screen.getByText("Hue Angle: 90°")).toBeTruthy();
-    expect(screen.getByText("\u03b1: 45°")).toBeTruthy();
+    expect(screen.getByText("Hue Phase: 45°")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "120" } });
     expect(props.onHueChange).toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Alpha angle"), { target: { value: "180" } });
+    fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "180" } });
     expect(props.onAlphaChange).toHaveBeenCalled();
   });
 
@@ -329,7 +329,7 @@ describe("MusicPanel section components", () => {
     fireEvent.change(screen.getByLabelText("Hue speed"), { target: { value: "48" } });
     expect(props.onHueSpeedChange).toHaveBeenCalledWith(48);
 
-    fireEvent.change(screen.getByLabelText("Alpha speed"), { target: { value: "54" } });
+    fireEvent.change(screen.getByLabelText("Hue phase speed"), { target: { value: "54" } });
     expect(props.onAlphaSpeedChange).toHaveBeenCalledWith(54);
 
     fireEvent.change(screen.getByLabelText("Phase drift"), { target: { value: "12" } });
@@ -346,7 +346,13 @@ describe("MusicPanel section components", () => {
     const props = makeTransportProps();
     renderWithLanguage(<MusicTransportControls {...props} />);
 
-    for (const name of ["Auto-rotate hue backward", "Auto-rotate hue forward", "Auto-rotate α backward", "Auto-rotate α forward", "Mute"]) {
+    for (const name of [
+      "Auto-rotate hue backward",
+      "Auto-rotate hue forward",
+      "Auto-rotate hue phase backward",
+      "Auto-rotate hue phase forward",
+      "Mute",
+    ]) {
       const button = screen.getByRole("button", { name });
       expect(button.style.height).toBe("22px");
       expect(button.style.fontSize).toBe("11px");

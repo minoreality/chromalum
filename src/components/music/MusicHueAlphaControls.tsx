@@ -84,7 +84,7 @@ export const MusicHueAlphaControls = React.memo(function MusicHueAlphaControls({
       </div>
 
       <div style={{ fontSize: FS.lg, color: C.textPrimary, textAlign: "center", fontFamily: FONT.mono }}>
-        {"\u03b1"}: {roundedAlpha}&deg;
+        {t("music_hue_phase")}: {roundedAlpha}&deg;
       </div>
       <div style={S_HUE_WRAP}>
         <div style={S_ALPHA_TRACK} />

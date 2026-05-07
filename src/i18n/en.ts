@@ -509,9 +509,9 @@ export const en = {
   aria_gallery_filter_hue: "Filter hue angle",
   aria_gallery_filter_range: "Filter hue range",
   aria_gallery_thumb_size: "Thumbnail size {0}",
-  aria_alpha_angle: "Alpha angle",
+  aria_alpha_angle: "Hue phase",
   aria_hue_speed: "Hue speed",
-  aria_alpha_speed: "Alpha speed",
+  aria_alpha_speed: "Hue phase speed",
 
   // LinkedVisualization (i18n key prefix kept as `linkedviz_` to avoid touching 17 keys × callsites)
   linkedviz_mode_l0: "L0=origin",
@@ -527,8 +527,8 @@ export const en = {
   linkedviz_sound_on: "Sound ON",
   linkedviz_sound_off: "Sound",
   linkedviz_sound_title: "Toggle sonification",
-  linkedviz_alpha_play: "Auto-rotate \u03b1 forward",
-  linkedviz_alpha_reverse: "Auto-rotate \u03b1 backward",
+  linkedviz_alpha_play: "Auto-rotate hue phase forward",
+  linkedviz_alpha_reverse: "Auto-rotate hue phase backward",
   linkedviz_hue_play: "Auto-rotate hue forward",
   linkedviz_hue_reverse: "Auto-rotate hue backward",
 
@@ -536,6 +536,7 @@ export const en = {
   tab_music: "Music",
   tab_music_short: "Music",
   music_title: "CHROMATIC MUSIC",
+  music_hue_phase: "Hue Phase",
   music_volume: "Volume",
   music_unmute: "Unmute",
   music_scale_mode: "Scale",
