@@ -61,11 +61,12 @@ const S_SOURCE_ACTION_BUTTON_ACTIVE: React.CSSProperties = { ...S_BTN_ACTIVE, ..
 const S_SOURCE_FILE_BUTTON: React.CSSProperties = { ...S_SOURCE_ACTION_BUTTON, minWidth: 52 };
 const S_EXPORT_SCALE_BUTTON_BASE: React.CSSProperties = {
   boxSizing: "border-box",
-  height: 28,
-  minWidth: 48,
-  padding: "0 10px",
-  fontSize: FS.md,
-  lineHeight: "26px",
+  height: 22,
+  minWidth: 38,
+  minHeight: 22,
+  padding: "0 6px",
+  fontSize: FS.sm,
+  lineHeight: "20px",
 };
 const S_EXPORT_SCALE_BUTTON: React.CSSProperties = { ...S_BTN, ...S_EXPORT_SCALE_BUTTON_BASE };
 const S_EXPORT_SCALE_BUTTON_ACTIVE: React.CSSProperties = { ...S_BTN_ACTIVE, ...S_EXPORT_SCALE_BUTTON_BASE };
@@ -585,8 +586,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
       {/* panel-layout */}
       <ConfirmModal open={confirmSave !== null} message={confirmMsg} onConfirm={handleConfirmSave} onCancel={handleCancelSave}>
         <div role="radiogroup" aria-label={t("label_png_scale")}>
-          <div style={{ fontSize: FS.sm, color: C.textDimmer, marginBottom: SP.sm }}>{t("label_png_scale")}</div>
-          <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: SP.lg, justifyContent: "center", flexWrap: "wrap" }}>
             {EXPORT_SCALES.map((scale) => (
               <button
                 key={scale}
