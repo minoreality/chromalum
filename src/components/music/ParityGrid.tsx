@@ -16,6 +16,7 @@ const PARITY_GROUPS = [
 
 const ROW_LABELS = ["P1", "P2", "P4"];
 const ROW_COLORS = ["#0000ff", "#ff0000", "#00ff00"];
+const COLUMNS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const CELL = 20;
 const GAP = 2;
@@ -28,6 +29,10 @@ function pointColor(lv: number, activeLevels: ParityGridProps["activeLevels"]): 
   const found = activeLevels.find((l) => l.lv === lv);
   if (found) return `rgb(${found.rgb.join(",")})`;
   return LV_COLORS[lv] ?? "#888";
+}
+
+function binaryLevelLabel(lv: number): string {
+  return lv.toString(2).padStart(3, "0");
 }
 
 export const ParityGrid = React.memo(function ParityGrid({ activeGroups, activeLevels }: ParityGridProps) {
@@ -53,9 +58,9 @@ export const ParityGrid = React.memo(function ParityGrid({ activeGroups, activeL
       `}</style>
 
       {/* Column headers */}
-      {[1, 2, 3, 4, 5, 6, 7].map((col) => (
+      {COLUMNS.map((col) => (
         <text key={col} x={LEFT + (col - 1) * (CELL + GAP) + CELL / 2} y={HEADER_H} fontSize={8} fill={C.textDimmer} textAnchor="middle">
-          {col}
+          {binaryLevelLabel(col)}
         </text>
       ))}
 
@@ -72,7 +77,7 @@ export const ParityGrid = React.memo(function ParityGrid({ activeGroups, activeL
             </text>
 
             {/* Cells */}
-            {[1, 2, 3, 4, 5, 6, 7].map((col) => {
+            {COLUMNS.map((col) => {
               const x = LEFT + (col - 1) * (CELL + GAP);
               const isMember = group.includes(col);
               const col_ = pointColor(col, activeLevels);

@@ -60,9 +60,9 @@ export const ParityChordCard = React.memo(function ParityChordCard({
   );
 
   const PARITY_ROWS: { name: string; bit: number; set: string; color: string; group: 0 | 1 | 2 }[] = [
-    { name: "P1", bit: 0, set: "{1,3,5,7}", color: "#0000ff", group: 0 },
-    { name: "P2", bit: 1, set: "{2,3,6,7}", color: "#ff0000", group: 1 },
-    { name: "P4", bit: 2, set: "{4,5,6,7}", color: "#00ff00", group: 2 },
+    { name: "P1", bit: 0, set: "{001,011,101,111}", color: "#0000ff", group: 0 },
+    { name: "P2", bit: 1, set: "{010,011,110,111}", color: "#ff0000", group: 1 },
+    { name: "P4", bit: 2, set: "{100,101,110,111}", color: "#00ff00", group: 2 },
   ];
 
   return (
@@ -89,7 +89,7 @@ export const ParityChordCard = React.memo(function ParityChordCard({
           return (
             <div key={r.name} style={{ opacity: activeGroups.length === 0 || active ? 1 : 0.4 }}>
               <span style={{ color: r.color, fontWeight: active ? 700 : 400 }}>{r.name}</span>
-              {`: bit ${r.bit} = ${r.set}`}
+              {`: bit${r.bit} = ${r.set}`}
             </div>
           );
         })}

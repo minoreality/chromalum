@@ -50,7 +50,7 @@ function changedBit(a: number, b: number): number {
 const BIT_COLORS = ["#0000ff", "#ff0000", "#00ff00"];
 const BIT_LABELS = ["B", "R", "G"];
 const NODE_R = 4;
-const ACTIVE_NODE_R = 6.5;
+const ACTIVE_NODE_R = 5.5;
 
 function toBinary(n: number): string {
   return n.toString(2).padStart(3, "0");

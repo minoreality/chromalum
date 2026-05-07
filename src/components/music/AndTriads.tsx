@@ -20,6 +20,10 @@ function textColor(lv: number): string {
   return lv >= 4 ? "#000" : "#fff";
 }
 
+function binaryLevelLabel(lv: number): string {
+  return lv.toString(2).padStart(3, "0");
+}
+
 interface Props {
   activeStep: { pairIndex: number; phase: "operands" | "result" } | null;
   activeLevels: { lv: number; rgb: [number, number, number] }[];
@@ -58,8 +62,16 @@ export const AndTriads = React.memo(function AndTriads({ activeStep, activeLevel
               strokeWidth={operandGlow ? 2 : 1}
               filter={operandGlow ? "url(#and-glow)" : undefined}
             />
-            <text x={24} y={y + 3.5} fontSize={FS.xs} fontWeight={FW.bold} fill={textColor(a)} textAnchor="middle">
-              {a}
+            <text
+              x={24}
+              y={y + 3.5}
+              fontSize={FS.xs}
+              fontWeight={FW.bold}
+              fontFamily="var(--font-mono)"
+              fill={textColor(a)}
+              textAnchor="middle"
+            >
+              {binaryLevelLabel(a)}
             </text>
 
             <text x={46} y={y + 3} textAnchor="middle" fontSize={FS.sm} fill={C.textDim}>
@@ -75,8 +87,16 @@ export const AndTriads = React.memo(function AndTriads({ activeStep, activeLevel
               strokeWidth={operandGlow ? 2 : 1}
               filter={operandGlow ? "url(#and-glow)" : undefined}
             />
-            <text x={68} y={y + 3.5} fontSize={FS.xs} fontWeight={FW.bold} fill={textColor(b)} textAnchor="middle">
-              {b}
+            <text
+              x={68}
+              y={y + 3.5}
+              fontSize={FS.xs}
+              fontWeight={FW.bold}
+              fontFamily="var(--font-mono)"
+              fill={textColor(b)}
+              textAnchor="middle"
+            >
+              {binaryLevelLabel(b)}
             </text>
 
             <text x={93} y={y + 3} textAnchor="middle" fontSize={FS.sm} fill={C.textDim}>
@@ -92,8 +112,16 @@ export const AndTriads = React.memo(function AndTriads({ activeStep, activeLevel
               strokeWidth={resultGlow ? 2 : 1}
               filter={resultGlow ? "url(#and-glow)" : undefined}
             />
-            <text x={118} y={y + 3.5} fontSize={FS.xs} fontWeight={FW.bold} fill={textColor(r)} textAnchor="middle">
-              {r}
+            <text
+              x={118}
+              y={y + 3.5}
+              fontSize={FS.xs}
+              fontWeight={FW.bold}
+              fontFamily="var(--font-mono)"
+              fill={textColor(r)}
+              textAnchor="middle"
+            >
+              {binaryLevelLabel(r)}
             </text>
           </g>
         );

@@ -346,9 +346,9 @@ button.theory-diagram-button {
     font-size: 16px;
   }
   .linked-viz-controls {
-    --linked-viz-toggle-padding: 2px 7px;
+    --linked-viz-toggle-padding: 3px 7px;
     --linked-viz-toggle-fs: 10px;
-    --linked-viz-toggle-line: 13px;
+    --linked-viz-toggle-line: 14px;
     --linked-viz-delta-width: 52px;
   }
 }
@@ -358,9 +358,9 @@ button.theory-diagram-button {
     font-size: 14px;
   }
   .linked-viz-controls {
-    --linked-viz-toggle-padding: 2px 4px;
+    --linked-viz-toggle-padding: 3px 4px;
     --linked-viz-toggle-fs: 9px;
-    --linked-viz-toggle-line: 12px;
+    --linked-viz-toggle-line: 14px;
     --linked-viz-control-gap: 2px;
     --linked-viz-delta-width: 44px;
   }

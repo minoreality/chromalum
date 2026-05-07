@@ -33,6 +33,25 @@ describe("music-playback-sequences", () => {
     expect(syndromeDemoEvents(0)).toEqual([]);
   });
 
+  it("maps every error position to the matching syndrome parity tones", () => {
+    const expected = [
+      { errorPos: 1, levels: [1] },
+      { errorPos: 2, levels: [2] },
+      { errorPos: 3, levels: [1, 2] },
+      { errorPos: 4, levels: [4] },
+      { errorPos: 5, levels: [1, 4] },
+      { errorPos: 6, levels: [2, 4] },
+      { errorPos: 7, levels: [1, 2, 4] },
+    ];
+
+    for (const { errorPos, levels } of expected) {
+      const events = syndromeDemoEvents(errorPos);
+
+      expect(events).toContainEqual({ at: 1700 + (errorPos - 1) * 200, type: "tone", lv: errorPos, errorMarker: true });
+      expect(events).toContainEqual({ at: 3400, type: "parity", levels });
+    }
+  });
+
   it("builds weight spectrum and extended Hamming timelines", () => {
     const weight = weightSpectrumTimeline();
     const extended = extendedHammingTimeline();

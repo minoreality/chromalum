@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import type { ComponentProps, ReactNode } from "react";
+import { useState, type ComponentProps, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { LEVEL_CANDIDATES } from "../../../color-engine";
 import { LanguageProvider } from "../../../i18n";
 import type { MusicEngineReturn } from "../../../hooks/useMusicEngine";
+import type { DecoderPhase } from "../types";
+import { ErrorCorrectionCard } from "../ErrorCorrectionCard";
 import { MusicAlgebraPanel } from "../MusicAlgebraPanel";
 import { MusicFanoControls } from "../MusicFanoControls";
 import { MusicHueAlphaControls } from "../MusicHueAlphaControls";
@@ -248,6 +250,23 @@ function makeLevelPreview(lv: number) {
   };
 }
 
+function ErrorCorrectionHarness({ engine }: { engine: MusicEngineReturn }) {
+  const [errorPos, setErrorPos] = useState(1);
+  const [errorPhase, setErrorPhase] = useState<DecoderPhase>(null);
+
+  return (
+    <ErrorCorrectionCard
+      engine={engine}
+      activeLevels={[]}
+      stopSignal={0}
+      errorPos={errorPos}
+      errorPhase={errorPhase}
+      onErrorPosChange={setErrorPos}
+      onErrorPhaseChange={setErrorPhase}
+    />
+  );
+}
+
 function makeCandidateGridProps(overrides: Partial<CandidateGridProps> = {}): CandidateGridProps {
   return {
     levelPreview: [makeLevelPreview(2)],
@@ -414,6 +433,22 @@ describe("MusicPanel section components", () => {
     expect(engine.initAudio).toHaveBeenCalled();
     expect(engine.playCayleyRow).toHaveBeenCalledWith(1, expect.any(Function));
     expect(props.cayley.onColChange).toHaveBeenCalledWith(3);
+  });
+
+  it("starts syndrome playback for the selected error position", () => {
+    const engine = makeMusicEngine({
+      playSyndromeDemo: vi.fn((_errorPos, onPhase) => onPhase("syndrome")),
+    });
+
+    renderWithLanguage(<ErrorCorrectionHarness engine={engine} />);
+
+    fireEvent.change(screen.getByLabelText("Error position"), { target: { value: "6" } });
+    fireEvent.click(screen.getByRole("button", { name: "\u25b6 Syndrome" }));
+
+    expect(engine.initAudio).toHaveBeenCalled();
+    expect(engine.playSyndromeDemo).toHaveBeenCalledWith(6, expect.any(Function));
+    expect(screen.getByText("Syndrome")).toBeTruthy();
+    expect(screen.getByText("s\u2082s\u2081s\u2080 = 110 \u2192 pos 6")).toBeTruthy();
   });
 
   it("routes algebra stop, octahedron, and GL(3,2) callbacks", () => {

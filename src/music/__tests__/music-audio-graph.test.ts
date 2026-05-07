@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BASE_FREQ } from "../../data/music-frequency";
 import {
   applyParams,
   buildAudioGraph,
@@ -265,6 +266,29 @@ describe("music-audio-graph", () => {
     expect(fake.oscs.length).toBeGreaterThan(initialOscCount + 2);
     expect(fake.sources.length).toBeGreaterThan(1);
     expect(fake.filters).toHaveLength(1);
+  });
+
+  it("maps levels 1 through 7 to the matching bit-spectrum components", () => {
+    const expected = [
+      { lv: 1, freqs: [BASE_FREQ * 3] },
+      { lv: 2, freqs: [BASE_FREQ] },
+      { lv: 3, freqs: [BASE_FREQ * 3, BASE_FREQ] },
+      { lv: 4, freqs: [BASE_FREQ * 2] },
+      { lv: 5, freqs: [BASE_FREQ * 3, BASE_FREQ * 2] },
+      { lv: 6, freqs: [BASE_FREQ, BASE_FREQ * 2] },
+      { lv: 7, freqs: [BASE_FREQ * 3, BASE_FREQ, BASE_FREQ * 2] },
+    ];
+
+    for (const { lv, freqs } of expected) {
+      const ctx = makeContext();
+      const fake = ctx as unknown as FakeAudioContext;
+      const nodes = buildAudioGraph(ctx);
+      const initialOscCount = fake.oscs.length;
+
+      triggerBitSpectrumBurst(nodes, lv, -1, false);
+
+      expect(fake.oscs.slice(initialOscCount).map((osc) => osc.frequency.value)).toEqual(freqs);
+    }
   });
 
   it("tears down persistent graph nodes and closes the context", () => {
