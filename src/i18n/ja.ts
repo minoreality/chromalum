@@ -77,7 +77,7 @@ export const ja: Record<TranslationKey, string> = {
   hex_title: "色相環の六角形 — ルマレベル配置図",
   hex_edge_label: "レベル{0} の色 ({1})",
   hex_vertex_label: "{0} — レベル{1}",
-  btn_random_color: "🎲ランダム",
+  btn_random_color: "ランダム",
   title_random_color: "配色をランダムに変更",
 
   random_patterns: "{0}通り",

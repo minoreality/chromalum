@@ -77,7 +77,7 @@ export const en = {
   hex_title: "Hexagonal hue ring — Luminance level layout",
   hex_edge_label: "Level {0} color ({1})",
   hex_vertex_label: "{0} — Level {1}",
-  btn_random_color: "🎲Random",
+  btn_random_color: "Random",
   title_random_color: "Randomize color scheme",
 
   random_patterns: "{0} patterns",

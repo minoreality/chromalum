@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, memo } from "react";
+import randomDiceUrl from "../assets/random-dice.png";
 import { LEVEL_CANDIDATES } from "../color-engine";
 import { NUM_VERTICES } from "../constants";
 import {
@@ -27,6 +28,11 @@ interface Props {
   onRandomize: () => void;
   canRandomize: boolean;
 }
+
+const DICE_CX = HEX_CX;
+const DICE_CY = HEX_CY + 6;
+const DICE_HIT_RADIUS = 40;
+const DICE_SIZE = 68;
 
 export const HexDiagram = memo(
   function HexDiagram({ cc, dispatch, hist, total, locked, onToggleLock, onRandomize, canRandomize }: Props) {
@@ -418,19 +424,24 @@ export const HexDiagram = memo(
                   : undefined
               }
             >
-              <text
-                x={HEX_CX}
-                y={HEX_CY + 12}
-                textAnchor="middle"
-                fontSize={36}
+              <circle cx={DICE_CX} cy={DICE_CY + 2} r={DICE_HIT_RADIUS} fill="transparent" />
+              <g
+                aria-hidden="true"
                 style={{
-                  transformOrigin: `${HEX_CX}px ${HEX_CY}px`,
+                  transformOrigin: `${DICE_CX}px ${DICE_CY}px`,
                   transition: diceRolling ? "transform 0.4s cubic-bezier(.2,.8,.3,1)" : "none",
-                  transform: diceRolling ? "rotate(720deg) scale(1.2)" : "rotate(0deg) scale(1)",
+                  transform: diceRolling ? "rotate(720deg) scale(1.12)" : "rotate(0deg) scale(1)",
                 }}
               >
-                🎲
-              </text>
+                <image
+                  href={randomDiceUrl}
+                  x={DICE_CX - DICE_SIZE / 2}
+                  y={DICE_CY - DICE_SIZE / 2}
+                  width={DICE_SIZE}
+                  height={DICE_SIZE}
+                  preserveAspectRatio="xMidYMid meet"
+                />
+              </g>
             </g>
           </g>
         </svg>
