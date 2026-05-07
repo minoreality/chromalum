@@ -16,6 +16,9 @@ interface Slice {
   isGlazed?: boolean;
 }
 
+const SELECTED_ARC_STROKE_WIDTH = 1.4;
+const SELECTED_ARC_INSET = SELECTED_ARC_STROKE_WIDTH / 2;
+
 function computeSlices(entries: { count: number; color: string; info: string[]; isGlazed?: boolean }[], total: number): Slice[] {
   const slices: Slice[] = [];
   for (const v of entries) {
@@ -25,12 +28,15 @@ function computeSlices(entries: { count: number; color: string; info: string[]; 
 }
 
 function drawRing(
+  ringId: string,
   slices: Slice[],
   cx: number,
   cy: number,
   rOuter: number,
   rInner: number,
-  onSelect: (info: string[] | null, color?: string) => void,
+  selectedSliceId: string | null,
+  onPreview: (info: string[] | null, color?: string) => void,
+  onActivate: (sliceId: string, info: string[], color: string) => void,
 ): React.ReactNode[] {
   if (slices.length === 0) return [];
   const elems: React.ReactNode[] = [];
@@ -38,35 +44,48 @@ function drawRing(
 
   for (let i = 0; i < slices.length; i++) {
     const s = slices[i];
+    const sliceId = `${ringId}-${i}`;
+    const selected = selectedSliceId === sliceId;
     const sweep = s.fraction * Math.PI * 2;
     if (sweep < 0.001) continue;
 
     const handlers = {
-      onMouseEnter: () => onSelect(s.info, s.color),
-      onMouseLeave: () => onSelect(null),
+      onMouseEnter: () => onPreview(s.info, s.color),
+      onMouseLeave: () => onPreview(null),
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
-        onSelect(s.info, s.color);
+        onActivate(sliceId, s.info, s.color);
       },
       style: S_CURSOR_POINTER,
     };
 
     if (s.fraction > 0.999) {
+      const selectedOuterRadius = rOuter - SELECTED_ARC_INSET;
+      const selectedInnerRadius = rInner + SELECTED_ARC_INSET;
       elems.push(
-        <circle
-          key={i}
-          cx={cx}
-          cy={cy}
-          r={(rOuter + rInner) / 2}
-          fill="none"
-          stroke={s.color}
-          strokeWidth={rOuter - rInner}
-          {...handlers}
-        />,
+        <React.Fragment key={sliceId}>
+          <circle cx={cx} cy={cy} r={(rOuter + rInner) / 2} fill="none" stroke={s.color} strokeWidth={rOuter - rInner} {...handlers} />
+          {selected &&
+            [selectedOuterRadius, selectedInnerRadius].map((r) => (
+              <circle
+                key={r}
+                cx={cx}
+                cy={cy}
+                r={r}
+                fill="none"
+                stroke={C.textWhite}
+                strokeWidth={SELECTED_ARC_STROKE_WIDTH}
+                opacity={0.9}
+                pointerEvents="none"
+              />
+            ))}
+        </React.Fragment>,
       );
       break;
     }
 
+    const selectedOuterRadius = rOuter - SELECTED_ARC_INSET;
+    const selectedInnerRadius = rInner + SELECTED_ARC_INSET;
     const x1 = cx + rOuter * Math.cos(angle);
     const y1 = cy + rOuter * Math.sin(angle);
     const x2 = cx + rOuter * Math.cos(angle + sweep);
@@ -75,13 +94,38 @@ function drawRing(
     const y3 = cy + rInner * Math.sin(angle + sweep);
     const x4 = cx + rInner * Math.cos(angle);
     const y4 = cy + rInner * Math.sin(angle);
+    const xo1 = cx + selectedOuterRadius * Math.cos(angle);
+    const yo1 = cy + selectedOuterRadius * Math.sin(angle);
+    const xo2 = cx + selectedOuterRadius * Math.cos(angle + sweep);
+    const yo2 = cy + selectedOuterRadius * Math.sin(angle + sweep);
+    const xi1 = cx + selectedInnerRadius * Math.cos(angle);
+    const yi1 = cy + selectedInnerRadius * Math.sin(angle);
+    const xi2 = cx + selectedInnerRadius * Math.cos(angle + sweep);
+    const yi2 = cy + selectedInnerRadius * Math.sin(angle + sweep);
     const large = sweep > Math.PI ? 1 : 0;
 
     const d = `M${x1},${y1} A${rOuter},${rOuter} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${rInner},${rInner} 0 ${large} 0 ${x4},${y4} Z`;
+    const outerArc = `M${xo1},${yo1} A${selectedOuterRadius},${selectedOuterRadius} 0 ${large} 1 ${xo2},${yo2}`;
+    const innerArc = `M${xi1},${yi1} A${selectedInnerRadius},${selectedInnerRadius} 0 ${large} 1 ${xi2},${yi2}`;
     // Only show border on glazed slices
     const showBorder = s.isGlazed;
     elems.push(
-      <path key={i} d={d} fill={s.color} stroke={showBorder ? C.bgPanel : "none"} strokeWidth={showBorder ? 0.5 : 0} {...handlers} />,
+      <React.Fragment key={sliceId}>
+        <path d={d} fill={s.color} stroke={showBorder ? C.bgPanel : "none"} strokeWidth={showBorder ? 0.5 : 0} {...handlers} />
+        {selected &&
+          [outerArc, innerArc].map((arc, arcIndex) => (
+            <path
+              key={arcIndex}
+              d={arc}
+              fill="none"
+              stroke={C.textWhite}
+              strokeWidth={SELECTED_ARC_STROKE_WIDTH}
+              strokeLinecap="round"
+              opacity={0.9}
+              pointerEvents="none"
+            />
+          ))}
+      </React.Fragment>,
     );
     angle += sweep;
   }
@@ -98,10 +142,16 @@ interface CompositionDonutProps {
 
 export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist, total, colorLUT, cc }: CompositionDonutProps) {
   const { t } = useTranslation();
-  const [hover, setHover] = useState<{ info: string[]; color: string } | null>(null);
+  const [preview, setPreview] = useState<{ info: string[]; color: string } | null>(null);
+  const [selected, setSelected] = useState<{ id: string; info: string[]; color: string } | null>(null);
 
-  const onSelect = useCallback((info: string[] | null, color?: string) => {
-    setHover(info && color ? { info, color } : null);
+  const onPreview = useCallback((info: string[] | null, color?: string) => {
+    setPreview(info && color ? { info, color } : null);
+  }, []);
+
+  const onActivate = useCallback((id: string, info: string[], color: string) => {
+    setPreview(null);
+    setSelected((current) => (current?.id === id ? null : { id, info, color }));
   }, []);
 
   const { graySlices, colorSlices, glazeSlices, hasGlaze } = useMemo(() => {
@@ -241,8 +291,16 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
   const glazeOuter = 122;
   const glazeInner = 81;
 
+  const activeInfo = preview ?? selected;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} onClick={() => setHover(null)}>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+      onClick={() => {
+        setPreview(null);
+        setSelected(null);
+      }}
+    >
       <div style={{ maxWidth: "min(260px, 90vw)", width: "100%" }}>
         <svg
           width="100%"
@@ -250,12 +308,12 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
           viewBox={`0 0 ${size} ${size}`}
           role="img"
           aria-label={t("stats_composition")}
-          style={{ display: "block" }}
+          style={{ display: "block", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
         >
-          {drawRing(graySlices, cx, cy, grayOuter, grayInner, onSelect)}
-          {drawRing(colorSlices, cx, cy, colorOuter, colorInner, onSelect)}
-          {hasGlaze && drawRing(glazeSlices, cx, cy, glazeOuter, glazeInner, onSelect)}
-          {hover && <circle cx={cx} cy={cy} r={grayInner - 18} fill={hover.color} stroke={C.border} strokeWidth={1} />}
+          {drawRing("gray", graySlices, cx, cy, grayOuter, grayInner, selected?.id ?? null, onPreview, onActivate)}
+          {drawRing("color", colorSlices, cx, cy, colorOuter, colorInner, selected?.id ?? null, onPreview, onActivate)}
+          {hasGlaze && drawRing("glaze", glazeSlices, cx, cy, glazeOuter, glazeInner, selected?.id ?? null, onPreview, onActivate)}
+          {activeInfo && <circle cx={cx} cy={cy} r={grayInner - 18} fill={activeInfo.color} stroke={C.border} strokeWidth={1} />}
         </svg>
       </div>
       {/* Legend */}
@@ -274,10 +332,10 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
           fontFamily: FONT.mono,
           textAlign: "center",
           lineHeight: 1.6,
-          visibility: hover ? "visible" : "hidden",
+          visibility: activeInfo ? "visible" : "hidden",
         }}
       >
-        {hover?.info.map((line, i) => (
+        {activeInfo?.info.map((line, i) => (
           <div key={i} style={{ color: i === 0 ? C.textPrimary : C.textDimmer }}>
             {line}
           </div>

@@ -33,9 +33,10 @@ function ST({ title }: { title: string }) {
 }
 
 const S_MAP_MODE_BTN: React.CSSProperties = {
-  padding: `${SP.sm}px ${SP.md}px`,
-  fontSize: FS.md,
-  minHeight: 22,
+  height: 22,
+  padding: `0 ${SP.md}px`,
+  fontSize: FS.lg,
+  lineHeight: "12px",
   whiteSpace: "nowrap",
 };
 

@@ -27,6 +27,15 @@ interface HexPanelProps {
 
 const S_FLEX_COL_CENTER: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg };
 const S_LABEL: React.CSSProperties = { fontSize: FS.md, color: C.textDim, lineHeight: "14px" };
+const S_UNLOCK_ALL_BUTTON: React.CSSProperties = {
+  ...S_BTN,
+  height: 22,
+  minWidth: 72,
+  padding: `0 ${SP.xl}px`,
+  fontSize: FS.lg,
+  lineHeight: "12px",
+  whiteSpace: "nowrap",
+};
 
 export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
   const {
@@ -97,7 +106,7 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
             canRandomize={canRandomize}
           />
           {/* Pattern info — 3 aligned rows: labels, dots, ∏ᵢcᵢ = counts × ... = total */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs, marginTop: -SP.lg }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, marginTop: -SP.lg }}>
             <div
               onClick={onPatternClick}
               role={onPatternClick ? "button" : undefined}
@@ -226,7 +235,7 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
               </span>
             </div>
             {hasLocked && (
-              <button style={S_BTN} onClick={handleUnlockAll}>
+              <button style={S_UNLOCK_ALL_BUTTON} onClick={handleUnlockAll}>
                 {t("btn_unlock_all")}
               </button>
             )}
