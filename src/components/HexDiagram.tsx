@@ -32,7 +32,9 @@ interface Props {
 const DICE_CX = HEX_CX;
 const DICE_CY = HEX_CY + 6;
 const DICE_HIT_RADIUS = 40;
-const DICE_SIZE = 68;
+const DICE_SIZE = 60;
+const DICE_ROLL_MS = 280;
+const DICE_ROLL_TRANSFORM = "rotate(360deg) scale(1.06)";
 
 export const HexDiagram = memo(
   function HexDiagram({ cc, dispatch, hist, total, locked, onToggleLock, onRandomize, canRandomize }: Props) {
@@ -45,7 +47,7 @@ export const HexDiagram = memo(
       onRandomize();
       setDiceRolling(true);
       clearTimeout(diceTimer.current);
-      diceTimer.current = setTimeout(() => setDiceRolling(false), 400);
+      diceTimer.current = setTimeout(() => setDiceRolling(false), DICE_ROLL_MS);
     }, [onRandomize]);
     const vp = HEX_VP;
     const sel = (lv: number, ai: number) => dispatch({ type: "set_color", lv, idx: ai });
@@ -429,8 +431,8 @@ export const HexDiagram = memo(
                 aria-hidden="true"
                 style={{
                   transformOrigin: `${DICE_CX}px ${DICE_CY}px`,
-                  transition: diceRolling ? "transform 0.4s cubic-bezier(.2,.8,.3,1)" : "none",
-                  transform: diceRolling ? "rotate(720deg) scale(1.12)" : "rotate(0deg) scale(1)",
+                  transition: diceRolling ? `transform ${DICE_ROLL_MS}ms cubic-bezier(.2,.8,.3,1)` : "none",
+                  transform: diceRolling ? DICE_ROLL_TRANSFORM : "rotate(0deg) scale(1)",
                 }}
               >
                 <image
