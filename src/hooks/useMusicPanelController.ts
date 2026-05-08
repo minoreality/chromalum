@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import type { ChangeEvent, Dispatch, MouseEvent, MutableRefObject, SetStateAction } from "react";
+import type { Dispatch, MouseEvent, MutableRefObject, SetStateAction } from "react";
 
-import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import {
   buildActiveMusicLevels,
   buildMusicHueTicks,
   buildMusicLevelPreview,
   buildMusicSonificationLevels,
 } from "../music/music-panel-derived";
-import { MUSIC_ACTIVE_LEVELS } from "../music/types";
 import { useMusicEngine } from "./useMusicEngine";
 import { useMusicFanoHandlers } from "./useMusicFanoHandlers";
+import { useMusicHuePaletteHandlers } from "./useMusicHuePaletteHandlers";
 import {
   useMusicAlgebraState,
   useMusicBurstHighlightState,
@@ -128,30 +127,6 @@ function useMusicLifecycleStop(onBackgroundStop: () => void, backgroundStoppedRe
       window.removeEventListener("pageshow", onPageShow);
     };
   }, [backgroundStoppedRef, onBackgroundStop]);
-}
-
-function useMusicKeyboardShortcuts(
-  sonificationLevels: Array<{ lv: number; angle: number }>,
-  onLevelTrigger: (lv: number, angle: number) => void,
-): void {
-  const sonificationLevelsRef = useRef(sonificationLevels);
-  useEffect(() => {
-    sonificationLevelsRef.current = sonificationLevels;
-  }, [sonificationLevels]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const k = e.key;
-      if (k >= "1" && k <= "6") {
-        const lv = +k;
-        const entry = sonificationLevelsRef.current.find((s) => s.lv === lv);
-        if (entry) onLevelTrigger(lv, entry.angle);
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onLevelTrigger]);
 }
 
 export function useMusicPanelController() {
@@ -322,12 +297,6 @@ export function useMusicPanelController() {
   });
 
   const activeAlpha = originMode === 0 ? alpha0 : alpha7;
-  const triggerToneBurstAtActiveAlpha = useCallback(
-    (lv: number, angle: number) => {
-      engine.triggerToneBurst(lv, angle >= 0 ? angle + activeAlpha : angle);
-    },
-    [activeAlpha, engine],
-  );
 
   useInitialAudio(engine.initAudio);
 
@@ -398,59 +367,24 @@ export function useMusicPanelController() {
     signals: { setResetSignal },
   });
 
-  const handleHueChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      engine.initAudio();
-      resumeDrone();
-      setHueAngle(Number(e.target.value));
-      setDirectCandidates(new Map());
-      setSelectedLevels(new Set());
-    },
-    [engine, resumeDrone, setDirectCandidates, setHueAngle, setSelectedLevels],
-  );
-
-  const handleAlphaBarChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      engine.initAudio();
-      resumeDrone();
-      const v = Number(e.target.value);
-      setAlpha0(v);
-      setAlpha7(v);
-    },
-    [engine, resumeDrone, setAlpha0, setAlpha7],
-  );
-
-  const handleBlockClick = useCallback(
-    (lv: number, angle: number) => {
-      ensureAudio();
-      engine.initAudio();
-      triggerToneBurstAtActiveAlpha(lv, angle);
-      const prev = burstTimersRef.current.get(lv);
-      if (prev) clearTimeout(prev);
-      setBurstHighlight((s) => {
-        const n = new Set(s);
-        n.delete(lv);
-        return n;
-      });
-      requestAnimationFrame(() => {
-        setBurstHighlight((s) => new Set(s).add(lv));
-        burstTimersRef.current.set(
-          lv,
-          setTimeout(() => {
-            setBurstHighlight((s) => {
-              const n = new Set(s);
-              n.delete(lv);
-              return n;
-            });
-            burstTimersRef.current.delete(lv);
-          }, 20),
-        );
-      });
-    },
-    [burstTimersRef, engine, ensureAudio, setBurstHighlight, triggerToneBurstAtActiveAlpha],
-  );
-
-  useMusicKeyboardShortcuts(sonificationLevels, handleBlockClick);
+  const {
+    handleHueChange,
+    handleAlphaBarChange,
+    handleBlockClick,
+    handleLinkedHueAngleChange,
+    handleAlpha0Change,
+    handleAlpha7Change,
+    handleOriginModeChange,
+  } = useMusicHuePaletteHandlers({
+    engine,
+    activeAlpha,
+    resumeDrone,
+    ensureAudio,
+    sonificationLevels,
+    palette: { setHueAngle, setDirectCandidates, setSelectedLevels, prevCandidatesRef },
+    transport: { setAlpha0, setAlpha7, setOriginMode },
+    burst: { setBurstHighlight, burstTimersRef },
+  });
 
   const {
     selectedFanoLine,
@@ -488,52 +422,6 @@ export function useMusicPanelController() {
   const levelPreview = useMemo(() => buildMusicLevelPreview(directCandidates, hueAngle), [hueAngle, directCandidates]);
   const activeLevels = useMemo(() => buildActiveMusicLevels(levelPreview), [levelPreview]);
   const hueTicks = useMemo(() => buildMusicHueTicks(), []);
-
-  const handleLinkedHueAngleChange = useCallback(
-    (a: number) => {
-      engine.initAudio();
-      resumeDrone();
-      for (const lv of MUSIC_ACTIVE_LEVELS) {
-        const ci = findClosestCandidate(lv, a);
-        const prev = prevCandidatesRef.current.get(lv);
-        if (prev !== undefined && prev !== ci) {
-          const cand = LEVEL_CANDIDATES[lv][ci];
-          if (cand && cand.angle >= 0) triggerToneBurstAtActiveAlpha(lv, cand.angle);
-        }
-        prevCandidatesRef.current.set(lv, ci);
-      }
-      setHueAngle(a);
-      setDirectCandidates(new Map());
-      setSelectedLevels(new Set());
-    },
-    [engine, prevCandidatesRef, resumeDrone, setDirectCandidates, setHueAngle, setSelectedLevels, triggerToneBurstAtActiveAlpha],
-  );
-
-  const handleAlpha0Change = useCallback(
-    (a: number) => {
-      engine.initAudio();
-      resumeDrone();
-      setAlpha0(a);
-    },
-    [engine, resumeDrone, setAlpha0],
-  );
-
-  const handleAlpha7Change = useCallback(
-    (a: number) => {
-      engine.initAudio();
-      resumeDrone();
-      setAlpha7(a);
-    },
-    [engine, resumeDrone, setAlpha7],
-  );
-
-  const handleOriginModeChange = useCallback(
-    (mode: 0 | 7) => {
-      resumeDrone();
-      setOriginMode(mode);
-    },
-    [resumeDrone, setOriginMode],
-  );
 
   const handleBgTap = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {

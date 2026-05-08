@@ -76,6 +76,14 @@ function latestEngineParams(): MusicEngineParams {
   return latest[0] as MusicEngineParams;
 }
 
+function getMainCandidateButton(level: number): HTMLElement {
+  const button = screen
+    .getAllByRole("button", { name: new RegExp(`Level ${level} color candidate`) })
+    .find((candidate) => candidate.getAttribute("aria-pressed") !== null);
+  if (!button) throw new Error(`Level ${level} main candidate button was not found`);
+  return button;
+}
+
 describe("MusicPanel controller integration", () => {
   beforeEach(() => {
     resetMusicEngineMocks();
@@ -140,6 +148,51 @@ describe("MusicPanel controller integration", () => {
 
     expect(musicEngineMock.engine.initAudio).toHaveBeenCalledTimes(4);
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+  });
+
+  it("routes hue, alpha, and candidate interactions through the controller", () => {
+    renderWithLanguage(<MusicPanel />);
+    musicEngineMock.engine.initAudio.mockClear();
+    musicEngineMock.engine.setDroneMuted.mockClear();
+    musicEngineMock.engine.triggerToneBurst.mockClear();
+
+    fireEvent.click(getMainCandidateButton(2));
+    expect(musicEngineMock.engine.initAudio).toHaveBeenCalled();
+    expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledWith(2, expect.any(Number));
+    expect(getMainCandidateButton(2).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "180" } });
+    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+    expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("180");
+    expect(getMainCandidateButton(2).getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "90" } });
+    expect(latestEngineParams()).toMatchObject({ alpha0: 90, alpha7: 90 });
+  });
+
+  it("triggers tone bursts from music keyboard shortcuts", () => {
+    renderWithLanguage(<MusicPanel />);
+    musicEngineMock.engine.initAudio.mockClear();
+    musicEngineMock.engine.triggerToneBurst.mockClear();
+
+    fireEvent.keyDown(document, { key: "3" });
+
+    expect(musicEngineMock.engine.initAudio).toHaveBeenCalled();
+    expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledWith(3, expect.any(Number));
+  });
+
+  it("routes linked visualization origin and phase controls through the controller", () => {
+    renderWithLanguage(<MusicPanel />);
+    musicEngineMock.engine.setDroneMuted.mockClear();
+
+    expect(latestEngineParams()).toMatchObject({ originMode: 0, alpha7: 0 });
+
+    fireEvent.click(screen.getByRole("button", { name: "L7=origin" }));
+    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+    expect(latestEngineParams().originMode).toBe(7);
+
+    fireEvent.click(screen.getByRole("button", { name: "Anti-phase" }));
+    expect(latestEngineParams().alpha7).toBe(180);
   });
 
   it("starts traversal playback and Stop All resets active playback state", () => {
