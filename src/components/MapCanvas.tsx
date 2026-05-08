@@ -166,7 +166,9 @@ export function MapCanvas({
   );
 
   return (
-    <div style={{ maxWidth: "100%", position: "relative", width: displayW }}>
+    <div
+      style={{ alignItems: "center", display: "flex", flexDirection: "column", maxWidth: "100%", position: "relative", width: displayW }}
+    >
       <canvas
         ref={ref}
         role="img"
