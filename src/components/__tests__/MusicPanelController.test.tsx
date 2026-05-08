@@ -178,8 +178,12 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Just" }));
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     fireEvent.click(screen.getByRole("button", { name: "Luma" }));
+    fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "180" } });
+    fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "90" } });
     fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
     fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "160" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Fano point" }), { target: { value: "6" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Fano line" }), { target: { value: "2" } });
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
 
     expect(latestEngineParams()).toMatchObject({
@@ -188,7 +192,11 @@ describe("MusicPanel controller integration", () => {
       luminanceMode: "luminance",
       volume: 0,
     });
+    expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("180");
+    expect((screen.getByLabelText("Hue phase") as HTMLInputElement).value).toBe("90");
     expect((screen.getByLabelText("BPM") as HTMLInputElement).value).toBe("160");
+    expect((screen.getByRole("combobox", { name: "Fano point" }) as HTMLSelectElement).value).toBe("6");
+    expect((screen.getByRole("combobox", { name: "Fano line" }) as HTMLSelectElement).value).toBe("2");
 
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
@@ -199,7 +207,11 @@ describe("MusicPanel controller integration", () => {
       volume: 0.7,
     });
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
+    expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("0");
+    expect((screen.getByLabelText("Hue phase") as HTMLInputElement).value).toBe("0");
     expect((screen.getByLabelText("BPM") as HTMLInputElement).value).toBe("120");
+    expect((screen.getByRole("combobox", { name: "Fano point" }) as HTMLSelectElement).value).toBe("1");
+    expect((screen.getByRole("combobox", { name: "Fano line" }) as HTMLSelectElement).value).toBe("0");
     expect(musicEngineMock.engine.resetGL32Transform).toHaveBeenCalledWith(expect.any(Function));
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(true);
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);

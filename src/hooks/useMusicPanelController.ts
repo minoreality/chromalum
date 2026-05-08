@@ -12,7 +12,6 @@ import {
 import { MUSIC_ACTIVE_LEVELS } from "../music/types";
 import { useMusicEngine, type MusicEngineReturn } from "./useMusicEngine";
 import {
-  createDefaultMusicDirectCandidates,
   useMusicAlgebraState,
   useMusicBurstHighlightState,
   useMusicFanoState,
@@ -20,6 +19,7 @@ import {
   useMusicSignalsState,
   useMusicTransportState,
 } from "./useMusicPanelState";
+import { useMusicResetDefaultsHandler } from "./useMusicResetDefaultsHandler";
 import { useMusicStopAllHandler } from "./useMusicStopAllHandler";
 import { useMusicTransportHandlers } from "./useMusicTransportHandlers";
 
@@ -414,63 +414,28 @@ export function useMusicPanelController() {
 
   useMusicLifecycleStop(handleBackgroundStop, backgroundStoppedRef);
 
-  const handleResetDefaults = useCallback(() => {
-    handleStopAll();
-    engine.setDroneMuted(false);
-    setDroneMuted(false);
-    setHueAngle(0);
-    setDirectCandidates(createDefaultMusicDirectCandidates());
-    setSelectedLevels(new Set());
-    setMuted(false);
-    setVolume(0.7);
-    setScaleMode("diatonic7");
-    setFmEnabled(false);
-    setAlphaSpeed(36);
-    setPhaseSpeed(0);
-    setHueSpeed(36);
-    setAlpha0(0);
-    setAlpha7(0);
-    setLuminanceMode("symmetric");
-    setRhythmTempo(120);
-    setFanoContextPoint(1);
-    setPartitionLineIndex(0);
-    engine.resetGL32Transform?.((perm) => setGl32Perm(perm));
-    setHoveredFanoLine(null);
-    setDistA(5);
-    setDistB(3);
-    setDistC(6);
-    setOctaA(1);
-    setOctaB(2);
-    setResetSignal((s) => s + 1);
-  }, [
-    handleStopAll,
+  const handleResetDefaults = useMusicResetDefaultsHandler({
     engine,
-    setAlpha0,
-    setAlpha7,
-    setAlphaSpeed,
-    setDirectCandidates,
-    setDistA,
-    setDistB,
-    setDistC,
-    setDroneMuted,
-    setFanoContextPoint,
-    setFmEnabled,
-    setGl32Perm,
-    setHoveredFanoLine,
-    setHueAngle,
-    setHueSpeed,
-    setLuminanceMode,
-    setOctaA,
-    setOctaB,
-    setPartitionLineIndex,
-    setPhaseSpeed,
-    setResetSignal,
-    setRhythmTempo,
-    setScaleMode,
-    setMuted,
-    setSelectedLevels,
-    setVolume,
-  ]);
+    stopAll: handleStopAll,
+    palette: { setHueAngle, setDirectCandidates, setSelectedLevels },
+    transport: {
+      setDroneMuted,
+      setMuted,
+      setVolume,
+      setScaleMode,
+      setFmEnabled,
+      setAlphaSpeed,
+      setPhaseSpeed,
+      setHueSpeed,
+      setAlpha0,
+      setAlpha7,
+      setLuminanceMode,
+      setHoveredFanoLine,
+    },
+    fano: { setRhythmTempo, setFanoContextPoint, setPartitionLineIndex },
+    algebra: { setGl32Perm, setDistA, setDistB, setDistC, setOctaA, setOctaB },
+    signals: { setResetSignal },
+  });
 
   const handleHueChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
