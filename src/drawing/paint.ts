@@ -55,7 +55,7 @@ export function paintBrushLine(
   paintBrush(data, x1, y1, mask, lv, w, h);
 }
 
-export function paintBrushRect(
+function paintBrushRect(
   data: Uint8Array,
   x0: number,
   y0: number,
@@ -77,7 +77,7 @@ export function paintBrushRect(
   paintBrushLine(data, left, bottom, left, top, mask, lv, w, h);
 }
 
-export function paintBrushEllipse(
+function paintBrushEllipse(
   data: Uint8Array,
   x0: number,
   y0: number,
@@ -322,16 +322,6 @@ export function paintEllipse(
     }
   }
 }
-
-/** Shape tool painter dispatch table for type-safe dynamic tool selection. */
-export const SHAPE_PAINTERS: Record<
-  string,
-  (data: Uint8Array, x0: number, y0: number, x1: number, y1: number, r: number, lv: number, w: number, h: number) => void
-> = {
-  line: paintLine,
-  rect: paintRect,
-  ellipse: paintEllipse,
-};
 
 export const BRUSH_SHAPE_PAINTERS: Record<
   string,

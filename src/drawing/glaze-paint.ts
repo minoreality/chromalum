@@ -187,52 +187,6 @@ export function paintGlazeCircle(
   }
 }
 
-/** Paint a glaze line with circular brush at each step. */
-export function paintGlazeLine(
-  colorMap: Uint8Array,
-  data: Uint8Array,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  r: number,
-  w: number,
-  h: number,
-  glazeLUT: Uint8Array,
-): void {
-  if (w <= 0 || h <= 0) return;
-  const ax = Math.abs(x1 - x0),
-    ay = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1,
-    sy = y0 < y1 ? 1 : -1;
-  let e = ax - ay;
-  const skipDist = Math.max(1, Math.floor(r / 4));
-  const skipDist2 = skipDist * skipDist;
-  let lastPX = x0,
-    lastPY = y0;
-  paintGlazeCircle(colorMap, data, x0, y0, r, w, h, glazeLUT);
-  for (;;) {
-    if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * e;
-    if (e2 > -ay) {
-      e -= ay;
-      x0 += sx;
-    }
-    if (e2 < ax) {
-      e += ax;
-      y0 += sy;
-    }
-    const dx = x0 - lastPX,
-      dy = y0 - lastPY;
-    if (dx * dx + dy * dy >= skipDist2) {
-      paintGlazeCircle(colorMap, data, x0, y0, r, w, h, glazeLUT);
-      lastPX = x0;
-      lastPY = y0;
-    }
-  }
-  paintGlazeCircle(colorMap, data, x1, y1, r, w, h, glazeLUT);
-}
-
 /** Erase glaze circle: reset colorMap to 0 (default cc[]). */
 export function eraseGlazeCircle(colorMap: Uint8Array, cx: number, cy: number, r: number, w: number, h: number): void {
   if (r <= 0) {
@@ -262,48 +216,4 @@ export function eraseGlazeCircle(colorMap: Uint8Array, cx: number, cy: number, r
     }
     x++;
   }
-}
-
-/** Erase glaze line with circular eraser at each step. */
-export function eraseGlazeLine(
-  colorMap: Uint8Array,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  r: number,
-  w: number,
-  h: number,
-): void {
-  if (w <= 0 || h <= 0) return;
-  const ax = Math.abs(x1 - x0),
-    ay = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1,
-    sy = y0 < y1 ? 1 : -1;
-  let e = ax - ay;
-  const skipDist = Math.max(1, Math.floor(r / 4));
-  const skipDist2 = skipDist * skipDist;
-  let lastPX = x0,
-    lastPY = y0;
-  eraseGlazeCircle(colorMap, x0, y0, r, w, h);
-  for (;;) {
-    if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * e;
-    if (e2 > -ay) {
-      e -= ay;
-      x0 += sx;
-    }
-    if (e2 < ax) {
-      e += ax;
-      y0 += sy;
-    }
-    const dx = x0 - lastPX,
-      dy = y0 - lastPY;
-    if (dx * dx + dy * dy >= skipDist2) {
-      eraseGlazeCircle(colorMap, x0, y0, r, w, h);
-      lastPX = x0;
-      lastPY = y0;
-    }
-  }
-  eraseGlazeCircle(colorMap, x1, y1, r, w, h);
 }

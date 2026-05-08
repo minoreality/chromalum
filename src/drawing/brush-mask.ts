@@ -1,6 +1,6 @@
 import type { DirtyRect } from "../types";
 
-export interface BrushMaskOffset {
+interface BrushMaskOffset {
   dx: number;
   dy: number;
 }

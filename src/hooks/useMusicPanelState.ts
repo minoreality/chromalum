@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 
 import { DEFAULT_CC } from "../color-engine";
-import type { DecoderPhase, MusicCandidateHover } from "../components/music/types";
+import type { DecoderPhase, MusicCandidateHover } from "../music/types";
 import type { ScaleMode } from "./useMusicEngine";
 
 type MusicWeightStep = { positions: number[]; weight: number; index: number } | null;

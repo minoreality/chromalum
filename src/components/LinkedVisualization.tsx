@@ -26,7 +26,6 @@ import {
   type LinkedVisualizationHover,
 } from "./linked-visualization-geometry";
 
-export { ACTIVE_LEVELS } from "./linked-visualization-geometry";
 export type { LinkedVisualizationDot } from "./linked-visualization-geometry";
 
 export interface LinkedVisualizationOverlayContext {
