@@ -22,13 +22,13 @@ export type AnalysisMapRenderStatus = "rendered" | "stale";
 
 const REGION_SMALL_THRESHOLD = 10;
 const MAP_STATUS_LABEL: Record<MapMode, string> = {
-  luminance: "MapLuma",
-  colorlum: "MapColorLum",
+  luminance: "MapTone",
+  colorlum: "MapColorLuma",
   region: "MapRegion",
-  gradient: "MapGrad",
-  depth: "MapDepth",
-  noise: "MapIso",
-  entropy: "MapDiv",
+  gradient: "MapToneGrad",
+  depth: "MapBoundaryDist",
+  noise: "MapIsolation",
+  entropy: "MapDiversity",
 };
 
 function buildLUT(stops: [number, number, number][]): Uint8Array {

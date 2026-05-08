@@ -111,13 +111,13 @@ describe("analysis-map-render", () => {
 
     expect(regionSizeById.get(1)).toBe(2);
     const cases: Array<[MapMode, string]> = [
-      ["luminance", "(0,0) MapLuma L0 Black gray=0 level=0/7 t=0%"],
-      ["colorlum", "(0,0) MapColorLum L0 c1/1 #000000 Y=0/255 0% dGray=0"],
+      ["luminance", "(0,0) MapTone L0 Black gray=0 level=0/7 t=0%"],
+      ["colorlum", "(0,0) MapColorLuma L0 c1/1 #000000 Y=0/255 0% dGray=0"],
       ["region", "(0,0) MapRegion L0 base c1/1 #000000 region#1 size=2px interior small"],
-      ["gradient", "(0,0) MapGrad L0 g=(+2,+5) dir=180° mag=0% flat"],
-      ["depth", "(0,0) MapDepth L0 base c1/1 #000000 depth=0% near"],
-      ["noise", "(0,0) MapIso L0 base c1/1 #000000 unlike=0/4 same=4/4 score=0%"],
-      ["entropy", "(0,0) MapDiv L0 base c1/1 #000000 win=2x2 keys=4 score=0%"],
+      ["gradient", "(0,0) MapToneGrad L0 g=(+2,+5) dir=180° mag=0% flat"],
+      ["depth", "(0,0) MapBoundaryDist L0 base c1/1 #000000 depth=0% near"],
+      ["noise", "(0,0) MapIsolation L0 base c1/1 #000000 unlike=0/4 same=4/4 score=0%"],
+      ["entropy", "(0,0) MapDiversity L0 base c1/1 #000000 win=2x2 keys=4 score=0%"],
     ];
 
     for (const [mode, expected] of cases) {
