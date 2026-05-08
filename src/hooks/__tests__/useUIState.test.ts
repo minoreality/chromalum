@@ -14,6 +14,7 @@ describe("useUIState", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -47,6 +48,17 @@ describe("useUIState", () => {
     expect(result.current.activeTab).toBe(7);
   });
 
+  it("initial activeTab falls back to Source when stored tab cannot be read", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation((key) => {
+      if (key === "chromalum-active-tab-v2") throw new DOMException("Storage blocked", "SecurityError");
+      return null;
+    });
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTab).toBe(2);
+  });
+
   it("setActiveTab changes tab", () => {
     const { result } = renderHook(() => useUIState(t));
     act(() => {
@@ -55,6 +67,20 @@ describe("useUIState", () => {
     expect(result.current.activeTab).toBe(6);
     expect(window.location.hash).toBe("#theory");
     expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("6");
+  });
+
+  it("setActiveTab still changes tab when storage cannot be written", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation((key) => {
+      if (key === "chromalum-active-tab-v2") throw new DOMException("Storage blocked", "SecurityError");
+    });
+    const { result } = renderHook(() => useUIState(t));
+
+    act(() => {
+      result.current.setActiveTab(6);
+    });
+
+    expect(result.current.activeTab).toBe(6);
+    expect(window.location.hash).toBe("#theory");
   });
 
   it("tracks whether the stats tab has been opened through tab changes", () => {
@@ -111,6 +137,26 @@ describe("useUIState", () => {
     expect(result.current.activeTab).toBe(2);
     expect(window.location.hash).toBe("");
     expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("2");
+  });
+
+  it("ignores storage failures while restoring scroll position", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation((key) => {
+      if (key === "chromalum-scroll-y") throw new DOMException("Storage blocked", "SecurityError");
+      return null;
+    });
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTab).toBe(2);
+  });
+
+  it("ignores storage failures while saving scroll position", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation((key) => {
+      if (key === "chromalum-scroll-y") throw new DOMException("Storage blocked", "SecurityError");
+    });
+    renderHook(() => useUIState(t));
+
+    expect(() => window.dispatchEvent(new Event("beforeunload"))).not.toThrow();
   });
 
   it("showToast sets toast and auto-clears after TOAST_DURATION", () => {
