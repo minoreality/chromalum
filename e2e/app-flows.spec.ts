@@ -52,8 +52,12 @@ test("draws, undoes, redoes, saves, and restores the source canvas", async ({ pa
   await page.getByRole("button", { name: /Redo/ }).click();
   await expect.poll(() => canvasPixel(canvas, 160, 160)).toEqual([255, 255, 255, 255]);
 
-  const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /Save Gray/ }).click();
+  const saveDialog = page.getByRole("dialog", { name: "Save grayscale image?" });
+  await expect(saveDialog).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await saveDialog.getByRole("button", { name: "Yes" }).click();
   await expect((await downloadPromise).suggestedFilename()).toMatch(/^chromalum_gray_.+\.png$/);
 
   await page.waitForTimeout(1300);
