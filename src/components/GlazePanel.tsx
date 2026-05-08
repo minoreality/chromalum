@@ -328,6 +328,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
         <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
           <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("label_glaze")}</div>
           <div
+            className="canvas-workspace"
             ref={prvWrapRef}
             tabIndex={0}
             onKeyDown={handleKeyDown}
@@ -335,6 +336,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerLeave}
+            onMouseLeave={glazeDrawing.clearCursor}
             onContextMenu={handleContextMenu}
             style={{
               border: panZoomMode ? `1px solid ${C.accentBright}` : `1px solid ${C.border}`,
@@ -344,7 +346,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
               width: displayW,
               height: displayH,
               outline: "none",
-              cursor: canvasCursor,
+              cursor: panZoomMode ? "grab" : canvasCursor,
               touchAction: "none",
               ...S_CHECKERBOARD,
             }}
@@ -353,7 +355,14 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
               ref={prvRef}
               role="img"
               aria-label={t("label_glaze")}
-              style={{ width: displayW, height: displayH, display: "block", ...canvasTransform, cursor: canvasCursor, touchAction: "none" }}
+              style={{
+                width: displayW,
+                height: displayH,
+                display: "block",
+                ...canvasTransform,
+                cursor: panZoomMode ? "grab" : canvasCursor,
+                touchAction: "none",
+              }}
             />
             {showHighlight && glazeCount > 0 && (
               <canvas
@@ -375,6 +384,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
               />
             )}
             <canvas
+              className="canvas-cursor-overlay"
               ref={glazeCurRef}
               width={displayW}
               height={displayH}

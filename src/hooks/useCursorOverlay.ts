@@ -37,6 +37,8 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
   const cursorPosRef = useRef<{ dx: number; dy: number } | null>(null);
   const prvCursorPosRef = useRef<{ dx: number; dy: number } | null>(null);
   const prevGridStateRef = useRef<string>("");
+  const forceSrcRedrawRef = useRef(false);
+  const forcePrvRedrawRef = useRef(false);
   const getCurRect = useRectCache(curRef);
   const getPrvRect = useRectCache(prvCurRef);
 
@@ -157,9 +159,13 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
     const gridKey = `${z}_${p.x}_${p.y}_${cv.w}_${cv.h}_${brushSizeRef.current}_${toolRef.current}_${panningRef.current}`;
     const gridChanged = gridKey !== prevGridStateRef.current;
     if (gridChanged) prevGridStateRef.current = gridKey;
+    const forceSrc = forceSrcRedrawRef.current;
+    const forcePrv = forcePrvRedrawRef.current;
+    forceSrcRedrawRef.current = false;
+    forcePrvRedrawRef.current = false;
     // Always redraw if grid changed (zoom/pan), otherwise only the canvas with active cursor
-    if (hasSrc || gridChanged) drawCursorAndGridOn(curRef.current, cursorPosRef);
-    if (hasPrv || gridChanged) drawCursorAndGridOn(prvCurRef.current, prvCursorPosRef);
+    if (hasSrc || gridChanged || forceSrc) drawCursorAndGridOn(curRef.current, cursorPosRef);
+    if (hasPrv || gridChanged || forcePrv) drawCursorAndGridOn(prvCurRef.current, prvCursorPosRef);
   }
 
   function schedCursor() {
@@ -189,6 +195,7 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
 
   const clearCursor = useCallback(() => {
     cursorPosRef.current = null;
+    forceSrcRedrawRef.current = true;
     schedCursor();
     const el = statusRef.current;
     if (el) el.textContent = "\u2014";
@@ -209,6 +216,7 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
 
   const clearCursorPrv = useCallback(() => {
     prvCursorPosRef.current = null;
+    forcePrvRedrawRef.current = true;
     schedCursor();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- schedCursor is synced through schedCursorRef
   }, []);

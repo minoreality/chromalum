@@ -12,6 +12,12 @@ const mockAnnounce = vi.fn();
 const mockEndPan = vi.fn();
 const mockSetHueAngle = vi.fn();
 const mockPanningRef = { current: false };
+const mockZoomRef = { current: 1 };
+const mockPanRef = { current: { x: 0, y: 0 } };
+const cursorOverlayMocks = vi.hoisted(() => ({
+  trackCursor: vi.fn(),
+  clearCursor: vi.fn(),
+}));
 
 vi.mock("../../state/DrawingContext", () => ({
   useDrawingContext: () => ({
@@ -19,8 +25,8 @@ vi.mock("../../state/DrawingContext", () => ({
     displayH: 320,
     panningRef: mockPanningRef,
     spaceRef: { current: false },
-    zoomRef: { current: 1 },
-    panRef: { current: { x: 0, y: 0 } },
+    zoomRef: mockZoomRef,
+    panRef: mockPanRef,
     startPan: vi.fn(),
     movePan: vi.fn(),
     endPan: mockEndPan,
@@ -42,8 +48,8 @@ vi.mock("../useCursorOverlay", () => ({
     cursorRafRef: { current: null },
     schedCursorRef: { current: null },
     cursorPosRef: { current: null },
-    trackCursor: vi.fn(),
-    clearCursor: vi.fn(),
+    trackCursor: cursorOverlayMocks.trackCursor,
+    clearCursor: cursorOverlayMocks.clearCursor,
   }),
 }));
 
@@ -113,6 +119,8 @@ describe("useGlazeDrawing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPanningRef.current = false;
+    mockZoomRef.current = 1;
+    mockPanRef.current = { x: 0, y: 0 };
   });
 
   it("onUp during pan calls endPan", () => {
@@ -301,6 +309,7 @@ describe("useGlazeDrawing", () => {
   });
 
   it("arms a background drag and starts a glaze brush only after entering the canvas", () => {
+    mockZoomRef.current = 0.5;
     const cvs = makeCvs(10, 10);
     cvs.data.fill(2);
     const dispatch = vi.fn();
@@ -309,7 +318,7 @@ describe("useGlazeDrawing", () => {
     mockCanvasRect(canvas);
 
     act(() => {
-      result.current.onWorkspaceDown(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+      result.current.onWorkspaceDown(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
     });
 
     expect(result.current.drawingRef.current).toBe(false);
@@ -322,11 +331,45 @@ describe("useGlazeDrawing", () => {
     });
 
     const cmBuf = dispatch.mock.calls[0][0].finalColorMap as Uint8Array;
-    expect(cmBuf[5 * 10 + 0]).toBe(0);
+    expect(cmBuf[5 * 10 + 0]).toBeGreaterThan(0);
     expect(cmBuf[5 * 10 + 5]).toBeGreaterThan(0);
   });
 
+  it("tracks the glaze cursor over checkerboard background without starting a stroke", () => {
+    mockZoomRef.current = 0.5;
+    const cvs = makeCvs(10, 10);
+    cvs.data.fill(2);
+    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ cvs, brushSize: 1 })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onWorkspaceMove(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
+    });
+
+    expect(cursorOverlayMocks.trackCursor).toHaveBeenCalled();
+    expect(cursorOverlayMocks.clearCursor).not.toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(false);
+  });
+
+  it("clears the glaze cursor when the pointer leaves the workspace", () => {
+    const cvs = makeCvs(10, 10);
+    cvs.data.fill(2);
+    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ cvs, brushSize: 1 })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onWorkspaceMove(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+    });
+
+    expect(cursorOverlayMocks.trackCursor).not.toHaveBeenCalled();
+    expect(cursorOverlayMocks.clearCursor).toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(false);
+  });
+
   it("ignores pickHue events that start on the checkerboard background", () => {
+    mockZoomRef.current = 0.5;
     const cvs = makeCvs(10, 10);
     cvs.data[5 * 10 + 0] = 2;
     const { result } = renderHook(() => useGlazeDrawing(makeOpts({ cvs })));
@@ -334,7 +377,7 @@ describe("useGlazeDrawing", () => {
     mockCanvasRect(canvas);
 
     act(() => {
-      result.current.pickHue(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+      result.current.pickHue(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
     });
 
     expect(mockSetHueAngle).not.toHaveBeenCalled();

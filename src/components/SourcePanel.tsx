@@ -22,6 +22,7 @@ interface SourcePanelProps {
   onMove: (e: React.PointerEvent) => void;
   onUp: () => void;
   onPointerLeave: (e: React.PointerEvent) => void;
+  clearCursor: () => void;
   undo: () => void;
   redo: () => void;
   handleClear: () => void;
@@ -84,6 +85,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     onMove,
     onUp,
     onPointerLeave,
+    clearCursor,
     undo,
     redo,
     handleClear,
@@ -297,6 +299,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
         <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
           <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("label_source")}</div>
           <div
+            className="canvas-workspace"
             ref={srcWrapRef}
             tabIndex={0}
             onKeyDown={handleKeyDown}
@@ -304,6 +307,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
             onPointerMove={panZoomMode ? onPinchMove : onMove}
             onPointerUp={panZoomMode ? onPinchUp : onUp}
             onPointerLeave={panZoomMode ? onPinchUp : onPointerLeave}
+            onMouseLeave={clearCursor}
             onContextMenu={handleContextMenu}
             style={{
               border: panZoomMode ? `1px solid ${C.accentBright}` : `1px solid ${C.border}`,
@@ -333,6 +337,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
               }}
             />
             <canvas
+              className="canvas-cursor-overlay"
               ref={curRef}
               width={displayW}
               height={displayH}

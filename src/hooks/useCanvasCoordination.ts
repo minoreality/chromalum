@@ -37,6 +37,8 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
     sharedSchedCursorRef,
     onWheel,
   } = opts;
+  const { clearCursor, clearCursorPrv } = drawing;
+  const { clearCursor: clearGlazeCursor } = glazeDrawing;
 
   // Bridge schedCursorRef from drawing hook to shared ref used by panZoom
   useLayoutEffect(() => {
@@ -67,6 +69,28 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
       if (g) g.removeEventListener("wheel", onWheel, wheelOpts);
     };
   }, [onWheel, srcWrapRef, prvWrapRef, glazeWrapRef, activeTabId]);
+
+  useEffect(() => {
+    function isPointInElement(e: MouseEvent | PointerEvent, el: HTMLElement | null) {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return false;
+      return e.clientX >= r.left && e.clientX < r.left + r.width && e.clientY >= r.top && e.clientY < r.top + r.height;
+    }
+
+    function clearCursorsOutsideWorkspace(e: MouseEvent | PointerEvent) {
+      if (srcWrapRef.current && !isPointInElement(e, srcWrapRef.current)) clearCursor();
+      if (prvWrapRef.current && !isPointInElement(e, prvWrapRef.current)) clearCursorPrv();
+      if (glazeWrapRef.current && !isPointInElement(e, glazeWrapRef.current)) clearGlazeCursor();
+    }
+
+    document.addEventListener("pointermove", clearCursorsOutsideWorkspace);
+    document.addEventListener("mousemove", clearCursorsOutsideWorkspace);
+    return () => {
+      document.removeEventListener("pointermove", clearCursorsOutsideWorkspace);
+      document.removeEventListener("mousemove", clearCursorsOutsideWorkspace);
+    };
+  }, [clearCursor, clearCursorPrv, clearGlazeCursor, srcWrapRef, prvWrapRef, glazeWrapRef]);
 
   const renderGlazeCanvas = useCallback(() => {
     const gp = glazePrvRef.current;

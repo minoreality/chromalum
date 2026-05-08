@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { useCanvasCoordination } from "../useCanvasCoordination";
@@ -22,6 +22,20 @@ function makeCanvasData(): CanvasData {
     data: new Uint8Array(4),
     colorMap: new Uint8Array(4),
   };
+}
+
+function mockWrapRect(el: HTMLElement) {
+  vi.spyOn(el, "getBoundingClientRect").mockReturnValue({
+    left: 10,
+    top: 20,
+    right: 110,
+    bottom: 120,
+    width: 100,
+    height: 100,
+    x: 10,
+    y: 20,
+    toJSON: () => ({}),
+  });
 }
 
 function makeDrawingResult(schedCursor: (() => void) | null): CanvasDrawingResult {
@@ -107,5 +121,42 @@ describe("useCanvasCoordination", () => {
     rerender();
 
     expect(sharedSchedCursorRef.current).toBe(secondScheduler);
+  });
+
+  it("clears cursor overlays when the pointer leaves a mounted workspace", () => {
+    const drawing = makeDrawingResult(null);
+    const glazeDrawing = makeGlazeDrawingResult();
+    const srcWrap = document.createElement("div");
+    mockWrapRect(srcWrap);
+
+    renderHook(() =>
+      useCanvasCoordination({
+        cvs: makeCanvasData(),
+        colorLUT: Array.from({ length: 8 }, () => [0, 0, 0] as [number, number, number]),
+        activeTabId: "source",
+        drawing,
+        glazeDrawing,
+        srcWrapRef: ref(srcWrap),
+        prvWrapRef: ref<HTMLDivElement | null>(null),
+        glazeWrapRef: ref<HTMLDivElement | null>(null),
+        prvRef: ref<HTMLCanvasElement | null>(null),
+        hexPrvRef: ref<HTMLCanvasElement | null>(null),
+        glazePrvRef: ref<HTMLCanvasElement | null>(null),
+        sharedSchedCursorRef: ref<(() => void) | null>(null),
+        onWheel: vi.fn(),
+      }),
+    );
+
+    act(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 50, clientY: 50 }));
+    });
+    expect(drawing.clearCursor).not.toHaveBeenCalled();
+
+    act(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 5, clientY: 50 }));
+    });
+    expect(drawing.clearCursor).toHaveBeenCalled();
+    expect(drawing.clearCursorPrv).not.toHaveBeenCalled();
+    expect(glazeDrawing.clearCursor).not.toHaveBeenCalled();
   });
 });

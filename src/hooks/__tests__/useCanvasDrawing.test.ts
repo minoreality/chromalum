@@ -14,6 +14,14 @@ const mockEndPan = vi.fn();
 const mockAnnounce = vi.fn();
 const mockPanningRef = { current: false };
 const mockSpaceRef = { current: false };
+const mockZoomRef = { current: 1 };
+const mockPanRef = { current: { x: 0, y: 0 } };
+const cursorOverlayMocks = vi.hoisted(() => ({
+  trackCursor: vi.fn(),
+  clearCursor: vi.fn(),
+  trackCursorPrv: vi.fn(),
+  clearCursorPrv: vi.fn(),
+}));
 
 vi.mock("../../state/DrawingContext", () => ({
   useDrawingContext: () => ({
@@ -21,8 +29,8 @@ vi.mock("../../state/DrawingContext", () => ({
     displayH: 320,
     panningRef: mockPanningRef,
     spaceRef: mockSpaceRef,
-    zoomRef: { current: 1 },
-    panRef: { current: { x: 0, y: 0 } },
+    zoomRef: mockZoomRef,
+    panRef: mockPanRef,
     startPan: mockStartPan,
     movePan: mockMovePan,
     endPan: mockEndPan,
@@ -44,10 +52,10 @@ vi.mock("../useCursorOverlay", () => ({
     cursorRafRef: { current: null },
     schedCursorRef: { current: null },
     cursorPosRef: { current: null },
-    trackCursor: vi.fn(),
-    clearCursor: vi.fn(),
-    trackCursorPrv: vi.fn(),
-    clearCursorPrv: vi.fn(),
+    trackCursor: cursorOverlayMocks.trackCursor,
+    clearCursor: cursorOverlayMocks.clearCursor,
+    trackCursorPrv: cursorOverlayMocks.trackCursorPrv,
+    clearCursorPrv: cursorOverlayMocks.clearCursorPrv,
   }),
 }));
 
@@ -118,6 +126,8 @@ describe("useCanvasDrawing", () => {
     vi.clearAllMocks();
     mockPanningRef.current = false;
     mockSpaceRef.current = false;
+    mockZoomRef.current = 1;
+    mockPanRef.current = { x: 0, y: 0 };
   });
 
   it("onUp during pan calls endPan", () => {
@@ -376,12 +386,13 @@ describe("useCanvasDrawing", () => {
   });
 
   it("arms a background drag and starts a brush stroke only after entering the canvas", () => {
+    mockZoomRef.current = 0.5;
     const { result } = renderHook(() => useCanvasDrawing(makeOpts({ brushLevel: 3, brushSize: 1 })));
     const canvas = result.current.curRef.current!;
     mockCanvasRect(canvas);
 
     act(() => {
-      result.current.onWorkspaceDown(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+      result.current.onWorkspaceDown(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
     });
 
     expect(result.current.drawingRef.current).toBe(false);
@@ -394,16 +405,46 @@ describe("useCanvasDrawing", () => {
     const buf = result.current.strokeRef.current?.buf;
     expect(result.current.drawingRef.current).toBe(true);
     expect(buf?.[5 * 10 + 5]).toBe(3);
-    expect(buf?.[5 * 10 + 0]).toBe(0);
+    expect(buf?.[5 * 10 + 0]).toBe(3);
+  });
+
+  it("tracks the custom cursor over checkerboard background without starting a stroke", () => {
+    mockZoomRef.current = 0.5;
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ brushLevel: 3, brushSize: 1 })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onWorkspaceMove(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
+    });
+
+    expect(cursorOverlayMocks.trackCursor).toHaveBeenCalled();
+    expect(cursorOverlayMocks.clearCursor).not.toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(false);
+  });
+
+  it("clears the custom cursor when the pointer leaves the workspace", () => {
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ brushLevel: 3, brushSize: 1 })));
+    const canvas = result.current.curRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onWorkspaceMove(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+    });
+
+    expect(cursorOverlayMocks.trackCursor).not.toHaveBeenCalled();
+    expect(cursorOverlayMocks.clearCursor).toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(false);
   });
 
   it("does not arm fill from the checkerboard background", () => {
+    mockZoomRef.current = 0.5;
     const { result } = renderHook(() => useCanvasDrawing(makeOpts({ tool: "fill", brushLevel: 3, brushSize: 1 })));
     const canvas = result.current.curRef.current!;
     mockCanvasRect(canvas);
 
     act(() => {
-      result.current.onWorkspaceDown(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+      result.current.onWorkspaceDown(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
     });
     act(() => {
       result.current.onWorkspaceMove(pointerEvent({ clientX: 160, clientY: 160, target: canvas }));
@@ -414,12 +455,13 @@ describe("useCanvasDrawing", () => {
   });
 
   it("uses the canvas entry point as the start of a background-armed line stroke", () => {
+    mockZoomRef.current = 0.5;
     const { result } = renderHook(() => useCanvasDrawing(makeOpts({ tool: "line", brushLevel: 3, brushSize: 1 })));
     const canvas = result.current.curRef.current!;
     mockCanvasRect(canvas);
 
     act(() => {
-      result.current.onWorkspaceDown(pointerEvent({ clientX: -32, clientY: 160, target: canvas }));
+      result.current.onWorkspaceDown(pointerEvent({ clientX: 40, clientY: 160, target: canvas }));
     });
     act(() => {
       result.current.onWorkspaceMove(pointerEvent({ clientX: 160, clientY: 160, target: canvas }));
@@ -429,7 +471,7 @@ describe("useCanvasDrawing", () => {
     });
 
     const buf = result.current.strokeRef.current?.buf;
-    expect(buf?.[5 * 10 + 0]).toBe(0);
+    expect(buf?.[5 * 10 + 0]).toBe(3);
     expect(buf?.[5 * 10 + 5]).toBe(3);
     expect(buf?.[5 * 10 + 8]).toBe(3);
   });

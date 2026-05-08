@@ -130,6 +130,7 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
             </span>
           </div>
           <div
+            className="canvas-workspace"
             ref={prvWrapRef}
             tabIndex={0}
             aria-label={t("aria_color_preview")}
@@ -138,6 +139,7 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerLeave={drawing.onPointerLeavePrv}
+            onMouseLeave={drawing.clearCursorPrv}
             onContextMenu={handleContextMenu}
             style={{
               border: `1px solid ${C.border}`,
@@ -158,6 +160,7 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
               style={{ width: displayW, height: displayH, display: "block", ...canvasTransform, cursor: canvasCursor, touchAction: "none" }}
             />
             <canvas
+              className="canvas-cursor-overlay"
               ref={prvCurRef}
               width={displayW}
               height={displayH}

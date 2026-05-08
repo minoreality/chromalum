@@ -24,7 +24,7 @@ import { createStrokeSmoother, smoothStrokePoint } from "../drawing/stroke-smoot
 import type { StrokeSmoother } from "../drawing/stroke-smoothing";
 import { pressureAdjustedBrushSize } from "../drawing/stroke-pressure";
 import type { PointerPressureSample } from "../drawing/stroke-pressure";
-import type { CanvasData, ImgCache, CanvasAction, DirtyRect } from "../types";
+import type { CanvasData, ImgCache, CanvasAction, DirtyRect, Point } from "../types";
 import { useDrawingContext } from "../state/DrawingContext";
 
 interface GlazeDrawingOptions {
@@ -77,6 +77,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   const drawingRef = useRef(false);
   const lastRef = useRef<{ x: number; y: number } | null>(null);
   const strokeSmootherRef = useRef<StrokeSmoother | null>(null);
+  const forceRawNextMoveRef = useRef(false);
   const strokeRef = useRef<GlazeStroke | null>(null);
   // Buffer pool: reuse cmPre/cmBuf allocations across strokes
   const cmPoolRef = useRef<{ cmPre: Uint8Array | null; cmBuf: Uint8Array | null; size: number }>({ cmPre: null, cmBuf: null, size: 0 });
@@ -94,7 +95,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   } | null>(null);
   const fillPendingRef = useRef(false);
   const pendingUpRef = useRef(false);
-  const pendingWorkspaceStartRef = useRef(false);
+  const pendingWorkspaceStartRef = useRef<{ startPos: Point } | null>(null);
   const floodFillWorker = useFloodFillWorker();
 
   // Refs needed by useCursorOverlay (individual for interface compatibility)
@@ -120,6 +121,14 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   function isInCanvasBounds(e: React.PointerEvent) {
     const pos = canvasPosUnclamped(e, cursor.curRef.current, zoomRef.current, panRef.current, cvsRef.current);
     return isCanvasPointInBounds(pos, cvsRef.current);
+  }
+
+  function isInWorkspaceBounds(e: React.PointerEvent) {
+    const refEl = cursor.curRef.current;
+    if (!refEl) return false;
+    const r = refEl.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return false;
+    return e.clientX >= r.left && e.clientX < r.left + r.width && e.clientY >= r.top && e.clientY < r.top + r.height;
   }
 
   function updateStatus(e: React.PointerEvent) {
@@ -160,7 +169,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     });
   }
 
-  function doDown(e: React.PointerEvent, buttonOverride?: 0 | 1) {
+  function doDown(e: React.PointerEvent, buttonOverride?: 0 | 1, startPos?: Point) {
     const button = buttonOverride ?? e.button;
     if (button !== 0 && button !== 1) return;
     e.preventDefault();
@@ -171,7 +180,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     }
     trySetPointerCapture(e);
     drawingRef.current = true;
-    const pos = cPos(e);
+    const pos = startPos ?? cPos(e);
     lastRef.current = pos;
     const cv = cvsRef.current;
     // Ensure preview canvas dimensions match
@@ -199,6 +208,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     strokeRef.current = { cmBuf, cmPre, fillChanged: null, glazeLUT };
     const curTool = s.current.glazeTool;
     strokeSmootherRef.current = curTool === "glaze_fill" ? null : createStrokeSmoother(pos);
+    forceRawNextMoveRef.current = startPos !== undefined && !isCanvasPointInBounds(startPos, cvsRef.current);
     const mask = getBrushMask(pressureAdjustedBrushSize(brushSizeRef.current, e.nativeEvent));
     const W = cv.w,
       H = cv.h;
@@ -250,7 +260,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
       paintGlazeBrush(cmBuf, cv.data, pos.x, pos.y, mask, W, H, glazeLUT);
     }
     const dirtyBB = brushMaskBBox([[pos.x, pos.y]], mask, W, H);
-    renderBuf(cv.data, W, H, s.current.colorLUT, srcRef.current, prvRef.current, imgCacheRef.current, dirtyBB, cmBuf);
+    if (dirtyBB) renderBuf(cv.data, W, H, s.current.colorLUT, srcRef.current, prvRef.current, imgCacheRef.current, dirtyBB, cmBuf);
   }
 
   function canArmWorkspaceStart(e: React.PointerEvent) {
@@ -258,46 +268,64 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function doWorkspaceDown(e: React.PointerEvent) {
-    pendingWorkspaceStartRef.current = false;
+    pendingWorkspaceStartRef.current = null;
     if (e.button === 1 || spaceRef.current || isInCanvasBounds(e)) {
       doDown(e);
       return;
     }
     e.preventDefault();
-    cursor.clearCursor();
+    if (!isInWorkspaceBounds(e)) {
+      cursor.clearCursor();
+      return;
+    }
+    cursor.trackCursor(e);
+    updateStatus(e);
     if (!canArmWorkspaceStart(e)) return;
     trySetPointerCapture(e);
-    pendingWorkspaceStartRef.current = true;
+    pendingWorkspaceStartRef.current = {
+      startPos: canvasPosUnclamped(e, cursor.curRef.current, zoomRef.current, panRef.current, cvsRef.current),
+    };
   }
 
   function doWorkspaceMove(e: React.PointerEvent) {
-    if (pendingWorkspaceStartRef.current) {
+    const pending = pendingWorkspaceStartRef.current;
+    if (pending) {
       e.preventDefault();
-      updateStatus(e);
+      if (isInWorkspaceBounds(e)) {
+        cursor.trackCursor(e);
+        updateStatus(e);
+      } else {
+        cursor.clearCursor();
+      }
       if ((e.buttons & 1) !== 1) {
-        pendingWorkspaceStartRef.current = false;
+        pendingWorkspaceStartRef.current = null;
         cursor.clearCursor();
         return;
       }
-      if (!isInCanvasBounds(e)) {
-        cursor.clearCursor();
-        return;
-      }
-      cursor.trackCursor(e);
-      pendingWorkspaceStartRef.current = false;
-      doDown(e, 0);
+      if (!isInCanvasBounds(e)) return;
+      pendingWorkspaceStartRef.current = null;
+      doDown(e, 0, pending.startPos);
+      doMove(e);
       return;
     }
     if (!drawingRef.current && !panningRef.current && !isInCanvasBounds(e)) {
-      updateStatus(e);
-      cursor.clearCursor();
+      if (isInWorkspaceBounds(e)) {
+        cursor.trackCursor(e);
+        updateStatus(e);
+      } else {
+        cursor.clearCursor();
+      }
       return;
     }
     doMove(e);
   }
 
   function doMove(e: React.PointerEvent) {
-    cursor.trackCursor(e);
+    if (isInWorkspaceBounds(e)) {
+      cursor.trackCursor(e);
+    } else {
+      cursor.clearCursor();
+    }
     updateStatus(e);
     if (panningRef.current) {
       s.current.movePan(e);
@@ -327,7 +355,13 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     let dirtyBB: DirtyRect | null = null;
     for (const ev of events) {
       const raw = canvasPosUnclamped(ev, canvasEl, zoom, pan, cv);
-      const p = strokeSmootherRef.current ? smoothStrokePoint(strokeSmootherRef.current, raw) : raw;
+      const useRaw = forceRawNextMoveRef.current;
+      if (useRaw) forceRawNextMoveRef.current = false;
+      const p = useRaw || !strokeSmootherRef.current ? raw : smoothStrokePoint(strokeSmootherRef.current, raw);
+      if (useRaw && strokeSmootherRef.current) {
+        strokeSmootherRef.current.x = raw.x;
+        strokeSmootherRef.current.y = raw.y;
+      }
       const mask = getBrushMask(pressureAdjustedBrushSize(brushSizeRef.current, ev));
       if (curTool === "glaze_eraser") {
         if (last) eraseGlazeBrushLine(cmBuf, last.x, last.y, p.x, p.y, mask, W, H);
@@ -393,10 +427,12 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     drawingRef.current = false;
     lastRef.current = null;
     strokeSmootherRef.current = null;
+    forceRawNextMoveRef.current = false;
     strokeRef.current = null;
   }
 
   const onUp = useCallback(() => {
+    pendingWorkspaceStartRef.current = null;
     if (panningRef.current) {
       s.current.endPan();
       return;
@@ -435,7 +471,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   const onWorkspaceLeave = useCallback(
     (e: React.PointerEvent) => {
       if (pendingWorkspaceStartRef.current) {
-        pendingWorkspaceStartRef.current = false;
+        pendingWorkspaceStartRef.current = null;
         cursor.clearCursor();
         return;
       }

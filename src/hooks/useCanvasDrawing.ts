@@ -26,7 +26,7 @@ import { createStrokeSmoother, smoothStrokePoint } from "../drawing/stroke-smoot
 import type { StrokeSmoother } from "../drawing/stroke-smoothing";
 import { pressureAdjustedBrushSize } from "../drawing/stroke-pressure";
 import type { PointerPressureSample } from "../drawing/stroke-pressure";
-import type { CanvasData, StrokeState, ImgCache, CanvasAction, DirtyRect } from "../types";
+import type { CanvasData, StrokeState, ImgCache, CanvasAction, DirtyRect, Point } from "../types";
 import { useDrawingContext } from "../state/DrawingContext";
 
 export interface CanvasDrawingResult {
@@ -83,6 +83,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   const bufPoolRef = useRef<BufferPool>({ pre: null, buf: null, size: 0 });
   const lastRef = useRef<{ x: number; y: number } | null>(null);
   const strokeSmootherRef = useRef<StrokeSmoother | null>(null);
+  const forceRawNextMoveRef = useRef(false);
   const activeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const paintRafRef = useRef<number | null>(null);
   const pendingPaintDirtyRef = useRef<DirtyRect | null>(null);
@@ -101,6 +102,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     refEl: HTMLCanvasElement | null;
     cursorTrack: (e: React.PointerEvent) => void;
     clearCursor: () => void;
+    startPos: Point;
   } | null>(null);
   const floodFillWorker = useFloodFillWorker();
 
@@ -127,6 +129,13 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   function isInCanvasBounds(e: React.PointerEvent, refEl: HTMLCanvasElement | null) {
     const pos = canvasPosUnclamped(e, refEl, zoomRef.current, panRef.current, cvsRef.current);
     return isCanvasPointInBounds(pos, cvsRef.current);
+  }
+
+  function isInWorkspaceBounds(e: React.PointerEvent, refEl: HTMLCanvasElement | null) {
+    if (!refEl) return false;
+    const r = refEl.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return false;
+    return e.clientX >= r.left && e.clientX < r.left + r.width && e.clientY >= r.top && e.clientY < r.top + r.height;
   }
 
   function updateStatus(e: React.PointerEvent) {
@@ -165,7 +174,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     });
   }
 
-  function doDown(e: React.PointerEvent, refEl: HTMLCanvasElement | null, buttonOverride?: 0 | 1 | 2) {
+  function doDown(e: React.PointerEvent, refEl: HTMLCanvasElement | null, buttonOverride?: 0 | 1 | 2, startPos?: Point) {
     const button = buttonOverride ?? e.button;
     if (button !== 0 && button !== 1 && button !== 2) return;
     e.preventDefault();
@@ -191,9 +200,10 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     const curTool = toolRef.current,
       curBL = s.current.brushLevel,
       curBS = brushSizeRef.current;
-    const pos = cPos(e, refEl);
+    const pos = startPos ?? cPos(e, refEl);
     lastRef.current = pos;
     strokeSmootherRef.current = curTool === "fill" || isShapeTool(curTool) ? null : createStrokeSmoother(pos);
+    forceRawNextMoveRef.current = startPos !== undefined && !isCanvasPointInBounds(startPos, cvsRef.current);
     const cv = cvsRef.current;
     const { pre, buf } = allocateStrokeBuffers(bufPoolRef.current, cv.data);
     strokeRef.current = createStrokeState(buf, pre, curTool, curBL, curBS, pos);
@@ -235,11 +245,11 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     } else if (isShapeTool(curTool)) {
       const bb = applyShapeDot(buf, curTool, pos, curBS, lv, W, H);
       strokeRef.current.prevShapeBBox = bb;
-      renderBuf(buf, W, H, s.current.colorLUT, srcRef.current, prvRef.current, imgCacheRef.current, bb);
+      if (bb) renderBuf(buf, W, H, s.current.colorLUT, srcRef.current, prvRef.current, imgCacheRef.current, bb);
     } else {
       const effectiveBrushSize = pressureAdjustedBrushSize(curBS, e.nativeEvent);
       const dirtyBB = applyBrushDot(buf, pos, effectiveBrushSize, lv, W, H);
-      renderBuf(buf, W, H, s.current.colorLUT, srcRef.current, prvRef.current, imgCacheRef.current, dirtyBB);
+      if (dirtyBB) renderBuf(buf, W, H, s.current.colorLUT, srcRef.current, prvRef.current, imgCacheRef.current, dirtyBB);
     }
   }
 
@@ -259,10 +269,20 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       return;
     }
     e.preventDefault();
-    clearCursor();
+    if (!isInWorkspaceBounds(e, refEl)) {
+      clearCursor();
+      return;
+    }
+    cursorTrack(e);
+    updateStatus(e);
     if (!canArmWorkspaceStart(e)) return;
     trySetPointerCapture(e);
-    pendingWorkspaceStartRef.current = { refEl, cursorTrack, clearCursor };
+    pendingWorkspaceStartRef.current = {
+      refEl,
+      cursorTrack,
+      clearCursor,
+      startPos: canvasPosUnclamped(e, refEl, zoomRef.current, panRef.current, cvsRef.current),
+    };
   }
 
   function doWorkspaceMove(
@@ -274,32 +294,48 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     const pending = pendingWorkspaceStartRef.current;
     if (pending) {
       e.preventDefault();
-      updateStatus(e);
+      const pendingRefEl = pending.refEl ?? refEl;
+      if (isInWorkspaceBounds(e, pendingRefEl)) {
+        pending.cursorTrack(e);
+        updateStatus(e);
+      } else {
+        pending.clearCursor();
+      }
       if ((e.buttons & 1) !== 1) {
         pendingWorkspaceStartRef.current = null;
         clearCursor();
         return;
       }
-      const pendingRefEl = pending.refEl ?? refEl;
-      if (!isInCanvasBounds(e, pendingRefEl)) {
-        clearCursor();
-        return;
-      }
-      pending.cursorTrack(e);
+      if (!isInCanvasBounds(e, pendingRefEl)) return;
       pendingWorkspaceStartRef.current = null;
-      doDown(e, pendingRefEl, 0);
+      doDown(e, pendingRefEl, 0, pending.startPos);
+      doMove(e, pendingRefEl, pending.cursorTrack, pending.clearCursor);
       return;
     }
     if (!drawingRef.current && !panningRef.current && !isInCanvasBounds(e, refEl)) {
-      updateStatus(e);
-      clearCursor();
+      if (isInWorkspaceBounds(e, refEl)) {
+        cursorTrack(e);
+        updateStatus(e);
+      } else {
+        clearCursor();
+      }
       return;
     }
-    doMove(e, refEl, cursorTrack);
+    doMove(e, refEl, cursorTrack, clearCursor);
   }
 
-  function doMove(e: React.PointerEvent, refEl: HTMLCanvasElement | null, cursorTrack: (e: React.PointerEvent) => void) {
-    cursorTrack(e);
+  function doMove(
+    e: React.PointerEvent,
+    refEl: HTMLCanvasElement | null,
+    cursorTrack: (e: React.PointerEvent) => void,
+    clearCursor: () => void,
+  ) {
+    const canvasEl = refEl ?? activeCanvasRef.current ?? cursor.curRef.current;
+    if (isInWorkspaceBounds(e, canvasEl)) {
+      cursorTrack(e);
+    } else {
+      clearCursor();
+    }
     updateStatus(e);
     if (panningRef.current) {
       s.current.movePan(e);
@@ -317,7 +353,6 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       H = cv.h;
 
     if (isShapeTool(sp.tool)) {
-      const canvasEl = refEl ?? activeCanvasRef.current ?? cursor.curRef.current;
       const pos = canvasPosUnclamped(e, canvasEl, zoomRef.current, panRef.current, cv);
       const origin = st.shapeStart || pos;
       const { shapeBBox: newBB, dirtyBBox: dirtyBB } = applyShapeStroke(
@@ -342,7 +377,6 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     // outside the canvas. Paint kernels clip to the buffer, which avoids edge
     // clamping while keeping strokes continuous when the pointer re-enters.
     const nativeEvent = e.nativeEvent;
-    const canvasEl = refEl ?? activeCanvasRef.current ?? cursor.curRef.current;
     const zoom = zoomRef.current,
       pan = panRef.current;
     const coalesced = typeof nativeEvent.getCoalescedEvents === "function" ? nativeEvent.getCoalescedEvents() : [];
@@ -352,7 +386,13 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     let dirtyBB: DirtyRect | null = null;
     for (const ev of events) {
       const raw = canvasPosUnclamped(ev, canvasEl, zoom, pan, cv);
-      const p = strokeSmootherRef.current ? smoothStrokePoint(strokeSmootherRef.current, raw) : raw;
+      const useRaw = forceRawNextMoveRef.current;
+      if (useRaw) forceRawNextMoveRef.current = false;
+      const p = useRaw || !strokeSmootherRef.current ? raw : smoothStrokePoint(strokeSmootherRef.current, raw);
+      if (useRaw && strokeSmootherRef.current) {
+        strokeSmootherRef.current.x = raw.x;
+        strokeSmootherRef.current.y = raw.y;
+      }
       const effectiveBrushSize = pressureAdjustedBrushSize(sp.brushSize, ev);
       const bb = last ? applyBrushStroke(buf, last, p, effectiveBrushSize, lv, W, H) : applyBrushDot(buf, p, effectiveBrushSize, lv, W, H);
       dirtyBB = unionBBox(dirtyBB, bb);
@@ -372,10 +412,10 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   const onMove = useCallback(
     (e: React.PointerEvent) => {
-      doMove(e, cursor.curRef.current, cursor.trackCursor);
+      doMove(e, cursor.curRef.current, cursor.trackCursor, cursor.clearCursor);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs, cursor.curRef is stable
-    [cursor.trackCursor],
+    [cursor.trackCursor, cursor.clearCursor],
   );
 
   const onDownPrv = useCallback((e: React.PointerEvent) => {
@@ -385,10 +425,10 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   const onMovePrv = useCallback(
     (e: React.PointerEvent) => {
-      doMove(e, cursor.prvCurRef.current, cursor.trackCursorPrv);
+      doMove(e, cursor.prvCurRef.current, cursor.trackCursorPrv, cursor.clearCursorPrv);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs, cursor.prvCurRef is stable
-    [cursor.trackCursorPrv],
+    [cursor.trackCursorPrv, cursor.clearCursorPrv],
   );
 
   function finishStroke() {
@@ -411,11 +451,13 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     drawingRef.current = false;
     lastRef.current = null;
     strokeSmootherRef.current = null;
+    forceRawNextMoveRef.current = false;
     strokeRef.current = null;
     activeCanvasRef.current = null;
   }
 
   const onUp = useCallback(() => {
+    pendingWorkspaceStartRef.current = null;
     if (panningRef.current) {
       s.current.endPan();
       return;

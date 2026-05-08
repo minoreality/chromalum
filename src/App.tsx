@@ -408,6 +408,7 @@ function AppContent({ app, panZoom, sharedSchedCursorRef, announce, ariaLiveRef,
               onMove={drawing.onWorkspaceMove}
               onUp={drawing.onUp}
               onPointerLeave={drawing.onWorkspaceLeave}
+              clearCursor={drawing.clearCursor}
               undo={undo}
               redo={redo}
               handleClear={handleClear}

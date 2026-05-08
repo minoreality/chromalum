@@ -213,6 +213,12 @@ input[type="checkbox"]:focus-visible {
   width: 100%;
   max-width: var(--display-max, 420px);
 }
+.canvas-cursor-overlay {
+  opacity: 0;
+}
+.canvas-workspace:hover > .canvas-cursor-overlay {
+  opacity: 1;
+}
 .panel-sidebar {
   display: flex;
   flex-direction: column;

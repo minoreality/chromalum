@@ -176,6 +176,7 @@ describe("SourcePanel interactions", () => {
       onMove: vi.fn(),
       onUp: vi.fn(),
       onPointerLeave: vi.fn(),
+      clearCursor: vi.fn(),
       undo: vi.fn(),
       redo: vi.fn(),
       handleClear: vi.fn(),
@@ -328,9 +329,11 @@ describe("SourcePanel interactions", () => {
     fireEvent.pointerMove(canvas);
     fireEvent.pointerUp(canvas);
     fireEvent.pointerLeave(canvas);
+    fireEvent.mouseLeave(canvas.parentElement!);
     expect(props.onPinchDown).toHaveBeenCalled();
     expect(props.onPinchMove).toHaveBeenCalled();
     expect(props.onPinchUp).toHaveBeenCalledTimes(2);
+    expect(props.clearCursor).toHaveBeenCalled();
   });
 });
 
@@ -380,6 +383,9 @@ describe("ColorPanel interactions", () => {
     expect(panZoom.endPan).toHaveBeenCalled();
 
     const wrap = screen.getByLabelText("aria_color_preview");
+    fireEvent.mouseLeave(wrap);
+    expect(drawing.clearCursorPrv).toHaveBeenCalled();
+
     fireEvent.keyDown(wrap, { key: "+" });
     expect(setZoom).toHaveBeenCalledWith(expect.any(Function));
     expect((setZoom.mock.calls[0][0] as (value: number) => number)(1)).toBeCloseTo(1.15);
@@ -467,6 +473,8 @@ describe("GlazePanel interactions", () => {
     fireEvent.pointerUp(canvas);
     expect(panZoom.movePan).toHaveBeenCalled();
     expect(panZoom.endPan).toHaveBeenCalled();
+    fireEvent.mouseLeave(canvas.parentElement!);
+    expect(glazeDrawing.clearCursor).toHaveBeenCalled();
 
     const wrap = canvas.parentElement!;
     fireEvent.keyDown(wrap, { key: "]" });

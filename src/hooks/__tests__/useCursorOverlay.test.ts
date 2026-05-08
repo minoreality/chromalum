@@ -134,6 +134,10 @@ describe("useCursorOverlay", () => {
     expect(result.current.cursorPosRef.current).toBeNull();
     expect(result.current.prvCursorPosRef.current).toBeNull();
     expect(status.textContent).toBe("\u2014");
+
+    raf.flushNextFrame();
+    expect(curCtx.clearRect).toHaveBeenCalledTimes(2);
+    expect(prvCtx.clearRect).toHaveBeenCalledTimes(2);
   });
 
   it("coalesces redraws and redraws both overlays when the grid state changes", () => {
