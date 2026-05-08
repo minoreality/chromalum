@@ -162,12 +162,14 @@ export function rasterizeAnalysisMap({
   colorLUT,
   cvs,
   target,
+  regionSizeById,
 }: {
   mode: MapMode;
   pixelMaps: AnalysisPixelMaps;
   colorLUT: AnalysisColorLUT;
   cvs: CanvasData;
   target: Uint32Array;
+  regionSizeById?: Map<number, number>;
 }): AnalysisMapRenderStatus {
   const w = cvs.w;
   const h = cvs.h;
@@ -213,7 +215,7 @@ export function rasterizeAnalysisMap({
     }
   } else if (mode === "region" && pixelMaps.regionId.length >= n && pixelMaps.isEdge.length >= n) {
     const phi = 0.618033988749895;
-    const regionSize = buildRegionSizeMap(pixelMaps);
+    const regionSize = regionSizeById ?? buildRegionSizeMap(pixelMaps);
     const smallThreshold = 10;
     for (let i = 0; i < n; i++) {
       if (pixelMaps.isEdge[i]) {

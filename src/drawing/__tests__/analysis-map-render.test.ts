@@ -80,6 +80,29 @@ describe("analysis-map-render", () => {
     expect(Array.from(target)).toEqual([0, 0, 0, 0]);
   });
 
+  it("reuses a supplied region size map for region rasterization", () => {
+    const cvs = makeCanvasData();
+    const pixelMaps = makePixelMaps();
+    const defaultTarget = new Uint32Array(4);
+    const sharedTarget = new Uint32Array(4);
+
+    rasterizeAnalysisMap({ mode: "region", pixelMaps, colorLUT, cvs, target: defaultTarget });
+    const status = rasterizeAnalysisMap({
+      mode: "region",
+      pixelMaps,
+      colorLUT,
+      cvs,
+      target: sharedTarget,
+      regionSizeById: new Map([
+        [1, 10],
+        [2, 10],
+      ]),
+    });
+
+    expect(status).toBe("rendered");
+    expect(sharedTarget[0]).not.toBe(defaultTarget[0]);
+  });
+
   it("builds hover details without depending on React or canvas APIs", () => {
     const cvs = makeCanvasData();
     const pixelMaps = makePixelMaps();

@@ -33,6 +33,7 @@ export function MapCanvas({
   const ref = useRef<HTMLCanvasElement>(null);
   const cw = cvs.w;
   const ch = cvs.h;
+  const regionSizeCache = useMemo(() => (mode === "region" ? buildRegionSizeMap(pixelMaps) : EMPTY_REGION_SIZE_BY_ID), [mode, pixelMaps]);
 
   useEffect(() => {
     const c = ref.current;
@@ -47,7 +48,7 @@ export function MapCanvas({
     const img = ctx.createImageData(cw, ch);
     const d32 = new Uint32Array(img.data.buffer);
     const n = cw * ch;
-    const status = rasterizeAnalysisMap({ mode, pixelMaps, colorLUT, cvs, target: d32 });
+    const status = rasterizeAnalysisMap({ mode, pixelMaps, colorLUT, cvs, target: d32, regionSizeById: regionSizeCache });
     ctx.putImageData(img, 0, 0);
     recordDebugPerf(`MapCanvas:${mode}`, perfStart, {
       status,
@@ -55,11 +56,10 @@ export function MapCanvas({
       h: ch,
       pixels: n,
     });
-  }, [mode, pixelMaps, colorLUT, cvs, cw, ch]);
+  }, [mode, pixelMaps, colorLUT, cvs, cw, ch, regionSizeCache]);
 
   // Hover info
   const [hoverInfo, setHoverInfo] = useState<string | null>(null);
-  const regionSizeCache = useMemo(() => (mode === "region" ? buildRegionSizeMap(pixelMaps) : EMPTY_REGION_SIZE_BY_ID), [mode, pixelMaps]);
 
   const onMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
