@@ -20,6 +20,7 @@ import {
   useMusicSignalsState,
   useMusicTransportState,
 } from "./useMusicPanelState";
+import { useMusicTransportHandlers } from "./useMusicTransportHandlers";
 
 function useInitialAudio(initAudio: () => void): void {
   const initAudioRef = useRef(initAudio);
@@ -368,36 +369,19 @@ export function useMusicPanelController() {
 
   useInitialAudio(engine.initAudio);
 
-  const resumeDrone = useCallback(() => {
-    if (droneMuted) {
-      engine.setDroneMuted(false);
-      setDroneMuted(false);
-    }
-  }, [droneMuted, engine, setDroneMuted]);
-
-  const handleAlphaPlay = useCallback(() => {
-    engine.initAudio();
-    resumeDrone();
-    setAlphaDir((d) => (d === 1 ? 0 : 1));
-  }, [engine, resumeDrone, setAlphaDir]);
-
-  const handleAlphaReverse = useCallback(() => {
-    engine.initAudio();
-    resumeDrone();
-    setAlphaDir((d) => (d === -1 ? 0 : -1));
-  }, [engine, resumeDrone, setAlphaDir]);
-
-  const handleHuePlay = useCallback(() => {
-    engine.initAudio();
-    resumeDrone();
-    setHueDir((d) => (d === 1 ? 0 : 1));
-  }, [engine, resumeDrone, setHueDir]);
-
-  const handleHueReverse = useCallback(() => {
-    engine.initAudio();
-    resumeDrone();
-    setHueDir((d) => (d === -1 ? 0 : -1));
-  }, [engine, resumeDrone, setHueDir]);
+  const { resumeDrone, handleAlphaPlay, handleAlphaReverse, handleHuePlay, handleHueReverse, handleMuteToggle, handleVolumeChange } =
+    useMusicTransportHandlers({
+      engine,
+      droneMuted,
+      setDroneMuted,
+      muted,
+      setMuted,
+      volume,
+      setVolume,
+      preMuteVolumeRef,
+      setAlphaDir,
+      setHueDir,
+    });
 
   const handleStopAll = useCallback(() => {
     engine.stopGrayMelody?.();
@@ -702,29 +686,6 @@ export function useMusicPanelController() {
       setOriginMode(mode);
     },
     [resumeDrone, setOriginMode],
-  );
-
-  const handleMuteToggle = useCallback(() => {
-    if (muted) {
-      setMuted(false);
-      setVolume(preMuteVolumeRef.current);
-    } else {
-      preMuteVolumeRef.current = volume;
-      setMuted(true);
-    }
-    if (droneMuted) {
-      engine.setDroneMuted(false);
-      setDroneMuted(false);
-    }
-  }, [droneMuted, engine, muted, preMuteVolumeRef, setDroneMuted, setMuted, setVolume, volume]);
-
-  const handleVolumeChange = useCallback(
-    (v: number) => {
-      engine.initAudio();
-      setVolume(v);
-      if (muted && v > 0) setMuted(false);
-    },
-    [engine, muted, setMuted, setVolume],
   );
 
   const handleBgTap = useCallback(
