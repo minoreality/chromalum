@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ChangeEvent, Dispatch, MouseEvent, MutableRefObject, SetStateAction } from "react";
 
-import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate } from "../color-engine";
-import { FANO_LINES } from "../data/theory-data";
+import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
+import {
+  buildActiveMusicLevels,
+  buildMusicHueTicks,
+  buildMusicLevelPreview,
+  buildMusicSonificationLevels,
+  findMusicFanoLine,
+} from "../music/music-panel-derived";
 import { MUSIC_ACTIVE_LEVELS } from "../music/types";
-import type { MusicHueTick, MusicLevelPreview } from "../music/types";
 import { useMusicEngine, type MusicEngineReturn } from "./useMusicEngine";
 import {
   createDefaultMusicDirectCandidates,
@@ -15,15 +20,6 @@ import {
   useMusicSignalsState,
   useMusicTransportState,
 } from "./useMusicPanelState";
-
-function findFanoLine(a: number, b: number): number {
-  const c = a ^ b;
-  const triple = [a, b, c].sort((x, y) => x - y);
-  return FANO_LINES.findIndex((line) => {
-    const sorted = [...line].sort((x, y) => x - y);
-    return sorted[0] === triple[0] && sorted[1] === triple[1] && sorted[2] === triple[2];
-  });
-}
 
 function useInitialAudio(initAudio: () => void): void {
   const initAudioRef = useRef(initAudio);
@@ -345,13 +341,7 @@ export function useMusicPanelController() {
   const { stopSignal, setStopSignal, resetSignal, setResetSignal, backgroundStoppedRef } = useMusicSignalsState();
   const { burstHighlight, setBurstHighlight, burstTimersRef } = useMusicBurstHighlightState();
 
-  const sonificationLevels = useMemo(() => {
-    return MUSIC_ACTIVE_LEVELS.map((lv) => {
-      const ci = directCandidates.has(lv) ? directCandidates.get(lv)! : findClosestCandidate(lv, hueAngle);
-      const cand = LEVEL_CANDIDATES[lv][ci];
-      return cand ? { lv, angle: cand.angle, gray: LEVEL_INFO[lv].gray } : { lv, angle: 0, gray: 0 };
-    });
-  }, [hueAngle, directCandidates]);
+  const sonificationLevels = useMemo(() => buildMusicSonificationLevels(directCandidates, hueAngle), [hueAngle, directCandidates]);
 
   const engine = useMusicEngine({
     enabled: true,
@@ -611,7 +601,7 @@ export function useMusicPanelController() {
   const handlePlayXor = useCallback(() => {
     if (xorA != null && xorB != null) {
       engine.initAudio();
-      const fanoIdx = findFanoLine(xorA, xorB);
+      const fanoIdx = findMusicFanoLine(xorA, xorB);
       if (fanoIdx >= 0) setHoveredFanoLine(fanoIdx);
       engine.playXorTriple?.(xorA, xorB, (lv) => {
         setXorStep(lv);
@@ -662,36 +652,9 @@ export function useMusicPanelController() {
     [setHoveredFanoLine],
   );
 
-  const levelPreview = useMemo<MusicLevelPreview[]>(() => {
-    return LEVEL_INFO.map((info, lv) => {
-      const candidates = LEVEL_CANDIDATES[lv];
-      const ci = directCandidates.has(lv) ? directCandidates.get(lv)! : findClosestCandidate(lv, hueAngle);
-      const rgb = candidates[ci]?.rgb ?? [128, 128, 128];
-      return { lv, name: info.name, rgb, hex: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` };
-    });
-  }, [hueAngle, directCandidates]);
-
-  const activeLevels = useMemo(
-    () => levelPreview.filter((lp) => lp.lv >= 1 && lp.lv <= 6).map((lp) => ({ lv: lp.lv, rgb: lp.rgb as [number, number, number] })),
-    [levelPreview],
-  );
-
-  const hueTicks = useMemo<MusicHueTick[]>(() => {
-    const ticks: MusicHueTick[] = [];
-    for (let lv = 2; lv <= 5; lv++) {
-      const cands = LEVEL_CANDIDATES[lv];
-      if (cands.length <= 1 || cands[0].angle < 0) continue;
-      const angles = cands.map((c) => c.angle).sort((a, b) => a - b);
-      for (let i = 0; i < angles.length; i++) {
-        const a1 = angles[i];
-        const a2 = angles[(i + 1) % angles.length];
-        const diff = (a2 - a1 + 360) % 360;
-        const mid = (a1 + diff / 2) % 360;
-        ticks.push({ deg: mid, color: `rgb(${cands[0].rgb.join(",")})` });
-      }
-    }
-    return ticks;
-  }, []);
+  const levelPreview = useMemo(() => buildMusicLevelPreview(directCandidates, hueAngle), [hueAngle, directCandidates]);
+  const activeLevels = useMemo(() => buildActiveMusicLevels(levelPreview), [levelPreview]);
+  const hueTicks = useMemo(() => buildMusicHueTicks(), []);
 
   const handleLinkedHueAngleChange = useCallback(
     (a: number) => {
