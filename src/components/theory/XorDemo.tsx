@@ -77,15 +77,15 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
             y={1}
             textAnchor="middle"
             dominantBaseline="central"
-            fontSize={FS.xl}
+            fontSize={FS.lg}
             fontWeight={900}
             fontFamily="var(--font-mono)"
             fill={a >= 4 ? "#000" : "#fff"}
           >
-            {a}
+            {infoA.bits.join("")}
           </text>
           <text y={DOT_R + 12} textAnchor="middle" fontSize={FS.xs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-            {infoA.bits.join("")}
+            L{a}
           </text>
         </g>
 
@@ -109,15 +109,15 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
             y={1}
             textAnchor="middle"
             dominantBaseline="central"
-            fontSize={FS.xl}
+            fontSize={FS.lg}
             fontWeight={900}
             fontFamily="var(--font-mono)"
             fill={b >= 4 ? "#000" : "#fff"}
           >
-            {b}
+            {infoB.bits.join("")}
           </text>
           <text y={DOT_R + 12} textAnchor="middle" fontSize={FS.xs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-            {infoB.bits.join("")}
+            L{b}
           </text>
         </g>
 
@@ -141,15 +141,15 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
             y={1}
             textAnchor="middle"
             dominantBaseline="central"
-            fontSize={FS.xl}
+            fontSize={FS.lg}
             fontWeight={900}
             fontFamily="var(--font-mono)"
             fill={result >= 4 ? "#000" : "#fff"}
           >
-            {result}
+            {infoR.bits.join("")}
           </text>
           <text y={DOT_R + 12} textAnchor="middle" fontSize={FS.xs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-            {infoR.bits.join("")}
+            L{result}
           </text>
         </g>
 
@@ -204,11 +204,23 @@ export const XorDemo = React.memo(function XorDemo({ hlLevel, onHover }: Props) 
       {/* Complement pairs */}
       <div style={{ display: "flex", gap: SP["2xl"], justifyContent: "center", flexWrap: "wrap" }}>
         <div className="theory-annotation" style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, textAlign: "center" }}>
-          {t("theory_xor_complement", infoA.name, THEORY_LEVELS[complementA].name)}
+          {t(
+            "theory_xor_complement",
+            infoA.bits.join(""),
+            THEORY_LEVELS[complementA].bits.join(""),
+            infoA.name,
+            THEORY_LEVELS[complementA].name,
+          )}
         </div>
         {b !== a && (
           <div className="theory-annotation" style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, textAlign: "center" }}>
-            {t("theory_xor_complement", infoB.name, THEORY_LEVELS[complementB].name)}
+            {t(
+              "theory_xor_complement",
+              infoB.bits.join(""),
+              THEORY_LEVELS[complementB].bits.join(""),
+              infoB.name,
+              THEORY_LEVELS[complementB].name,
+            )}
           </div>
         )}
       </div>

@@ -324,7 +324,7 @@ export const ja: Record<TranslationKey, string> = {
   theory_conn_boundary:
     "GL(3,2)（位数168）は、GF(2)³ の可逆線形変換全体であり、非零7点の入射構造 PG(2,2) を完全に保ちます。しかし一般の GL(3,2) 変換は、基底ベクトル {B,R,G} を別の非零ベクトルへ送るため、RGB の原色チャンネルという意味を保ちません。色彩的に自然な自己同型は、基底 {B,R,G} を互いに置換する S₃（6通り）に限られます。GF(2)³ は8点の有限モデルなので、より多くの色を扱うには、別の座標系や代数構造が必要になります。",
   theory_conn_boundary_title: "範囲と限界",
-  theory_xor_complement: "補色: {0} \u2295 7 = {1}",
+  theory_xor_complement: "{0} \u2295 111 = {1}  {2} \u2194 {3}",
   theory_xor_cayley_aria: "XOR \u30b1\u30a4\u30ea\u30fc\u8868",
   theory_pin_hint: "\u30db\u30d0\u30fc\u3067\u30cf\u30a4\u30e9\u30a4\u30c8 \u00b7 \u30af\u30ea\u30c3\u30af\u3067\u56fa\u5b9a",
   theory_fano_show_primary: "原色",

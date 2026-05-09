@@ -323,7 +323,7 @@ export const en = {
   theory_conn_boundary:
     "GL(3,2) (order 168) is the full group of invertible linear transformations of GF(2)³, and it completely preserves the incidence structure PG(2,2) on the seven nonzero points. However, a general GL(3,2) transformation sends the basis vectors {B,R,G} to other nonzero vectors, so it does not preserve their meaning as RGB primary channels. The color-theoretically natural automorphisms are exactly the S₃ subgroup (6 permutations) that permutes the basis {B,R,G}. Since GF(2)³ is a finite 8-point model, handling more colors requires a different coordinate system or algebraic structure.",
   theory_conn_boundary_title: "Scope and Limits",
-  theory_xor_complement: "Complement: {0} \u2295 7 = {1}",
+  theory_xor_complement: "{0} \u2295 111 = {1}  {2} \u2194 {3}",
   theory_xor_cayley_aria: "XOR Cayley table",
   theory_pin_hint: "Hover to highlight \u00b7 Click to pin",
   theory_fano_show_primary: "Primary",
