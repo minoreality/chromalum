@@ -9,7 +9,7 @@ import {
   STELLA_EDGES,
   COMPLEMENT_EDGES,
 } from "../../data/theory-data";
-import { C, FS, FW, SP, FONT } from "../../styles/tokens";
+import { C, FS, SP, FONT } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
 import { S_CURSOR_POINTER, S_THEORY_BTN, S_THEORY_BTN_ACTIVE } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
@@ -19,12 +19,6 @@ const DOT_R = 11;
 function edgesOf(v: number): number[] {
   return CUBE_EDGES.map((e, i) => (e[0] === v || e[1] === v ? i : -1)).filter((i) => i >= 0);
 }
-
-const AXIS_LABELS: { ch: "G" | "R" | "B"; from: number; to: number }[] = [
-  { ch: "G", from: 0, to: 4 },
-  { ch: "R", from: 0, to: 2 },
-  { ch: "B", from: 0, to: 1 },
-];
 
 const CHANNEL_COLORS: Record<string, string> = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
 
@@ -164,36 +158,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           <path d={equatorPath} fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.40)" strokeWidth={1.5} strokeDasharray="4,3" />
         )}
 
-        {/* Axis labels */}
-        {AXIS_LABELS.map(({ ch, from, to }) => {
-          const p0 = getPos(from),
-            p1 = getPos(to);
-          const mx = (p0.x + p1.x) / 2,
-            my = (p0.y + p1.y) / 2;
-          const chColor = CHANNEL_COLORS[ch];
-          const dx = mx - 150,
-            dy = my - 150;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const ox = mx + (dx / dist) * 14,
-            oy = my + (dy / dist) * 14;
-          return (
-            <text
-              key={"ax" + ch}
-              x={ox}
-              y={oy}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={FS.sm}
-              fontFamily="var(--font-mono)"
-              fontWeight={FW.bold}
-              fill={chColor}
-              opacity={0.5 * (1 - animT)}
-            >
-              {ch}
-            </text>
-          );
-        })}
-
         {/* Complement diagonals (all 4 body diagonals) */}
         {showComplements &&
           COMPLEMENT_EDGES.map(([a, b]) => {
@@ -288,19 +252,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 strokeDasharray={back && !active && animT < 0.5 ? "3,3" : undefined}
                 opacity={edgeOpacity}
               />
-              {active && (
-                <text
-                  x={(p0.x + p1.x) / 2}
-                  y={(p0.y + p1.y) / 2 - 8}
-                  textAnchor="middle"
-                  fontSize={FS.xs}
-                  fontFamily="var(--font-mono)"
-                  fontWeight={FW.bold}
-                  fill={chColor}
-                >
-                  {ch}
-                </text>
-              )}
             </g>
           );
         })}
