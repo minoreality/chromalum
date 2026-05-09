@@ -21,7 +21,6 @@ export interface KeyboardShortcutDeps {
   setShowNewCanvas: React.Dispatch<React.SetStateAction<boolean>>;
   t: TranslationFn;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
-  onSave: () => void;
   activeTabId: MainTabId;
 }
 
@@ -48,7 +47,6 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     setShowNewCanvas,
     t,
     setZoom,
-    onSave,
     activeTabId,
   } = deps;
 
@@ -59,13 +57,6 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
         ctrl: true,
         action: () => {
           setShowNewCanvas(true);
-        },
-      },
-      {
-        key: "s",
-        ctrl: true,
-        action: () => {
-          onSave();
         },
       },
       {
@@ -253,7 +244,6 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     setShowNewCanvas,
     t,
     setZoom,
-    onSave,
     activeTabId,
   ]);
 }

@@ -21,7 +21,6 @@ function makeArgs() {
   const setShowNewCanvas = vi.fn() as unknown as React.Dispatch<React.SetStateAction<boolean>>;
   const t = ((key: string) => key) as import("../../i18n").TranslationFn;
   const setZoom = vi.fn() as unknown as React.Dispatch<React.SetStateAction<number>>;
-  const onSave = vi.fn() as () => void;
 
   const deps: KeyboardShortcutDeps = {
     setTool,
@@ -38,7 +37,6 @@ function makeArgs() {
     setShowNewCanvas,
     t,
     setZoom,
-    onSave,
     activeTabId: "gallery",
   };
 
@@ -57,7 +55,6 @@ function makeArgs() {
     brushSizeRef,
     setShowNewCanvas,
     setZoom,
-    onSave,
   };
 }
 
@@ -177,6 +174,20 @@ describe("useKeyboardShortcuts", () => {
   });
 
   describe("undo/redo shortcuts", () => {
+    it("leaves Ctrl+S to the browser", () => {
+      const { deps, dispatch, setShowNewCanvas } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
+      cleanup = unmount;
+      const event = new KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true });
+      const preventDefault = vi.spyOn(event, "preventDefault");
+
+      window.dispatchEvent(event);
+
+      expect(preventDefault).not.toHaveBeenCalled();
+      expect(vi.mocked(dispatch)).not.toHaveBeenCalled();
+      expect(vi.mocked(setShowNewCanvas)).not.toHaveBeenCalled();
+    });
+
     it("Ctrl+Z dispatches undo", () => {
       const { deps, dispatch } = makeArgs();
       const { unmount } = renderHook(() => useKeyboardShortcuts(deps));

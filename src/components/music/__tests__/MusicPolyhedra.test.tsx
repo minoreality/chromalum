@@ -10,6 +10,7 @@ import { TetraSplitView } from "../TetraSplitView";
 import { K8LayerGraph } from "../K8LayerGraph";
 import { GrayCube } from "../GrayCube";
 import { ParityChordCard } from "../ParityChordCard";
+import { GL32Arrows } from "../GL32Arrows";
 function renderWithLanguage(node: ReactNode) {
   localStorage.setItem("chromalum_lang", "en");
   return render(<LanguageProvider>{node}</LanguageProvider>);
@@ -65,5 +66,21 @@ describe("Music polyhedra widgets", () => {
       expect(screen.getAllByText(level).length).toBeGreaterThan(0);
     }
     expect(container.textContent).toContain("P1: bit0 = {001,011,101,111}");
+  });
+
+  it("uses dark GL(3,2) labels for bright levels", () => {
+    const { container } = renderWithLanguage(<GL32Arrows perm={[0, 1, 2, 3, 4, 5, 6, 7]} activeLevels={[]} />);
+
+    for (const level of ["4", "5", "6", "7"]) {
+      const labels = [...container.querySelectorAll("text")].filter((el) => el.textContent === level);
+      expect(labels).toHaveLength(2);
+      labels.forEach((label) => expect(label.getAttribute("fill")).toBe("#000"));
+    }
+
+    for (const level of ["1", "2", "3"]) {
+      const labels = [...container.querySelectorAll("text")].filter((el) => el.textContent === level);
+      expect(labels).toHaveLength(2);
+      labels.forEach((label) => expect(label.getAttribute("fill")).toBe("#fff"));
+    }
   });
 });

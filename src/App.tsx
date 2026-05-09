@@ -15,7 +15,6 @@ import { useAppState } from "./hooks/useAppState";
 import { usePwaUpdate } from "./hooks/usePwaUpdate";
 import { DrawingContextProvider } from "./state/DrawingContext";
 import { GlazeContextProvider } from "./state/GlazeContext";
-import { timestamp } from "./utils";
 import { C, Z, FS, FW, FONT } from "./styles/tokens";
 import { Toast } from "./components/Toast";
 import { PwaUpdateToast } from "./components/PwaUpdateToast";
@@ -222,10 +221,6 @@ function AppContent({ app, panZoom, sharedSchedCursorRef, announce, ariaLiveRef,
 
   const { saveColor, saveColorWithLUT, saveGlaze, shareColor, shareGlaze } = useExport(cvs, colorLUT, showToast, t);
 
-  const handleKbSave = useCallback(() => {
-    saveColor(prvRef, `chromalum_color_${timestamp()}.png`);
-  }, [saveColor, prvRef]);
-
   useKeyboardShortcuts({
     setTool,
     setBrushLevel,
@@ -241,7 +236,6 @@ function AppContent({ app, panZoom, sharedSchedCursorRef, announce, ariaLiveRef,
     setShowNewCanvas,
     t,
     setZoom: panZoom.setZoom,
-    onSave: handleKbSave,
     activeTabId,
   });
 

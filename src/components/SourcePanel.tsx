@@ -62,10 +62,10 @@ const S_SOURCE_ACTION_BUTTON_ACTIVE: React.CSSProperties = { ...S_BTN_ACTIVE, ..
 const S_SOURCE_FILE_BUTTON: React.CSSProperties = { ...S_SOURCE_ACTION_BUTTON, minWidth: 52 };
 const S_EXPORT_SCALE_BUTTON_BASE: React.CSSProperties = {
   boxSizing: "border-box",
-  width: 26,
-  height: 24,
-  minWidth: 26,
-  minHeight: 24,
+  width: 25,
+  height: 23,
+  minWidth: 25,
+  minHeight: 23,
   padding: 0,
   fontSize: FS.sm,
   lineHeight: 1,

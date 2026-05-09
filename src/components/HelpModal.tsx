@@ -39,22 +39,33 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
         aria-modal="true"
         aria-label={t("help_title")}
         style={{
-          background: C.bgSurfaceHover,
+          background: C.bgModal,
           border: `1px solid ${C.borderHover}`,
           borderRadius: R["2xl"],
           padding: SP["4xl"],
-          maxWidth: "min(360px, calc(100vw - 32px))",
+          boxSizing: "border-box",
+          maxWidth: "min(400px, calc(100vw - 48px))",
           maxHeight: "80vh",
           overflowY: "auto",
-          fontFamily: FONT.mono,
+          fontFamily: FONT.sans,
           fontSize: FS.lg,
+          lineHeight: 1.25,
           color: C.textPrimary,
         }}
         onClick={stopPropagation}
       >
-        <div style={{ fontSize: FS["2xl"], fontWeight: FW.bold, marginBottom: 12, color: C.accentBright, textAlign: "center" }}>
+        <h2
+          style={{
+            fontFamily: FONT.mono,
+            fontSize: FS["2xl"],
+            fontWeight: FW.bold,
+            margin: `0 0 ${SP["2xl"]}px`,
+            color: C.accentBright,
+            textAlign: "center",
+          }}
+        >
           {t("help_title")}
-        </div>
+        </h2>
         {[
           // Drawing tools
           ["B", t("help_brush")],
@@ -76,7 +87,6 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
           [t("help_zoom_pixel_key"), t("help_zoom_pixel")],
           // File operations
           ["Ctrl+N", t("help_new_canvas")],
-          [t("help_save_key"), t("help_save")],
           ["Ctrl+V", t("help_paste")],
           [t("help_drop_image_key"), t("help_drop_image")],
           // Edit
@@ -88,13 +98,20 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
         ].map(([k, v]) => (
           <div
             key={k}
-            style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: `1px solid ${C.border}` }}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(116px, 0.9fr) minmax(0, 1fr)",
+              columnGap: SP["2xl"],
+              alignItems: "baseline",
+              padding: `${SP.xs}px 0`,
+              borderBottom: `1px solid ${C.border}`,
+            }}
           >
-            <span style={{ color: C.accentBright, fontWeight: FW.bold, minWidth: 120 }}>{k}</span>
-            <span style={{ color: C.textSecondary }}>{v}</span>
+            <span style={{ color: C.accentBright, fontFamily: FONT.mono, fontWeight: FW.bold, whiteSpace: "nowrap" }}>{k}</span>
+            <span style={{ color: C.textSecondary, minWidth: 0, textAlign: "right" }}>{v}</span>
           </div>
         ))}
-        <button onClick={handleClose} tabIndex={0} style={{ ...S_BTN, marginTop: 12, width: "100%", textAlign: "center" }}>
+        <button onClick={handleClose} tabIndex={0} style={{ ...S_BTN, marginTop: SP["2xl"], width: "100%", textAlign: "center" }}>
           {t("help_close")}
         </button>
       </div>

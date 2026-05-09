@@ -124,8 +124,6 @@ export const ja: Record<TranslationKey, string> = {
   help_close: "閉じる",
   help_pan_key: "Space+ドラッグ",
   help_zoom_key: "ホイール / +/-",
-  help_save: "カラーPNG保存",
-  help_save_key: "Ctrl+S",
   help_eyedropper: "レベル取得（スポイト）",
   help_eyedropper_key: "右クリック / Alt+クリック",
   help_dblclick_level: "レベル選択+ブラシ切替",

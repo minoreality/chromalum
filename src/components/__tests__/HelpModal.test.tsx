@@ -28,8 +28,6 @@ vi.mock("../../i18n", () => ({
         help_this_help: "This help (also F1)",
         help_pan_key: "Space+Drag",
         help_zoom_key: "Wheel / +/-",
-        help_save: "Save color PNG",
-        help_save_key: "Ctrl+S",
         help_eyedropper: "Pick level (eyedropper)",
         help_eyedropper_key: "Right-click / Alt+click",
         help_dblclick_level: "Select level + Brush tool",

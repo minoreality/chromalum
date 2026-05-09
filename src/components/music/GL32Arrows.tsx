@@ -22,6 +22,10 @@ function lvColor(lv: number, activeLevels: GL32ArrowsProps["activeLevels"]): str
   return LV_COLORS[lv] ?? "#888";
 }
 
+function labelColor(lv: number): string {
+  return lv >= 4 ? "#000" : "#fff";
+}
+
 function isIdentity(perm: number[]): boolean {
   return LEVELS.every((lv) => perm[lv] === lv);
 }
@@ -114,7 +118,7 @@ export const GL32Arrows = React.memo(function GL32Arrows({ perm, activeLevels, f
         return (
           <g key={`t${lv}`}>
             <circle cx={x} cy={Y_TOP} r={CR} fill={color} stroke="#fff" strokeWidth={0.5} />
-            <text x={x} y={Y_TOP + 2.5} fontSize={7} fill="#fff" textAnchor="middle" pointerEvents="none">
+            <text x={x} y={Y_TOP + 2.5} fontSize={7} fill={labelColor(lv)} textAnchor="middle" pointerEvents="none">
               {lv}
             </text>
           </g>
@@ -139,7 +143,7 @@ export const GL32Arrows = React.memo(function GL32Arrows({ perm, activeLevels, f
               strokeWidth={isFlashing ? 1.5 : 0.5}
               style={{ transition: "r 0.3s" }}
             />
-            <text x={x} y={Y_BOT + 2.5} fontSize={7} fill="#fff" textAnchor="middle" pointerEvents="none">
+            <text x={x} y={Y_BOT + 2.5} fontSize={7} fill={labelColor(val)} textAnchor="middle" pointerEvents="none">
               {val}
             </text>
           </g>
