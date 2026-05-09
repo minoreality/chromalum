@@ -1,8 +1,8 @@
 # CHROMALUM
 
-[![Deploy to GitHub Pages](https://github.com/humannnnn1-bot/chromalum/actions/workflows/deploy.yml/badge.svg)](https://github.com/humannnnn1-bot/chromalum/actions/workflows/deploy.yml)
-[![CI](https://github.com/humannnnn1-bot/chromalum/actions/workflows/ci.yml/badge.svg)](https://github.com/humannnnn1-bot/chromalum/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/humannnnn1-bot/chromalum/actions/workflows/codeql.yml/badge.svg)](https://github.com/humannnnn1-bot/chromalum/actions/workflows/codeql.yml)
+[![Deploy to GitHub Pages](https://github.com/minoreality/chromalum/actions/workflows/deploy.yml/badge.svg)](https://github.com/minoreality/chromalum/actions/workflows/deploy.yml)
+[![CI](https://github.com/minoreality/chromalum/actions/workflows/ci.yml/badge.svg)](https://github.com/minoreality/chromalum/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/minoreality/chromalum/actions/workflows/codeql.yml/badge.svg)](https://github.com/minoreality/chromalum/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/source-MIT-blue.svg)](./LICENSE)
 [![Docs: CC BY 4.0](https://img.shields.io/badge/docs-CC%20BY%204.0-green.svg)](./docs/LICENSE.md)
 
@@ -12,7 +12,7 @@ color remapping, glaze variants, gallery and map/statistics views, plus Theory a
 Music tabs that explore the same eight-level structure through `GF(2)^3`, RGB cube
 geometry, the Fano plane, Hamming codes, and related polyhedral structures.
 
-**Demo:** [humannnnn1-bot.github.io/chromalum](https://humannnnn1-bot.github.io/chromalum/)
+**Demo:** [minoreality.github.io/chromalum](https://minoreality.github.io/chromalum/)
 
 ## Screenshots
 

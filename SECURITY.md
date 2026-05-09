@@ -17,7 +17,7 @@ requests.
 Use GitHub's private vulnerability reporting flow if it is available for this
 repository:
 
-<https://github.com/humannnnn1-bot/chromalum/security/advisories/new>
+<https://github.com/minoreality/chromalum/security/advisories/new>
 
 Include:
 

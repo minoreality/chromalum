@@ -126,7 +126,7 @@ Attribution under CC BY 4.0 must include four elements (TASL):
   Appendix_ for the Music companion notes; _CHROMALUM Theory Tab_ for the
   interactive Theory tab)
 - **A**uthor: Doctor Chromaticus
-- **S**ource URL: <https://github.com/humannnnn1-bot/chromalum>
+- **S**ource URL: <https://github.com/minoreality/chromalum>
 - **L**icense: CC BY 4.0,
   <https://creativecommons.org/licenses/by/4.0/>
 
@@ -142,7 +142,7 @@ TASL elements are present.
 ```text
 Doctor Chromaticus, "Algebraic Color Model,"
 in Tractatus Chromaticus, 2026.
-https://github.com/humannnnn1-bot/chromalum, licensed under
+https://github.com/minoreality/chromalum, licensed under
 CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 ```
 
@@ -155,7 +155,7 @@ the mononym into "first name / last name"):
   title     = {Algebraic Color Model},
   booktitle = {Tractatus Chromaticus},
   year      = {2026},
-  url       = {https://github.com/humannnnn1-bot/chromalum},
+  url       = {https://github.com/minoreality/chromalum},
   note      = {Licensed under CC BY 4.0,
                \url{https://creativecommons.org/licenses/by/4.0/}}
 }
@@ -172,7 +172,7 @@ For Music Appendix notes, replace `booktitle` / corpus wording with
 > "<quoted text>"
 
 Source: "Algebraic Color Model," in
-[Tractatus Chromaticus](https://github.com/humannnnn1-bot/chromalum),
+[Tractatus Chromaticus](https://github.com/minoreality/chromalum),
 by Doctor Chromaticus, licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 ```
@@ -182,14 +182,14 @@ by Doctor Chromaticus, licensed under
 ```text
 Adapted from "Algebraic Color Model," in
 Tractatus Chromaticus by Doctor Chromaticus, CC BY 4.0.
-Source: https://github.com/humannnnn1-bot/chromalum
+Source: https://github.com/minoreality/chromalum
 ```
 
 ### Slide deck (footer or final credits slide)
 
 ```text
 Adapted from: Tractatus Chromaticus by Doctor Chromaticus,
-CC BY 4.0, github.com/humannnnn1-bot/chromalum
+CC BY 4.0, github.com/minoreality/chromalum
 ```
 
 ### Translation or summary (adaptation marker required)
@@ -198,7 +198,7 @@ CC BY 4.0, github.com/humannnnn1-bot/chromalum
 This document is a <translation | summary | abridgment> of
 "Algebraic Color Model" in Tractatus Chromaticus
 by Doctor Chromaticus, CC BY 4.0
-(https://github.com/humannnnn1-bot/chromalum).
+(https://github.com/minoreality/chromalum).
 Changes: <e.g. translated from Japanese to English; sections 3-4 abridged>.
 ```
 
@@ -213,7 +213,7 @@ by Doctor Chromaticus, CC BY 4.0.
 
 ```text
 via Doctor Chromaticus · Tractatus Chromaticus · CC BY 4.0
-github.com/humannnnn1-bot/chromalum
+github.com/minoreality/chromalum
 ```
 
 ### Japanese-language template (日本語の標準形)
@@ -222,7 +222,7 @@ github.com/humannnnn1-bot/chromalum
 出典: 「離散代数的色彩モデル」
 （Tractatus Chromaticus, Doctor Chromaticus 作）
 ライセンス: CC BY 4.0
-https://github.com/humannnnn1-bot/chromalum
+https://github.com/minoreality/chromalum
 ```
 
 改変（翻訳・要約・抜粋）を行った場合は、上記に加えて改変内容を
