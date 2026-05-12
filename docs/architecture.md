@@ -125,7 +125,8 @@ Two version numbers have separate roles. `DB_VERSION` controls the IndexedDB
 database structure and should change when object stores or indexes need an
 IndexedDB upgrade. `SAVED_STATE_VERSION` controls the serialized canvas state
 shape stored under the current key and should change when saved state needs a
-data migration.
+data migration. Restore also accepts legacy v1 records whose color candidate
+choices used the `cc` field and normalizes them to `colorChoiceIndices`.
 
 Restore treats an empty database and an invalid saved record differently. Empty
 storage starts from the default canvas. Invalid or unsupported saved data is
@@ -138,8 +139,8 @@ a fresh valid save.
 Two worker paths keep expensive pixel operations away from the main thread:
 
 - `flood-fill.worker.ts` handles large source and glaze flood fills.
-- `pixel-analysis.worker.ts` computes map data for noise, diversity, depth,
-  gradient, and regions.
+- `pixel-analysis.worker.ts` computes map data for noise, diversity, boundary
+  distance, gradient, and regions.
 
 Both paths have synchronous fallbacks so tests and restricted browser
 environments can still run the same behavior. `usePixelMaps` also caches results
