@@ -7,7 +7,7 @@ import type { PanZoomHandlers, DrawingHandlers } from "../types";
 import { useTranslation } from "../i18n";
 import { S_CANVAS_STATUS_STABLE, S_CHECKERBOARD, S_PANEL_SUBTITLE } from "../styles/shared";
 import { C, Z, SP, R } from "../styles/tokens";
-import { getCanvasPanelClassName, getCanvasPanelStyle } from "../utils/panel-layout";
+import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 
 interface ColorPanelProps {
   prvRef: React.RefObject<HTMLCanvasElement | null>;
@@ -132,7 +132,7 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
           </span>
         </span>
       </div>
-      <div className="panel-layout">
+      <div className={getPanelLayoutClassName(displayW, displayH)}>
         <div className={getCanvasPanelClassName(displayW, displayH)} style={getCanvasPanelStyle(displayW, displayH)}>
           <div
             className="canvas-workspace"

@@ -11,7 +11,7 @@ import type { GlazeDrawingResult } from "../hooks/useGlazeDrawing";
 import { useTranslation } from "../i18n";
 import { useGlazeContext } from "../state/GlazeContext";
 import { C, Z, SP, FS, R, HUE_GRADIENT } from "../styles/tokens";
-import { getCanvasPanelClassName, getCanvasPanelStyle } from "../utils/panel-layout";
+import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 
 interface GlazePanelProps {
   prvRef: React.RefObject<HTMLCanvasElement | null>;
@@ -334,7 +334,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}>
       <div style={S_PANEL_SUBTITLE}>{t("label_glaze")}</div>
-      <div className="panel-layout">
+      <div className={getPanelLayoutClassName(displayW, displayH)}>
         <div className={getCanvasPanelClassName(displayW, displayH)} style={getCanvasPanelStyle(displayW, displayH)}>
           <div
             className="canvas-workspace"

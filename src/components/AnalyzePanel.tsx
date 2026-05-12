@@ -6,7 +6,7 @@ import { MapCanvas } from "./MapCanvas";
 import { usePixelMaps } from "../hooks/usePixelMaps";
 import { CompositionDonut } from "./CompositionDonut";
 import { C, SP, FS, FW } from "../styles/tokens";
-import { getCanvasPanelClassName, getCanvasPanelStyle } from "../utils/panel-layout";
+import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 
 interface AnalyzePanelProps {
   levelHistogram: number[];
@@ -66,7 +66,7 @@ export const AnalyzePanel = React.memo(
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: SP.lg, alignItems: "center" }}>
         <div style={S_PANEL_SUBTITLE}>{t("stats_title")}</div>
-        <div className="panel-layout">
+        <div className={getPanelLayoutClassName(displayW, displayH)}>
           <div
             className={`${getCanvasPanelClassName(displayW, displayH)} panel-canvas--map`}
             style={getCanvasPanelStyle(displayW, displayH)}

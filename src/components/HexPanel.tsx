@@ -8,7 +8,7 @@ import { HexDiagram } from "./HexDiagram";
 import type { ColorAction } from "../state/color-reducer";
 import type { TranslationFn } from "../i18n";
 import type { CanvasData } from "../types";
-import { getCanvasPanelClassName, getCanvasPanelStyle } from "../utils/panel-layout";
+import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 import { formatHexPixelStatus } from "../utils/pixel-status";
 import { getFullStatusText, getVisibleStatusText, type StatusText, useCompactStatus } from "../utils/status-display";
 
@@ -113,7 +113,7 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
   return (
     <div style={S_FLEX_COL_CENTER}>
       <div style={S_PANEL_SUBTITLE}>{t("label_diagram")}</div>
-      <div className="panel-layout">
+      <div className={getPanelLayoutClassName(displayW, displayH)}>
         <div className={getCanvasPanelClassName(displayW, displayH)} style={getCanvasPanelStyle(displayW, displayH)}>
           <div
             style={{

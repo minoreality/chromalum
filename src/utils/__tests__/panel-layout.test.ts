@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCanvasPanelClassName, getCanvasPanelStyle } from "../panel-layout";
+import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../panel-layout";
 
 describe("panel layout helpers", () => {
   it("adds a capped desktop offset hint for landscape canvases", () => {
@@ -20,5 +20,12 @@ describe("panel layout helpers", () => {
     expect(getCanvasPanelStyle(540, 540)).toEqual({ "--display-max": "540px" });
     expect(getCanvasPanelClassName(304, 540)).toBe("panel-canvas");
     expect(getCanvasPanelStyle(304, 540)).toEqual({ "--display-max": "304px" });
+  });
+
+  it("classifies portrait layouts for earlier side-by-side breakpoints", () => {
+    expect(getPanelLayoutClassName(304, 540)).toBe("panel-layout panel-layout--tall-portrait");
+    expect(getPanelLayoutClassName(405, 540)).toBe("panel-layout panel-layout--portrait");
+    expect(getPanelLayoutClassName(540, 540)).toBe("panel-layout");
+    expect(getPanelLayoutClassName(796, 448)).toBe("panel-layout");
   });
 });

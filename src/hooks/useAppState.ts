@@ -9,11 +9,12 @@ import { useColorState } from "./useColorState";
 
 const STORAGE_PERSIST_REQUEST_KEY = "chromalum-storage-persist-requested-v1";
 const DESKTOP_LAYOUT_BP = 1024;
+const PORTRAIT_LAYOUT_BP = 900;
+const TALL_PORTRAIT_LAYOUT_BP = 820;
 const DESKTOP_UI_OVERHEAD = 180;
 const DESKTOP_PANEL_GAP = 32;
 const DESKTOP_PANEL_SIDEBAR_WIDTH = 420;
 const DESKTOP_ROOT_INLINE_PADDING = 32;
-const DESKTOP_LEGACY_SIDEBAR_RESERVE = 340;
 const MOBILE_WIDTH_RESERVE = 32;
 
 function clampDisplayMax(value: number): number {
@@ -25,23 +26,32 @@ function getViewportSize() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+function getSideBySideLayoutBreakpoint(aspect: number): number {
+  if (aspect <= 0.7) return TALL_PORTRAIT_LAYOUT_BP;
+  if (aspect < 1) return PORTRAIT_LAYOUT_BP;
+  return DESKTOP_LAYOUT_BP;
+}
+
 export function getCanvasDisplaySize(canvasWidth: number, canvasHeight: number, viewportWidth: number, viewportHeight: number) {
   const safeW = Math.max(1, canvasWidth);
   const safeH = Math.max(1, canvasHeight);
   const asp = safeW / safeH;
-  const isWide = viewportWidth >= DESKTOP_LAYOUT_BP;
-  const uiOverhead = isWide ? DESKTOP_UI_OVERHEAD : Math.round(viewportHeight * 0.3);
+  const isSideBySide = viewportWidth >= getSideBySideLayoutBreakpoint(asp);
+  const uiOverhead = isSideBySide ? DESKTOP_UI_OVERHEAD : Math.round(viewportHeight * 0.3);
   const heightLimit = Math.floor(viewportHeight - uiOverhead);
 
-  if (isWide && asp > 1) {
+  if (isSideBySide) {
     const contentWidth = viewportWidth - DESKTOP_ROOT_INLINE_PADDING;
     const widthLimit = Math.floor(contentWidth - DESKTOP_PANEL_GAP - DESKTOP_PANEL_SIDEBAR_WIDTH);
-    const displayW = clampDisplayMax(Math.min(widthLimit, heightLimit * asp));
-    return { displayW, displayH: Math.round(displayW / asp) };
+    if (asp > 1) {
+      const displayW = clampDisplayMax(Math.min(widthLimit, heightLimit * asp));
+      return { displayW, displayH: Math.round(displayW / asp) };
+    }
+    const displayH = Math.round(clampDisplayMax(Math.min(heightLimit, widthLimit / asp)));
+    return { displayW: Math.round(displayH * asp), displayH };
   }
 
-  const widthReserve = isWide ? DESKTOP_LEGACY_SIDEBAR_RESERVE : MOBILE_WIDTH_RESERVE;
-  const displayMax = clampDisplayMax(Math.min(Math.floor(viewportWidth - widthReserve), heightLimit));
+  const displayMax = clampDisplayMax(Math.min(Math.floor(viewportWidth - MOBILE_WIDTH_RESERVE), heightLimit));
   return {
     displayW: asp >= 1 ? displayMax : Math.round(displayMax * asp),
     displayH: asp >= 1 ? Math.round(displayMax / asp) : displayMax,

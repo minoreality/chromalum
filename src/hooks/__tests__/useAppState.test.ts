@@ -35,6 +35,12 @@ describe("useAppState", () => {
     expect(getCanvasDisplaySize(1600, 900, 1280, 720)).toEqual({ displayW: 796, displayH: 448 });
   });
 
+  it("uses side-by-side sizing earlier for portrait canvases", () => {
+    expect(getCanvasDisplaySize(900, 1600, 840, 720)).toEqual({ displayW: 304, displayH: 540 });
+    expect(getCanvasDisplaySize(1200, 1600, 900, 1000)).toEqual({ displayW: 416, displayH: 555 });
+    expect(getCanvasDisplaySize(320, 320, 900, 1000)).toEqual({ displayW: 700, displayH: 700 });
+  });
+
   it("keeps mobile landscape canvases on the existing width-constrained sizing path", () => {
     expect(getCanvasDisplaySize(1600, 900, 390, 844)).toEqual({ displayW: 358, displayH: 201 });
   });

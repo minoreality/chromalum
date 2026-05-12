@@ -360,6 +360,82 @@ button.theory-diagram-button {
   }
 }
 
+@media (min-width: 820px) and (max-width: 1023px) {
+  .panel-layout--tall-portrait {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 32px;
+  }
+  .panel-layout--tall-portrait > .panel-canvas {
+    flex-shrink: 0;
+    width: var(--display-max, auto);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    touch-action: none;
+  }
+  .panel-layout--tall-portrait > .panel-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: center;
+    gap: 8px;
+    width: 420px;
+    flex-shrink: 0;
+  }
+  .panel-layout--tall-portrait .map-mode-break {
+    display: none;
+  }
+  .panel-layout--tall-portrait .map-mode-buttons {
+    flex-wrap: nowrap;
+    max-width: calc(100vw - 32px);
+    width: max-content;
+  }
+  .panel-layout--tall-portrait .panel-canvas--map .map-status-line {
+    --map-status-line-max-width: calc(100vw - 32px);
+    --map-status-line-width: max(var(--display-max, 0px), 324px);
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1023px) {
+  .panel-layout--portrait {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 32px;
+  }
+  .panel-layout--portrait > .panel-canvas {
+    flex-shrink: 0;
+    width: var(--display-max, auto);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    touch-action: none;
+  }
+  .panel-layout--portrait > .panel-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: center;
+    gap: 8px;
+    width: 420px;
+    flex-shrink: 0;
+  }
+  .panel-layout--portrait .map-mode-break {
+    display: none;
+  }
+  .panel-layout--portrait .map-mode-buttons {
+    flex-wrap: nowrap;
+    max-width: calc(100vw - 32px);
+    width: max-content;
+  }
+  .panel-layout--portrait .panel-canvas--map .map-status-line {
+    --map-status-line-max-width: calc(100vw - 32px);
+    --map-status-line-width: max(var(--display-max, 0px), 324px);
+  }
+}
+
 /* ── Algebra cards: center SVG/canvas vertically, keep header at top ── */
 .linked-viz-controls {
   --linked-viz-toggle-padding: 3px 10px;

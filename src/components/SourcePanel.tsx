@@ -7,7 +7,7 @@ import type { AppState, ToolState, ViewState, SaveActions } from "../types";
 import { useTranslation } from "../i18n";
 import { C, Z, SP, FS, FW, R, O } from "../styles/tokens";
 import { ConfirmModal } from "./ConfirmModal";
-import { getCanvasPanelClassName, getCanvasPanelStyle } from "../utils/panel-layout";
+import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 
 interface SourcePanelProps {
   srcRef: React.RefObject<HTMLCanvasElement | null>;
@@ -282,7 +282,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}>
       <div style={S_PANEL_SUBTITLE}>{t("label_source")}</div>
-      <div className="panel-layout">
+      <div className={getPanelLayoutClassName(displayW, displayH)}>
         <div className={getCanvasPanelClassName(displayW, displayH)} style={getCanvasPanelStyle(displayW, displayH)}>
           <div
             className="canvas-workspace"
