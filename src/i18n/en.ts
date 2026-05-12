@@ -49,8 +49,6 @@ export const en = {
   btn_save_svg: "💾SVG",
   btn_copy: "📋Copy",
   title_copy: "Copy color image to clipboard",
-  label_png_scale: "PNG Scale",
-  aria_png_scale: "PNG {0}x scale",
   announce_level_btn: "Level {0} {1}",
 
   // ColorPanel
@@ -416,7 +414,7 @@ export const en = {
   stats_map_density: "Density",
   stats_map_entropy: "Diversity",
   stats_map_noise: "Isolation",
-  stats_map_boundaryDistance: "Edge Depth",
+  stats_map_boundaryDistance: "Boundary Distance",
   stats_map_gradient: "Gradient",
   stats_map_luminance: "Tone",
   stats_map_colorLuma: "Color Tone",

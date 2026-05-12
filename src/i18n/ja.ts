@@ -49,8 +49,6 @@ export const ja = {
   btn_save_svg: "💾SVG",
   btn_copy: "📋コピー",
   title_copy: "カラー画像をクリップボードにコピー",
-  label_png_scale: "PNGスケール",
-  aria_png_scale: "PNG {0}倍スケール",
   announce_level_btn: "レベル{0} {1}",
 
   // ColorPanel

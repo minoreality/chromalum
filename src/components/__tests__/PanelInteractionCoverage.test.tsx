@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MAX_UNDO } from "../../constants";
 import type { AnalysisPixelMaps, AppState, CanvasData, CompressedDiff, MapMode, PanZoomHandlers } from "../../types";
 import { RingBuffer } from "../../utils/ring-buffer";
@@ -229,7 +229,6 @@ describe("SourcePanel interactions", () => {
     expect(saveColor).toHaveBeenCalledWith(
       expect.any(Object),
       expect.stringMatching(/^chromalum_gray_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/),
-      1,
     );
   });
 
@@ -239,17 +238,15 @@ describe("SourcePanel interactions", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "btn_save_color" }));
     expect(screen.getByRole("dialog", { name: "confirm_save_color" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("radio", { name: "aria_png_scale(8)" }));
     fireEvent.click(screen.getByRole("button", { name: "btn_yes" }));
     expect(saveColor).toHaveBeenCalledWith(
       expect.any(Object),
       expect.stringMatching(/^chromalum_color_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/),
-      8,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "btn_save_glaze" }));
     fireEvent.click(screen.getByRole("button", { name: "btn_yes" }));
-    expect(saveGlaze).toHaveBeenCalledWith(expect.stringMatching(/^chromalum_glaze_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/), 1);
+    expect(saveGlaze).toHaveBeenCalledWith(expect.stringMatching(/^chromalum_glaze_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/));
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "btn_save_gray" }));
     expect(shareColor).toHaveBeenCalledWith(
@@ -267,20 +264,17 @@ describe("SourcePanel interactions", () => {
     expect(shareGlaze).toHaveBeenCalledWith(expect.stringMatching(/^chromalum_glaze_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/));
   });
 
-  it("resets the export scale each time the save dialog opens", () => {
+  it("does not render export scale controls in the save dialog", () => {
     const { saveColor } = renderSource();
 
     fireEvent.click(screen.getByRole("button", { name: "btn_save_gray" }));
-    fireEvent.click(screen.getByRole("radio", { name: "aria_png_scale(16)" }));
-    fireEvent.click(screen.getByRole("button", { name: "btn_no" }));
-
-    fireEvent.click(screen.getByRole("button", { name: "btn_save_gray" }));
+    const dialog = screen.getByRole("dialog", { name: "confirm_save_gray" });
+    expect(within(dialog).queryByRole("radio")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "btn_yes" }));
 
     expect(saveColor).toHaveBeenCalledWith(
       expect.any(Object),
       expect.stringMatching(/^chromalum_gray_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/),
-      1,
     );
   });
 

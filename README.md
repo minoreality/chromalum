@@ -34,7 +34,7 @@ geometry, the Fano plane, Hamming codes, and related polyhedral structures.
 - Gallery generation for color-pattern variants, bookmarks, previews, and
   PNG exports.
 - Map/statistics views for composition, tone, color tone, connected regions,
-  gradients, edge depth, isolation, and local diversity.
+  gradients, boundary distance, isolation, and local diversity.
 - Theory tab explaining the color system through binary levels, XOR, cube
   geometry, the Fano plane, Hamming codes, tetrahedra, octahedra, and compound
   polyhedra.
