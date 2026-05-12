@@ -11,7 +11,7 @@ vi.mock("../../utils/idb-persistence", () => ({
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
-import { useAppState } from "../useAppState";
+import { getCanvasDisplaySize, useAppState } from "../useAppState";
 import { loadStateWithStatus, requestPersistentStorage, saveState } from "../../utils/idb-persistence";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../../constants";
 
@@ -27,6 +27,16 @@ describe("useAppState", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("uses desktop width for wide landscape canvases while preserving square and portrait sizing", () => {
+    expect(getCanvasDisplaySize(320, 320, 1280, 720)).toEqual({ displayW: 540, displayH: 540 });
+    expect(getCanvasDisplaySize(900, 1600, 1280, 720)).toEqual({ displayW: 304, displayH: 540 });
+    expect(getCanvasDisplaySize(1600, 900, 1280, 720)).toEqual({ displayW: 796, displayH: 448 });
+  });
+
+  it("keeps mobile landscape canvases on the existing width-constrained sizing path", () => {
+    expect(getCanvasDisplaySize(1600, 900, 390, 844)).toEqual({ displayW: 358, displayH: 201 });
   });
 
   it("composes the initial app state needed by the canvas UI", () => {

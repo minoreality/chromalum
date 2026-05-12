@@ -8,6 +8,45 @@ import { useUIState } from "./useUIState";
 import { useColorState } from "./useColorState";
 
 const STORAGE_PERSIST_REQUEST_KEY = "chromalum-storage-persist-requested-v1";
+const DESKTOP_LAYOUT_BP = 1024;
+const DESKTOP_UI_OVERHEAD = 180;
+const DESKTOP_PANEL_GAP = 32;
+const DESKTOP_PANEL_SIDEBAR_WIDTH = 420;
+const DESKTOP_ROOT_INLINE_PADDING = 32;
+const DESKTOP_LEGACY_SIDEBAR_RESERVE = 340;
+const MOBILE_WIDTH_RESERVE = 32;
+
+function clampDisplayMax(value: number): number {
+  return Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX_LIMIT, value));
+}
+
+function getViewportSize() {
+  if (typeof window === "undefined") return { width: 640, height: 640 };
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+export function getCanvasDisplaySize(canvasWidth: number, canvasHeight: number, viewportWidth: number, viewportHeight: number) {
+  const safeW = Math.max(1, canvasWidth);
+  const safeH = Math.max(1, canvasHeight);
+  const asp = safeW / safeH;
+  const isWide = viewportWidth >= DESKTOP_LAYOUT_BP;
+  const uiOverhead = isWide ? DESKTOP_UI_OVERHEAD : Math.round(viewportHeight * 0.3);
+  const heightLimit = Math.floor(viewportHeight - uiOverhead);
+
+  if (isWide && asp > 1) {
+    const contentWidth = viewportWidth - DESKTOP_ROOT_INLINE_PADDING;
+    const widthLimit = Math.floor(contentWidth - DESKTOP_PANEL_GAP - DESKTOP_PANEL_SIDEBAR_WIDTH);
+    const displayW = clampDisplayMax(Math.min(widthLimit, heightLimit * asp));
+    return { displayW, displayH: Math.round(displayW / asp) };
+  }
+
+  const widthReserve = isWide ? DESKTOP_LEGACY_SIDEBAR_RESERVE : MOBILE_WIDTH_RESERVE;
+  const displayMax = clampDisplayMax(Math.min(Math.floor(viewportWidth - widthReserve), heightLimit));
+  return {
+    displayW: asp >= 1 ? displayMax : Math.round(displayMax * asp),
+    displayH: asp >= 1 ? Math.round(displayMax / asp) : displayMax,
+  };
+}
 
 function hasRequestedPersistentStorage(): boolean {
   try {
@@ -185,22 +224,9 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   }, []);
 
   // Responsive display size based on viewport width AND height
-  const computeDisplayMax = () => {
-    if (typeof window === "undefined") return 640;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    // On wide screens (>=1024px), reserve space for sidebar panel
-    const isWide = w >= 1024;
-    // Header ~50 + tabs ~40 + label ~20 + status ~15 + padding ~55 = ~180
-    const UI_OVERHEAD = isWide ? 180 : Math.round(h * 0.3);
-    const sidebarReserve = isWide ? 340 : 32;
-    const fromW = Math.floor(w - sidebarReserve);
-    const fromH = Math.floor(h - UI_OVERHEAD);
-    return Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX_LIMIT, fromW, fromH));
-  };
-  const [displayMax, setDisplayMax] = useState(computeDisplayMax);
+  const [viewportSize, setViewportSize] = useState(getViewportSize);
   useEffect(() => {
-    const onResize = () => setDisplayMax(computeDisplayMax());
+    const onResize = () => setViewportSize(getViewportSize());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -209,16 +235,10 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     resetBrushSizeForCanvas(canvasData.width, canvasData.height);
   }, [canvasData.width, canvasData.height, resetBrushSizeForCanvas]);
 
-  const { displayW, displayH } = useMemo(() => {
-    const safeW = Math.max(1, canvasData.width),
-      safeH = Math.max(1, canvasData.height);
-    const asp = safeW / safeH,
-      mx = displayMax;
-    return {
-      displayW: asp >= 1 ? mx : Math.round(mx * asp),
-      displayH: asp >= 1 ? Math.round(mx / asp) : mx,
-    };
-  }, [canvasData.width, canvasData.height, displayMax]);
+  const { displayW, displayH } = useMemo(
+    () => getCanvasDisplaySize(canvasData.width, canvasData.height, viewportSize.width, viewportSize.height),
+    [canvasData.width, canvasData.height, viewportSize.width, viewportSize.height],
+  );
 
   // Cleanup timers on unmount
   useEffect(
@@ -243,7 +263,6 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     colorLUT: colorState.colorLUT,
     displayW,
     displayH,
-    displayMax,
     toggleLevelLock: colorState.toggleLevelLock,
     handleRandomize: colorState.handleRandomize,
     handleUnlockAll: colorState.handleUnlockAll,

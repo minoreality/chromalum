@@ -495,6 +495,9 @@ button.theory-diagram-button {
     align-items: center;
     touch-action: none;
   }
+  .panel-canvas--landscape {
+    margin-top: var(--canvas-landscape-offset, 0);
+  }
   .panel-layout > .panel-sidebar {
     display: flex;
     flex-direction: column;
