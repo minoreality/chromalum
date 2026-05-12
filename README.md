@@ -60,7 +60,7 @@ undo/redo stores compact diffs, and autosave uses IndexedDB.
 - **Canvas rendering:** direct pixel-buffer rendering with dirty-rect updates.
 - **Performance:** typed arrays, reusable buffers, scanline flood fill, and
   worker-backed flood fill and pixel analysis.
-- **Undo/redo:** compressed diffs with optional color-map deltas.
+- **Undo/redo:** compressed diffs with optional glaze override deltas.
 - **Persistence:** debounced IndexedDB autosave with pagehide/visibility flush.
 - **Offline support:** production builds include a service worker that
   pre-caches the app shell, icons, workers, and lazy-loaded Music tab chunk for
@@ -218,8 +218,8 @@ npm run verify:full
 
 To inspect canvas performance locally, open the app with `?debugPerf` appended
 to the URL. The console reports rolling `avgMs`, `p95Ms`, and `maxMs` for
-`renderBuf`, analysis map rendering, flood fill requests, and pixel-analysis
-requests.
+`renderCanvasBuffers`, analysis map rendering, flood fill requests, and
+pixel-analysis requests.
 
 `format:check` covers source, tests, GitHub configuration, root Markdown, and
 technical Markdown in `docs/`, plus TypeScript and tooling config files.

@@ -8,21 +8,22 @@ The central model is a compact canvas:
 
 ```text
 CanvasData
-  w, h      canvas dimensions
-  data      Uint8Array of 8 source luma levels
-  colorMap  Uint8Array of optional per-pixel glaze variant overrides
+  width, height              canvas dimensions
+  levelData                  Uint8Array of 8 source luma levels
+  pixelCandidateOverrideMap  Uint8Array of optional per-pixel color variant overrides
 ```
 
 Every major feature reads or transforms this model. Drawing changes the source
-luma levels, glaze changes `colorMap`, analysis derives maps from the same
-pixels, and gallery/theory/music views interpret the same 8-level structure.
+luma levels, glaze changes `pixelCandidateOverrideMap`, analysis derives maps
+from the same pixels, and gallery/theory/music views interpret the same 8-level
+structure.
 
 ## Runtime Shape
 
 ```text
 App.tsx
   useAppState()
-    canvasReducer        source pixels, glaze map, undo/redo, histogram
+    canvasReducer        source pixels, candidate overrides, undo/redo, histogram
     useColorState()      palette candidate selection and locked levels
     useToolState()       active tools and brush settings
     useUIState()         tabs, modals, toasts, language-facing UI state
@@ -56,15 +57,16 @@ lives under `src/music`, with React hooks wiring it to Web Audio and UI state.
 
 `canvasReducer` owns the canonical canvas state:
 
-- `cvs.data`: one level per source pixel.
-- `cvs.colorMap`: optional glaze overrides for source pixels.
+- `canvasData.levelData`: one level per source pixel.
+- `canvasData.pixelCandidateOverrideMap`: optional per-pixel color candidate
+  overrides for source pixels.
 - `undoStack` and `redoStack`: compressed diffs for source and glaze changes.
-- `hist`: source-level histogram used by color and analysis UI.
+- `levelHistogram`: source-level histogram used by color and analysis UI.
 
-The reducer owns `colorMap` so one undo step can atomically revert a source
-stroke and any related glaze change. Color candidate selection is separate in
-`useColorState` and `colorReducer`; it controls which RGB candidate each luma
-level maps to without rewriting source pixels.
+The reducer owns `pixelCandidateOverrideMap` so one undo step can atomically
+revert a source stroke and any related glaze change. Color candidate selection
+is separate in `useColorState` and `colorReducer`; it controls which RGB
+candidate each luma level maps to without rewriting source pixels.
 
 ## Drawing Pipeline
 
@@ -73,7 +75,7 @@ Source drawing and glaze drawing share the same broad flow:
 1. Pointer input is converted into canvas coordinates.
 2. The active tool mutates a cloned `Uint8Array` buffer.
 3. The changed region is tracked as a dirty rectangle.
-4. `renderBuf` redraws only the needed canvas region when possible.
+4. `renderCanvasBuffers` redraws only the needed canvas region when possible.
 5. On stroke completion, the hook dispatches a compressed diff to
    `canvasReducer`.
 
@@ -96,14 +98,14 @@ state or color lookup tables change.
 
 ## Rendering
 
-`renderBuf` converts luma levels plus the active color lookup table into
-`ImageData`. It supports dirty-rectangle updates and optional `colorMap`
-overrides for the glaze layer.
+`renderCanvasBuffers` converts luma levels plus the active color lookup table
+into `ImageData`. It supports dirty-rectangle updates and optional
+`pixelCandidateOverrideMap` overrides for the glaze layer.
 
 The app intentionally keeps rendering close to browser primitives:
 
 - Canvas elements display source, color, hex, glaze, gallery, and map outputs.
-- Typed arrays hold source, color-map, and analysis buffers.
+- Typed arrays hold source levels, candidate overrides, and analysis buffers.
 - Reusable image caches avoid unnecessary allocation in repeated renders.
 
 ## Persistence
@@ -115,18 +117,19 @@ likely to lose work.
 
 The stored state includes:
 
-- canvas dimensions and source data;
-- glaze color map;
-- color candidate choices;
-- locked color levels;
+- `width`/`height` and `levelData`;
+- optional `pixelCandidateOverrideMap`;
+- `candidateIndexByLevel`;
+- `lockedLevels`;
 - persistence schema version.
 
 Two version numbers have separate roles. `DB_VERSION` controls the IndexedDB
 database structure and should change when object stores or indexes need an
 IndexedDB upgrade. `SAVED_STATE_VERSION` controls the serialized canvas state
 shape stored under the current key and should change when saved state needs a
-data migration. Restore also accepts legacy v1 records whose color candidate
-choices used the `cc` field and normalizes them to `colorChoiceIndices`.
+data migration. Restore also accepts legacy v1/v2 field names (`w`, `h`, `data`,
+`colorMap`, `colorChoiceIndices`, `cc`, and `locked`) and normalizes them to the
+current saved-state shape.
 
 Restore treats an empty database and an invalid saved record differently. Empty
 storage starts from the default canvas. Invalid or unsupported saved data is
@@ -139,13 +142,14 @@ a fresh valid save.
 Two worker paths keep expensive pixel operations away from the main thread:
 
 - `flood-fill.worker.ts` handles large source and glaze flood fills.
-- `pixel-analysis.worker.ts` computes map data for noise, diversity, boundary
+- `pixel-analysis.worker.ts` computes map data for isolation, diversity, boundary
   distance, gradient, and regions.
 
 Both paths have synchronous fallbacks so tests and restricted browser
 environments can still run the same behavior. `usePixelMaps` also caches results
 per canvas buffer and mode, preloads remaining map modes after the active map is
-ready, and invalidates the cache when either source data or `colorMap` changes.
+ready, and invalidates the cache when either `levelData` or
+`pixelCandidateOverrideMap` changes.
 
 ## Theory And Music Data
 
