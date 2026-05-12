@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useEffect, useState } from "react";
-import { S_BTN, S_CANVAS_STATUS_STABLE } from "../styles/shared";
+import { S_BTN, S_CANVAS_STATUS_STABLE, S_PANEL_SUBTITLE } from "../styles/shared";
 import { LEVEL_CANDIDATES } from "../color-engine";
 import { LEVEL_MASK } from "../constants";
 import { rgbStr } from "../utils";
@@ -31,7 +31,6 @@ interface HexPanelProps {
 }
 
 const S_FLEX_COL_CENTER: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg };
-const S_LABEL: React.CSSProperties = { fontSize: FS.md, color: C.textDim, lineHeight: "14px" };
 const S_UNLOCK_ALL_BUTTON: React.CSSProperties = {
   ...S_BTN,
   height: 22,
@@ -112,9 +111,9 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
 
   return (
     <div style={S_FLEX_COL_CENTER}>
+      <div style={S_PANEL_SUBTITLE}>{t("label_diagram")}</div>
       <div className="panel-layout">
         <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
-          <div style={S_LABEL}>{t("label_diagram")}</div>
           <div
             style={{
               border: `1px solid ${C.border}`,

@@ -3,6 +3,7 @@
 // See docs/LICENSE.md.
 import React, { useState, useCallback } from "react";
 import { C, SP, FS, FW, FONT } from "../styles/tokens";
+import { S_PANEL_SUBTITLE } from "../styles/shared";
 import { useTranslation } from "../i18n";
 import { PinResetContext } from "./theory/pin-reset";
 import { VennDiagram } from "./theory/VennDiagram";
@@ -96,7 +97,7 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
     <PinResetContext.Provider value={pinReset}>
       <div className="theory-container" onClick={onBgClick}>
         {/* Subtitle */}
-        <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("label_theory")}</div>
+        <div style={S_PANEL_SUBTITLE}>{t("label_theory")}</div>
 
         {/* Page title */}
         <div style={{ textAlign: "center" }}>

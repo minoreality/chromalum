@@ -2,7 +2,8 @@ import React from "react";
 
 import { useMusicPanelController } from "../hooks/useMusicPanelController";
 import { useTranslation } from "../i18n";
-import { C, FS, SP } from "../styles/tokens";
+import { S_PANEL_SUBTITLE } from "../styles/shared";
+import { SP } from "../styles/tokens";
 import { MusicAlgebraPanel } from "./music/MusicAlgebraPanel";
 import { MusicFanoControls } from "./music/MusicFanoControls";
 import { MusicHueAlphaControls } from "./music/MusicHueAlphaControls";
@@ -133,12 +134,9 @@ export const MusicPanel = React.memo(function MusicPanel() {
 
   return (
     <div onClick={handleBgTap} style={{ display: "flex", flexDirection: "column", gap: SP.md, padding: `0 ${SP.md}px ${SP.md}px` }}>
+      <div style={S_PANEL_SUBTITLE}>{t("music_title")}</div>
       <div className="panel-layout music-layout">
         <div className="panel-canvas" style={{ "--display-max": "420px" } as React.CSSProperties}>
-          <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px", marginBottom: SP.md }}>
-            {t("music_title")}
-          </div>
-
           <MusicHueAlphaControls
             hueAngle={hueAngle}
             alpha0={alpha0}

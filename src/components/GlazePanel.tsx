@@ -5,7 +5,7 @@ import { GlazeCandidateGrid, type GlazeLevelPreview } from "./GlazeCandidateGrid
 import { BRUSH_MIN, BRUSH_MAX, BRUSH_STEP, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from "../constants";
 import { buildGlazeHighlightPixels } from "../drawing/glaze-highlight";
 import type { GlazeToolId } from "../constants";
-import { S_BTN, S_BTN_ACTIVE, S_CANVAS_STATUS_STABLE, S_CHECKERBOARD } from "../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_CANVAS_STATUS_STABLE, S_CHECKERBOARD, S_PANEL_SUBTITLE } from "../styles/shared";
 import type { PanZoomHandlers, CanvasAction, CanvasData } from "../types";
 import type { GlazeDrawingResult } from "../hooks/useGlazeDrawing";
 import { useTranslation } from "../i18n";
@@ -332,9 +332,9 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}>
+      <div style={S_PANEL_SUBTITLE}>{t("label_glaze")}</div>
       <div className="panel-layout">
         <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
-          <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("label_glaze")}</div>
           <div
             className="canvas-workspace"
             ref={prvWrapRef}

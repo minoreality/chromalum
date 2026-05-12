@@ -94,6 +94,12 @@ export const S_TAB_INACTIVE: React.CSSProperties = {
 };
 export const S_SWATCH: React.CSSProperties = { borderRadius: R.md, cursor: "pointer", padding: 0, background: "none" };
 export const S_CURSOR_POINTER: React.CSSProperties = { cursor: "pointer" };
+export const S_PANEL_SUBTITLE: React.CSSProperties = {
+  fontSize: FS.md,
+  color: C.textDim,
+  textAlign: "center",
+  lineHeight: "14px",
+};
 const S_CANVAS_STATUS: React.CSSProperties = {
   fontSize: FS.xs,
   color: C.textDimmer,

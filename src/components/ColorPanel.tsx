@@ -5,8 +5,8 @@ import { ColorMappingList } from "./ColorMappingList";
 import type { ColorAction } from "../state/color-reducer";
 import type { PanZoomHandlers, DrawingHandlers } from "../types";
 import { useTranslation } from "../i18n";
-import { S_CANVAS_STATUS_STABLE, S_CHECKERBOARD } from "../styles/shared";
-import { C, Z, SP, FS, R } from "../styles/tokens";
+import { S_CANVAS_STATUS_STABLE, S_CHECKERBOARD, S_PANEL_SUBTITLE } from "../styles/shared";
+import { C, Z, SP, R } from "../styles/tokens";
 
 interface ColorPanelProps {
   prvRef: React.RefObject<HTMLCanvasElement | null>;
@@ -121,16 +121,18 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}>
+      <div style={S_PANEL_SUBTITLE}>
+        <span style={{ position: "relative", display: "inline-block" }}>
+          {t("label_colorized")}
+          <span style={{ position: "absolute", left: "100%", marginLeft: SP.xl, color: C.textDimmest }}>
+            {t("tool_" + tool)
+              .replace(/[A-Za-z\u3000-\u9fff\u30a0-\u30ff\u3040-\u309f]+/g, "")
+              .trim()}
+          </span>
+        </span>
+      </div>
       <div className="panel-layout">
         <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
-          <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>
-            {t("label_colorized")}
-            <span style={{ marginLeft: SP.xl, color: C.textDimmest }}>
-              {t("tool_" + tool)
-                .replace(/[A-Za-z\u3000-\u9fff\u30a0-\u30ff\u3040-\u309f]+/g, "")
-                .trim()}
-            </span>
-          </div>
           <div
             className="canvas-workspace"
             ref={prvWrapRef}

@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "../i18n";
 import type { CanvasData, MapMode } from "../types";
-import { S_BTN, S_BTN_ACTIVE } from "../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_PANEL_SUBTITLE } from "../styles/shared";
 import { MapCanvas } from "./MapCanvas";
 import { usePixelMaps } from "../hooks/usePixelMaps";
 import { CompositionDonut } from "./CompositionDonut";
@@ -64,9 +64,9 @@ export const AnalyzePanel = React.memo(
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: SP.lg, alignItems: "center" }}>
+        <div style={S_PANEL_SUBTITLE}>{t("stats_title")}</div>
         <div className="panel-layout">
           <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
-            <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("stats_title")}</div>
             <MapCanvas
               mode={mapMode}
               pixelMaps={pixelMaps}

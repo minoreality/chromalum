@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { TOOLS, BRUSH_MIN, BRUSH_MAX, BRUSH_STEP, ZOOM_MIN, ZOOM_MAX } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
-import { S_BTN, S_BTN_ACTIVE, S_CANVAS_STATUS_STABLE, S_CHECKERBOARD } from "../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_CANVAS_STATUS_STABLE, S_CHECKERBOARD, S_PANEL_SUBTITLE } from "../styles/shared";
 import { rgbStr, timestamp } from "../utils";
 import type { AppState, ToolState, ViewState, SaveActions } from "../types";
 import { useTranslation } from "../i18n";
@@ -280,9 +280,9 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}>
+      <div style={S_PANEL_SUBTITLE}>{t("label_source")}</div>
       <div className="panel-layout">
         <div className="panel-canvas" style={{ "--display-max": displayW + "px" } as React.CSSProperties}>
-          <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("label_source")}</div>
           <div
             className="canvas-workspace"
             ref={srcWrapRef}

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { LEVEL_CANDIDATES, buildColorLUT, hue2rgb } from "../color-engine";
-import { S_BTN, S_BTN_ACTIVE, S_BTN_SM, S_BTN_SM_ACTIVE } from "../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_BTN_SM, S_BTN_SM_ACTIVE, S_PANEL_SUBTITLE } from "../styles/shared";
 import { rgbStr, timestamp } from "../utils";
 import { useGallery, renderThumbnail } from "../hooks/useGallery";
 import type { GalleryItem } from "../hooks/useGallery";
@@ -201,7 +201,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
 
   return (
     <div ref={panelRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}>
-      <div style={{ fontSize: FS.md, color: C.textDim, textAlign: "center", lineHeight: "14px" }}>{t("gallery_title")}</div>
+      <div style={S_PANEL_SUBTITLE}>{t("gallery_title")}</div>
 
       <div style={{ fontSize: FS.sm, color: C.textDimmer, textAlign: "center", width: "100%", minHeight: 16 }}>
         {generating && progress.total > 0 ? (
