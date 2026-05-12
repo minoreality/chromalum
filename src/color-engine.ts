@@ -20,11 +20,11 @@ export const lum = (r: number, g: number, b: number): number => LUMA_R * r + LUM
 const EIGHT_LEVELS = [0, lum(0, 0, 255), lum(255, 0, 0), lum(255, 0, 255), lum(0, 255, 0), lum(0, 255, 255), lum(255, 255, 0), 255];
 
 interface LevelInfo {
-  name: string;
-  gray: number;
+  readonly name: string;
+  readonly gray: number;
 }
 
-export const LEVEL_INFO: LevelInfo[] = ["Black", "Blue", "Red", "Magenta", "Green", "Cyan", "Yellow", "White"].map((name, i) => ({
+export const LEVEL_INFO: readonly LevelInfo[] = ["Black", "Blue", "Red", "Magenta", "Green", "Cyan", "Yellow", "White"].map((name, i) => ({
   name,
   gray: Math.round(EIGHT_LEVELS[i]),
 }));
@@ -71,9 +71,9 @@ export function rgb2hue(r: number, g: number, b: number): number {
 const PURE_DUPL_THRESHOLD = 8;
 
 interface ColorCandidate {
-  angle: number;
-  rgb: [number, number, number];
-  hueLabel: string;
+  readonly angle: number;
+  readonly rgb: readonly [number, number, number];
+  readonly hueLabel: string;
 }
 
 function findPure(target: number): ColorCandidate[] {
@@ -104,7 +104,7 @@ function findPure(target: number): ColorCandidate[] {
   return results.sort((a, b) => a.angle - b.angle);
 }
 
-const CANONICAL_COLORS: [number, number, number][] = [
+const CANONICAL_COLORS: readonly (readonly [number, number, number])[] = [
   [0, 0, 0],
   [0, 0, 255],
   [255, 0, 0],
@@ -115,19 +115,19 @@ const CANONICAL_COLORS: [number, number, number][] = [
   [255, 255, 255],
 ];
 
-export const LEVEL_CANDIDATES: ColorCandidate[][] = LEVEL_INFO.map((_, i) => {
-  if (i === 0) return [{ angle: -1, rgb: [0, 0, 0] as [number, number, number], hueLabel: "—" }];
-  if (i === 7) return [{ angle: -1, rgb: [255, 255, 255] as [number, number, number], hueLabel: "—" }];
+export const LEVEL_CANDIDATES: readonly (readonly ColorCandidate[])[] = LEVEL_INFO.map((_, i) => {
+  if (i === 0) return [{ angle: -1, rgb: [0, 0, 0] as const, hueLabel: "—" }];
+  if (i === 7) return [{ angle: -1, rgb: [255, 255, 255] as const, hueLabel: "—" }];
   const a = findPure(EIGHT_LEVELS[i]);
   if (!a.length) {
     // Fallback for levels with no pure-color solution (should not occur with BT.601 coefficients)
-    return [{ angle: -1, rgb: [128, 128, 128] as [number, number, number], hueLabel: "?" }];
+    return [{ angle: -1, rgb: [128, 128, 128] as const, hueLabel: "?" }];
   }
   // Sort by hue angle ascending (0°→360°)
   return a.sort((x, y) => x.angle - y.angle);
 });
 
-export const DEFAULT_CC: number[] = LEVEL_CANDIDATES.map((alts, i) => {
+export const DEFAULT_CC: readonly number[] = LEVEL_CANDIDATES.map((alts, i) => {
   let best = 0,
     bestDist = Infinity;
   alts.forEach((x, j) => {
@@ -143,8 +143,8 @@ export const DEFAULT_CC: number[] = LEVEL_CANDIDATES.map((alts, i) => {
   return best;
 });
 
-export const GRAY_LUT = new Uint8Array(256);
-(() => {
+function buildGrayLut(): Uint8Array {
+  const lut = new Uint8Array(256);
   for (let g = 0; g < 256; g++) {
     let best = 0,
       bestDist = Infinity;
@@ -155,15 +155,19 @@ export const GRAY_LUT = new Uint8Array(256);
         best = i;
       }
     }
-    GRAY_LUT[g] = best;
+    lut[g] = best;
   }
-})();
+  return lut;
+}
 
-export function buildColorLUT(cc: number[]): [number, number, number][] {
+export const GRAY_LUT = buildGrayLut();
+
+export function buildColorLUT(cc: readonly number[]): [number, number, number][] {
   return LEVEL_CANDIDATES.map((alts, lv) => {
     const raw = lv < cc.length ? cc[lv] : 0;
     const ci = alts.length > 0 ? ((raw % alts.length) + alts.length) % alts.length : 0;
-    return alts[ci]?.rgb ?? [128, 128, 128];
+    const rgb = alts[ci]?.rgb ?? ([128, 128, 128] as [number, number, number]);
+    return [rgb[0], rgb[1], rgb[2]];
   });
 }
 

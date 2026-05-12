@@ -3,7 +3,7 @@ import { C } from "../../styles/tokens";
 
 interface GL32ArrowsProps {
   perm: number[]; // current permutation [0,1,2,3,4,5,6,7] or permuted
-  activeLevels: { lv: number; rgb: [number, number, number] }[];
+  activeLevels: { lv: number; rgb: readonly [number, number, number] }[];
   flash?: boolean; // true for ~500ms after a transform is applied
 }
 

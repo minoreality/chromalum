@@ -62,7 +62,7 @@ interface CanvasDrawingOptions {
   cvs: CanvasData;
   dispatch: React.Dispatch<CanvasAction>;
   colorLUT: [number, number, number][];
-  cc: number[];
+  cc: readonly number[];
   brushLevel: number;
   brushSize: number;
   tool: ToolId;

@@ -4,7 +4,7 @@ export const FANO_VIEWBOX_WIDTH = 180;
 export const FANO_VIEWBOX_HEIGHT = 162;
 
 /* Equilateral triangle: base = 140, height = 70√3 ≈ 121.2 */
-export const FANO_POINT_POSITIONS: Record<number, [number, number]> = {
+export const FANO_POINT_POSITIONS: Readonly<Record<number, readonly [number, number]>> = {
   2: [90, 15],
   1: [20, 136.2],
   4: [160, 136.2],

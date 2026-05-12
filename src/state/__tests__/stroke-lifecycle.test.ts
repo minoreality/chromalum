@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canvasReducer, initialState } from "../canvas-reducer";
+import { canvasReducer, createInitialState } from "../canvas-reducer";
 import { computeDiff, computeGlazeDiff } from "../undo-diff";
 import { paintCircle, paintLine } from "../../drawing/paint";
 
@@ -9,7 +9,7 @@ import { paintCircle, paintLine } from "../../drawing/paint";
  */
 
 function mkCanvas(w: number, h: number) {
-  return canvasReducer(initialState, { type: "new_canvas", w, h });
+  return canvasReducer(createInitialState(), { type: "new_canvas", w, h });
 }
 
 function applyStroke(state: ReturnType<typeof canvasReducer>, mutator: (data: Uint8Array) => void) {

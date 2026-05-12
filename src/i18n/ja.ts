@@ -1,6 +1,6 @@
-import type { Translations, TranslationKey } from "./types";
+import type { Translations } from "./types";
 
-export const ja: Record<TranslationKey, string> = {
+export const ja = {
   // Tools
   tool_brush: "🖌️ブラシ",
   tool_eraser: "🧽消しゴム",

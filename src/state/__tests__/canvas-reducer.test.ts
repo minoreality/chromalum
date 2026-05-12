@@ -1,7 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { canvasReducer, initialState } from "../canvas-reducer";
+import { beforeEach, describe, it, expect } from "vitest";
+import { canvasReducer, createInitialState } from "../canvas-reducer";
 import { computeDiff } from "../undo-diff";
 import { MAX_UNDO } from "../../constants";
+
+let initialState: ReturnType<typeof createInitialState>;
+
+beforeEach(() => {
+  initialState = createInitialState();
+});
 
 describe("canvasReducer", () => {
   describe("stroke_end", () => {

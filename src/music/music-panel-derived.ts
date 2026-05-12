@@ -34,7 +34,9 @@ export function buildMusicLevelPreview(directCandidates: ReadonlyMap<number, num
 }
 
 export function buildActiveMusicLevels(levelPreview: readonly MusicLevelPreview[]): ActiveMusicLevel[] {
-  return levelPreview.filter((lp) => lp.lv >= 1 && lp.lv <= 6).map((lp) => ({ lv: lp.lv, rgb: lp.rgb as [number, number, number] }));
+  return levelPreview
+    .filter((lp) => lp.lv >= 1 && lp.lv <= 6)
+    .map((lp) => ({ lv: lp.lv, rgb: lp.rgb as readonly [number, number, number] }));
 }
 
 export function buildMusicHueTicks(): MusicHueTick[] {

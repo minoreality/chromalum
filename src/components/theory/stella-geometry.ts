@@ -15,7 +15,10 @@ interface FaceLighting {
   diffuse: number;
 }
 
-type Pt2 = { x: number; y: number };
+type Pt2 = { readonly x: number; readonly y: number };
+type Pt2Map = Readonly<Record<number, Pt2>>;
+type Pt3 = readonly [number, number, number];
+type Pt3Map = Readonly<Record<number, Pt3>>;
 
 interface EdgeSegment {
   t0: number;
@@ -53,7 +56,7 @@ interface SilhouetteEdge {
 }
 
 export interface ViewData {
-  pts: Record<number, Pt2>;
+  pts: Pt2Map;
   faceLighting: FaceLighting[];
   sortedFaces: ((typeof STELLA_FACES)[number] & { origIdx: number; depth: number })[];
   backEdges: Set<string>;
@@ -64,7 +67,7 @@ export interface ViewData {
   silhouetteEdges: SilhouetteEdge[];
 }
 
-export function computeFaceLighting(coords3D: Record<number, [number, number, number]>): FaceLighting[] {
+export function computeFaceLighting(coords3D: Pt3Map): FaceLighting[] {
   return STELLA_FACES.map((f) => {
     const p0 = coords3D[f.verts[0]],
       p1 = coords3D[f.verts[1]],
@@ -125,7 +128,7 @@ export function pointInTri(px: number, py: number, ax: number, ay: number, bx: n
   return u >= -0.01 && v >= -0.01 && u + v <= 1.01;
 }
 
-export function triDepthAt(px: number, py: number, verts: readonly [number, number, number], pts2D: Record<number, Pt2>): number {
+export function triDepthAt(px: number, py: number, verts: readonly [number, number, number], pts2D: Pt2Map): number {
   const [a, b, c] = verts;
   const pa = pts2D[a],
     pb = pts2D[b],
@@ -138,7 +141,7 @@ export function triDepthAt(px: number, py: number, verts: readonly [number, numb
   return u * vertexDepth(a) + v * vertexDepth(b) + w * vertexDepth(c);
 }
 
-export function computeEdgeSegments(edgeIdx: number, pts2D: Record<number, Pt2>, faceLighting: { isFront: boolean }[]): EdgeSegment[] {
+export function computeEdgeSegments(edgeIdx: number, pts2D: Pt2Map, faceLighting: { isFront: boolean }[]): EdgeSegment[] {
   const [a, b] = STELLA_EDGES[edgeIdx];
   const pa = pts2D[a],
     pb = pts2D[b];
@@ -237,7 +240,7 @@ function intersectEdge(p: Pt2, q: Pt2, a: Pt2, b: Pt2): Pt2 {
   return { x: p.x + t * dx1, y: p.y + t * dy1 };
 }
 
-function computeFaceOcclusions(pts2D: Record<number, Pt2>, faceLighting: { isFront: boolean }[]): FaceOcclusion[][] {
+function computeFaceOcclusions(pts2D: Pt2Map, faceLighting: { isFront: boolean }[]): FaceOcclusion[][] {
   return STELLA_FACES.map((face, fi) => {
     const occlusions: FaceOcclusion[] = [];
     const fVerts = face.verts.map((v) => pts2D[v]);
@@ -272,7 +275,7 @@ function computeFaceOcclusions(pts2D: Record<number, Pt2>, faceLighting: { isFro
   });
 }
 
-export function computeSurfaceFaces(pts2D: Record<number, Pt2>): SurfaceFace[] {
+export function computeSurfaceFaces(pts2D: Pt2Map): SurfaceFace[] {
   const mid2D = (a: number, b: number): Pt2 => ({
     x: (pts2D[a].x + pts2D[b].x) / 2,
     y: (pts2D[a].y + pts2D[b].y) / 2,

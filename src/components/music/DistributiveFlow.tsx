@@ -8,7 +8,7 @@ const DOT_R = 8;
 
 type Phase = "bxc" | "left" | "ab" | "ac" | "right" | "equal" | null;
 
-function pointColor(lv: number, activeLevels: { lv: number; rgb: [number, number, number] }[]): string {
+function pointColor(lv: number, activeLevels: { lv: number; rgb: readonly [number, number, number] }[]): string {
   const al = activeLevels.find((a) => a.lv === lv);
   return al ? `rgb(${al.rgb.join(",")})` : LV_COLORS[lv];
 }
@@ -18,7 +18,7 @@ interface Props {
   b: number;
   c: number;
   phase: Phase;
-  activeLevels: { lv: number; rgb: [number, number, number] }[];
+  activeLevels: { lv: number; rgb: readonly [number, number, number] }[];
 }
 
 export const DistributiveFlow = React.memo(function DistributiveFlow({ a, b, c, phase, activeLevels }: Props) {

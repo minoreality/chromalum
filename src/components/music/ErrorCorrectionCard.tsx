@@ -8,7 +8,7 @@ import type { DecoderPhase } from "../../music/types";
 
 interface ErrorCorrectionCardProps {
   engine: MusicEngineReturn;
-  activeLevels: { lv: number; rgb: [number, number, number] }[];
+  activeLevels: { lv: number; rgb: readonly [number, number, number] }[];
   stopSignal: number;
   errorPos: number;
   errorPhase: DecoderPhase;

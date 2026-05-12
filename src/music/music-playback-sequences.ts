@@ -45,7 +45,7 @@ export function complementOfLine(lineIndex: number): number[] | null {
 export function lineAndComplement(lineIndex: number): { line: number[]; complement: number[] } | null {
   const complement = complementOfLine(lineIndex);
   if (!complement) return null;
-  return { line: FANO_LINES[lineIndex], complement };
+  return { line: [...FANO_LINES[lineIndex]], complement };
 }
 
 export function syndromeDemoEvents(errorPos: number): SyndromeEvent[] {
@@ -129,7 +129,7 @@ export function weightSpectrumTimeline(): TimedCodeword[] {
 export function complementCanonPairs(reverse = false): Array<{ at: number; pairIndex: number; pair: [number, number] }> {
   return [0, 1, 2].map((step) => {
     const pairIndex = reverse ? 2 - step : step;
-    return { at: step * 600, pairIndex, pair: COMPLEMENT_PAIRS[pairIndex] };
+    return { at: step * 600, pairIndex, pair: [...COMPLEMENT_PAIRS[pairIndex]] };
   });
 }
 
@@ -214,6 +214,6 @@ export function k8LayerStep(layer: 1 | 2 | 3, step: number): { intervalMs: numbe
   return {
     intervalMs: layer === 3 ? 520 : 280,
     edgeIndex,
-    pair: edges[edgeIndex],
+    pair: [...edges[edgeIndex]],
   };
 }

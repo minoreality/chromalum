@@ -12,7 +12,7 @@ const THUMB_MAX = 260;
 const CHUNK_SIZE = 8;
 
 /** Generate all cc[] variants as a Cartesian product of unlocked candidate indices. */
-export function generateAllVariants(cc: number[], locked: boolean[], hist: number[]): number[][] {
+export function generateAllVariants(cc: readonly number[], locked: readonly boolean[], hist: readonly number[]): number[][] {
   const options: number[][] = [];
   for (let lv = 0; lv < 8; lv++) {
     const n = LEVEL_CANDIDATES[lv].length;
@@ -89,7 +89,7 @@ const _generationCache = {
   hist: "",
 };
 
-function galleryVariantKey(cc: number[], locked: boolean[], hist: number[]): string {
+function galleryVariantKey(cc: readonly number[], locked: readonly boolean[], hist: readonly number[]): string {
   return LEVEL_CANDIDATES.map((cands, lv) => {
     const n = cands.length;
     if (locked[lv] || hist[lv] === 0 || n <= 1) return String(cc[lv] % n);
@@ -106,7 +106,7 @@ function clearGenerationCache() {
   _generationCache.hist = "";
 }
 
-function shouldGenerate(cvs: CanvasData, cc: number[], locked: boolean[], hist: number[]): boolean {
+function shouldGenerate(cvs: CanvasData, cc: readonly number[], locked: readonly boolean[], hist: readonly number[]): boolean {
   const variantKey = galleryVariantKey(cc, locked, hist);
   const lockedStr = locked.join(",");
   const histStr = hist.join(",");
@@ -120,7 +120,7 @@ function shouldGenerate(cvs: CanvasData, cc: number[], locked: boolean[], hist: 
   );
 }
 
-function rememberGeneration(cvs: CanvasData, cc: number[], locked: boolean[], hist: number[]) {
+function rememberGeneration(cvs: CanvasData, cc: readonly number[], locked: readonly boolean[], hist: readonly number[]) {
   _generationCache.data = cvs.data;
   _generationCache.w = cvs.w;
   _generationCache.h = cvs.h;
@@ -129,7 +129,7 @@ function rememberGeneration(cvs: CanvasData, cc: number[], locked: boolean[], hi
   _generationCache.hist = hist.join(",");
 }
 
-export function useGallery(cvs: CanvasData, cc: number[], locked: boolean[], hist: number[], active = true) {
+export function useGallery(cvs: CanvasData, cc: readonly number[], locked: readonly boolean[], hist: readonly number[], active = true) {
   const [items, setItems] = useState<GalleryItem[]>(_cache.items);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });

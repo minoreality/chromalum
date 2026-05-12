@@ -4,7 +4,7 @@ export interface LinkedVisualizationDot {
   lv: number;
   ci: number;
   a: number;
-  rgb: [number, number, number];
+  rgb: readonly [number, number, number];
   act: boolean;
 }
 
@@ -46,10 +46,10 @@ export const BW = BXright - BXleft;
 export const TW = RX + RW + 4;
 export const TH = BY + BH + 16;
 
-export const ACTIVE_LEVELS = [1, 2, 3, 4, 5, 6];
-export const HUE_LABELS = [0, 60, 120, 180, 240, 300, 360];
-export const LV_COLORS = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", ""];
-export const C2_PAIR: Record<number, number> = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
+export const ACTIVE_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+export const HUE_LABELS = [0, 60, 120, 180, 240, 300, 360] as const;
+export const LV_COLORS = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", ""] as const;
+export const C2_PAIR: Readonly<Record<number, number>> = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
 
 export const lumR0 = (lv: number) => (LEVEL_INFO[lv].gray / 255) * WR;
 export const lumR7 = (lv: number) => (1 - LEVEL_INFO[lv].gray / 255) * WR;

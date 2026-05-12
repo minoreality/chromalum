@@ -19,7 +19,7 @@ import { useTranslation } from "../i18n";
 import { C, FS, FW, O } from "../styles/tokens";
 
 interface Props {
-  cc: number[];
+  cc: readonly number[];
   dispatch: React.Dispatch<ColorAction>;
   hist: number[];
   total: number;

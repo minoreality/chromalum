@@ -22,7 +22,7 @@ function hueDelta(current: number, canonical: number): number {
 
 /** Compute XOR decompositions: find all pairs (a, b) where a XOR b = lv, a < b, both non-zero */
 interface Props {
-  cc: number[];
+  cc: readonly number[];
   dispatch: React.Dispatch<ColorAction>;
   brushLevel: number;
   onSelectLevel?: (lv: number) => void;

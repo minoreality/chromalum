@@ -103,7 +103,7 @@ function MiniTetra({
   onLeave,
 }: {
   verts: readonly number[];
-  edges: [number, number][];
+  edges: readonly (readonly [number, number])[];
   idPrefix: string;
   label: string;
   hl: number | null;

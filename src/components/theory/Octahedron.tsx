@@ -114,13 +114,13 @@ interface FaceLightData {
 
 interface DiamondViewData {
   faceLighting: FaceLightData[];
-  sortedFaces: { verts: [number, number, number]; color: number; origIdx: number }[];
+  sortedFaces: { verts: readonly [number, number, number]; color: number; origIdx: number }[];
   backEdges: Set<string>;
   silhouetteEdges: Set<string>;
   frontFaceEdges: Set<string>;
   backFaceEdges: Set<string>;
   hiddenEdges: Set<string>;
-  points: Record<number, { x: number; y: number }>;
+  points: Readonly<Record<number, { readonly x: number; readonly y: number }>>;
 }
 
 function computeFaceLighting(
@@ -154,7 +154,7 @@ function computeFaceLighting(
 
 function computeDiamondView(
   octa3d: Record<number, [number, number, number]>,
-  points: Record<number, { x: number; y: number }>,
+  points: Readonly<Record<number, { readonly x: number; readonly y: number }>>,
 ): DiamondViewData {
   const faceLighting = OCTA_FACES.map((f) => computeFaceLighting(f.verts, octa3d, LIGHT_DIR));
   const indexed = OCTA_FACES.map((f, i) => ({ f, i }));

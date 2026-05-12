@@ -56,10 +56,10 @@ function saveGalleryBookmarks(bookmarks: number[][], storage: Storage | null = g
 export function useGalleryBookmarks({ limit = GALLERY_BOOKMARKS_MAX, onLimitReached, onSaveFailed }: UseGalleryBookmarksOptions = {}) {
   const [bookmarks, setBookmarks] = useState<number[][]>(loadGalleryBookmarks);
 
-  const isBookmarked = useCallback((itemCc: number[]) => bookmarks.some((bookmark) => ccEqual(bookmark, itemCc)), [bookmarks]);
+  const isBookmarked = useCallback((itemCc: readonly number[]) => bookmarks.some((bookmark) => ccEqual(bookmark, itemCc)), [bookmarks]);
 
   const toggleBookmark = useCallback(
-    (itemCc: number[]) => {
+    (itemCc: readonly number[]) => {
       const idx = bookmarks.findIndex((bookmark) => ccEqual(bookmark, itemCc));
       if (idx >= 0) {
         const next = [...bookmarks.slice(0, idx), ...bookmarks.slice(idx + 1)];

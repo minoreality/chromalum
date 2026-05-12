@@ -8,7 +8,7 @@ interface MiniFanoChordProps {
   onLineHover: (lineIndex: number | null) => void;
   onNodeClick?: (lv: number) => void;
   onLineClick?: (lineIndex: number) => void;
-  activeLevels: { lv: number; rgb: [number, number, number] }[];
+  activeLevels: { lv: number; rgb: readonly [number, number, number] }[];
   /** Currently playing level from Gray melody (1-7 or null) */
   playingLevel?: number | null;
   /** Currently firing Fano line indices from rhythm (each beat triggers up to 3). */

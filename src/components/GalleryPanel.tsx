@@ -14,7 +14,7 @@ import { C, SP, FS, R, DUR, Z, HUE_GRADIENT, FONT } from "../styles/tokens";
 
 interface GalleryPanelProps {
   cvs: CanvasData;
-  cc: number[];
+  cc: readonly number[];
   ccDispatch: React.Dispatch<ColorAction>;
   locked: boolean[];
   hist: number[];

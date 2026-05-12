@@ -11,7 +11,7 @@ interface AnalyzePanelProps {
   hist: number[];
   total: number;
   colorLUT: [number, number, number][];
-  cc: number[];
+  cc: readonly number[];
   brushLevel: number;
   setBrushLevel: (lv: number) => void;
   cvs: CanvasData;

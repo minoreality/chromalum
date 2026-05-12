@@ -87,7 +87,7 @@ function normalizeCandidateIndex(lv: number, idx: number): number {
   return count > 0 ? ((idx % count) + count) % count : 0;
 }
 
-function resolveCandidate(lv: number, idx: number): { ci: number; count: number; rgb: [number, number, number] } {
+function resolveCandidate(lv: number, idx: number): { ci: number; count: number; rgb: readonly [number, number, number] } {
   const alts = LEVEL_CANDIDATES[lv] ?? LEVEL_CANDIDATES[0];
   const ci = normalizeCandidateIndex(lv, idx);
   return {
@@ -105,19 +105,19 @@ function visualKey(cvs: CanvasData, idx: number): number {
   return ((cvs.data[idx] & LEVEL_MASK) << 8) | (cvs.colorMap[idx] ?? 0);
 }
 
-function visualLabel(cvs: CanvasData, cc: number[], idx: number, lv: number): string {
+function visualLabel(cvs: CanvasData, cc: readonly number[], idx: number, lv: number): string {
   const cm = cvs.colorMap[idx] ?? 0;
   const candidate = cm > 0 ? resolveCandidate(lv, cm - 1) : resolveCandidate(lv, cc[lv] ?? 0);
   return `${cm > 0 ? "override" : "base"} ${candidateLabel(candidate)} ${hexStr(candidate.rgb)}`;
 }
 
-function compactVisualLabel(cvs: CanvasData, cc: number[], idx: number, lv: number): string {
+function compactVisualLabel(cvs: CanvasData, cc: readonly number[], idx: number, lv: number): string {
   const cm = cvs.colorMap[idx] ?? 0;
   const candidate = cm > 0 ? resolveCandidate(lv, cm - 1) : resolveCandidate(lv, cc[lv] ?? 0);
   return `${cm > 0 ? "ovr" : "base"} ${candidateLabel(candidate)}`;
 }
 
-function luma255(rgb: [number, number, number]): number {
+function luma255(rgb: readonly [number, number, number]): number {
   return Math.round(LUMA_R * rgb[0] + LUMA_G * rgb[1] + LUMA_B * rgb[2]);
 }
 
@@ -366,7 +366,7 @@ export function getAnalysisMapHoverInfo({
   mode: MapMode;
   pixelMaps: AnalysisPixelMaps;
   colorLUT: AnalysisColorLUT;
-  cc: number[];
+  cc: readonly number[];
   cvs: CanvasData;
   regionSizeById: Map<number, number>;
 }): StatusText | null {

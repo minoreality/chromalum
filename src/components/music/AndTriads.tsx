@@ -10,7 +10,7 @@ const TRIADS: [number, number, number][] = [
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const ROW_Y = [26, 58, 90];
 
-function pointColor(lv: number, activeLevels: { lv: number; rgb: [number, number, number] }[]): string {
+function pointColor(lv: number, activeLevels: { lv: number; rgb: readonly [number, number, number] }[]): string {
   const found = activeLevels.find((l) => l.lv === lv);
   if (found) return `rgb(${found.rgb.join(",")})`;
   return LV_COLORS[lv] ?? "#888";
@@ -26,7 +26,7 @@ function binaryLevelLabel(lv: number): string {
 
 interface Props {
   activeStep: { pairIndex: number; phase: "operands" | "result" } | null;
-  activeLevels: { lv: number; rgb: [number, number, number] }[];
+  activeLevels: { lv: number; rgb: readonly [number, number, number] }[];
 }
 
 export const AndTriads = React.memo(function AndTriads({ activeStep, activeLevels }: Props) {

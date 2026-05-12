@@ -5,7 +5,7 @@ import type { LinkedVisualizationDot, LinkedVisualizationOverlayContext } from "
 
 interface RatioMember {
   lv: number;
-  rgb: [number, number, number];
+  rgb: readonly [number, number, number];
   ci: number;
 }
 

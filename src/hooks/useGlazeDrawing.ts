@@ -31,7 +31,7 @@ interface GlazeDrawingOptions {
   cvs: CanvasData;
   dispatch: React.Dispatch<CanvasAction>;
   colorLUT: [number, number, number][];
-  cc: number[];
+  cc: readonly number[];
   hueAngle: number;
   setHueAngle: React.Dispatch<React.SetStateAction<number>>;
   glazeTool: GlazeToolId;

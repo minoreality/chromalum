@@ -35,21 +35,21 @@ export const NUM_VERTICES = 6; /* hexagon vertex count */
 export type ToolId = "brush" | "eraser" | "fill" | "line" | "rect" | "ellipse";
 
 interface ToolDef {
-  id: ToolId;
-  key: string;
-  shape: boolean;
+  readonly id: ToolId;
+  readonly key: string;
+  readonly shape: boolean;
 }
 
-export const TOOLS: ToolDef[] = [
+export const TOOLS = [
   { id: "brush", key: "B", shape: false },
   { id: "eraser", key: "E", shape: false },
   { id: "fill", key: "F", shape: false },
   { id: "line", key: "L", shape: true },
   { id: "rect", key: "R", shape: true },
   { id: "ellipse", key: "O", shape: true },
-];
+] as const satisfies readonly ToolDef[];
 
-const SHAPE_TOOL_SET = new Set(TOOLS.filter((t) => t.shape).map((t) => t.id));
+const SHAPE_TOOL_SET: ReadonlySet<ToolId> = new Set(TOOLS.filter((t) => t.shape).map((t) => t.id));
 export const isShapeTool = (t: ToolId): boolean => SHAPE_TOOL_SET.has(t);
 
 export type GlazeToolId = "glaze_brush" | "glaze_eraser" | "glaze_fill";

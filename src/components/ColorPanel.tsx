@@ -17,7 +17,7 @@ interface ColorPanelProps {
   displayH: number;
   canvasTransform: React.CSSProperties;
   canvasCursor: string;
-  cc: number[];
+  cc: readonly number[];
   ccDispatch: React.Dispatch<ColorAction>;
   brushLevel: number;
   setBrushLevel: (lv: number) => void;

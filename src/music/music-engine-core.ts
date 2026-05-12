@@ -1,16 +1,16 @@
 import { COMPLEMENT_EDGES, CUBE_EDGES, FANO_LINES, STELLA_EDGES } from "../data/theory-data";
 import { fanoLinesThrough } from "../data/music-data";
 
-export const PARITY_GROUPS: number[][] = [
+export const PARITY_GROUPS: readonly (readonly number[])[] = [
   [1, 3, 5, 7],
   [2, 3, 6, 7],
   [4, 5, 6, 7],
-];
-export const ALL_POINTS = [1, 2, 3, 4, 5, 6, 7];
-export const FULL_GRAY_CODE = [0, 1, 3, 2, 6, 7, 5, 4];
+] as const;
+export const ALL_POINTS = [1, 2, 3, 4, 5, 6, 7] as const;
+export const FULL_GRAY_CODE = [0, 1, 3, 2, 6, 7, 5, 4] as const;
 
 /** BT.601 luminance coefficients per level (L1-L6) */
-export const BT601_LUMINANCE: Record<number, number> = {
+export const BT601_LUMINANCE: Readonly<Record<number, number>> = {
   1: 0.114, // B
   2: 0.299, // R
   3: 0.413, // M = B+R
@@ -49,9 +49,9 @@ export function gl32GenC(lv: number): number {
  * 3-voice frequencies for Gray code decomposition. bit0=B, bit1=R, bit2=G.
  * Ratio 330:440:550 = 3:4:5 = just-intonation minor triad (E4, A4, C#5).
  */
-export const GRAY_VOICE_FREQS = [550, 440, 330];
+export const GRAY_VOICE_FREQS = [550, 440, 330] as const;
 
-export const AND_TRIADS: [number, number, number][] = [
+export const AND_TRIADS: readonly (readonly [number, number, number])[] = [
   [3, 5, 1],
   [5, 6, 4],
   [6, 3, 2],

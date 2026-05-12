@@ -91,13 +91,15 @@ function clearColorMapForDataChanges(colorMap: Uint8Array, diff: Diff): { colorM
   return { colorMap: nextColorMap, diff: { ...diff, cmOv, cmNv } };
 }
 
-const initData = new Uint8Array(W0 * H0);
-export const initialState: AppState = {
-  cvs: { w: W0, h: H0, data: initData, colorMap: new Uint8Array(W0 * H0) },
-  undoStack: new RingBuffer<CompressedDiff>(MAX_UNDO),
-  redoStack: new RingBuffer<CompressedDiff>(MAX_UNDO),
-  hist: computeHist(initData),
-};
+export function createInitialState(): AppState {
+  const initData = new Uint8Array(W0 * H0);
+  return {
+    cvs: { w: W0, h: H0, data: initData, colorMap: new Uint8Array(W0 * H0) },
+    undoStack: new RingBuffer<CompressedDiff>(MAX_UNDO),
+    redoStack: new RingBuffer<CompressedDiff>(MAX_UNDO),
+    hist: computeHist(initData),
+  };
+}
 
 export function canvasReducer(state: AppState, action: CanvasAction): AppState {
   switch (action.type) {

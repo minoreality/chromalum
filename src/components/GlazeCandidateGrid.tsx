@@ -7,7 +7,7 @@ import { C, R, SHADOW, SP } from "../styles/tokens";
 export interface GlazeLevelPreview {
   lv: number;
   name: string;
-  rgb: [number, number, number];
+  rgb: readonly [number, number, number];
   hex: string;
 }
 
@@ -28,7 +28,7 @@ interface GlazeCandidateColumnProps extends Omit<GlazeCandidateGridProps, "level
   level: GlazeLevelPreview;
 }
 
-function candidateHex(rgb: number[]) {
+function candidateHex(rgb: readonly number[]) {
   return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 

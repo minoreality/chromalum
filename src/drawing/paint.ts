@@ -323,9 +323,11 @@ export function paintEllipse(
   }
 }
 
-export const BRUSH_SHAPE_PAINTERS: Record<
-  string,
-  (data: Uint8Array, x0: number, y0: number, x1: number, y1: number, mask: BrushMask, lv: number, w: number, h: number) => void
+export const BRUSH_SHAPE_PAINTERS: Readonly<
+  Record<
+    string,
+    (data: Uint8Array, x0: number, y0: number, x1: number, y1: number, mask: BrushMask, lv: number, w: number, h: number) => void
+  >
 > = {
   line: paintBrushLine,
   rect: paintBrushRect,

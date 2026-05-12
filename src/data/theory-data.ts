@@ -3,15 +3,15 @@
    ═══════════════════════════════════════════ */
 
 interface TheoryLevel {
-  lv: number;
-  name: string;
-  short: string; // single-letter abbreviation (K for Black to avoid clash with Blue's B)
-  bits: [number, number, number]; // [G, R, B]
-  color: string;
-  hamming: string; // P1/P2/P4 for parity, D1-D4 for data, "—" for 0/7
+  readonly lv: number;
+  readonly name: string;
+  readonly short: string; // single-letter abbreviation (K for Black to avoid clash with Blue's B)
+  readonly bits: readonly [number, number, number]; // [G, R, B]
+  readonly color: string;
+  readonly hamming: string; // P1/P2/P4 for parity, D1-D4 for data, "—" for 0/7
 }
 
-export const THEORY_LEVELS: TheoryLevel[] = [
+export const THEORY_LEVELS = [
   { lv: 0, name: "Black", short: "K", bits: [0, 0, 0], color: "#000000", hamming: "—" },
   { lv: 1, name: "Blue", short: "B", bits: [0, 0, 1], color: "#0000ff", hamming: "P1" },
   { lv: 2, name: "Red", short: "R", bits: [0, 1, 0], color: "#ff0000", hamming: "P2" },
@@ -20,10 +20,10 @@ export const THEORY_LEVELS: TheoryLevel[] = [
   { lv: 5, name: "Cyan", short: "C", bits: [1, 0, 1], color: "#00ffff", hamming: "D2" },
   { lv: 6, name: "Yellow", short: "Y", bits: [1, 1, 0], color: "#ffff00", hamming: "D3" },
   { lv: 7, name: "White", short: "W", bits: [1, 1, 1], color: "#ffffff", hamming: "D4" },
-];
+] as const satisfies readonly TheoryLevel[];
 
 /** 7 Fano plane lines — each [a, b, c] satisfies a XOR b XOR c = 0 */
-export const FANO_LINES: [number, number, number][] = [
+export const FANO_LINES: readonly (readonly [number, number, number])[] = [
   [1, 2, 3], // B⊕R=M  (primary mixing)
   [1, 4, 5], // B⊕G=C
   [2, 4, 6], // R⊕G=Y
@@ -34,7 +34,7 @@ export const FANO_LINES: [number, number, number][] = [
 ];
 
 /** Line category for display */
-export const FANO_LINE_CATEGORIES: ("primary" | "complement" | "secondary")[] = [
+export const FANO_LINE_CATEGORIES = [
   "primary",
   "primary",
   "primary",
@@ -42,7 +42,7 @@ export const FANO_LINE_CATEGORIES: ("primary" | "complement" | "secondary")[] = 
   "complement",
   "complement",
   "secondary",
-];
+] as const satisfies readonly ("primary" | "complement" | "secondary")[];
 
 /** Gray code hexagon path (level indices) — each step toggles 1 channel */
 export const GRAY_PATH = [2, 6, 4, 5, 1, 3] as const;
@@ -59,7 +59,7 @@ export const DICE_NET_FACES = [
 ] as const;
 
 /** 12 edges of the 3-cube (pairs of vertices differing by 1 bit) */
-export const CUBE_EDGES: [number, number][] = [
+export const CUBE_EDGES: readonly (readonly [number, number])[] = [
   [0, 1],
   [0, 2],
   [0, 4],
@@ -99,7 +99,12 @@ const P6 = { x: (P2.x + P4.x) / 2, y: (P2.y + P4.y) / 2 }; // midpoint of 2→4 
 const P5 = { x: (P1.x + P4.x) / 2, y: (P1.y + P4.y) / 2 }; // midpoint of 1→4 (bottom edge)
 
 /** Fano point positions: outer triangle (2,1,4) + inner triangle (3,6,5) + center (7) */
-export const FANO_POINTS: Record<number, { x: number; y: number }> = {
+interface Point2D {
+  readonly x: number;
+  readonly y: number;
+}
+
+export const FANO_POINTS: Readonly<Record<number, Point2D>> = {
   2: P2,
   1: P1,
   4: P4, // outer triangle
@@ -111,10 +116,10 @@ export const FANO_POINTS: Record<number, { x: number; y: number }> = {
 
 /** Inscribed circle: circumcircle of inner triangle 3,5,6 (radius = half outer) */
 const FANO_INNER_R = Math.sqrt((P3.x - FANO_CX) ** 2 + (P3.y - FANO_CY) ** 2);
-export const FANO_CIRCLE = { cx: FANO_CX, cy: FANO_CY, r: FANO_INNER_R };
+export const FANO_CIRCLE = { cx: FANO_CX, cy: FANO_CY, r: FANO_INNER_R } as const;
 
 /** Line endpoints for rendering: [from, to] for each of the 7 Fano lines */
-export const FANO_LINE_ENDPOINTS: [number, number][] = [
+export const FANO_LINE_ENDPOINTS: readonly (readonly [number, number])[] = [
   [1, 2], // {1,2,3}: left side of outer triangle (3 is midpoint)
   [1, 4], // {1,4,5}: bottom side of outer triangle (5 is midpoint)
   [2, 4], // {2,4,6}: right side of outer triangle (6 is midpoint)
@@ -135,16 +140,21 @@ const ISO_R = { dx: 0, dy: -1.2 };
 const ISO_G = { dx: Math.cos(Math.PI / 6), dy: Math.sin(Math.PI / 6) };
 const ISO_B = { dx: -Math.cos(Math.PI / 6), dy: Math.sin(Math.PI / 6) };
 
-export const CUBE_POINTS: Record<number, { x: number; y: number }> = {};
-for (let i = 0; i < 8; i++) {
-  const g = (i >> 2) & 1,
-    r = (i >> 1) & 1,
-    b = i & 1;
-  CUBE_POINTS[i] = {
-    x: ISO_CX + ISO_SCALE * (g * ISO_G.dx + r * ISO_R.dx + b * ISO_B.dx),
-    y: ISO_CY + ISO_SCALE * (g * ISO_G.dy + r * ISO_R.dy + b * ISO_B.dy),
-  };
+function buildCubePoints(): Readonly<Record<number, Point2D>> {
+  const points: Record<number, Point2D> = {};
+  for (let i = 0; i < 8; i++) {
+    const g = (i >> 2) & 1,
+      r = (i >> 1) & 1,
+      b = i & 1;
+    points[i] = {
+      x: ISO_CX + ISO_SCALE * (g * ISO_G.dx + r * ISO_R.dx + b * ISO_B.dx),
+      y: ISO_CY + ISO_SCALE * (g * ISO_G.dy + r * ISO_R.dy + b * ISO_B.dy),
+    };
+  }
+  return points;
 }
+
+export const CUBE_POINTS = buildCubePoints();
 
 /** Determine if an edge is a "back edge" (behind the cube) for dashed rendering */
 export function isBackEdge(a: number, b: number): boolean {
@@ -173,7 +183,7 @@ const OCTA_B = { dx: ISO_B.dx, dy: ISO_B.dy }; // already magnitude 1.0
  * Complement pairs remain antipodal on each axis.
  * Uses normalized axes (equal length) so the octahedron is regular.
  */
-export const OCTA_POINTS: Record<number, { x: number; y: number }> = {
+export const OCTA_POINTS: Readonly<Record<number, Point2D>> = {
   2: { x: OCTA_CX + OCTA_SCALE * OCTA_R.dx, y: OCTA_CY + OCTA_SCALE * OCTA_R.dy }, // Red = top
   5: { x: OCTA_CX - OCTA_SCALE * OCTA_R.dx, y: OCTA_CY - OCTA_SCALE * OCTA_R.dy }, // Cyan = bottom
   4: { x: OCTA_CX + OCTA_SCALE * OCTA_G.dx, y: OCTA_CY + OCTA_SCALE * OCTA_G.dy }, // Green = lower-right
@@ -183,14 +193,14 @@ export const OCTA_POINTS: Record<number, { x: number; y: number }> = {
 };
 
 /** 3 complement axes: R↔C, G↔M, B↔Y */
-export const OCTA_COMPLEMENT_AXES: [number, number][] = [
+export const OCTA_COMPLEMENT_AXES: readonly (readonly [number, number])[] = [
   [2, 5],
   [4, 3],
   [1, 6],
 ];
 
 /** 12 octahedron edges = all non-complement chromatic pairs */
-export const OCTA_EDGES: [number, number][] = [
+export const OCTA_EDGES: readonly (readonly [number, number])[] = [
   [1, 2],
   [1, 3],
   [1, 4],
@@ -209,7 +219,7 @@ export const OCTA_EDGES: [number, number][] = [
  *  Sign convention: vertex lv is on the + side of its axis if it's a primary (weight 1),
  *  and on the − side if it's a secondary (weight 2).
  *  For each axis i, the octant sign determines bit i of the face color. */
-export const OCTA_FACES: { verts: [number, number, number]; color: number }[] = [
+export const OCTA_FACES: readonly { readonly verts: readonly [number, number, number]; readonly color: number }[] = [
   { verts: [2, 4, 1], color: 7 }, // (+R,+G,+B) = White
   { verts: [2, 4, 6], color: 6 }, // (+R,+G,−B) = Yellow
   { verts: [2, 3, 1], color: 3 }, // (+R,−G,+B) = Magenta
@@ -228,7 +238,7 @@ export const TETRA_T0 = [0, 3, 5, 6] as const;
 export const TETRA_T1 = [1, 2, 4, 7] as const;
 
 /** Edges of the T0 tetrahedron inscribed in the cube */
-export const TETRA_T0_EDGES: [number, number][] = [
+export const TETRA_T0_EDGES: readonly (readonly [number, number])[] = [
   [0, 3],
   [0, 5],
   [0, 6],
@@ -237,7 +247,7 @@ export const TETRA_T0_EDGES: [number, number][] = [
   [5, 6],
 ];
 /** Edges of the T1 tetrahedron inscribed in the cube */
-export const TETRA_T1_EDGES: [number, number][] = [
+export const TETRA_T1_EDGES: readonly (readonly [number, number])[] = [
   [1, 2],
   [1, 4],
   [1, 7],
@@ -257,10 +267,10 @@ export function hammingDist(a: number, b: number): number {
 }
 
 /** Distance-2 edges (stella octangula): T0 internal + T1 internal */
-export const STELLA_EDGES: [number, number][] = [...TETRA_T0_EDGES, ...TETRA_T1_EDGES];
+export const STELLA_EDGES: readonly (readonly [number, number])[] = [...TETRA_T0_EDGES, ...TETRA_T1_EDGES];
 
 /** Distance-3 edges (complement matching): 4 body diagonals */
-export const COMPLEMENT_EDGES: [number, number][] = [
+export const COMPLEMENT_EDGES: readonly (readonly [number, number])[] = [
   [0, 7],
   [1, 6],
   [2, 5],
@@ -272,12 +282,12 @@ export const COMPLEMENT_EDGES: [number, number][] = [
    8 vertices (all cube), 12 edges (STELLA_EDGES), 8 triangular faces.  */
 
 interface StellaFace {
-  verts: [number, number, number];
-  color: number; // XOR of 3 vertices = opposite vertex
-  tetra: 0 | 1;
+  readonly verts: readonly [number, number, number];
+  readonly color: number; // XOR of 3 vertices = opposite vertex
+  readonly tetra: 0 | 1;
 }
 
-export const STELLA_FACES: StellaFace[] = [
+export const STELLA_FACES: readonly StellaFace[] = [
   // T0 faces (even-weight tetrahedron)
   { verts: [0, 3, 5], color: 6, tetra: 0 },
   { verts: [0, 3, 6], color: 5, tetra: 0 },
@@ -291,10 +301,17 @@ export const STELLA_FACES: StellaFace[] = [
 ];
 
 /** 3D coordinates of cube vertices in unit cube [G, R, B] */
-export const STELLA_3D: Record<number, [number, number, number]> = {};
-for (let i = 0; i < 8; i++) {
-  STELLA_3D[i] = [(i >> 2) & 1, (i >> 1) & 1, i & 1];
+type Point3D = readonly [number, number, number];
+
+function buildStella3D(): Readonly<Record<number, Point3D>> {
+  const points: Record<number, Point3D> = {};
+  for (let i = 0; i < 8; i++) {
+    points[i] = [(i >> 2) & 1, (i >> 1) & 1, i & 1];
+  }
+  return points;
 }
+
+export const STELLA_3D = buildStella3D();
 
 /** Depth along (1,1,1) body diagonal = popcount of level (0–3) */
 export function vertexDepth(lv: number): number {
@@ -361,11 +378,16 @@ const GRAY_CX = 150,
   GRAY_CY = 150,
   GRAY_R = 110;
 
-export const GRAY_POINTS: Record<number, { x: number; y: number }> = {};
-GRAY_PATH.forEach((lv, i) => {
-  const angle = -Math.PI / 2 + (i * Math.PI * 2) / 6;
-  GRAY_POINTS[lv] = {
-    x: GRAY_CX + GRAY_R * Math.cos(angle),
-    y: GRAY_CY + GRAY_R * Math.sin(angle),
-  };
-});
+function buildGrayPoints(): Readonly<Record<number, Point2D>> {
+  const points: Record<number, Point2D> = {};
+  GRAY_PATH.forEach((lv, i) => {
+    const angle = -Math.PI / 2 + (i * Math.PI * 2) / 6;
+    points[lv] = {
+      x: GRAY_CX + GRAY_R * Math.cos(angle),
+      y: GRAY_CY + GRAY_R * Math.sin(angle),
+    };
+  });
+  return points;
+}
+
+export const GRAY_POINTS = buildGrayPoints();

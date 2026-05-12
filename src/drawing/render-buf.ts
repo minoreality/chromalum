@@ -16,8 +16,13 @@ import { recordDebugPerf, startDebugPerf } from "../utils/perf-debug";
    Supports dirty-rect optimization + GRAY_VALUES LUT.
    ═══════════════════════════════════════════ */
 
-export const GRAY_VALUES = new Uint8Array(8);
-for (let i = 0; i < 8; i++) GRAY_VALUES[i] = LEVEL_INFO[i].gray;
+function buildGrayValues(): Uint8Array {
+  const values = new Uint8Array(8);
+  for (let i = 0; i < 8; i++) values[i] = LEVEL_INFO[i].gray;
+  return values;
+}
+
+export const GRAY_VALUES = buildGrayValues();
 
 /* Pre-packed candidate RGB as 0xFFBBGGRR for fast Uint32Array writes.
    Layout: PACKED_CANDIDATES[level * MAX_VARIANTS + variantIdx] */

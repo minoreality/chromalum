@@ -21,7 +21,7 @@ interface MusicLevelCandidateColumnProps extends Omit<MusicLevelCandidateGridPro
   level: MusicLevelPreview;
 }
 
-function candidateHex(rgb: number[]) {
+function candidateHex(rgb: readonly number[]) {
   return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 

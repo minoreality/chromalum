@@ -23,6 +23,8 @@ export default tseslint.config(
       "react-hooks/immutability": "off",
       "react-hooks/refs": "off",
       "no-empty": ["error", { allowEmptyCatch: true }],
+      "no-var": "error",
+      "prefer-const": "error",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "error",
     },

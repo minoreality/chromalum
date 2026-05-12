@@ -15,7 +15,7 @@ interface PixelStatusBase {
 interface CandidateResolution {
   ci: number;
   count: number;
-  rgb: [number, number, number];
+  rgb: readonly [number, number, number];
   angle: number;
 }
 
@@ -36,7 +36,7 @@ function resolveCandidate(lv: number, idx: number): CandidateResolution {
   };
 }
 
-function resolveGlobalCandidate(cc: number[], lv: number): CandidateResolution {
+function resolveGlobalCandidate(cc: readonly number[], lv: number): CandidateResolution {
   return resolveCandidate(lv, cc[lv] ?? 0);
 }
 
@@ -108,7 +108,7 @@ export function formatSourcePixelStatus({ x, y, lv }: PixelStatusBase): StatusTe
   };
 }
 
-export function formatColorPixelStatus({ x, y, lv, cc }: PixelStatusBase & { cc: number[] }): StatusText {
+export function formatColorPixelStatus({ x, y, lv, cc }: PixelStatusBase & { cc: readonly number[] }): StatusText {
   const candidate = resolveGlobalCandidate(cc, lv);
   const rgb = candidate.rgb;
   return {
@@ -128,8 +128,8 @@ export function formatHexPixelStatus({
   patternFactor,
   locked,
 }: PixelStatusBase & {
-  cc: number[];
-  hist: number[];
+  cc: readonly number[];
+  hist: readonly number[];
   patternFactor: number;
   locked: boolean;
 }): StatusText {
@@ -155,7 +155,7 @@ export function formatGlazePixelStatus({
   directCandidates,
   glazeTool,
 }: PixelStatusBase & {
-  cc: number[];
+  cc: readonly number[];
   colorMapValue: number;
   hueAngle: number;
   directCandidates: Map<number, number>;

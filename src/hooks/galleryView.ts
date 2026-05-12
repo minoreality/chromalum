@@ -4,7 +4,7 @@ import type { GalleryItem } from "./useGallery";
 export type GalleryFilter = "all" | "bookmarks";
 export type GallerySortMode = "default" | "hue_asc" | "hue_desc" | "similar";
 
-export function ccEqual(a: number[], b: number[]): boolean {
+export function ccEqual(a: readonly number[], b: readonly number[]): boolean {
   for (let i = 0; i < 8; i++) {
     const na = LEVEL_CANDIDATES[i].length;
     if (a[i] % na !== b[i] % na) return false;
@@ -12,7 +12,7 @@ export function ccEqual(a: number[], b: number[]): boolean {
   return true;
 }
 
-export function getGalleryPatternCount(locked: boolean[], hist: number[]): number {
+export function getGalleryPatternCount(locked: readonly boolean[], hist: readonly number[]): number {
   let total = 1;
   for (let lv = 0; lv < 8; lv++) {
     const n = LEVEL_CANDIDATES[lv].length;
@@ -22,7 +22,7 @@ export function getGalleryPatternCount(locked: boolean[], hist: number[]): numbe
 }
 
 /** Compute average hue angle for a pattern's cc[] for sorting/display. */
-function patternHue(patternCc: number[]): number {
+function patternHue(patternCc: readonly number[]): number {
   let sumAngle = 0;
   let count = 0;
   for (let lv = 0; lv < 8; lv++) {
@@ -38,7 +38,7 @@ function patternHue(patternCc: number[]): number {
 }
 
 /** Check whether any chromatic level in a pattern matches the hue filter. */
-function matchesHueFilter(patternCc: number[], filterHue: number, filterRange: number): boolean {
+function matchesHueFilter(patternCc: readonly number[], filterHue: number, filterRange: number): boolean {
   for (let lv = 1; lv <= 6; lv++) {
     const cands = LEVEL_CANDIDATES[lv];
     if (cands.length <= 1) continue;
@@ -52,7 +52,7 @@ function matchesHueFilter(patternCc: number[], filterHue: number, filterRange: n
 }
 
 /** Count how many variant levels differ between two cc[] arrays. */
-function ccDistance(a: number[], b: number[]): number {
+function ccDistance(a: readonly number[], b: readonly number[]): number {
   let dist = 0;
   for (let i = 0; i < 8; i++) {
     const na = LEVEL_CANDIDATES[i].length;
@@ -69,7 +69,7 @@ interface GalleryDisplayOptions {
   sortMode: GallerySortMode;
   filterHue: number;
   filterRange: number;
-  currentCc: number[];
+  currentCc: readonly number[];
 }
 
 export function getDisplayGalleryItems({

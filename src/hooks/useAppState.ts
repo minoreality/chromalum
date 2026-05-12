@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useReducer, useMemo } from "react";
 import { DISPLAY_MIN, DISPLAY_MAX_LIMIT } from "../constants";
-import { canvasReducer, initialState } from "../state/canvas-reducer";
+import { canvasReducer, createInitialState } from "../state/canvas-reducer";
 import { SAVED_STATE_VERSION, saveState, loadStateWithStatus, requestPersistentStorage } from "../utils/idb-persistence";
 import { createErrorHandler } from "../utils/error-handler";
 import { useToolState } from "./useToolState";
@@ -24,7 +24,7 @@ function markPersistentStorageRequested(): void {
 }
 
 export function useAppState(t: import("../i18n").TranslationFn) {
-  const [state, dispatch] = useReducer(canvasReducer, initialState);
+  const [state, dispatch] = useReducer(canvasReducer, undefined, createInitialState);
   const { cvs } = state;
 
   const toolState = useToolState();

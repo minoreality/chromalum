@@ -137,7 +137,7 @@ interface CompositionDonutProps {
   hist: number[];
   total: number;
   colorLUT: [number, number, number][];
-  cc: number[];
+  cc: readonly number[];
 }
 
 export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist, total, colorLUT, cc }: CompositionDonutProps) {
@@ -197,7 +197,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
     // Count per (level, actual color) group — merge default and glazed if same color
     interface GlazeGroup {
       count: number;
-      rgb: [number, number, number];
+      rgb: readonly [number, number, number];
       isGlazed: boolean;
       lv: number;
     }
@@ -207,7 +207,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({ cvs, hist
     for (let i = 0; i < n; i++) {
       const lv = data[i] & LEVEL_MASK;
       const cm = colorMap[i];
-      let rgb: [number, number, number];
+      let rgb: readonly [number, number, number];
       let isGlazed = false;
       if (cm === 0) {
         rgb = colorLUT[lv];

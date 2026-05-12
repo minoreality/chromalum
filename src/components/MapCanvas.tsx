@@ -27,7 +27,7 @@ export function MapCanvas({
   mode: MapMode;
   pixelMaps: PixelMaps;
   colorLUT: [number, number, number][];
-  cc: number[];
+  cc: readonly number[];
   cvs: CanvasData;
   displayW: number;
   displayH: number;

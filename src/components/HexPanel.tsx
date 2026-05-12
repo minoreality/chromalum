@@ -16,7 +16,7 @@ interface HexPanelProps {
   cvs: CanvasData;
   displayW: number;
   displayH: number;
-  cc: number[];
+  cc: readonly number[];
   ccDispatch: React.Dispatch<ColorAction>;
   hist: number[];
   total: number;
