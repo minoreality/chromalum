@@ -385,7 +385,9 @@ function AppContent({ app, panZoom, sharedSchedCursorRef, announce, ariaLiveRef,
       <HelpModal showHelp={showHelp} setShowHelp={setShowHelp} helpRef={helpRef} />
 
       <div style={S_HEADER}>
-        <h1 style={S_TITLE}>CHROMALUM</h1>
+        <h1 className="app-title" style={S_TITLE}>
+          CHROMALUM
+        </h1>
         <div style={S_STATUS}>
           <button type="button" className="header-action-link" style={S_HEADER_ACTION} onClick={() => setShowAbout(true)}>
             {t("header_about")}

@@ -37,6 +37,15 @@
   --sp-tab-h: 4px;
 }
 
+@media (max-width: 767px) {
+  :root {
+    --sp-status-mt: 1px;
+  }
+  .app-title {
+    transform: translateY(2px);
+  }
+}
+
 /* ── Base reset ── */
 html,
 body {
