@@ -148,7 +148,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   }, [hueAngleDeg, brushLevel, candidateOverridesByLevel]);
 
   const activeDots = useMemo(() => dots.filter((d) => d.isActive), [dots]);
-  const projectionDots = useMemo(() => [...dots].sort((a, b) => Number(a.isActive) - Number(b.isActive)), [dots]);
+  const projectionDots = dots;
 
   // SVG coordinate conversion
   const svgCoord = useCallback((clientX: number, clientY: number) => {

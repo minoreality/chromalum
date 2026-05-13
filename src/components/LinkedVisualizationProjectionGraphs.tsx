@@ -283,8 +283,7 @@ export function RightProjectionGraph({
         const hov = hoveredDot !== null && hoveredDot.levelIndex === d.levelIndex && hoveredDot.candidateIndex === d.candidateIndex;
         const dimmed = d.isActive && hoveredDot !== null && !hov;
         return (
-          <g key={`rproj-${d.levelIndex}-${d.candidateIndex}`} {...(d.isActive ? dotHandlers(d) : {})}>
-            {d.isActive && <circle cx={rPx(d.angleDeg)} cy={y} r={dotHitR} fill="transparent" pointerEvents="all" />}
+          <g key={`rproj-${d.levelIndex}-${d.candidateIndex}`}>
             <circle
               cx={rPx(d.angleDeg)}
               cy={y}
@@ -299,6 +298,23 @@ export function RightProjectionGraph({
           </g>
         );
       })}
+      {projectionDots
+        .filter((d) => d.isActive)
+        .map((d) => {
+          const rad = ((d.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+          const y = CY + activeRadiusFn(d.levelIndex) * Math.sin(rad);
+          return (
+            <circle
+              key={`rproj-hit-${d.levelIndex}-${d.candidateIndex}`}
+              cx={rPx(d.angleDeg)}
+              cy={y}
+              r={dotHitR}
+              fill="transparent"
+              pointerEvents="all"
+              {...dotHandlers(d)}
+            />
+          );
+        })}
     </g>
   );
 }
@@ -519,8 +535,7 @@ export function BottomProjectionGraph({
         const hov = hoveredDot !== null && hoveredDot.levelIndex === d.levelIndex && hoveredDot.candidateIndex === d.candidateIndex;
         const dimmed = d.isActive && hoveredDot !== null && !hov;
         return (
-          <g key={`bproj-${d.levelIndex}-${d.candidateIndex}`} {...(d.isActive ? dotHandlers(d) : {})}>
-            {d.isActive && <circle cx={x} cy={bPy(d.angleDeg)} r={dotHitR} fill="transparent" pointerEvents="all" />}
+          <g key={`bproj-${d.levelIndex}-${d.candidateIndex}`}>
             <circle
               cx={x}
               cy={bPy(d.angleDeg)}
@@ -535,6 +550,23 @@ export function BottomProjectionGraph({
           </g>
         );
       })}
+      {projectionDots
+        .filter((d) => d.isActive)
+        .map((d) => {
+          const rad = ((d.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+          const x = CX + activeRadiusFn(d.levelIndex) * Math.cos(rad);
+          return (
+            <circle
+              key={`bproj-hit-${d.levelIndex}-${d.candidateIndex}`}
+              cx={x}
+              cy={bPy(d.angleDeg)}
+              r={dotHitR}
+              fill="transparent"
+              pointerEvents="all"
+              {...dotHandlers(d)}
+            />
+          );
+        })}
     </g>
   );
 }
