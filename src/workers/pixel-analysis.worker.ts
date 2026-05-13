@@ -34,7 +34,7 @@ self.onmessage = (e: MessageEvent<PixelAnalysisWorkerRequest>) => {
   const needsGrad = mode === "gradient";
   const needsRegion = mode === "region";
   const needsEdge = mode === "boundaryDistance" || mode === "region";
-  const needsLevelTone = mode === "luminance" || mode === "isolation" || mode === "gradient";
+  const needsLevelTone = mode === "levelTone" || mode === "isolation" || mode === "gradient";
   const needsDiversity = mode === "diversity";
 
   const result: PixelAnalysisWorkerResponse = {
@@ -72,7 +72,7 @@ self.onmessage = (e: MessageEvent<PixelAnalysisWorkerRequest>) => {
     case "region":
       computeRegion(levelData, width, height, result.regionId, result.isEdge, pixelCandidateOverrideMap);
       break;
-    case "luminance":
+    case "levelTone":
       for (let i = 0; i < n; i++) result.levelTone[i] = (levelData[i] & LEVEL_MASK) / 7;
       break;
     case "colorLuma":

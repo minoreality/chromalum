@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  lum,
+  bt601Luma,
   LUMA_R,
   LUMA_G,
   LUMA_B,
@@ -13,25 +13,25 @@ import {
   DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
 } from "../color-engine";
 
-describe("lum", () => {
+describe("bt601Luma", () => {
   it("black = 0", () => {
-    expect(lum(0, 0, 0)).toBe(0);
+    expect(bt601Luma(0, 0, 0)).toBe(0);
   });
 
   it("white = 255", () => {
-    expect(lum(255, 255, 255)).toBe(255);
+    expect(bt601Luma(255, 255, 255)).toBe(255);
   });
 
   it("pure red ~76.245", () => {
-    expect(lum(255, 0, 0)).toBeCloseTo(255 * LUMA_R, 1);
+    expect(bt601Luma(255, 0, 0)).toBeCloseTo(255 * LUMA_R, 1);
   });
 
   it("pure green ~149.685", () => {
-    expect(lum(0, 255, 0)).toBeCloseTo(255 * LUMA_G, 1);
+    expect(bt601Luma(0, 255, 0)).toBeCloseTo(255 * LUMA_G, 1);
   });
 
   it("pure blue ~29.07", () => {
-    expect(lum(0, 0, 255)).toBeCloseTo(255 * LUMA_B, 1);
+    expect(bt601Luma(0, 0, 255)).toBeCloseTo(255 * LUMA_B, 1);
   });
 });
 

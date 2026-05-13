@@ -9,7 +9,7 @@ export type AnalysisMapRenderStatus = "rendered" | "stale";
 
 const REGION_SMALL_THRESHOLD = 10;
 const MAP_STATUS_LABEL: Record<MapMode, string> = {
-  luminance: "MapTone",
+  levelTone: "MapTone",
   colorLuma: "MapColorLuma",
   region: "MapRegion",
   gradient: "MapToneGrad",
@@ -281,7 +281,7 @@ export function rasterizeAnalysisMap({
     for (let i = 0; i < n; i++) {
       target[i] = applyLUTPacked(TURBO, 1 - pixelMaps.boundaryDistance[i]);
     }
-  } else if (mode === "luminance" && pixelMaps.levelTone.length >= n) {
+  } else if (mode === "levelTone" && pixelMaps.levelTone.length >= n) {
     for (let i = 0; i < n; i++) {
       target[i] = applyLUTPacked(MAGMA, pixelMaps.levelTone[i]);
     }
@@ -365,7 +365,7 @@ export function getAnalysisMapHoverInfo({
   const lv = canvasData.levelData[idx] & LEVEL_MASK;
   const prefix = `(${x},${y}) ${MAP_STATUS_LABEL[mode]} L${lv}`;
   const compactPrefix = `(${x},${y}) ${MAP_STATUS_LABEL[mode].replace("Map", "")} L${lv}`;
-  const needsComputedMap = mode !== "luminance" && mode !== "colorLuma";
+  const needsComputedMap = mode !== "levelTone" && mode !== "colorLuma";
   if (needsComputedMap && (pixelMaps.width !== w || pixelMaps.height !== h))
     return { full: `${prefix} pending`, compact: `${compactPrefix} pending` };
 
@@ -399,7 +399,7 @@ export function getAnalysisMapHoverInfo({
       full: `${prefix} ${visualLabel(canvasData, candidateIndexByLevel, idx, lv)} unlike=${unlike}/4 same=${4 - unlike}/4 score=${pct(score)}`,
       compact: `${compactPrefix} ${compactVisualLabel(canvasData, candidateIndexByLevel, idx, lv)} unlike=${unlike}/4 score=${pct(score)}`,
     };
-  } else if (mode === "luminance") {
+  } else if (mode === "levelTone") {
     const g = LEVEL_INFO[lv].gray;
     return {
       full: `${prefix} ${LEVEL_INFO[lv].name} gray=${g} level=${lv}/7 t=${pct(lv / 7)}`,

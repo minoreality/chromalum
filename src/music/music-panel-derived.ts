@@ -25,7 +25,7 @@ export function buildMusicSonificationLevels(
   return MUSIC_ACTIVE_LEVELS.map((levelIndex) => {
     const candidateIndex = getCandidateIndex(candidateOverridesByLevel, levelIndex, hueAngle);
     const cand = LEVEL_CANDIDATES[levelIndex][candidateIndex];
-    return cand ? { lv: levelIndex, angle: cand.angle, gray: LEVEL_INFO[levelIndex].gray } : { lv: levelIndex, angle: 0, gray: 0 };
+    return cand ? { lv: levelIndex, angle: cand.angle, luma255: LEVEL_INFO[levelIndex].gray } : { lv: levelIndex, angle: 0, luma255: 0 };
   });
 }
 

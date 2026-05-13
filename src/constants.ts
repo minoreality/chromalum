@@ -22,7 +22,7 @@ export const TOAST_DURATION = 2500;
 /* ═══════════════════════════════════════════
    MODULE-LEVEL CONSTANTS (early, used by HEX data)
    ═══════════════════════════════════════════ */
-export const LEVEL_COUNT = 8; /* number of luminance levels */
+export const LEVEL_COUNT = 8; /* number of source tone levels */
 export const LEVEL_MASK = 7; /* 3-bit mask for 8 levels (0-7) */
 export const NUM_VERTICES = 6; /* hexagon vertex count */
 

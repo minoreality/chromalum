@@ -16,7 +16,7 @@ import { recordDebugPerf, startDebugPerf } from "../utils/perf-debug";
 import PixelAnalysisWorker from "../workers/pixel-analysis.worker?worker";
 
 const WORKER_MODES = new Set<MapMode>(["isolation", "diversity", "boundaryDistance", "gradient", "region"]);
-const PRELOAD_ORDER: readonly MapMode[] = ["luminance", "isolation", "gradient", "region", "boundaryDistance", "diversity"];
+const PRELOAD_ORDER: readonly MapMode[] = ["levelTone", "isolation", "gradient", "region", "boundaryDistance", "diversity"];
 
 type PixelMapsCache = {
   levelData: Uint8Array;
@@ -71,7 +71,7 @@ function computePixelMapsSync(canvasData: CanvasData, mode: MapMode): AnalysisPi
     case "region":
       computeRegion(levelData, width, height, maps.regionId, maps.isEdge, canvasData.pixelCandidateOverrideMap);
       break;
-    case "luminance":
+    case "levelTone":
       for (let i = 0; i < n; i++) maps.levelTone[i] = (levelData[i] & LEVEL_MASK) / 7;
       break;
     case "colorLuma":

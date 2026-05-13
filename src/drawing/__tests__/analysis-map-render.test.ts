@@ -54,7 +54,7 @@ describe("analysis-map-render", () => {
     const canvasData = makeCanvasData();
     const pixelMaps = makePixelMaps();
 
-    for (const mode of ["diversity", "isolation", "boundaryDistance", "gradient", "region", "luminance", "colorLuma"] satisfies MapMode[]) {
+    for (const mode of ["diversity", "isolation", "boundaryDistance", "gradient", "region", "levelTone", "colorLuma"] satisfies MapMode[]) {
       const target = new Uint32Array(4);
       const status = rasterizeAnalysisMap({ mode, pixelMaps, colorLUT, canvasData, target });
       expect(status).toBe("rendered");
@@ -106,7 +106,7 @@ describe("analysis-map-render", () => {
 
     expect(regionSizeById.get(1)).toBe(2);
     const cases: Array<[MapMode, string]> = [
-      ["luminance", "(0,0) MapTone L0 Black gray=0 level=0/7 t=0%"],
+      ["levelTone", "(0,0) MapTone L0 Black gray=0 level=0/7 t=0%"],
       ["colorLuma", "(0,0) MapColorLuma L0 c1/1 #000000 Y=0/255 0% dGray=0"],
       ["region", "(0,0) MapRegion L0 base c1/1 #000000 region#1 size=2px interior small"],
       ["gradient", "(0,0) MapToneGrad L0 g=(+2,+5) dir=180° mag=0% flat"],

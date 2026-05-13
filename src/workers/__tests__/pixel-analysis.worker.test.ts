@@ -12,8 +12,8 @@ import { LEVEL_MASK } from "../../constants";
  */
 
 describe("pixel-analysis worker logic", () => {
-  describe("conditional allocation for luminance mode", () => {
-    it("luminance mode: only levelTone should be populated", () => {
+  describe("conditional allocation for levelTone mode", () => {
+    it("levelTone mode: only levelTone should be populated", () => {
       const w = 4,
         h = 4,
         n = w * h;
@@ -21,7 +21,7 @@ describe("pixel-analysis worker logic", () => {
       // Fill with varying levels 0-7
       for (let i = 0; i < n; i++) levelData[i] = i % 8;
 
-      // Simulate what the worker does for "luminance" mode
+      // Simulate what the worker does for "levelTone" mode
       const levelTone = new Float32Array(n);
       for (let i = 0; i < n; i++) levelTone[i] = (levelData[i] & LEVEL_MASK) / 7;
 

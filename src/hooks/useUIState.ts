@@ -102,7 +102,7 @@ export function useUIState(_t: TranslationFn) {
   const [showHelp, setShowHelp] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "info" } | null>(null);
   const [showNewCanvas, setShowNewCanvas] = useState(false);
-  const [mapMode, setMapMode] = useState<MapMode>("luminance");
+  const [mapMode, setMapMode] = useState<MapMode>("levelTone");
   const [hueAngle, setHueAngle] = useState(0);
   const [candidateOverridesByLevel, setCandidateOverridesByLevel] = useState<Map<number, number>>(new Map());
 

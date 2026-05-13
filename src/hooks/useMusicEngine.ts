@@ -44,7 +44,7 @@ interface MusicEngineParams {
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null; // 0-6 or null
-  luminanceMode: "symmetric" | "luminance";
+  lumaMode: "symmetric" | "bt601Luma";
   originMode: 0 | 7;
 }
 
@@ -67,7 +67,7 @@ export interface MusicEngineReturn {
   playCayleyRow: (row: number, onStep: (col: number, value: number) => void) => void;
   applyGL32Transform: (gen: "A" | "B" | "C", onPerm?: (perm: number[]) => void) => void;
   resetGL32Transform: (onPerm?: (perm: number[]) => void) => void;
-  setLuminanceMode: (mode: "symmetric" | "luminance") => void;
+  setLumaMode: (mode: "symmetric" | "bt601Luma") => void;
   stopAlgebra: () => void;
   setDroneMuted: (muted: boolean) => void;
   playComplementCanon: (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse?: boolean) => void;
@@ -101,7 +101,7 @@ export function useMusicEngine({
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
-  luminanceMode,
+  lumaMode,
   originMode,
 }: MusicEngineParams): MusicEngineReturn {
   const grayIntervalRef = useRef<IntervalHandle | null>(null);
@@ -129,7 +129,7 @@ export function useMusicEngine({
     playBitVectorLevel,
     triggerLumaBurst,
     triggerErrorMarker,
-    setLuminanceMode,
+    setLumaMode,
     setDroneMuted,
   } = useMusicAudioSession({
     enabled,
@@ -142,7 +142,7 @@ export function useMusicEngine({
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
-    luminanceMode,
+    lumaMode,
     originMode,
     onStopPlayback: clearPlayback,
   });
@@ -574,7 +574,7 @@ export function useMusicEngine({
     playCayleyRow,
     applyGL32Transform,
     resetGL32Transform,
-    setLuminanceMode,
+    setLumaMode,
     stopAlgebra,
     setDroneMuted,
     playComplementCanon,

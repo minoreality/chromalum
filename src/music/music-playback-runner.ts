@@ -21,7 +21,7 @@ export interface MusicPlaybackRuntime {
   clear: () => void;
   schedule: (fn: () => void, ms: number) => void;
   playBitVectorLevel: (lv: number) => void;
-  triggerLumaBurst: (gray: number) => void;
+  triggerLumaBurst: (luma255: number) => void;
   triggerErrorMarker: () => void;
 }
 

@@ -25,14 +25,14 @@ describe("music panel derived data", () => {
     expect(levels[1]).toEqual({
       lv: 2,
       angle: LEVEL_CANDIDATES[2][directCandidate].angle,
-      gray: LEVEL_INFO[2].gray,
+      luma255: LEVEL_INFO[2].gray,
     });
 
     const fallbackCandidate = findClosestCandidate(3, 123);
     expect(levels[2]).toEqual({
       lv: 3,
       angle: LEVEL_CANDIDATES[3][fallbackCandidate].angle,
-      gray: LEVEL_INFO[3].gray,
+      luma255: LEVEL_INFO[3].gray,
     });
   });
 

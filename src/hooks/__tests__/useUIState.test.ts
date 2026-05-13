@@ -265,11 +265,11 @@ describe("useUIState", () => {
 
   it("mapMode changes", () => {
     const { result } = renderHook(() => useUIState(t));
-    expect(result.current.mapMode).toBe("luminance");
+    expect(result.current.mapMode).toBe("levelTone");
 
     act(() => {
-      result.current.setMapMode("luminance");
+      result.current.setMapMode("levelTone");
     });
-    expect(result.current.mapMode).toBe("luminance");
+    expect(result.current.mapMode).toBe("levelTone");
   });
 });

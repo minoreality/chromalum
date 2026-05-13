@@ -164,12 +164,12 @@ afterEach(() => {
 type MusicEngineParams = Parameters<typeof useMusicEngine>[0];
 
 const DEFAULT_LEVELS: MusicEngineParams["levels"] = [
-  { lv: 1, angle: 240, gray: 29 },
-  { lv: 2, angle: 0, gray: 76 },
-  { lv: 3, angle: 300, gray: 105 },
-  { lv: 4, angle: 120, gray: 150 },
-  { lv: 5, angle: 180, gray: 179 },
-  { lv: 6, angle: 60, gray: 226 },
+  { lv: 1, angle: 240, luma255: 29 },
+  { lv: 2, angle: 0, luma255: 76 },
+  { lv: 3, angle: 300, luma255: 105 },
+  { lv: 4, angle: 120, luma255: 150 },
+  { lv: 5, angle: 180, luma255: 179 },
+  { lv: 6, angle: 60, luma255: 226 },
 ];
 
 function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {
@@ -185,7 +185,7 @@ function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {
       fmEnabled: false,
       panEnabled: true,
       hoveredFanoLine: null,
-      luminanceMode: "symmetric",
+      lumaMode: "symmetric",
       originMode: 0,
       ...overrides,
     }),
@@ -250,7 +250,7 @@ describe("useMusicEngine", () => {
           fmEnabled: false,
           panEnabled: true,
           hoveredFanoLine: null,
-          luminanceMode: "symmetric",
+          lumaMode: "symmetric",
           originMode: 0,
         }),
       { initialProps: { enabled: true } },

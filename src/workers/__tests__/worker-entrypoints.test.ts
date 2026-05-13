@@ -75,7 +75,7 @@ describe("worker entrypoints", () => {
 
   it("pixel-analysis worker allocates only the maps required by each mode", async () => {
     const fakeSelf = await loadWorker("../pixel-analysis.worker");
-    const modes: MapMode[] = ["isolation", "diversity", "boundaryDistance", "gradient", "region", "luminance", "colorLuma"];
+    const modes: MapMode[] = ["isolation", "diversity", "boundaryDistance", "gradient", "region", "levelTone", "colorLuma"];
 
     modes.forEach((mode, index) => {
       const req: PixelAnalysisWorkerRequest = {

@@ -24,7 +24,7 @@ const mockEngine = vi.hoisted(() => ({
   playCayleyRow: vi.fn(),
   applyGL32Transform: vi.fn(),
   resetGL32Transform: vi.fn(),
-  setLuminanceMode: vi.fn(),
+  setLumaMode: vi.fn(),
   stopAlgebra: vi.fn(),
   setDroneMuted: vi.fn(),
   playComplementCanon: vi.fn(),

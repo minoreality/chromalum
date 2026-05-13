@@ -56,7 +56,7 @@ function makeProps(overrides?: Partial<Parameters<typeof AnalyzePanel>[0]>) {
     displayW: 320,
     displayH: 320,
     active: true,
-    mapMode: "luminance" as const,
+    mapMode: "levelTone" as const,
     setMapMode: vi.fn(),
     ...overrides,
   };
@@ -85,7 +85,7 @@ describe("AnalyzePanel", () => {
     render(<AnalyzePanel {...makeProps()} />);
 
     expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
-      "stats_map_luminance",
+      "stats_map_levelTone",
       "stats_map_colorLuma",
       "stats_map_gradient",
       "stats_map_region",
@@ -105,7 +105,7 @@ describe("AnalyzePanel", () => {
     const setMapMode = vi.fn<(mode: MapMode) => void>();
     render(<AnalyzePanel {...makeProps({ setMapMode })} />);
 
-    for (const mode of ["luminance", "colorLuma", "gradient", "region", "boundaryDistance", "isolation", "diversity"] satisfies MapMode[]) {
+    for (const mode of ["levelTone", "colorLuma", "gradient", "region", "boundaryDistance", "isolation", "diversity"] satisfies MapMode[]) {
       fireEvent.click(screen.getByRole("button", { name: `stats_map_${mode}` }));
       expect(setMapMode).toHaveBeenLastCalledWith(mode);
     }
@@ -135,7 +135,7 @@ describe("AnalyzePanel", () => {
   });
 
   it("memoizes rerenders when comparable props are unchanged", () => {
-    const first = makeProps({ mapMode: "luminance" });
+    const first = makeProps({ mapMode: "levelTone" });
     const { rerender } = render(<AnalyzePanel {...first} />);
     expect(analyzeMocks.usePixelMaps).toHaveBeenCalledTimes(1);
 

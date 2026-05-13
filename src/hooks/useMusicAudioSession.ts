@@ -15,7 +15,7 @@ import {
   type SonificationLevel,
 } from "../music/music-audio-graph";
 
-type MusicLuminanceMode = "symmetric" | "luminance";
+type MusicLumaMode = "symmetric" | "bt601Luma";
 
 interface MusicAudioSessionParams {
   enabled: boolean;
@@ -28,7 +28,7 @@ interface MusicAudioSessionParams {
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null;
-  luminanceMode: MusicLuminanceMode;
+  lumaMode: MusicLumaMode;
   originMode: 0 | 7;
   onStopPlayback: () => void;
 }
@@ -43,7 +43,7 @@ interface MusicAudioSessionSnapshot {
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null;
-  luminanceMode: MusicLuminanceMode;
+  lumaMode: MusicLumaMode;
   originMode: 0 | 7;
 }
 
@@ -56,9 +56,9 @@ interface MusicAudioSessionReturn {
   triggerToneBurst: (lv: number, angle: number) => void;
   playPitchLevel: (lv: number) => void;
   playBitVectorLevel: (lv: number) => void;
-  triggerLumaBurst: (gray: number) => void;
+  triggerLumaBurst: (luma255: number) => void;
   triggerErrorMarker: () => void;
-  setLuminanceMode: (mode: MusicLuminanceMode) => void;
+  setLumaMode: (mode: MusicLumaMode) => void;
   setDroneMuted: (muted: boolean) => void;
 }
 
@@ -73,7 +73,7 @@ export function useMusicAudioSession({
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
-  luminanceMode,
+  lumaMode,
   originMode,
   onStopPlayback,
 }: MusicAudioSessionParams): MusicAudioSessionReturn {
@@ -91,7 +91,7 @@ export function useMusicAudioSession({
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
-    luminanceMode,
+    lumaMode,
     originMode,
   });
   paramsRef.current = {
@@ -104,11 +104,11 @@ export function useMusicAudioSession({
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
-    luminanceMode,
+    lumaMode,
     originMode,
   };
 
-  const applyCurrentParams = useCallback((nodes: AudioNodes, luminanceOverride?: MusicLuminanceMode, droneMutedOverride?: boolean) => {
+  const applyCurrentParams = useCallback((nodes: AudioNodes, lumaModeOverride?: MusicLumaMode, droneMutedOverride?: boolean) => {
     const p = paramsRef.current;
     applyParams(
       nodes,
@@ -121,7 +121,7 @@ export function useMusicAudioSession({
       p.fmEnabled,
       p.panEnabled,
       p.hoveredFanoLine,
-      luminanceOverride ?? p.luminanceMode,
+      lumaModeOverride ?? p.lumaMode,
       p.originMode,
       droneMutedOverride ?? droneMutedRef.current,
     );
@@ -188,7 +188,7 @@ export function useMusicAudioSession({
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
-    luminanceMode,
+    lumaMode,
     originMode,
     applyCurrentParams,
   ]);
@@ -225,10 +225,10 @@ export function useMusicAudioSession({
     triggerBitSpectrumBurst(nodes, lv, -1, false);
   }, []);
 
-  const triggerLumaBurstForSession = useCallback((gray: number) => {
+  const triggerLumaBurstForSession = useCallback((luma255: number) => {
     const nodes = nodesRef.current;
     if (nodes) {
-      triggerLumaBurst(nodes, gray);
+      triggerLumaBurst(nodes, luma255);
     }
   }, []);
 
@@ -239,10 +239,10 @@ export function useMusicAudioSession({
     }
   }, []);
 
-  const setLuminanceMode = useCallback(
-    (mode: MusicLuminanceMode) => {
+  const setLumaMode = useCallback(
+    (mode: MusicLumaMode) => {
       if (!nodesRef.current) return;
-      paramsRef.current.luminanceMode = mode;
+      paramsRef.current.lumaMode = mode;
       applyCurrentParams(nodesRef.current, mode);
     },
     [applyCurrentParams],
@@ -268,7 +268,7 @@ export function useMusicAudioSession({
     playBitVectorLevel,
     triggerLumaBurst: triggerLumaBurstForSession,
     triggerErrorMarker: triggerErrorMarkerForSession,
-    setLuminanceMode,
+    setLumaMode,
     setDroneMuted,
   };
 }

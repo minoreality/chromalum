@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { CUBE_EDGES, COMPLEMENT_EDGES, STELLA_EDGES } from "../../data/theory-data";
 import {
   ALL_POINTS,
-  BT601_LUMINANCE,
-  BT601_MAX,
+  BT601_LUMA_COEFFICIENT_BY_LEVEL,
+  MAX_BT601_LUMA_COEFFICIENT,
   FULL_GRAY_CODE,
   K8_LAYER_EDGES,
   extendedHammingCodewords,
@@ -24,7 +24,7 @@ describe("music-engine-core", () => {
 
     expect(lumaToFreq(0)).toBe(220);
     expect(lumaToFreq(255)).toBe(880);
-    expect(BT601_MAX).toBe(BT601_LUMINANCE[6]);
+    expect(MAX_BT601_LUMA_COEFFICIENT).toBe(BT601_LUMA_COEFFICIENT_BY_LEVEL[6]);
   });
 
   it("applies GL(3,2) generators to all nonzero points", () => {

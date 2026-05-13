@@ -9,8 +9,8 @@ export const PARITY_GROUPS: readonly (readonly number[])[] = [
 export const ALL_POINTS = [1, 2, 3, 4, 5, 6, 7] as const;
 export const FULL_GRAY_CODE = [0, 1, 3, 2, 6, 7, 5, 4] as const;
 
-/** BT.601 luminance coefficients per level (L1-L6) */
-export const BT601_LUMINANCE: Readonly<Record<number, number>> = {
+/** BT.601 luma coefficients per level (L1-L6). */
+export const BT601_LUMA_COEFFICIENT_BY_LEVEL: Readonly<Record<number, number>> = {
   1: 0.114, // B
   2: 0.299, // R
   3: 0.413, // M = B+R
@@ -18,7 +18,7 @@ export const BT601_LUMINANCE: Readonly<Record<number, number>> = {
   5: 0.701, // C = G+B
   6: 0.886, // Y = R+G
 };
-export const BT601_MAX = Math.max(...Object.values(BT601_LUMINANCE));
+export const MAX_BT601_LUMA_COEFFICIENT = Math.max(...Object.values(BT601_LUMA_COEFFICIENT_BY_LEVEL));
 
 /** GL(3,2) generators operating on {1..7} via bit manipulation */
 // Gen A: [G,R,B] -> [B,G,R] (bit rotation left)
@@ -63,8 +63,8 @@ export const K8_LAYER_EDGES = {
 } as const;
 
 /** Luma value -> frequency (distinct from angleToFreq: sonifies BT.601 luma theorem) */
-export function lumaToFreq(gray: number): number {
-  return 220 + (gray / 255) * 660; // 220-880 Hz linear
+export function lumaToFreq(luma255: number): number {
+  return 220 + (luma255 / 255) * 660; // 220-880 Hz linear
 }
 
 /** Lines through a Fano point */

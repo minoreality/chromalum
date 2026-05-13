@@ -1,12 +1,12 @@
 import { FANO_LINES } from "../data/theory-data";
 import { LUMA_VALUES, bitSpectrumComponents } from "../data/music-data";
 import { BASE_FREQ, angleToFreq, type ScaleMode } from "../data/music-frequency";
-import { BT601_LUMINANCE, BT601_MAX, lumaToFreq } from "./music-engine-core";
+import { BT601_LUMA_COEFFICIENT_BY_LEVEL, MAX_BT601_LUMA_COEFFICIENT, lumaToFreq } from "./music-engine-core";
 
 export interface SonificationLevel {
   lv: number;
   angle: number; // hue angle in degrees (0-360)
-  gray: number; // luminance 0-255
+  luma255: number;
 }
 
 export interface AudioNodes {
@@ -159,7 +159,7 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
     modOsc.frequency.value = angleToFreq(modData.angle, scaleMode);
 
     const modGain = nodes.ctx.createGain();
-    const modIndex = (Math.abs(carrierData.gray - modData.gray) / 255) * 400;
+    const modIndex = (Math.abs(carrierData.luma255 - modData.luma255) / 255) * 400;
     modGain.gain.value = modIndex;
 
     // carrier index in oscs array is (carrierLv - 1)
@@ -176,11 +176,11 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
 }
 
 /** Trigger a short tone burst at a luma-derived frequency */
-export function triggerLumaBurst(nodes: AudioNodes, gray: number) {
+export function triggerLumaBurst(nodes: AudioNodes, luma255: number) {
   const ctx = nodes.ctx;
   const osc = ctx.createOscillator();
   osc.type = "sine";
-  osc.frequency.value = lumaToFreq(gray);
+  osc.frequency.value = lumaToFreq(luma255);
   const gain = ctx.createGain();
   const now = ctx.currentTime;
   gain.gain.setValueAtTime(0, now);
@@ -223,8 +223,8 @@ export function triggerBitSpectrumBurst(nodes: AudioNodes, lv: number, angle: nu
   const components = bitSpectrumComponents(lv);
   if (components.length === 0) return;
 
-  const grayNorm = Math.max(0, Math.min(1, (LUMA_VALUES[lv] ?? 0) / 255));
-  if (grayNorm <= 0) return;
+  const lumaNorm = Math.max(0, Math.min(1, (LUMA_VALUES[lv] ?? 0) / 255));
+  if (lumaNorm <= 0) return;
 
   const ctx = nodes.ctx;
   const now = ctx.currentTime;
@@ -232,7 +232,7 @@ export function triggerBitSpectrumBurst(nodes: AudioNodes, lv: number, angle: nu
   const panner = ctx.createStereoPanner();
 
   group.gain.setValueAtTime(0, now);
-  group.gain.linearRampToValueAtTime(grayNorm * BIT_TIMBRE_GAIN_SCALE, now + 0.01);
+  group.gain.linearRampToValueAtTime(lumaNorm * BIT_TIMBRE_GAIN_SCALE, now + 0.01);
   group.gain.linearRampToValueAtTime(0, now + 0.31);
 
   if (panEnabled && angle >= 0) {
@@ -293,7 +293,7 @@ export function applyParams(
   fmEnabled: boolean,
   panEnabled: boolean,
   hoveredFanoLine: number | null,
-  luminanceMode: "symmetric" | "luminance" = "symmetric",
+  lumaMode: "symmetric" | "bt601Luma" = "symmetric",
   originMode: 0 | 7 = 0,
   droneMuted = false,
 ) {
@@ -326,12 +326,14 @@ export function applyParams(
     nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(rotatedAngle, scaleMode), now, RAMP_TC);
 
     // Gain: hover logic with Fano line boost
-    // L0 mode: brighter levels are louder (gray/255)
-    // L7 mode: darker levels are louder (1 - gray/255), matching the inverted radius
+    // L0 mode: brighter levels are louder (luma/255)
+    // L7 mode: darker levels are louder (1 - luma/255), matching the inverted radius
     const gainScale =
-      luminanceMode === "luminance" && BT601_LUMINANCE[lv] !== undefined ? (BT601_LUMINANCE[lv] / BT601_MAX) * GAIN_SCALE : GAIN_SCALE;
-    const grayNorm = originMode === 0 ? lvData.gray / 255 : 1 - lvData.gray / 255;
-    const baseGain = grayNorm * gainScale;
+      lumaMode === "bt601Luma" && BT601_LUMA_COEFFICIENT_BY_LEVEL[lv] !== undefined
+        ? (BT601_LUMA_COEFFICIENT_BY_LEVEL[lv] / MAX_BT601_LUMA_COEFFICIENT) * GAIN_SCALE
+        : GAIN_SCALE;
+    const lumaNorm = originMode === 0 ? lvData.luma255 / 255 : 1 - lvData.luma255 / 255;
+    const baseGain = lumaNorm * gainScale;
     let targetGain: number;
 
     if (hoveredLv !== null) {
@@ -369,9 +371,9 @@ export function applyParams(
     nodes.panners[i].pan.setTargetAtTime(panValue, now, RAMP_TC);
   }
 
-  // L7 noise: gain follows wave graph radius: L0-origin -> gray/255 = 1.0, L7-origin -> 1-gray/255 = 0
-  const l7Gray = 255; // White
-  const l7Radius = originMode === 0 ? l7Gray / 255 : 1 - l7Gray / 255;
+  // L7 noise: gain follows wave graph radius: L0-origin -> luma/255 = 1.0, L7-origin -> 1-luma/255 = 0
+  const l7Luma255 = 255; // White
+  const l7Radius = originMode === 0 ? l7Luma255 / 255 : 1 - l7Luma255 / 255;
   const noiseBase = NOISE_GAIN * l7Radius;
   let noiseTarget = noiseBase * phaseFactor;
   if (hoveredLv === 7) noiseTarget = noiseBase * HOVER_BOOST;
@@ -392,7 +394,7 @@ export function applyParams(
         continue;
       }
       nodes.fmOscs[pairIdx].frequency.setTargetAtTime(angleToFreq(modData.angle + activeAlpha, scaleMode), now, RAMP_TC);
-      const modIndex = (Math.abs(carrierData.gray - modData.gray) / 255) * 400;
+      const modIndex = (Math.abs(carrierData.luma255 - modData.luma255) / 255) * 400;
       nodes.fmGains[pairIdx].gain.setTargetAtTime(modIndex, now, RAMP_TC);
       pairIdx++;
     }

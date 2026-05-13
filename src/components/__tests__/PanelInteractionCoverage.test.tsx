@@ -576,7 +576,7 @@ describe("MapCanvas rendering and inspection", () => {
     const pixelMaps = makePixelMaps(2, 2);
     const { container, rerender } = render(
       <MapCanvas
-        mode="luminance"
+        mode="levelTone"
         pixelMaps={pixelMaps}
         colorLUT={colorLUT}
         candidateIndexByLevel={DEFAULT_CANDIDATE_INDEX_BY_LEVEL}
@@ -586,7 +586,7 @@ describe("MapCanvas rendering and inspection", () => {
       />,
     );
 
-    for (const mode of ["diversity", "isolation", "boundaryDistance", "luminance", "colorLuma", "gradient", "region"] satisfies MapMode[]) {
+    for (const mode of ["diversity", "isolation", "boundaryDistance", "levelTone", "colorLuma", "gradient", "region"] satisfies MapMode[]) {
       rerender(
         <MapCanvas
           mode={mode}

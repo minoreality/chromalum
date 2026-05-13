@@ -48,7 +48,7 @@ function makeMusicEngine(overrides: Partial<MusicEngineReturn> = {}): MusicEngin
     playCayleyRow: vi.fn(),
     applyGL32Transform: vi.fn(),
     resetGL32Transform: vi.fn(),
-    setLuminanceMode: vi.fn(),
+    setLumaMode: vi.fn(),
     stopAlgebra: vi.fn(),
     setDroneMuted: vi.fn(),
     playComplementCanon: vi.fn(),
@@ -73,8 +73,8 @@ function makeTransportProps(overrides: Partial<TransportProps> = {}): TransportP
     onScaleModeChange: mockFn<TransportProps["onScaleModeChange"]>(),
     onStopAll: vi.fn(),
     onResetDefaults: vi.fn(),
-    luminanceMode: "symmetric",
-    onLuminanceModeChange: mockFn<TransportProps["onLuminanceModeChange"]>(),
+    lumaMode: "symmetric",
+    onLumaModeChange: mockFn<TransportProps["onLumaModeChange"]>(),
     fmEnabled: false,
     onFmEnabledChange: vi.fn(),
     hueDir: 0,
@@ -334,7 +334,7 @@ describe("MusicPanel section components", () => {
     expect(props.onResetDefaults).toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Luma" }));
-    expect(props.onLuminanceModeChange).toHaveBeenCalledWith("luminance");
+    expect(props.onLumaModeChange).toHaveBeenCalledWith("bt601Luma");
 
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     expect(props.onFmEnabledChange).toHaveBeenCalledWith(true);

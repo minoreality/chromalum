@@ -15,9 +15,18 @@
 export const LUMA_R = 0.299,
   LUMA_G = 0.587,
   LUMA_B = 0.114;
-export const lum = (r: number, g: number, b: number): number => LUMA_R * r + LUMA_G * g + LUMA_B * b;
+export const bt601Luma = (r: number, g: number, b: number): number => LUMA_R * r + LUMA_G * g + LUMA_B * b;
 
-const EIGHT_LEVELS = [0, lum(0, 0, 255), lum(255, 0, 0), lum(255, 0, 255), lum(0, 255, 0), lum(0, 255, 255), lum(255, 255, 0), 255];
+const EIGHT_LEVELS = [
+  0,
+  bt601Luma(0, 0, 255),
+  bt601Luma(255, 0, 0),
+  bt601Luma(255, 0, 255),
+  bt601Luma(0, 255, 0),
+  bt601Luma(0, 255, 255),
+  bt601Luma(255, 255, 0),
+  255,
+];
 
 interface LevelInfo {
   readonly name: string;

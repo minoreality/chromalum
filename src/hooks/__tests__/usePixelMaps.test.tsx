@@ -92,7 +92,7 @@ describe("usePixelMaps", () => {
       levelData: new Uint8Array([0, 7, 3, 4]),
       pixelCandidateOverrideMap: new Uint8Array(4),
     };
-    const { result } = renderHook(() => usePixelMaps(canvasData, "luminance"));
+    const { result } = renderHook(() => usePixelMaps(canvasData, "levelTone"));
 
     await waitFor(() => expect(result.current.levelTone[1]).toBeCloseTo(1));
     expect(result.current.width).toBe(2);
@@ -182,7 +182,7 @@ describe("usePixelMaps", () => {
     await waitFor(() =>
       expect(MockPixelAnalysisWorker.postedModes).toEqual([
         "isolation",
-        "luminance",
+        "levelTone",
         "gradient",
         "region",
         "boundaryDistance",
@@ -205,7 +205,7 @@ describe("usePixelMaps", () => {
     await waitFor(() =>
       expect(MockPixelAnalysisWorker.postedModes).toEqual([
         "isolation",
-        "luminance",
+        "levelTone",
         "gradient",
         "region",
         "boundaryDistance",
