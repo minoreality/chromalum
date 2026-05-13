@@ -42,6 +42,9 @@ jobs:
       - name: PWA end-to-end tests
         run: npm run test:pwa
 
+      - name: Visual regression tests
+        run: npm run test:visual
+
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
