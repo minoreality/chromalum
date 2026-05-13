@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 
 // Mock idb-persistence so IndexedDB is not required
 vi.mock("../../utils/idb-persistence", () => ({
@@ -17,6 +17,9 @@ import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../../constants";
 
 // Minimal translation stub
 const t = ((key: string) => key) as import("../../i18n").TranslationFn;
+async function waitForLoaded(result: { current: ReturnType<typeof useAppState> }) {
+  await waitFor(() => expect(result.current.loaded).toBe(true));
+}
 
 describe("useAppState", () => {
   beforeEach(() => {
@@ -45,8 +48,9 @@ describe("useAppState", () => {
     expect(getCanvasDisplaySize(1600, 900, 390, 844)).toEqual({ displayWidth: 358, displayHeight: 201 });
   });
 
-  it("composes the initial app state needed by the canvas UI", () => {
+  it("composes the initial app state needed by the canvas UI", async () => {
     const { result } = renderHook(() => useAppState(t));
+    await waitForLoaded(result);
     const s = result.current;
 
     expect(s.canvasData.width).toBe(DEFAULT_CANVAS_WIDTH);
@@ -64,8 +68,9 @@ describe("useAppState", () => {
     for (const rgb of result.current.colorLUT) expect(rgb).toHaveLength(3);
   });
 
-  it("passes through composed tool and color-state actions", () => {
+  it("passes through composed tool and color-state actions", async () => {
     const { result } = renderHook(() => useAppState(t));
+    await waitForLoaded(result);
 
     act(() => {
       result.current.setTool("fill");
@@ -81,8 +86,9 @@ describe("useAppState", () => {
     expect(result.current.lockedLevels[0]).toBe(false);
   });
 
-  it("updates the untouched brush size when canvas dimensions change", () => {
+  it("updates the untouched brush size when canvas dimensions change", async () => {
     const { result } = renderHook(() => useAppState(t));
+    await waitForLoaded(result);
 
     act(() => {
       result.current.dispatch({ type: "new_canvas", width: 64, height: 64 });
@@ -91,8 +97,9 @@ describe("useAppState", () => {
     expect(result.current.brushSize).toBe(2);
   });
 
-  it("keeps a manually selected brush size across canvas dimension changes", () => {
+  it("keeps a manually selected brush size across canvas dimension changes", async () => {
     const { result } = renderHook(() => useAppState(t));
+    await waitForLoaded(result);
 
     act(() => {
       result.current.setBrushSize(24);

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LanguageProvider } from "../../i18n";
 import { TheoryPanel } from "../TheoryPanel";
 
@@ -78,17 +78,23 @@ describe("TheoryPanel", () => {
     expect(tetraPair.querySelectorAll("svg")).toHaveLength(2);
   });
 
-  it("clears pinned highlights when clicking the full-width background surface", () => {
+  it("clears pinned highlights when clicking the full-width background surface", async () => {
     const { container } = renderWithLanguage();
 
     const venn = screen.getByRole("img", { name: "Venn Diagram" });
-    fireEvent.click(venn);
-    expect(venn.querySelector('rect[stroke="#fff"]')).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(venn);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(venn.querySelector('rect[stroke="#fff"]')).toBeTruthy());
 
     const resetSurface = container.querySelector(".theory-reset-surface");
     expect(resetSurface).toBeTruthy();
-    fireEvent.click(resetSurface!);
-    expect(venn.querySelector('rect[stroke="#fff"]')).toBeFalsy();
+    await act(async () => {
+      fireEvent.click(resetSurface!);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(venn.querySelector('rect[stroke="#fff"]')).toBeFalsy());
   });
 
   it("shows Color Star surface ridges and returns from K8 to surface mode", () => {
