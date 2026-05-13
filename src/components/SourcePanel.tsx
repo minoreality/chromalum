@@ -450,32 +450,8 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
             <span style={{ color: C.textSecondary, minWidth: 20 }}>{brushSize}</span>
           </div>
 
-          {/* Level indicator + buttons (grouped) */}
-          <div style={{ display: "flex", alignItems: "center", gap: SP.lg, justifyContent: "center", marginTop: SP["2xl"] }}>
-            <span style={{ fontSize: FS.sm, color: C.textDim }}>{t("label_input")}</span>
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: R.lg,
-                border: `2px solid ${C.accent}`,
-                background: `rgb(${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray})`,
-              }}
-            />
-            <div style={{ fontSize: FS.md, color: C.textSecondary, lineHeight: 1, display: "flex", alignItems: "center" }}>{"\u2192"}</div>
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: R.lg,
-                border: `2px solid ${C.accent}`,
-                background: rgbStr(colorLUT[brushLevel]),
-              }}
-            />
-            <span style={{ fontSize: FS.sm, color: C.textDim }}>{t("label_output")}</span>
-          </div>
-
-          <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", maxWidth: "100%", marginTop: SP.xl, marginBottom: SP.md }}>
+          {/* Level palette + selected mapping */}
+          <div style={{ display: "flex", gap: SP.sm, justifyContent: "center", maxWidth: "100%", marginTop: SP["2xl"] }}>
             {LEVEL_INFO.map((info, i) => (
               <button
                 key={i}
@@ -518,7 +494,31 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: SP.lg, flexWrap: "wrap", justifyContent: "center", marginTop: SP["3xl"] }}>
+          <div style={{ display: "flex", alignItems: "center", gap: SP.lg, justifyContent: "center", marginTop: SP.xl }}>
+            <span style={{ fontSize: FS.sm, color: C.textDim }}>{t("label_input")}</span>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: R.lg,
+                border: `2px solid ${C.accent}`,
+                background: `rgb(${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray})`,
+              }}
+            />
+            <div style={{ fontSize: FS.md, color: C.textSecondary, lineHeight: 1, display: "flex", alignItems: "center" }}>{"\u2192"}</div>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: R.lg,
+                border: `2px solid ${C.accent}`,
+                background: rgbStr(colorLUT[brushLevel]),
+              }}
+            />
+            <span style={{ fontSize: FS.sm, color: C.textDim }}>{t("label_output")}</span>
+          </div>
+
+          <div style={{ display: "flex", gap: SP.lg, flexWrap: "wrap", justifyContent: "center", marginTop: SP["3xl"] + 2 }}>
             <button onClick={onNewCanvas} style={S_SOURCE_FILE_BUTTON} title={t("title_new_canvas")}>
               {t("btn_new")}
             </button>

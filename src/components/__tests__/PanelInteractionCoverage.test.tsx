@@ -244,6 +244,17 @@ describe("SourcePanel interactions", () => {
     );
   });
 
+  it("places the tone palette before the selected input/output mapping", () => {
+    renderSource();
+
+    const firstTone = screen.getByLabelText("announce_level(0,Black)");
+    const inputLabel = screen.getByText("label_input");
+    const outputLabel = screen.getByText("label_output");
+
+    expect(Boolean(firstTone.compareDocumentPosition(inputLabel) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(inputLabel.compareDocumentPosition(outputLabel) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  });
+
   it("uses save confirmation on pointer-fine devices and keeps share actions immediate", () => {
     mockPointerFine(true);
     const { saveColor, saveGlaze, shareColor, shareGlaze } = renderSource();
