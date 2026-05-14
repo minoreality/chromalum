@@ -13,8 +13,7 @@ const ROW_H = 24,
 const COL = { lv: 18, bin: 46, dot: 78, set: 120, g: 170, r: 192, b: 214, wt: 242, hamming: 274, tone: 332 };
 const BIT_R = 6;
 const CHANNEL_COLORS = ["#00ff00", "#ff0000", "#0000ff"];
-const TONE_8_VALUES = [0, 36, 73, 109, 146, 182, 219, 255];
-const TONE_8_MAX = 255;
+const TONE_LEVELS = Array.from({ length: 8 }, (_, level) => level / 7);
 
 function setNotation(bits: readonly number[]): string {
   const elems: string[] = [];
@@ -137,7 +136,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
           const dim = hlLevel !== null && !active;
           const opacity = dim ? 0.25 : 1;
           const binStr = lv.bits.join("");
-          const toneW = 40 * (TONE_8_VALUES[i] / TONE_8_MAX);
+          const toneW = 40 * TONE_LEVELS[i];
           const weight = lv.bits[0] + lv.bits[1] + lv.bits[2];
           return (
             <g
@@ -247,7 +246,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
                 fill={C.textDimmer}
                 fontFamily="var(--font-mono)"
               >
-                {TONE_8_VALUES[i]}
+                {i}/7
               </text>
             </g>
           );

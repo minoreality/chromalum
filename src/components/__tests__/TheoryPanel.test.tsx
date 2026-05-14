@@ -70,6 +70,73 @@ describe("TheoryPanel", () => {
     expect(textNodes.find((node) => node.textContent === "Wt")?.getAttribute("x")).toBe("242");
     expect(textNodes.find((node) => node.textContent === "Hamming")?.getAttribute("x")).toBe("274");
     expect(textNodes.find((node) => node.textContent === "Tone")?.getAttribute("x")).toBe("332");
+    expect(textNodes.filter((node) => node.getAttribute("x") === "358").map((node) => node.textContent)).toEqual([
+      "0/7",
+      "1/7",
+      "2/7",
+      "3/7",
+      "4/7",
+      "5/7",
+      "6/7",
+      "7/7",
+    ]);
+  });
+
+  it("uses normalized tone labels in the tone zigzag", () => {
+    renderWithLanguage();
+
+    const zigzag = screen.getByRole("img", { name: "Tone Zigzag" });
+    const textContent = Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent);
+
+    expect(textContent).toEqual(expect.arrayContaining(["0/7", "1/7", "2/7", "3/7", "4/7", "5/7", "6/7", "7/7", "1/2"]));
+    expect(textContent).toEqual(expect.arrayContaining(["+4", "-2", "+1", "-4", "+2", "-1"]));
+    const toneCycleLabels = Array.from(zigzag.querySelectorAll('[data-tone-cycle-label="true"]'));
+    expect(toneCycleLabels.map((node) => node.textContent)).toEqual(["2", "3", "4", "5", "6", "5", "4", "5", "4", "3", "2", "1", "2", "3"]);
+    expect(toneCycleLabels.map((node) => node.getAttribute("fill"))).toEqual([
+      "rgb(255,0,0)",
+      "rgb(255,64,0)",
+      "rgb(255,128,0)",
+      "rgb(255,191,0)",
+      "rgb(255,255,0)",
+      "rgb(128,255,0)",
+      "rgb(0,255,0)",
+      "rgb(0,255,255)",
+      "rgb(0,191,255)",
+      "rgb(0,128,255)",
+      "rgb(0,64,255)",
+      "rgb(0,0,255)",
+      "rgb(128,0,255)",
+      "rgb(255,0,255)",
+    ]);
+    const hueAxisLabels = Array.from(zigzag.querySelectorAll('[data-hue-axis-label="true"]'));
+    expect(hueAxisLabels.map((node) => node.textContent)).toEqual([
+      "0turn",
+      "1/6turn",
+      "1/3turn",
+      "1/2turn",
+      "2/3turn",
+      "5/6turn",
+      "1turn",
+    ]);
+    expect(hueAxisLabels.map((node) => node.getAttribute("x"))).toEqual(["40", "110", "180", "250", "320", "390", "460"]);
+    expect(Number(toneCycleLabels[0].getAttribute("y"))).toBeLessThan(Number(hueAxisLabels[0].getAttribute("y")));
+    expect(zigzag.querySelector("#hueGrad")).toBeFalsy();
+    expect(zigzag.querySelector('rect[fill="url(#hueGrad)"]')).toBeFalsy();
+    expect(textContent.filter((text) => text === "N=4")).toHaveLength(2);
+    expect(textContent).not.toContain("N=4 zone");
+    expect(textContent).not.toContain("127.5");
+    expect(textContent).not.toContain("255");
+
+    const hoverTargets = zigzag.querySelectorAll("rect[fill='transparent']");
+    fireEvent.mouseEnter(hoverTargets[2]);
+    const levelTwoText = Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent);
+    expect(levelTwoText).toContain("=1");
+    expect(levelTwoText).toEqual(expect.arrayContaining(["0turn", "5/8turn", "3/4turn"]));
+    expect(levelTwoText).not.toContain("225°");
+
+    fireEvent.mouseLeave(hoverTargets[2]);
+    fireEvent.mouseEnter(zigzag.querySelector('[data-tone-level="2"]')!);
+    expect(Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent)).toContain("=1");
   });
 
   it("keeps Color Tetra SVG definition ids unique across T0 and T1", () => {
