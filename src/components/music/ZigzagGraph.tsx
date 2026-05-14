@@ -1,6 +1,6 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
-import { TONE_8_VALUES, ZIGZAG_CHANNELS, ZIGZAG_PATH } from "../../data/music-data";
+import { ZIGZAG_CHANNELS, ZIGZAG_PATH } from "../../data/music-data";
 
 // Zigzag path is a tone sequence (hue-invariant); colors stay canonical to match
 // the tone-based sonification (`triggerToneValueBurst`).
@@ -18,7 +18,7 @@ const PW = W - ML - MR,
   PH = H - MT - MB;
 
 const xPos = (i: number) => ML + (i / (ZIGZAG_PATH.length - 1)) * PW;
-const yPos = (tone8: number) => MT + PH - (tone8 / 255) * PH;
+const yPos = (level: number) => MT + PH - (level / 7) * PH;
 
 interface Props {
   currentStep: number | null;
@@ -36,26 +36,17 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep }: Prop
           </feMerge>
         </filter>
       </defs>
-      {/* Y-axis midline (127.5) */}
-      <line
-        x1={ML}
-        y1={yPos(127.5)}
-        x2={W - MR}
-        y2={yPos(127.5)}
-        stroke={C.textDimmer}
-        strokeWidth={0.5}
-        strokeDasharray="3,2"
-        opacity={0.4}
-      />
+      {/* Y-axis midline (1/2) */}
+      <line x1={ML} y1={yPos(3.5)} x2={W - MR} y2={yPos(3.5)} stroke={C.textDimmer} strokeWidth={0.5} strokeDasharray="3,2" opacity={0.4} />
       {/* Segments with channel-colored lines */}
       {ZIGZAG_PATH.slice(0, -1).map((lv, i) => {
         const nextLv = ZIGZAG_PATH[i + 1];
         const x0 = xPos(i),
-          y0 = yPos(TONE_8_VALUES[lv]);
+          y0 = yPos(lv);
         const x1 = xPos(i + 1),
-          y1 = yPos(TONE_8_VALUES[nextLv]);
+          y1 = yPos(nextLv);
         const ch = ZIGZAG_CHANNELS[i];
-        const delta = TONE_8_VALUES[nextLv] - TONE_8_VALUES[lv];
+        const delta = nextLv - lv;
         const isActive = currentStep === i || currentStep === i + 1;
         return (
           <g key={i}>
@@ -87,7 +78,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep }: Prop
       {/* Vertices */}
       {ZIGZAG_PATH.map((lv, i) => {
         const x = xPos(i),
-          y = yPos(TONE_8_VALUES[lv]);
+          y = yPos(lv);
         const isActive = currentStep === i;
         return (
           <g key={lv} filter={isActive ? "url(#zg-glow)" : undefined}>
@@ -116,18 +107,18 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep }: Prop
         fontFamily="var(--font-mono)"
         fill={C.textDimmer}
       >
-        0
+        0/7
       </text>
       <text
         x={ML - 3}
-        y={yPos(255)}
+        y={yPos(7)}
         textAnchor="end"
         dominantBaseline="central"
         fontSize={6}
         fontFamily="var(--font-mono)"
         fill={C.textDimmer}
       >
-        255
+        7/7
       </text>
     </svg>
   );

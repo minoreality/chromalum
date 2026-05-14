@@ -1,8 +1,8 @@
 import React from "react";
 import { C, FS } from "../../styles/tokens";
-import { COMPLEMENT_PAIRS, TONE_8_VALUES } from "../../data/music-data";
+import { COMPLEMENT_PAIRS } from "../../data/music-data";
 
-// Complement tone sums to 255 in 8-bit display units; keep colors canonical
+// Complement tone sums to 1 in normalized 4:2:1 tone units; keep colors canonical
 // (hue-invariant) so the visual matches the tone-based sonification.
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const W = 180,
@@ -11,7 +11,9 @@ const CX = W / 2;
 const BAR_H = 14,
   ROW_GAP = 6,
   TOP = 18;
-const MAX_BAR = 70; // max bar width for chromatic tone 219
+const MAX_BAR = 70; // full normalized pair width
+
+const toneFractionLabel = (level: number) => `${level}/7`;
 
 interface Props {
   activePair: number;
@@ -29,7 +31,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
           </feMerge>
         </filter>
       </defs>
-      {/* Center line: 127.5 → 550Hz constant */}
+      {/* Center line: 1/2 → 550Hz constant */}
       <line
         x1={CX}
         y1={TOP - 4}
@@ -45,8 +47,8 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
       </text>
       {COMPLEMENT_PAIRS.map(([a, b], i) => {
         const y = TOP + i * (BAR_H + ROW_GAP);
-        const wA = (TONE_8_VALUES[a] / 255) * MAX_BAR;
-        const wB = (TONE_8_VALUES[b] / 255) * MAX_BAR;
+        const wA = (a / 7) * MAX_BAR;
+        const wB = (b / 7) * MAX_BAR;
         const isActive = activePair === i;
         return (
           <g key={i} filter={isActive ? "url(#cp-glow)" : undefined} opacity={activePair >= 0 && !isActive ? 0.25 : 1}>
@@ -88,7 +90,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
                 fontFamily="var(--font-mono)"
                 fill={C.textMuted}
               >
-                {TONE_8_VALUES[a]}+{TONE_8_VALUES[b]}=255
+                {toneFractionLabel(a)}+{toneFractionLabel(b)}=1
               </text>
             )}
           </g>
@@ -96,7 +98,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
       })}
       {/* Theorem label */}
       <text x={CX} y={H - 4} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-        T&#x2096; + T&#x2087;&#x208b;&#x2096; = 255
+        T&#x2096; + T&#x2087;&#x208b;&#x2096; = 1
       </text>
     </svg>
   );

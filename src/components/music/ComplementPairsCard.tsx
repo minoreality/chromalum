@@ -75,7 +75,10 @@ export const ComplementPairsCard = React.memo(function ComplementPairsCard({ eng
   const revLabel = playing === "reverse" ? t("music_complement_stop") : t("music_complement_play_reverse");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}>
+    <div
+      data-testid="complement-pairs-card"
+      style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}
+    >
       <div style={{ ...S_COL, gap: "var(--music-card-control-gap, 3px)" }}>
         <span style={S_LABEL}>{t("music_complement_title")}</span>
         <button

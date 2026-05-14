@@ -6,12 +6,14 @@ import { LEVEL_CANDIDATES } from "../../../color-engine";
 import { LanguageProvider } from "../../../i18n";
 import type { MusicEngineReturn } from "../../../hooks/useMusicEngine";
 import type { DecoderPhase } from "../../../music/types";
+import { ComplementPairs } from "../ComplementPairs";
 import { ErrorCorrectionCard } from "../ErrorCorrectionCard";
 import { MusicAlgebraPanel } from "../MusicAlgebraPanel";
 import { MusicFanoControls } from "../MusicFanoControls";
 import { MusicHueAlphaControls } from "../MusicHueAlphaControls";
 import { MusicLevelCandidateGrid } from "../MusicLevelCandidateGrid";
 import { MusicTransportControls } from "../MusicTransportControls";
+import { ZigzagGraph } from "../ZigzagGraph";
 
 type TransportProps = ComponentProps<typeof MusicTransportControls>;
 type FanoProps = ComponentProps<typeof MusicFanoControls>;
@@ -472,6 +474,29 @@ describe("MusicPanel section components", () => {
       expect(control.style.height).toBe("var(--music-card-toggle-height, 20px)");
       expect(control.style.boxSizing).toBe("border-box");
     }
+  });
+
+  it("uses normalized 4:2:1 tone labels in the zigzag preview", () => {
+    const { container } = renderWithLanguage(<ZigzagGraph currentStep={null} />);
+
+    const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
+    expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "+4", "-2", "+1", "-4", "+2"]));
+    for (const staleLabel of ["0", "255", "+146", "-73", "+36", "-146", "+73"]) {
+      expect(labels).not.toContain(staleLabel);
+    }
+  });
+
+  it("uses normalized 4:2:1 tone labels in complement pairs", () => {
+    const { container } = renderWithLanguage(<ComplementPairs activePair={0} />);
+
+    const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
+    expect(labels).toEqual(expect.arrayContaining(["1/7+6/7=1", "Tₖ + T₇₋ₖ = 1"]));
+    expect(labels).not.toContain("36+219=255");
+    expect(labels).not.toContain("Tₖ + T₇₋ₖ = 255");
+
+    const bars = Array.from(container.querySelectorAll("rect"));
+    expect(bars[0].getAttribute("width")).toBe("10");
+    expect(bars[1].getAttribute("width")).toBe("60");
   });
 
   it("starts syndrome playback for the selected error position", () => {
