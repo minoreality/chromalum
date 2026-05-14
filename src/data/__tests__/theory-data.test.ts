@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LUMA_B, LUMA_G, LUMA_R } from "../../color-engine";
+import { GRB_TONE_B, GRB_TONE_G, GRB_TONE_R } from "../../color-engine";
 import {
   COMPLEMENT_EDGES,
   CUBE_EDGES,
@@ -59,10 +59,10 @@ const DICE_ROOT_ORIENTATION: OrientedFace = {
   v: DICE_NORMALS[4],
 };
 
-const BT601_LUMA_WEIGHTS: Record<Channel, number> = {
-  G: LUMA_G,
-  R: LUMA_R,
-  B: LUMA_B,
+const GRB_TONE_WEIGHTS: Record<Channel, number> = {
+  G: GRB_TONE_G,
+  R: GRB_TONE_R,
+  B: GRB_TONE_B,
 };
 
 const DICE_FACE_EDGES: DiceEdge[] = DICE_FACES.flatMap((a, i) =>
@@ -124,12 +124,12 @@ function combinations<T>(items: readonly T[], size: number): T[][] {
   return out;
 }
 
-function lumaWeightForAssignment([bit2, bit1, bit0]: BitAssignment, lv: number): number {
+function toneWeightForAssignment([bit2, bit1, bit0]: BitAssignment, lv: number): number {
   const channelBits: Record<Channel, number> = { G: 0, R: 0, B: 0 };
   channelBits[bit2] = (lv >> 2) & 1;
   channelBits[bit1] = (lv >> 1) & 1;
   channelBits[bit0] = lv & 1;
-  return channelBits.G * BT601_LUMA_WEIGHTS.G + channelBits.R * BT601_LUMA_WEIGHTS.R + channelBits.B * BT601_LUMA_WEIGHTS.B;
+  return channelBits.G * GRB_TONE_WEIGHTS.G + channelBits.R * GRB_TONE_WEIGHTS.R + channelBits.B * GRB_TONE_WEIGHTS.B;
 }
 
 function isStrictlyIncreasing(values: readonly number[]): boolean {
@@ -259,9 +259,9 @@ describe("theory-data invariants", () => {
     for (const count of pairCounts.values()) expect(count).toBe(1);
   });
 
-  it("makes GRB the unique BT.601 luma-monotone bit assignment", () => {
-    expect(BT601_LUMA_WEIGHTS.G).toBeGreaterThan(BT601_LUMA_WEIGHTS.R + BT601_LUMA_WEIGHTS.B);
-    expect(BT601_LUMA_WEIGHTS.R).toBeGreaterThan(BT601_LUMA_WEIGHTS.B);
+  it("makes GRB the unique binary-tone monotone bit assignment", () => {
+    expect(GRB_TONE_WEIGHTS.G).toBeGreaterThan(GRB_TONE_WEIGHTS.R + GRB_TONE_WEIGHTS.B);
+    expect(GRB_TONE_WEIGHTS.R).toBeGreaterThan(GRB_TONE_WEIGHTS.B);
     expect(THEORY_LEVELS.map(({ bits }) => 4 * bits[0] + 2 * bits[1] + bits[2])).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
 
     const assignments: BitAssignment[] = [
@@ -273,21 +273,21 @@ describe("theory-data invariants", () => {
       ["B", "R", "G"],
     ];
     const monotoneAssignments = assignments.filter((assignment) =>
-      isStrictlyIncreasing(Array.from({ length: 8 }, (_, lv) => lumaWeightForAssignment(assignment, lv))),
+      isStrictlyIncreasing(Array.from({ length: 8 }, (_, lv) => toneWeightForAssignment(assignment, lv))),
     );
 
     expect(assignments).toHaveLength(6);
     expect(monotoneAssignments).toEqual([["G", "R", "B"]]);
-    expect(Array.from({ length: 8 }, (_, lv) => Math.round(255 * lumaWeightForAssignment(["G", "R", "B"], lv)))).toEqual([
-      0, 29, 76, 105, 150, 179, 226, 255,
+    expect(Array.from({ length: 8 }, (_, lv) => Math.round(255 * toneWeightForAssignment(["G", "R", "B"], lv)))).toEqual([
+      0, 36, 73, 109, 146, 182, 219, 255,
     ]);
   });
 
-  it("reverses chromatic BT.601 luma ranks under complement, matching die opposite sums", () => {
+  it("reverses chromatic tone ranks under complement, matching die opposite sums", () => {
     const chromaticLevels = [1, 2, 3, 4, 5, 6];
     const ranked = chromaticLevels
-      .map((lv) => ({ lv, luma: lumaWeightForAssignment(["G", "R", "B"], lv) }))
-      .sort((a, b) => a.luma - b.luma);
+      .map((lv) => ({ lv, tone: toneWeightForAssignment(["G", "R", "B"], lv) }))
+      .sort((a, b) => a.tone - b.tone);
     const rankByLv = new Map(ranked.map(({ lv }, i) => [lv, i + 1]));
 
     expect(ranked.map(({ lv }) => lv)).toEqual([1, 2, 3, 4, 5, 6]);
@@ -295,7 +295,7 @@ describe("theory-data invariants", () => {
     for (const lv of chromaticLevels) {
       const complement = lv ^ 7;
       expect(chromaticLevels).toContain(complement);
-      expect(lumaWeightForAssignment(["G", "R", "B"], lv) + lumaWeightForAssignment(["G", "R", "B"], complement)).toBeCloseTo(1);
+      expect(toneWeightForAssignment(["G", "R", "B"], lv) + toneWeightForAssignment(["G", "R", "B"], complement)).toBeCloseTo(1);
       expect(rankByLv.get(lv)! + rankByLv.get(complement)!).toBe(7);
     }
   });

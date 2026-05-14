@@ -2,7 +2,7 @@
   "name": "CHROMALUM",
   "short_name": "CHROMALUM",
   "id": "chromalum/",
-  "description": "CHROMALUM is a browser-based pixel-art and algebraic color-theory app for drawing 8-level luma images, mapping palettes, testing glaze overlays, exploring patterns, and sonifying color structures.",
+  "description": "CHROMALUM is a browser-based pixel-art and algebraic color-theory app for drawing 8-level GRB Binary Tone images, mapping palettes, testing glaze overlays, exploring patterns, and sonifying color structures.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -27,7 +27,7 @@ const musicEngineMock = vi.hoisted(() => {
     playCayleyRow: vi.fn(),
     applyGL32Transform: vi.fn(),
     resetGL32Transform: vi.fn(),
-    setLumaMode: vi.fn(),
+    setToneMode: vi.fn(),
     stopAlgebra: vi.fn(),
     setDroneMuted: vi.fn(),
     playComplementCanon: vi.fn(),
@@ -92,7 +92,7 @@ describe("MusicPanel controller integration", () => {
     expect(latestEngineParams()).toMatchObject({
       scaleMode: "diatonic7",
       fmEnabled: false,
-      lumaMode: "symmetric",
+      toneMode: "symmetric",
       volume: 0.7,
     });
 
@@ -102,8 +102,8 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     expect(latestEngineParams().fmEnabled).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Luma" }));
-    expect(latestEngineParams().lumaMode).toBe("bt601Luma");
+    fireEvent.click(screen.getByRole("button", { name: "Tone" }));
+    expect(latestEngineParams().toneMode).toBe("grbTone");
 
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
     expect(latestEngineParams().volume).toBe(0);
@@ -250,7 +250,7 @@ describe("MusicPanel controller integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Just" }));
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
-    fireEvent.click(screen.getByRole("button", { name: "Luma" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tone" }));
     fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "180" } });
     fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "90" } });
     fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
@@ -262,7 +262,7 @@ describe("MusicPanel controller integration", () => {
     expect(latestEngineParams()).toMatchObject({
       scaleMode: "ji",
       fmEnabled: true,
-      lumaMode: "bt601Luma",
+      toneMode: "grbTone",
       volume: 0,
     });
     expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("180");
@@ -276,7 +276,7 @@ describe("MusicPanel controller integration", () => {
     expect(latestEngineParams()).toMatchObject({
       scaleMode: "diatonic7",
       fmEnabled: false,
-      lumaMode: "symmetric",
+      toneMode: "symmetric",
       volume: 0.7,
     });
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();

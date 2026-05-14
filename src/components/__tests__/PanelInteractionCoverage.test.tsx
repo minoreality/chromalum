@@ -609,7 +609,7 @@ describe("MapCanvas rendering and inspection", () => {
       />,
     );
 
-    for (const mode of ["diversity", "isolation", "boundaryDistance", "levelTone", "colorLuma", "gradient", "region"] satisfies MapMode[]) {
+    for (const mode of ["diversity", "isolation", "boundaryDistance", "levelTone", "colorTone", "gradient", "region"] satisfies MapMode[]) {
       rerender(
         <MapCanvas
           mode={mode}

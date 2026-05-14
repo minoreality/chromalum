@@ -32,7 +32,7 @@ describe("TheoryPanel", () => {
       "XOR Operation",
       "Color Cube",
       "Gray Code Cycle",
-      "Luma Zigzag",
+      "Tone Zigzag",
       "Color Die",
       "Fano Plane",
       "Hamming Code",
@@ -69,7 +69,7 @@ describe("TheoryPanel", () => {
     expect(channelHeaderXs).toEqual(["170", "192", "214"]);
     expect(textNodes.find((node) => node.textContent === "Wt")?.getAttribute("x")).toBe("242");
     expect(textNodes.find((node) => node.textContent === "Hamming")?.getAttribute("x")).toBe("274");
-    expect(textNodes.find((node) => node.textContent === "Luma")?.getAttribute("x")).toBe("332");
+    expect(textNodes.find((node) => node.textContent === "Tone")?.getAttribute("x")).toBe("332");
   });
 
   it("keeps Color Tetra SVG definition ids unique across T0 and T1", () => {

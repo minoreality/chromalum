@@ -3,10 +3,10 @@ import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../../color-engine";
 import { formatColorPixelStatus, formatGlazePixelStatus, formatHexPixelStatus, formatSourcePixelStatus } from "../pixel-status";
 
 describe("pixel status formatters", () => {
-  it("formats source pixels as source luma data", () => {
+  it("formats source pixels as source tone data", () => {
     expect(formatSourcePixelStatus({ x: 4, y: 2, lv: 3 })).toEqual({
-      full: "(4,2) Source L3 Magenta gray=105 bits=011",
-      compact: "(4,2) Src L3 gray=105",
+      full: "(4,2) Source L3 Magenta gray=109 bits=011",
+      compact: "(4,2) Src L3 gray=109",
     });
   });
 
@@ -77,7 +77,7 @@ describe("pixel status formatters", () => {
         glazeTool: "glaze_brush",
       }),
     ).toEqual({
-      full: "(4,2) Glaze L3 base c3/3 #ff00ff → actual c1/3 #ff3200 override",
+      full: "(4,2) Glaze L3 base c3/3 #ff00ff → actual c1/3 #ff4000 override",
       compact: "(4,2) Glaze L3 c3/3→c1/3 ovr",
     });
   });
@@ -95,7 +95,7 @@ describe("pixel status formatters", () => {
         glazeTool: "glaze_brush",
       }),
     ).toEqual({
-      full: "(4,2) Glaze L3 base c3/3 #ff00ff / brush→c1/3 #ff3200",
+      full: "(4,2) Glaze L3 base c3/3 #ff00ff / brush→c1/3 #ff4000",
       compact: "(4,2) Glaze L3 base c3/3 brush→c1/3",
     });
   });

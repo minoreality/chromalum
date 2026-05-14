@@ -26,8 +26,8 @@ export function buildMusicSonificationLevels(
     const candidateIndex = getCandidateIndex(candidateOverridesByLevel, levelIndex, hueAngleDeg);
     const cand = LEVEL_CANDIDATES[levelIndex][candidateIndex];
     return cand
-      ? { levelIndex, hueAngleDeg: cand.hueAngleDeg, luma255: LEVEL_INFO[levelIndex].gray }
-      : { levelIndex, hueAngleDeg: 0, luma255: 0 };
+      ? { levelIndex, hueAngleDeg: cand.hueAngleDeg, tone8: LEVEL_INFO[levelIndex].gray }
+      : { levelIndex, hueAngleDeg: 0, tone8: 0 };
   });
 }
 

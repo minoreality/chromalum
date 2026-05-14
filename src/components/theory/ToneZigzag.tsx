@@ -18,35 +18,34 @@ const VB_H = MT + PH + MB;
 const xH = (h: number) => ML + (h / 360) * PW;
 const yL = (y: number) => MT + PH - (y / 255) * PH;
 
+const LEVELS = Array.from({ length: 8 }, (_, lv) => (255 * lv) / 7);
+
 // 7 vertices (6 segments + wrap)
 const VERTS = [
-  { h: 0, Y: 76.245, lv: 2, name: "R" },
-  { h: 60, Y: 225.93, lv: 6, name: "Y" },
-  { h: 120, Y: 149.685, lv: 4, name: "G" },
-  { h: 180, Y: 178.755, lv: 5, name: "C" },
-  { h: 240, Y: 29.07, lv: 1, name: "B" },
-  { h: 300, Y: 105.315, lv: 3, name: "M" },
-  { h: 360, Y: 76.245, lv: 2, name: "R" },
+  { h: 0, tone8: LEVELS[2], lv: 2, name: "R" },
+  { h: 60, tone8: LEVELS[6], lv: 6, name: "Y" },
+  { h: 120, tone8: LEVELS[4], lv: 4, name: "G" },
+  { h: 180, tone8: LEVELS[5], lv: 5, name: "C" },
+  { h: 240, tone8: LEVELS[1], lv: 1, name: "B" },
+  { h: 300, tone8: LEVELS[3], lv: 3, name: "M" },
+  { h: 360, tone8: LEVELS[2], lv: 2, name: "R" },
 ];
 
 // Segment colors (by changing channel)
 const SEG_COLORS = ["#00cc00", "#cc0000", "#4466ff", "#00cc00", "#cc0000", "#4466ff"];
 const SEG_LABELS = ["G\u2191", "R\u2193", "B\u2191", "G\u2193", "R\u2191", "B\u2193"];
 
-// 8 luma levels
-const LEVELS = [0, 29.07, 76.245, 105.315, 149.685, 178.755, 225.93, 255];
-
-// Find intersections of Y=target with the zigzag
+// Find intersections of tone8=target with the zigzag
 function circularHueDistance(a: number, b: number): number {
   const diff = Math.abs(a - b);
   return Math.min(diff, 360 - diff);
 }
 
-export function findLumaIntersections(target: number): { h: number; color: string }[] {
+export function findToneIntersections(target: number): { h: number; color: string }[] {
   const hits: { h: number; color: string }[] = [];
   for (let i = 0; i < 6; i++) {
-    const y0 = VERTS[i].Y;
-    const y1 = VERTS[i + 1].Y;
+    const y0 = VERTS[i].tone8;
+    const y1 = VERTS[i + 1].tone8;
     const lo = Math.min(y0, y1);
     const hi = Math.max(y0, y1);
     if (target >= lo && target <= hi) {
@@ -73,15 +72,15 @@ interface Props {
   onHover: (lv: number | null) => void;
 }
 
-export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, onHover }: Props) {
+export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
   const enter = useCallback((lv: number) => onHover(lv), [onHover]);
   const leave = useCallback(() => onHover(null), [onHover]);
 
-  const hlY = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? LEVELS[hlLevel] : null;
+  const hlTone8 = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? LEVELS[hlLevel] : null;
   const compLevel = hlLevel !== null ? 7 - hlLevel : null;
-  const compY = compLevel !== null && compLevel >= 0 && compLevel <= 7 ? LEVELS[compLevel] : null;
-  const hits = hlY !== null ? findLumaIntersections(hlY) : [];
+  const compTone8 = compLevel !== null && compLevel >= 0 && compLevel <= 7 ? LEVELS[compLevel] : null;
+  const hits = hlTone8 !== null ? findToneIntersections(hlTone8) : [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "100%" }}>
@@ -110,12 +109,12 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
         </text>
 
         {/* N-region shading: N=4 bands */}
-        <rect x={ML} y={yL(105.315)} width={PW} height={yL(76.245) - yL(105.315)} fill="#ffffff" fillOpacity={0.03} />
-        <rect x={ML} y={yL(178.755)} width={PW} height={yL(149.685) - yL(178.755)} fill="#ffffff" fillOpacity={0.03} />
+        <rect x={ML} y={yL(LEVELS[3])} width={PW} height={yL(LEVELS[2]) - yL(LEVELS[3])} fill="#ffffff" fillOpacity={0.03} />
+        <rect x={ML} y={yL(LEVELS[5])} width={PW} height={yL(LEVELS[4]) - yL(LEVELS[5])} fill="#ffffff" fillOpacity={0.03} />
         {/* N=4 labels */}
         <text
           x={ML + PW + 2}
-          y={(yL(76.245) + yL(105.315)) / 2}
+          y={(yL(LEVELS[2]) + yL(LEVELS[3])) / 2}
           dominantBaseline="central"
           fontSize={FS.xxs}
           fill={C.textDimmer}
@@ -125,7 +124,7 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
         </text>
         <text
           x={ML + PW + 2}
-          y={(yL(149.685) + yL(178.755)) / 2}
+          y={(yL(LEVELS[4]) + yL(LEVELS[5])) / 2}
           dominantBaseline="central"
           fontSize={FS.xxs}
           fill={C.textDimmer}
@@ -152,7 +151,7 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
                 strokeDasharray={n === 1 ? "2,4" : undefined}
                 opacity={isHl ? 0.8 : isComp ? 0.5 : 0.2}
               />
-              {/* Y-axis label */}
+              {/* Tone-axis label */}
               <text
                 x={ML - 4}
                 y={yL(y)}
@@ -181,12 +180,12 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
         })}
 
         {/* Complement pair bracket when hovering */}
-        {hlY !== null && compY !== null && hlLevel !== compLevel && (
+        {hlTone8 !== null && compTone8 !== null && hlLevel !== compLevel && (
           <g>
-            <line x1={ML - 8} y1={yL(hlY)} x2={ML - 8} y2={yL(compY)} stroke={C.textMuted} strokeWidth={1} opacity={0.5} />
+            <line x1={ML - 8} y1={yL(hlTone8)} x2={ML - 8} y2={yL(compTone8)} stroke={C.textMuted} strokeWidth={1} opacity={0.5} />
             <text
               x={ML - 10}
-              y={(yL(hlY) + yL(compY!)) / 2}
+              y={(yL(hlTone8) + yL(compTone8!)) / 2}
               textAnchor="end"
               dominantBaseline="central"
               fontSize={FS.xxs}
@@ -205,9 +204,9 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
             <line
               key={`seg${i}`}
               x1={xH(v.h)}
-              y1={yL(v.Y)}
+              y1={yL(v.tone8)}
               x2={xH(v2.h)}
-              y2={yL(v2.Y)}
+              y2={yL(v2.tone8)}
               stroke={SEG_COLORS[i]}
               strokeWidth={2}
               opacity={0.7}
@@ -219,8 +218,8 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
         {VERTS.slice(0, 6).map((v, i) => {
           const v2 = VERTS[i + 1];
           const mx = (xH(v.h) + xH(v2.h)) / 2;
-          const my = (yL(v.Y) + yL(v2.Y)) / 2;
-          const rising = v2.Y > v.Y;
+          const my = (yL(v.tone8) + yL(v2.tone8)) / 2;
+          const rising = v2.tone8 > v.tone8;
           return (
             <text
               key={`sl${i}`}
@@ -244,8 +243,8 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
           const isHl = hlLevel === v.lv;
           return (
             <g key={`vd${v.h}`}>
-              {isHl && <circle cx={xH(v.h)} cy={yL(v.Y)} r={6} fill="none" stroke="#fff" strokeWidth={1.5} opacity={0.5} />}
-              <circle cx={xH(v.h)} cy={yL(v.Y)} r={4} fill={info.color} fillOpacity={0.85} stroke="#222" strokeWidth={0.8} />
+              {isHl && <circle cx={xH(v.h)} cy={yL(v.tone8)} r={6} fill="none" stroke="#fff" strokeWidth={1.5} opacity={0.5} />}
+              <circle cx={xH(v.h)} cy={yL(v.tone8)} r={4} fill={info.color} fillOpacity={0.85} stroke="#222" strokeWidth={0.8} />
             </g>
           );
         })}
@@ -253,8 +252,15 @@ export const LuminanceZigzag = React.memo(function LuminanceZigzag({ hlLevel, on
         {/* Intersection dots (when hovering a level) */}
         {hits.map((hit, i) => (
           <g key={`hit${i}`}>
-            <circle cx={xH(hit.h)} cy={yL(hlY!)} r={4} fill={hit.color} stroke="#fff" strokeWidth={1.5} />
-            <text x={xH(hit.h)} y={yL(hlY!) + 12} textAnchor="middle" fontSize={FS.xxs} fill={C.textMuted} fontFamily="var(--font-mono)">
+            <circle cx={xH(hit.h)} cy={yL(hlTone8!)} r={4} fill={hit.color} stroke="#fff" strokeWidth={1.5} />
+            <text
+              x={xH(hit.h)}
+              y={yL(hlTone8!) + 12}
+              textAnchor="middle"
+              fontSize={FS.xxs}
+              fill={C.textMuted}
+              fontFamily="var(--font-mono)"
+            >
               {Math.round(hit.h)}°
             </text>
           </g>

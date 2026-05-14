@@ -1,8 +1,8 @@
 import { useRef, useCallback, useMemo } from "react";
-import { FANO_RHYTHM_PATTERNS, LUMA_VALUES } from "../data/music-data";
+import { FANO_RHYTHM_PATTERNS, TONE_8_VALUES } from "../data/music-data";
 import { angleToFreq, type ScaleMode } from "../data/music-frequency";
 import { RAMP_TC, type SonificationLevel } from "../music/music-audio-graph";
-import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, lumaToFreq } from "../music/music-engine-core";
+import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, toneToFreq } from "../music/music-engine-core";
 import { complementOfLine, k8LayerStep, zigzagStep } from "../music/music-playback-sequences";
 import {
   scheduleAndTriads,
@@ -41,7 +41,7 @@ interface MusicEngineParams {
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null; // 0-6 or null
-  lumaMode: "symmetric" | "bt601Luma";
+  toneMode: "symmetric" | "grbTone";
   originMode: 0 | 7;
 }
 
@@ -64,7 +64,7 @@ export interface MusicEngineReturn {
   playCayleyRow: (row: number, onStep: (col: number, value: number) => void) => void;
   applyGL32Transform: (gen: "A" | "B" | "C", onPerm?: (perm: number[]) => void) => void;
   resetGL32Transform: (onPerm?: (perm: number[]) => void) => void;
-  setLumaMode: (mode: "symmetric" | "bt601Luma") => void;
+  setToneMode: (mode: "symmetric" | "grbTone") => void;
   stopAlgebra: () => void;
   setDroneMuted: (muted: boolean) => void;
   playComplementCanon: (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse?: boolean) => void;
@@ -95,7 +95,7 @@ export function useMusicEngine({
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
-  lumaMode,
+  toneMode,
   originMode,
 }: MusicEngineParams): MusicEngineReturn {
   const grayIntervalRef = useRef<IntervalHandle | null>(null);
@@ -121,9 +121,9 @@ export function useMusicEngine({
     triggerToneBurst,
     playPitchLevel,
     playBitVectorLevel,
-    triggerLumaBurst,
+    triggerToneValueBurst,
     triggerErrorMarker,
-    setLumaMode,
+    setToneMode,
     setDroneMuted,
   } = useMusicAudioSession({
     enabled,
@@ -136,7 +136,7 @@ export function useMusicEngine({
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
-    lumaMode,
+    toneMode,
     originMode,
     onStopPlayback: clearPlayback,
   });
@@ -240,10 +240,10 @@ export function useMusicEngine({
       clear: clearAlgebraTimers,
       schedule: scheduleAlgebra,
       playBitVectorLevel,
-      triggerLumaBurst,
+      triggerToneValueBurst,
       triggerErrorMarker,
     }),
-    [clearAlgebraTimers, playBitVectorLevel, scheduleAlgebra, triggerErrorMarker, triggerLumaBurst],
+    [clearAlgebraTimers, playBitVectorLevel, scheduleAlgebra, triggerErrorMarker, triggerToneValueBurst],
   );
 
   /* ── stopAlgebra ── */
@@ -389,7 +389,7 @@ export function useMusicEngine({
       const newPerm = gl32PermRef.current;
       const activeAlpha = p.originMode === 0 ? p.alpha0 : p.alpha7;
       const freqForLevel = (levelIndex: number): number => {
-        if (levelIndex === 0 || levelIndex === 7) return lumaToFreq(LUMA_VALUES[levelIndex]);
+        if (levelIndex === 0 || levelIndex === 7) return toneToFreq(TONE_8_VALUES[levelIndex]);
         const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
         return angleToFreq((levelData?.hueAngleDeg ?? 0) + activeAlpha, p.scaleMode);
       };
@@ -446,14 +446,14 @@ export function useMusicEngine({
         () => {
           if (!nodesRef.current) return;
           const { index, lv } = zigzagStep(step);
-          triggerLumaBurst(LUMA_VALUES[lv]);
+          triggerToneValueBurst(TONE_8_VALUES[lv]);
           onStep(index);
           step++;
         },
         400,
       );
     },
-    [nodesRef, triggerLumaBurst],
+    [nodesRef, triggerToneValueBurst],
   );
 
   const stopZigzagMelody = useCallback(() => {
@@ -544,7 +544,7 @@ export function useMusicEngine({
     playCayleyRow,
     applyGL32Transform,
     resetGL32Transform,
-    setLumaMode,
+    setToneMode,
     stopAlgebra,
     setDroneMuted,
     playComplementCanon,

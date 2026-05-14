@@ -31,7 +31,7 @@ describe("HEX_VERTICES", () => {
     expect(names).toEqual(["B", "C", "G", "M", "R", "Y"]);
   });
 
-  it("each vertex has a valid luma level 0-7", () => {
+  it("each vertex has a valid tone level 0-7", () => {
     for (const v of HEX_VERTICES) {
       expect(v.level).toBeGreaterThanOrEqual(0);
       expect(v.level).toBeLessThanOrEqual(7);
@@ -81,7 +81,7 @@ describe("HEX_EDGE_COLORS", () => {
     }
   });
 
-  it("handles edges with zero luminance difference (ts=0) safely", () => {
+  it("handles edges with zero tone difference (ts=0) safely", () => {
     // Edges 2 (G→C) and 5 (M→R) have empty lv arrays and
     // their ts values (|4-5|=1 and |3-2|=1) are non-zero.
     // But the guard should still be present for robustness.

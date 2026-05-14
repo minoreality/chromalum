@@ -52,7 +52,7 @@ export const ZigzagCard = React.memo(function ZigzagCard({ engine, stopSignal }:
 
   return (
     <div
-      data-testid="luma-zigzag-card"
+      data-testid="tone-zigzag-card"
       style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}
     >
       <div style={S_HEADER}>

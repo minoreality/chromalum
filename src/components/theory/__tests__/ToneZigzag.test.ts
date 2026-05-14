@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { findLumaIntersections } from "../LuminanceZigzag";
+import { findToneIntersections } from "../ToneZigzag";
 
-describe("LuminanceZigzag", () => {
+describe("ToneZigzag", () => {
   it("deduplicates the red candidate at the 0/360 degree seam", () => {
-    const redVertexLuma = 76.245;
-    const hits = findLumaIntersections(redVertexLuma);
+    const redVertexTone8 = (255 * 2) / 7;
+    const hits = findToneIntersections(redVertexTone8);
 
     expect(hits).toHaveLength(3);
     expect(hits.every((hit) => hit.h >= 0 && hit.h < 360)).toBe(true);

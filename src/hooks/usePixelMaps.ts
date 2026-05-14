@@ -96,7 +96,7 @@ function computePixelMapsSync(canvasData: CanvasData, mode: MapMode): AnalysisPi
     case "levelTone":
       for (let i = 0; i < n; i++) maps.levelTone[i] = (levelData[i] & LEVEL_MASK) / 7;
       break;
-    case "colorLuma":
+    case "colorTone":
       break;
   }
   return maps;

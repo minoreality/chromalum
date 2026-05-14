@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { FANO_LINES, GRAY_PATH, GRAY_TOGGLES } from "../theory-data";
 import {
-  BT601_VALUES,
   CHROMA_LEVELS,
   COMPLEMENT_PAIRS,
   FANO_RHYTHM_PATTERNS,
-  LUMA_VALUES,
+  GRB_TONE_VALUES,
+  TONE_8_VALUES,
   ZIGZAG_CHANNELS,
   ZIGZAG_PATH,
   bitSpectrumComponents,
@@ -18,44 +18,25 @@ describe("music-data invariants", () => {
     expect([...CHROMA_LEVELS]).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it("LUMA_VALUES are the BT.601 quantized lumas with complement symmetry Y_c + Y_(7-c) = 255", () => {
-    expect(LUMA_VALUES).toHaveLength(8);
+  it("TONE_8_VALUES are derived from level / 7 with complement symmetry T_c + T_(7-c) = 255", () => {
+    expect(TONE_8_VALUES).toHaveLength(8);
     for (let c = 0; c < 8; c++) {
-      expect(LUMA_VALUES[c] + LUMA_VALUES[7 - c]).toBe(255);
+      expect(TONE_8_VALUES[c] + TONE_8_VALUES[7 - c]).toBe(255);
     }
     for (let c = 1; c < 8; c++) {
-      expect(LUMA_VALUES[c]).toBeGreaterThan(LUMA_VALUES[c - 1]);
+      expect(TONE_8_VALUES[c]).toBeGreaterThan(TONE_8_VALUES[c - 1]);
     }
-    // Reproduce the table by applying BT.601 weights to the GRB bit decomposition.
-    const R = 0.299;
-    const G = 0.587;
-    const B = 0.114;
-    const derived = Array.from({ length: 8 }, (_, lv) => {
-      const g = (lv >> 2) & 1;
-      const r = (lv >> 1) & 1;
-      const b = lv & 1;
-      return Math.round(255 * (G * g + R * r + B * b));
-    });
-    expect([...LUMA_VALUES]).toEqual(derived);
+    expect([...TONE_8_VALUES]).toEqual(Array.from({ length: 8 }, (_, lv) => Math.round((255 * lv) / 7)));
   });
 
-  it("BT601_VALUES sums to 1 across each complement pair and to 3 over the chromatic levels", () => {
+  it("GRB_TONE_VALUES sums to 1 across each complement pair and to 3 over the chromatic levels", () => {
     for (const [a, b] of COMPLEMENT_PAIRS) {
-      expect(BT601_VALUES[a] + BT601_VALUES[b]).toBeCloseTo(1, 10);
+      expect(GRB_TONE_VALUES[a] + GRB_TONE_VALUES[b]).toBeCloseTo(1, 10);
     }
-    const total = CHROMA_LEVELS.reduce((s, c) => s + BT601_VALUES[c], 0);
+    const total = CHROMA_LEVELS.reduce((s, c) => s + GRB_TONE_VALUES[c], 0);
     expect(total).toBeCloseTo(3, 10);
-    // Each chromatic level's weight is the BT.601 luma of its bit pattern.
-    const expected: Record<number, number> = {
-      1: 0.114, // B
-      2: 0.299, // R
-      3: 0.114 + 0.299, // M
-      4: 0.587, // G
-      5: 0.587 + 0.114, // C
-      6: 0.587 + 0.299, // Y
-    };
     for (const c of CHROMA_LEVELS) {
-      expect(BT601_VALUES[c]).toBeCloseTo(expected[c], 10);
+      expect(GRB_TONE_VALUES[c]).toBeCloseTo(c / 7, 10);
     }
   });
 

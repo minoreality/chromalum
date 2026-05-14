@@ -1,4 +1,4 @@
-import { LUMA_VALUES } from "../data/music-data";
+import { TONE_8_VALUES } from "../data/music-data";
 import { FANO_LINES } from "../data/theory-data";
 import {
   andTriadEvents,
@@ -19,7 +19,7 @@ export interface MusicPlaybackRuntime {
   clear: () => void;
   schedule: (fn: () => void, ms: number) => void;
   playBitVectorLevel: (lv: number) => void;
-  triggerLumaBurst: (luma255: number) => void;
+  triggerToneValueBurst: (tone8: number) => void;
   triggerErrorMarker: () => void;
 }
 
@@ -100,8 +100,8 @@ export function scheduleComplementCanon(onStep: ComplementCanonStepHandler, reve
   for (const event of complementCanonPairs(reverse)) {
     runtime.schedule(() => {
       const [a, b] = event.pair;
-      runtime.triggerLumaBurst(LUMA_VALUES[a]);
-      runtime.triggerLumaBurst(LUMA_VALUES[b]);
+      runtime.triggerToneValueBurst(TONE_8_VALUES[a]);
+      runtime.triggerToneValueBurst(TONE_8_VALUES[b]);
       onStep(event.pairIndex, "playing");
     }, event.at);
   }
@@ -131,7 +131,7 @@ export function scheduleExtendedHamming(onStep: SpectrumStepHandler, runtime: Mu
       onStep(event.positions, event.weight, event.index);
       for (const lv of event.positions) {
         if (lv === 0) {
-          runtime.triggerLumaBurst(0);
+          runtime.triggerToneValueBurst(0);
         } else {
           runtime.playBitVectorLevel(lv);
         }

@@ -32,7 +32,7 @@ interface UseMusicResetDefaultsHandlerOptions {
     | "setHueSpeed"
     | "setAlpha0"
     | "setAlpha7"
-    | "setLumaMode"
+    | "setToneMode"
     | "setHoveredFanoLine"
   >;
   fano: Pick<MusicFanoState, "setRhythmTempo" | "setFanoContextPoint" | "setPartitionLineIndex">;
@@ -61,7 +61,7 @@ export function useMusicResetDefaultsHandler({
     setHueSpeed,
     setAlpha0,
     setAlpha7,
-    setLumaMode,
+    setToneMode,
     setHoveredFanoLine,
   } = transport;
   const { setRhythmTempo, setFanoContextPoint, setPartitionLineIndex } = fano;
@@ -84,7 +84,7 @@ export function useMusicResetDefaultsHandler({
     setHueSpeed(36);
     setAlpha0(0);
     setAlpha7(0);
-    setLumaMode("symmetric");
+    setToneMode("symmetric");
     setRhythmTempo(120);
     setFanoContextPoint(1);
     setPartitionLineIndex(0);
@@ -112,7 +112,7 @@ export function useMusicResetDefaultsHandler({
     setHoveredFanoLine,
     setHueAngleDeg,
     setHueSpeed,
-    setLumaMode,
+    setToneMode,
     setOctaA,
     setOctaB,
     setPartitionLineIndex,

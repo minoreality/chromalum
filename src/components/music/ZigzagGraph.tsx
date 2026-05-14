@@ -1,9 +1,9 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
-import { LUMA_VALUES, ZIGZAG_CHANNELS, ZIGZAG_PATH } from "../../data/music-data";
+import { TONE_8_VALUES, ZIGZAG_CHANNELS, ZIGZAG_PATH } from "../../data/music-data";
 
-// Zigzag path is a luma sequence (hue-invariant); colors stay canonical to match
-// the luma-based sonification (`triggerLumaBurst`).
+// Zigzag path is a tone sequence (hue-invariant); colors stay canonical to match
+// the tone-based sonification (`triggerToneValueBurst`).
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const NAMES = ["", "B", "R", "M", "G", "C", "Y"];
 const CH_COLORS: Record<string, string> = { G: "#00cc00", R: "#cc0000", B: "#4466ff" };
@@ -18,7 +18,7 @@ const PW = W - ML - MR,
   PH = H - MT - MB;
 
 const xPos = (i: number) => ML + (i / (ZIGZAG_PATH.length - 1)) * PW;
-const yPos = (luma: number) => MT + PH - (luma / 255) * PH;
+const yPos = (tone8: number) => MT + PH - (tone8 / 255) * PH;
 
 interface Props {
   currentStep: number | null;
@@ -51,11 +51,11 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep }: Prop
       {ZIGZAG_PATH.slice(0, -1).map((lv, i) => {
         const nextLv = ZIGZAG_PATH[i + 1];
         const x0 = xPos(i),
-          y0 = yPos(LUMA_VALUES[lv]);
+          y0 = yPos(TONE_8_VALUES[lv]);
         const x1 = xPos(i + 1),
-          y1 = yPos(LUMA_VALUES[nextLv]);
+          y1 = yPos(TONE_8_VALUES[nextLv]);
         const ch = ZIGZAG_CHANNELS[i];
-        const delta = LUMA_VALUES[nextLv] - LUMA_VALUES[lv];
+        const delta = TONE_8_VALUES[nextLv] - TONE_8_VALUES[lv];
         const isActive = currentStep === i || currentStep === i + 1;
         return (
           <g key={i}>
@@ -87,7 +87,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep }: Prop
       {/* Vertices */}
       {ZIGZAG_PATH.map((lv, i) => {
         const x = xPos(i),
-          y = yPos(LUMA_VALUES[lv]);
+          y = yPos(TONE_8_VALUES[lv]);
         const isActive = currentStep === i;
         return (
           <g key={lv} filter={isActive ? "url(#zg-glow)" : undefined}>
@@ -106,7 +106,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep }: Prop
           </g>
         );
       })}
-      {/* Y-axis luma labels */}
+      {/* Y-axis tone labels */}
       <text
         x={ML - 3}
         y={yPos(0)}

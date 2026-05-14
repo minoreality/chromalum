@@ -10,8 +10,8 @@ interface MusicTransportControlsProps {
   onScaleModeChange: (mode: ScaleMode) => void;
   onStopAll: () => void;
   onResetDefaults: () => void;
-  lumaMode: "symmetric" | "bt601Luma";
-  onLumaModeChange: (mode: "symmetric" | "bt601Luma") => void;
+  toneMode: "symmetric" | "grbTone";
+  onToneModeChange: (mode: "symmetric" | "grbTone") => void;
   fmEnabled: boolean;
   onFmEnabledChange: (enabled: boolean) => void;
   hueDir: 1 | -1 | 0;
@@ -57,8 +57,8 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
   onScaleModeChange,
   onStopAll,
   onResetDefaults,
-  lumaMode,
-  onLumaModeChange,
+  toneMode,
+  onToneModeChange,
   fmEnabled,
   onFmEnabledChange,
   hueDir,
@@ -106,17 +106,17 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
         <span style={{ width: SP.sm }} />
         <button
           type="button"
-          style={lumaMode === "symmetric" ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
-          onClick={() => onLumaModeChange("symmetric")}
+          style={toneMode === "symmetric" ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
+          onClick={() => onToneModeChange("symmetric")}
         >
-          {t("music_luma_sym")}
+          {t("music_tone_flat")}
         </button>
         <button
           type="button"
-          style={lumaMode === "bt601Luma" ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
-          onClick={() => onLumaModeChange("bt601Luma")}
+          style={toneMode === "grbTone" ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
+          onClick={() => onToneModeChange("grbTone")}
         >
-          {t("music_luma_bt601")}
+          {t("music_tone_grb")}
         </button>
         <span style={{ width: SP.sm }} />
         <button type="button" style={fmEnabled ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN} onClick={() => onFmEnabledChange(!fmEnabled)}>

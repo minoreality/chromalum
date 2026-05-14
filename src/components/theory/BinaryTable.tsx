@@ -10,11 +10,11 @@ const VIEWBOX_X = 8,
   VIEWBOX_W = 368;
 const ROW_H = 24,
   HEADER_Y = 18;
-const COL = { lv: 18, bin: 46, dot: 78, set: 120, g: 170, r: 192, b: 214, wt: 242, hamming: 274, luma: 332 };
+const COL = { lv: 18, bin: 46, dot: 78, set: 120, g: 170, r: 192, b: 214, wt: 242, hamming: 274, tone: 332 };
 const BIT_R = 6;
 const CHANNEL_COLORS = ["#00ff00", "#ff0000", "#0000ff"];
-const LUMA_VALUES = [0, 29, 76, 105, 150, 179, 226, 255];
-const LUMA_MAX = 255;
+const TONE_8_VALUES = [0, 36, 73, 109, 146, 182, 219, 255];
+const TONE_8_MAX = 255;
 
 function setNotation(bits: readonly number[]): string {
   const elems: string[] = [];
@@ -119,7 +119,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
           Hamming
         </text>
         <text
-          x={COL.luma}
+          x={COL.tone}
           y={HEADER_Y}
           textAnchor="middle"
           fontSize={FS.sm}
@@ -127,7 +127,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
           fontFamily="var(--font-mono)"
           fontWeight={FW.bold}
         >
-          Luma
+          Tone
         </text>
 
         {/* Data rows */}
@@ -137,7 +137,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
           const dim = hlLevel !== null && !active;
           const opacity = dim ? 0.25 : 1;
           const binStr = lv.bits.join("");
-          const lumaW = 40 * (LUMA_VALUES[i] / LUMA_MAX);
+          const toneW = 40 * (TONE_8_VALUES[i] / TONE_8_MAX);
           const weight = lv.bits[0] + lv.bits[1] + lv.bits[2];
           return (
             <g
@@ -228,18 +228,18 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
               >
                 {lv.hamming}
               </text>
-              {/* Luminance bar */}
+              {/* Tone bar */}
               <rect
-                x={COL.luma - 20}
+                x={COL.tone - 20}
                 y={y - 4}
-                width={lumaW}
+                width={toneW}
                 height={8}
                 rx={2}
                 fill={lv.lv === 0 ? C.textDimmer : lv.color}
                 fillOpacity={0.8}
               />
               <text
-                x={COL.luma + 26}
+                x={COL.tone + 26}
                 y={y}
                 textAnchor="start"
                 dominantBaseline="central"
@@ -247,7 +247,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
                 fill={C.textDimmer}
                 fontFamily="var(--font-mono)"
               >
-                {LUMA_VALUES[i]}
+                {TONE_8_VALUES[i]}
               </text>
             </g>
           );
@@ -257,13 +257,13 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
         className="theory-annotation"
         style={{ fontSize: FS.md, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}
       >
-        {t("theory_binary_luma_formula")}
+        {t("theory_binary_tone_formula")}
       </p>
       <p
         className="theory-annotation"
         style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}
       >
-        {t("theory_binary_luma_complement")}
+        {t("theory_binary_tone_complement")}
       </p>
     </div>
   );

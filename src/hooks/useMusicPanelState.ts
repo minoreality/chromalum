@@ -9,7 +9,7 @@ type MusicAndStep = { pairIndex: number; phase: "operands" | "result" } | null;
 type MusicDistPhase = "bxc" | "left" | "ab" | "ac" | "right" | "equal" | null;
 type MusicOctaPhase = "pair" | "result" | null;
 type MusicHammingMode = "743" | "844";
-type MusicLumaMode = "symmetric" | "bt601Luma";
+type MusicToneMode = "symmetric" | "grbTone";
 type MusicPartitionPhase = "line" | "complement" | null;
 type MusicRotationDir = 1 | -1 | 0;
 type MusicOriginMode = 0 | 7;
@@ -50,7 +50,7 @@ export function useMusicTransportState(hueAngleDeg: number) {
   const [phaseSpeed, setPhaseSpeed] = useState(0);
   const [hueSpeed, setHueSpeed] = useState(36);
   const [hoveredFanoLine, setHoveredFanoLine] = useState<number | null>(null);
-  const [lumaMode, setLumaMode] = useState<MusicLumaMode>("symmetric");
+  const [toneMode, setToneMode] = useState<MusicToneMode>("symmetric");
 
   const [alpha0, setAlpha0] = useState(0);
   const [alpha7, setAlpha7] = useState(0);
@@ -81,8 +81,8 @@ export function useMusicTransportState(hueAngleDeg: number) {
     setHueSpeed,
     hoveredFanoLine,
     setHoveredFanoLine,
-    lumaMode,
-    setLumaMode,
+    toneMode,
+    setToneMode,
     alpha0,
     setAlpha0,
     alpha7,

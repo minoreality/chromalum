@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
-  bt601Luma,
-  LUMA_R,
-  LUMA_G,
-  LUMA_B,
+  GRB_TONE_B,
+  GRB_TONE_G,
+  GRB_TONE_R,
+  levelTone8,
+  levelToneNorm,
+  rgbGrbTone8,
+  rgbGrbToneNorm,
   hue2rgb,
   rgb2hue,
   GRAY_LUT,
@@ -13,25 +16,24 @@ import {
   DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
 } from "../color-engine";
 
-describe("bt601Luma", () => {
-  it("black = 0", () => {
-    expect(bt601Luma(0, 0, 0)).toBe(0);
+describe("GRB Binary Tone helpers", () => {
+  it("uses 4:2:1 normalized GRB weights", () => {
+    expect(GRB_TONE_G).toBe(4 / 7);
+    expect(GRB_TONE_R).toBe(2 / 7);
+    expect(GRB_TONE_B).toBe(1 / 7);
   });
 
-  it("white = 255", () => {
-    expect(bt601Luma(255, 255, 255)).toBe(255);
+  it("maps levels to normalized tone and derived 8-bit tone", () => {
+    expect(Array.from({ length: 8 }, (_, level) => levelToneNorm(level))).toEqual([0, 1 / 7, 2 / 7, 3 / 7, 4 / 7, 5 / 7, 6 / 7, 1]);
+    expect(Array.from({ length: 8 }, (_, level) => levelTone8(level))).toEqual([0, 36, 73, 109, 146, 182, 219, 255]);
   });
 
-  it("pure red ~76.245", () => {
-    expect(bt601Luma(255, 0, 0)).toBeCloseTo(255 * LUMA_R, 1);
-  });
-
-  it("pure green ~149.685", () => {
-    expect(bt601Luma(0, 255, 0)).toBeCloseTo(255 * LUMA_G, 1);
-  });
-
-  it("pure blue ~29.07", () => {
-    expect(bt601Luma(0, 0, 255)).toBeCloseTo(255 * LUMA_B, 1);
+  it("maps RGB byte channels to GRB tone", () => {
+    expect(rgbGrbToneNorm(0, 0, 0)).toBe(0);
+    expect(rgbGrbToneNorm(255, 255, 255)).toBe(1);
+    expect(rgbGrbTone8(255, 0, 0)).toBe(73);
+    expect(rgbGrbTone8(0, 255, 0)).toBe(146);
+    expect(rgbGrbTone8(0, 0, 255)).toBe(36);
   });
 });
 
@@ -105,6 +107,10 @@ describe("LEVEL_INFO", () => {
     expect(LEVEL_INFO[7].name).toBe("White");
     expect(LEVEL_INFO[7].gray).toBe(255);
   });
+
+  it("uses derived 8-bit GRB tone values", () => {
+    expect(LEVEL_INFO.map(({ gray }) => gray)).toEqual([0, 36, 73, 109, 146, 182, 219, 255]);
+  });
 });
 
 describe("LEVEL_CANDIDATES", () => {
@@ -118,8 +124,21 @@ describe("LEVEL_CANDIDATES", () => {
     });
   });
 
-  it("has the expected pure-color candidate counts per luma level", () => {
+  it("has the expected pure-color candidate counts per tone level", () => {
     expect(LEVEL_CANDIDATES.map((alts) => alts.length)).toEqual([1, 1, 3, 3, 3, 3, 1, 1]);
+  });
+
+  it("aligns edge candidate hues to 4:2:1 hex angles", () => {
+    expect(LEVEL_CANDIDATES.map((alts) => alts.map(({ hueAngleDeg }) => Math.round(hueAngleDeg)))).toEqual([
+      [-1],
+      [240],
+      [0, 225, 270],
+      [15, 210, 300],
+      [30, 120, 195],
+      [45, 90, 180],
+      [60],
+      [-1],
+    ]);
   });
 
   it("level 0 is black [0,0,0]", () => {

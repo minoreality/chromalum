@@ -7,10 +7,11 @@
 [![Docs: CC BY 4.0](https://img.shields.io/badge/docs-CC%20BY%204.0-green.svg)](./docs/LICENSE.md)
 
 CHROMALUM is a browser-based React/Vite app for pixel art and algebraic color theory,
-built around an eight-level luma model based on BT.601. It combines canvas drawing,
+built around an eight-level GRB Binary Tone model. It combines canvas drawing,
 color remapping, glaze variants, gallery and Map analysis views, plus Theory and
-Music tabs that explore the same eight-level structure through `GF(2)^3`, RGB cube
-geometry, the Fano plane, Hamming codes, and related polyhedral structures.
+Music tabs that explore the same 4:2:1 GRB level structure through `GF(2)^3`,
+RGB cube geometry, the Fano plane, Hamming codes, and related polyhedral
+structures.
 
 **Demo:** [minoreality.github.io/chromalum](https://minoreality.github.io/chromalum/)
 
@@ -28,9 +29,9 @@ geometry, the Fano plane, Hamming codes, and related polyhedral structures.
 
 - Pixel-art drawing with brush, eraser, fill, line, rectangle, ellipse, undo,
   redo, pan, zoom, image import, PNG export, and mobile touch support.
-- Eight-level luma source model mapped into chromatic color variants.
+- Eight-level GRB Binary Tone source model mapped into chromatic color variants.
 - Glaze layer for per-pixel color-variant overrides without changing the
-  source luma structure.
+  source tone structure.
 - Gallery generation for color-pattern variants, bookmarks, previews, and
   PNG exports.
 - Map analysis views for composition, tone, color tone, connected regions,
@@ -45,7 +46,7 @@ geometry, the Fano plane, Hamming codes, and related polyhedral structures.
 ## Design Intent
 
 CHROMALUM keeps one compact data model at the center: every source pixel stores
-one of eight luma levels, while color mapping and optional glaze overrides select
+one of eight tone levels, while color mapping and optional glaze overrides select
 chromatic variants for those levels. This lets the app treat drawing, gallery
 generation, analysis, mathematical diagrams, and sonification as different views
 of the same discrete color structure instead of separate feature islands.

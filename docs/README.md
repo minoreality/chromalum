@@ -26,7 +26,7 @@ Treatise"). These documents define the discrete algebraic color model, place
 it against prior art, and explain how it is presented in the Theory tab.
 
 1. [Pars I - Algebraic Color Model](./algebraic-color-model.md)  
-   Defines the 8-color `GF(2)^3` model, luma ordering, complement theorem,
+   Defines the 8-color `GF(2)^3` model, GRB Binary Tone ordering, complement theorem,
    Fano/Hamming correspondences, and polyhedral readings.
 2. [Pars II - Algebraic Color Model - Prior Art](./prior-art-algebraic-color-model.md)  
    Separates known mathematical and color-model structures from the
@@ -43,11 +43,11 @@ sonification. These notes are companion documents to the core corpus rather
 than additional parts of _Tractatus Chromaticus_.
 
 1. [Appendix A - Music-Linked Visualization](./music-linked-visualization.md)  
-   Describes the luma-radius hue graph, hue-phase rotation (`alpha` in the
+   Describes the tone-radius hue graph, hue-phase rotation (`alpha` in the
    implementation), complement phase behavior, pitch mapping, and bit-spectrum
    timbre layer.
 2. [Appendix B - Music-Linked Visualization — 先行研究と設計ノート](./prior-art-music-linked-visualization.md)  
-   Surveys related sonification, color-to-sound, luma, hue, and accessibility
+   Surveys related sonification, color-to-sound, tone/brightness, hue, and accessibility
    references, and records design guidance for the Music tab.
 
 ## Suggested Reading Order

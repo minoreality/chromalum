@@ -86,7 +86,7 @@ describe("AnalyzePanel", () => {
 
     expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
       "map_map_levelTone",
-      "map_map_colorLuma",
+      "map_map_colorTone",
       "map_map_gradient",
       "map_map_region",
       "map_map_boundaryDistance",
@@ -105,7 +105,7 @@ describe("AnalyzePanel", () => {
     const setMapMode = vi.fn<(mode: MapMode) => void>();
     render(<AnalyzePanel {...makeProps({ setMapMode })} />);
 
-    for (const mode of ["levelTone", "colorLuma", "gradient", "region", "boundaryDistance", "isolation", "diversity"] satisfies MapMode[]) {
+    for (const mode of ["levelTone", "colorTone", "gradient", "region", "boundaryDistance", "isolation", "diversity"] satisfies MapMode[]) {
       fireEvent.click(screen.getByRole("button", { name: `map_map_${mode}` }));
       expect(setMapMode).toHaveBeenLastCalledWith(mode);
     }

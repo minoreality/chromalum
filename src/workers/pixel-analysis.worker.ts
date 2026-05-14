@@ -75,8 +75,8 @@ self.onmessage = (e: MessageEvent<PixelAnalysisWorkerRequest>) => {
     case "levelTone":
       for (let i = 0; i < n; i++) result.levelTone[i] = (levelData[i] & LEVEL_MASK) / 7;
       break;
-    case "colorLuma":
-      // No pre-computation needed for colorLuma
+    case "colorTone":
+      // No pre-computation needed for colorTone
       break;
   }
 

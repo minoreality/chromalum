@@ -20,17 +20,17 @@ function createRuntime() {
     scheduled.push({ fn, ms });
   });
   const playBitVectorLevel = vi.fn();
-  const triggerLumaBurst = vi.fn();
+  const triggerToneValueBurst = vi.fn();
   const triggerErrorMarker = vi.fn();
   const runtime: MusicPlaybackRuntime = {
     clear,
     schedule,
     playBitVectorLevel,
-    triggerLumaBurst,
+    triggerToneValueBurst,
     triggerErrorMarker,
   };
 
-  return { runtime, scheduled, clear, schedule, playBitVectorLevel, triggerLumaBurst, triggerErrorMarker };
+  return { runtime, scheduled, clear, schedule, playBitVectorLevel, triggerToneValueBurst, triggerErrorMarker };
 }
 
 describe("music-playback-runner", () => {
@@ -70,7 +70,7 @@ describe("music-playback-runner", () => {
     expect(playBitVectorLevel).toHaveBeenCalledWith(4);
   });
 
-  it("schedules luma canon and extended Hamming luma coordinates", () => {
+  it("schedules tone canon and extended Hamming tone coordinates", () => {
     const canon = createRuntime();
     const onCanonStep = vi.fn();
 
@@ -80,7 +80,7 @@ describe("music-playback-runner", () => {
 
     expect(onCanonStep).toHaveBeenCalledWith(2, "playing");
     expect(onCanonStep).toHaveBeenCalledWith(-1, null);
-    expect(canon.triggerLumaBurst).toHaveBeenCalledTimes(2);
+    expect(canon.triggerToneValueBurst).toHaveBeenCalledTimes(2);
 
     const extended = createRuntime();
     const onSpectrumStep = vi.fn();
@@ -88,7 +88,7 @@ describe("music-playback-runner", () => {
     scheduleExtendedHamming(onSpectrumStep, extended.runtime);
     extended.scheduled.forEach((event) => event.fn());
 
-    expect(extended.triggerLumaBurst).toHaveBeenCalledWith(0);
+    expect(extended.triggerToneValueBurst).toHaveBeenCalledWith(0);
     expect(onSpectrumStep).toHaveBeenLastCalledWith([], -1, 16);
   });
 

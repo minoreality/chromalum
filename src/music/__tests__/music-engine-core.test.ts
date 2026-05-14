@@ -2,29 +2,29 @@ import { describe, expect, it } from "vitest";
 import { CUBE_EDGES, COMPLEMENT_EDGES, STELLA_EDGES } from "../../data/theory-data";
 import {
   ALL_POINTS,
-  BT601_LUMA_COEFFICIENT_BY_LEVEL,
-  MAX_BT601_LUMA_COEFFICIENT,
   FULL_GRAY_CODE,
+  GRB_TONE_BY_LEVEL,
   K8_LAYER_EDGES,
+  MAX_GRB_TONE,
   extendedHammingCodewords,
   gl32GenA,
   gl32GenB,
   gl32GenC,
   linesThrough,
-  lumaToFreq,
+  toneToFreq,
 } from "../music-engine-core";
 
 describe("music-engine-core", () => {
-  it("keeps the Gray code sequence and luma frequency endpoints stable", () => {
+  it("keeps the Gray code sequence and tone frequency endpoints stable", () => {
     expect(FULL_GRAY_CODE).toEqual([0, 1, 3, 2, 6, 7, 5, 4]);
     for (let i = 1; i < FULL_GRAY_CODE.length; i++) {
       const diff = FULL_GRAY_CODE[i - 1] ^ FULL_GRAY_CODE[i];
       expect(diff && diff & (diff - 1)).toBe(0);
     }
 
-    expect(lumaToFreq(0)).toBe(220);
-    expect(lumaToFreq(255)).toBe(880);
-    expect(MAX_BT601_LUMA_COEFFICIENT).toBe(BT601_LUMA_COEFFICIENT_BY_LEVEL[6]);
+    expect(toneToFreq(0)).toBe(220);
+    expect(toneToFreq(255)).toBe(880);
+    expect(MAX_GRB_TONE).toBe(GRB_TONE_BY_LEVEL[6]);
   });
 
   it("applies GL(3,2) generators to all nonzero points", () => {

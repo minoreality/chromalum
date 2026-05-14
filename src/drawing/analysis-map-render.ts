@@ -1,4 +1,4 @@
-import { LEVEL_CANDIDATES, LEVEL_INFO, LUMA_B, LUMA_G, LUMA_R } from "../color-engine";
+import { LEVEL_CANDIDATES, LEVEL_INFO, rgbGrbTone8, rgbGrbToneNorm } from "../color-engine";
 import { LEVEL_MASK } from "../constants";
 import type { AnalysisPixelMaps, CanvasData, MapMode } from "../types";
 import { hexStr } from "../utils";
@@ -10,7 +10,7 @@ export type AnalysisMapRenderStatus = "rendered" | "pending" | "stale";
 const REGION_SMALL_THRESHOLD = 10;
 const MAP_STATUS_LABEL: Record<MapMode, string> = {
   levelTone: "MapTone",
-  colorLuma: "MapColorLuma",
+  colorTone: "MapColorTone",
   region: "MapRegion",
   gradient: "MapToneGrad",
   boundaryDistance: "MapBoundaryDist",
@@ -75,7 +75,7 @@ function getMapRenderStatus(
 ): Exclude<AnalysisMapRenderStatus, "rendered"> | null {
   const n = canvasData.width * canvasData.height;
 
-  if (mode === "levelTone" || mode === "colorLuma") return null;
+  if (mode === "levelTone" || mode === "colorTone") return null;
   if (pixelMaps.width !== canvasData.width || pixelMaps.height !== canvasData.height) return "stale";
 
   if (mode === "diversity") return hasPixels(pixelMaps.localDiversity, n) ? null : "pending";
@@ -134,8 +134,8 @@ function compactParts(...parts: string[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-function luma255(rgb: readonly [number, number, number]): number {
-  return Math.round(LUMA_R * rgb[0] + LUMA_G * rgb[1] + LUMA_B * rgb[2]);
+function tone8(rgb: readonly [number, number, number]): number {
+  return rgbGrbTone8(rgb[0], rgb[1], rgb[2]);
 }
 
 function gradientVector(canvasData: CanvasData, x: number, y: number): { gx: number; gy: number } {
@@ -316,12 +316,11 @@ export function rasterizeAnalysisMap({
     for (let i = 0; i < n; i++) {
       target[i] = applyLUTPacked(MAGMA, (canvasData.levelData[i] & LEVEL_MASK) / 7);
     }
-  } else if (mode === "colorLuma") {
+  } else if (mode === "colorTone") {
     for (let i = 0; i < n; i++) {
       const lv = canvasData.levelData[i] & LEVEL_MASK;
       const rgb = colorLUT[lv];
-      const lumVal = (LUMA_R * rgb[0] + LUMA_G * rgb[1] + LUMA_B * rgb[2]) / 255;
-      target[i] = applyLUTPacked(INFERNO, lumVal);
+      target[i] = applyLUTPacked(INFERNO, rgbGrbToneNorm(rgb[0], rgb[1], rgb[2]));
     }
   } else if (mode === "gradient" && pixelMaps.gradientMagnitude.length >= n && pixelMaps.levelTone.length >= n) {
     for (let i = 0; i < n; i++) {
@@ -437,13 +436,13 @@ export function getAnalysisMapHoverInfo({
       full: `${prefix} ${LEVEL_INFO[lv].name} gray=${g}`,
       compact: `${compactPrefix} gray=${g}`,
     };
-  } else if (mode === "colorLuma") {
+  } else if (mode === "colorTone") {
     const rgb = colorLUT[lv];
     const candidate = resolveCandidate(lv, candidateIndexByLevel[lv] ?? 0);
-    const y255 = luma255(rgb);
+    const t8 = tone8(rgb);
     return {
-      full: `${prefix} ${candidateLabel(candidate)} ${hexStr(rgb)} Y=${y255}/255 dGray=${signedInt(y255 - LEVEL_INFO[lv].gray)}`,
-      compact: `${compactPrefix} ${candidateLabel(candidate)} Y=${y255} dG=${signedInt(y255 - LEVEL_INFO[lv].gray)}`,
+      full: `${prefix} ${candidateLabel(candidate)} ${hexStr(rgb)} T=${t8}/255 dTone=${signedInt(t8 - LEVEL_INFO[lv].gray)}`,
+      compact: `${compactPrefix} ${candidateLabel(candidate)} T=${t8} dT=${signedInt(t8 - LEVEL_INFO[lv].gray)}`,
     };
   } else if (mode === "region") {
     const id = valueAt(pixelMaps.regionId, idx);

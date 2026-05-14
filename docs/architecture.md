@@ -9,12 +9,12 @@ The central model is a compact canvas:
 ```text
 CanvasData
   width, height              canvas dimensions
-  levelData                  Uint8Array of 8 source luma levels
+  levelData                  Uint8Array of 8 source tone levels
   pixelCandidateOverrideMap  Uint8Array of optional per-pixel color variant overrides
 ```
 
 Every major feature reads or transforms this model. Drawing changes the source
-luma levels, glaze changes `pixelCandidateOverrideMap`, analysis derives maps
+tone levels, glaze changes `pixelCandidateOverrideMap`, analysis derives maps
 from the same pixels, and gallery/theory/music views interpret the same 8-level
 structure.
 
@@ -66,7 +66,7 @@ lives under `src/music`, with React hooks wiring it to Web Audio and UI state.
 The reducer owns `pixelCandidateOverrideMap` so one undo step can atomically
 revert a source stroke and any related glaze change. Color candidate selection
 is separate in `useColorState` and `colorReducer`; it controls which RGB
-candidate each luma level maps to without rewriting source pixels.
+candidate each tone level maps to without rewriting source pixels.
 
 ## Drawing Pipeline
 
@@ -102,7 +102,7 @@ that opens the Map tab.
 
 ## Rendering
 
-`renderCanvasBuffers` converts luma levels plus the active color lookup table
+`renderCanvasBuffers` converts tone levels plus the active color lookup table
 into `ImageData`. It supports dirty-rectangle updates and optional
 `pixelCandidateOverrideMap` overrides for the glaze layer.
 

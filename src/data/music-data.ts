@@ -3,15 +3,15 @@ export { freqToNote } from "./music-frequency";
 
 export const CHROMA_LEVELS = [1, 2, 3, 4, 5, 6] as const;
 
-export const LUMA_VALUES = [0, 29, 76, 105, 150, 179, 226, 255] as const;
+export const TONE_8_VALUES = [0, 36, 73, 109, 146, 182, 219, 255] as const;
 
-export const BT601_VALUES: Readonly<Record<number, number>> = {
-  1: 0.114,
-  2: 0.299,
-  3: 0.413,
-  4: 0.587,
-  5: 0.701,
-  6: 0.886,
+export const GRB_TONE_VALUES: Readonly<Record<number, number>> = {
+  1: 1 / 7,
+  2: 2 / 7,
+  3: 3 / 7,
+  4: 4 / 7,
+  5: 5 / 7,
+  6: 6 / 7,
 };
 
 export const COMPLEMENT_PAIRS: readonly (readonly [number, number])[] = [

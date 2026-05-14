@@ -8,7 +8,7 @@ import {
   teardownFM,
   triggerBitSpectrumBurst,
   triggerErrorMarker,
-  triggerPitchOrLumaBurst,
+  triggerPitchOrToneBurst,
   type SonificationLevel,
 } from "../music-audio-graph";
 
@@ -191,12 +191,12 @@ function last(values: number[]) {
 }
 
 const levels: SonificationLevel[] = [
-  { levelIndex: 1, hueAngleDeg: 240, luma255: 29 },
-  { levelIndex: 2, hueAngleDeg: 0, luma255: 76 },
-  { levelIndex: 3, hueAngleDeg: 300, luma255: 105 },
-  { levelIndex: 4, hueAngleDeg: 120, luma255: 150 },
-  { levelIndex: 5, hueAngleDeg: 180, luma255: 179 },
-  { levelIndex: 6, hueAngleDeg: 60, luma255: 226 },
+  { levelIndex: 1, hueAngleDeg: 240, tone8: 36 },
+  { levelIndex: 2, hueAngleDeg: 0, tone8: 73 },
+  { levelIndex: 3, hueAngleDeg: 300, tone8: 109 },
+  { levelIndex: 4, hueAngleDeg: 120, tone8: 146 },
+  { levelIndex: 5, hueAngleDeg: 180, tone8: 182 },
+  { levelIndex: 6, hueAngleDeg: 60, tone8: 219 },
 ];
 
 describe("music-audio-graph", () => {
@@ -258,8 +258,8 @@ describe("music-audio-graph", () => {
     const nodes = buildAudioGraph(ctx);
     const initialOscCount = fake.oscs.length;
 
-    triggerPitchOrLumaBurst(nodes, 0, -1, "diatonic7");
-    triggerPitchOrLumaBurst(nodes, 2, 120, "diatonic7");
+    triggerPitchOrToneBurst(nodes, 0, -1, "diatonic7");
+    triggerPitchOrToneBurst(nodes, 2, 120, "diatonic7");
     triggerBitSpectrumBurst(nodes, 3, -1, false);
     triggerErrorMarker(nodes);
 

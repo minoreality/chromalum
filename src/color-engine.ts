@@ -1,32 +1,28 @@
 /* ═══════════════════════════════════════════
    COLOR ENGINE
-   8-level pure-color mapping using BT.601 luma coefficients
+   8-level pure-color mapping using the GRB Binary Tone model.
 
-   NOTE: BT.601 defines luma Y' from gamma-corrected component signals
-   R', G', and B'. Here we apply the same coefficients directly to
-   sRGB-like [0-255] channel values as a discrete luma ranking.
-   For WCAG relative luminance, sRGB must be linearized first
-   (coefficients 0.2126, 0.7152, 0.0722 on linear RGB).
-   We intentionally use the simpler BT.601 formula because:
-     1. The relative ordering of the 8 binary colors is preserved.
-     2. Complement symmetry Y_c + Y_(7−c) = 255 holds exactly.
-     3. The zigzag slope ratios directly reflect coefficient magnitudes.
+   The canonical CHROMALUM tone is the normalized 4:2:1 GRB level:
+     level = 4G + 2R + B
+     tone = level / 7
+
+   8-bit tone values are derived only for Canvas, PNG, and image I/O.
    ═══════════════════════════════════════════ */
-export const LUMA_R = 0.299,
-  LUMA_G = 0.587,
-  LUMA_B = 0.114;
-export const bt601Luma = (r: number, g: number, b: number): number => LUMA_R * r + LUMA_G * g + LUMA_B * b;
+export const GRB_TONE_R = 2 / 7,
+  GRB_TONE_G = 4 / 7,
+  GRB_TONE_B = 1 / 7;
 
-const EIGHT_LEVELS = [
-  0,
-  bt601Luma(0, 0, 255),
-  bt601Luma(255, 0, 0),
-  bt601Luma(255, 0, 255),
-  bt601Luma(0, 255, 0),
-  bt601Luma(0, 255, 255),
-  bt601Luma(255, 255, 0),
-  255,
-];
+function clamp01(v: number): number {
+  return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
+}
+
+export const levelToneNorm = (level: number): number => clamp01(level / 7);
+export const levelTone8 = (level: number): number => Math.round(255 * levelToneNorm(level));
+export const rgbGrbToneNorm = (r: number, g: number, b: number): number =>
+  GRB_TONE_R * clamp01(r / 255) + GRB_TONE_G * clamp01(g / 255) + GRB_TONE_B * clamp01(b / 255);
+export const rgbGrbTone8 = (r: number, g: number, b: number): number => Math.round(255 * rgbGrbToneNorm(r, g, b));
+
+const EIGHT_LEVEL_TONE_TARGETS = Array.from({ length: 8 }, (_, level) => 255 * levelToneNorm(level));
 
 interface LevelInfo {
   readonly name: string;
@@ -35,7 +31,7 @@ interface LevelInfo {
 
 export const LEVEL_INFO: readonly LevelInfo[] = ["Black", "Blue", "Red", "Magenta", "Green", "Cyan", "Yellow", "White"].map((name, i) => ({
   name,
-  gray: Math.round(EIGHT_LEVELS[i]),
+  gray: levelTone8(i),
 }));
 
 export function hue2rgb(h: number): [number, number, number] {
@@ -88,12 +84,12 @@ interface ColorCandidate {
 function findPure(target: number): ColorCandidate[] {
   if (target <= 0 || target >= 255) return [];
   const formulas = [
-    { solve: (L: number) => (L - 255 * LUMA_R) / LUMA_G, make: (v: number): [number, number, number] => [255, v, 0] },
-    { solve: (L: number) => (L - 255 * LUMA_G) / LUMA_R, make: (v: number): [number, number, number] => [v, 255, 0] },
-    { solve: (L: number) => (L - 255 * LUMA_G) / LUMA_B, make: (v: number): [number, number, number] => [0, 255, v] },
-    { solve: (L: number) => (L - 255 * LUMA_B) / LUMA_G, make: (v: number): [number, number, number] => [0, v, 255] },
-    { solve: (L: number) => (L - 255 * LUMA_B) / LUMA_R, make: (v: number): [number, number, number] => [v, 0, 255] },
-    { solve: (L: number) => (L - 255 * LUMA_R) / LUMA_B, make: (v: number): [number, number, number] => [255, 0, v] },
+    { solve: (L: number) => (L - 255 * GRB_TONE_R) / GRB_TONE_G, make: (v: number): [number, number, number] => [255, v, 0] },
+    { solve: (L: number) => (L - 255 * GRB_TONE_G) / GRB_TONE_R, make: (v: number): [number, number, number] => [v, 255, 0] },
+    { solve: (L: number) => (L - 255 * GRB_TONE_G) / GRB_TONE_B, make: (v: number): [number, number, number] => [0, 255, v] },
+    { solve: (L: number) => (L - 255 * GRB_TONE_B) / GRB_TONE_G, make: (v: number): [number, number, number] => [0, v, 255] },
+    { solve: (L: number) => (L - 255 * GRB_TONE_B) / GRB_TONE_R, make: (v: number): [number, number, number] => [v, 0, 255] },
+    { solve: (L: number) => (L - 255 * GRB_TONE_R) / GRB_TONE_B, make: (v: number): [number, number, number] => [255, 0, v] },
   ];
   const results: ColorCandidate[] = [];
   for (const f of formulas) {
@@ -127,9 +123,9 @@ const CANONICAL_COLORS: readonly (readonly [number, number, number])[] = [
 export const LEVEL_CANDIDATES: readonly (readonly ColorCandidate[])[] = LEVEL_INFO.map((_, i) => {
   if (i === 0) return [{ hueAngleDeg: -1, rgb: [0, 0, 0] as const, hueLabel: "—" }];
   if (i === 7) return [{ hueAngleDeg: -1, rgb: [255, 255, 255] as const, hueLabel: "—" }];
-  const a = findPure(EIGHT_LEVELS[i]);
+  const a = findPure(EIGHT_LEVEL_TONE_TARGETS[i]);
   if (!a.length) {
-    // Fallback for levels with no pure-color solution (should not occur with BT.601 coefficients)
+    // Fallback for levels with no pure-color solution (should not occur with GRB tone weights)
     return [{ hueAngleDeg: -1, rgb: [128, 128, 128] as const, hueLabel: "?" }];
   }
   // Sort by hue angle ascending (0°→360°)

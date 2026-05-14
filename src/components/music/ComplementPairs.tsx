@@ -1,9 +1,9 @@
 import React from "react";
 import { C, FS } from "../../styles/tokens";
-import { COMPLEMENT_PAIRS, LUMA_VALUES } from "../../data/music-data";
+import { COMPLEMENT_PAIRS, TONE_8_VALUES } from "../../data/music-data";
 
-// Theorem Y_k + Y_{7-k} = 255 is a pure luma identity; keep all colors canonical
-// (hue-invariant) so the visual matches the luma-based sonification.
+// Complement tone sums to 255 in 8-bit display units; keep colors canonical
+// (hue-invariant) so the visual matches the tone-based sonification.
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const W = 180,
   H = 100;
@@ -11,7 +11,7 @@ const CX = W / 2;
 const BAR_H = 14,
   ROW_GAP = 6,
   TOP = 18;
-const MAX_BAR = 70; // max bar width for luma 226
+const MAX_BAR = 70; // max bar width for chromatic tone 219
 
 interface Props {
   activePair: number;
@@ -45,14 +45,14 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
       </text>
       {COMPLEMENT_PAIRS.map(([a, b], i) => {
         const y = TOP + i * (BAR_H + ROW_GAP);
-        const wA = (LUMA_VALUES[a] / 255) * MAX_BAR;
-        const wB = (LUMA_VALUES[b] / 255) * MAX_BAR;
+        const wA = (TONE_8_VALUES[a] / 255) * MAX_BAR;
+        const wB = (TONE_8_VALUES[b] / 255) * MAX_BAR;
         const isActive = activePair === i;
         return (
           <g key={i} filter={isActive ? "url(#cp-glow)" : undefined} opacity={activePair >= 0 && !isActive ? 0.25 : 1}>
-            {/* Left bar (lower luma) */}
+            {/* Left bar (lower tone) */}
             <rect x={CX - wA} y={y} width={wA} height={BAR_H} rx={2} fill={LV_COLORS[a]} fillOpacity={0.8} />
-            {/* Right bar (higher luma) */}
+            {/* Right bar (higher tone) */}
             <rect x={CX} y={y} width={wB} height={BAR_H} rx={2} fill={LV_COLORS[b]} fillOpacity={0.8} />
             {/* Labels */}
             <text
@@ -88,7 +88,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
                 fontFamily="var(--font-mono)"
                 fill={C.textMuted}
               >
-                {LUMA_VALUES[a]}+{LUMA_VALUES[b]}=255
+                {TONE_8_VALUES[a]}+{TONE_8_VALUES[b]}=255
               </text>
             )}
           </g>
@@ -96,7 +96,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
       })}
       {/* Theorem label */}
       <text x={CX} y={H - 4} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-        Y&#x2096; + Y&#x2087;&#x208b;&#x2096; = 255
+        T&#x2096; + T&#x2087;&#x208b;&#x2096; = 255
       </text>
     </svg>
   );

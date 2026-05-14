@@ -1,6 +1,6 @@
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
 
-import { GRAY_LUT, LUMA_B, LUMA_G, LUMA_R } from "../color-engine";
+import { GRAY_LUT, rgbGrbTone8 } from "../color-engine";
 import type { CanvasAction } from "../types";
 
 interface CropImage {
@@ -42,7 +42,7 @@ export function useImageImportCrop({ dispatch, setZoom, setPan }: UseImageImport
       const px = id.data;
       for (let i = 0; i < w * h; i++) {
         const off = i * 4;
-        const gray = Math.min(255, Math.round(LUMA_R * px[off] + LUMA_G * px[off + 1] + LUMA_B * px[off + 2]));
+        const gray = rgbGrbTone8(px[off], px[off + 1], px[off + 2]);
         nd[i] = GRAY_LUT[gray];
       }
 

@@ -37,8 +37,8 @@ export const MusicPanel = React.memo(function MusicPanel() {
     setHueSpeed,
     hoveredFanoLine,
     setHoveredFanoLine,
-    lumaMode,
-    setLumaMode,
+    toneMode,
+    setToneMode,
     alpha0,
     alpha7,
     alphaDir,
@@ -176,8 +176,8 @@ export const MusicPanel = React.memo(function MusicPanel() {
             onScaleModeChange={setScaleMode}
             onStopAll={handleStopAll}
             onResetDefaults={handleResetDefaults}
-            lumaMode={lumaMode}
-            onLumaModeChange={setLumaMode}
+            toneMode={toneMode}
+            onToneModeChange={setToneMode}
             fmEnabled={fmEnabled}
             onFmEnabledChange={setFmEnabled}
             hueDir={hueDir}

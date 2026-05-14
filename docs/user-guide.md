@@ -17,11 +17,11 @@ need to keep outside the browser.
 
 ## Basic Workflow
 
-1. Use the Source tab to draw an eight-level luma image or import an image.
-2. Use Hex and Color to choose how the eight luma levels map to color
+1. Use the Source tab to draw an eight-level tone image or import an image.
+2. Use Hex and Color to choose how the eight tone levels map to color
    candidates.
 3. Use Glaze to paint per-pixel color-variant overrides while preserving the
-   underlying source luma structure.
+   underlying source tone structure.
 4. Use Gallery to generate, compare, bookmark, and export color-pattern
    variants.
 5. Use Map to inspect tone, color tone, gradient, connected regions, boundary
@@ -35,18 +35,19 @@ The Source workspace includes brush, eraser, fill, line, rectangle, and ellipse
 tools, plus undo and redo. Pan and zoom are shared across canvas workspaces so
 you can inspect the same structure from Source, Color, Hex, Glaze, and Map.
 
-Image import converts the source image into the eight luma levels used by the
+Image import converts the source image into the eight tone levels used by the
 model. PNG export can save grayscale, color, or glaze renderings; keep exported
 files when you need a durable copy outside browser storage.
 
 ## What The Model Means
 
-CHROMALUM is built around eight RGB vertices and a BT.601 luma ordering. The
-levels are useful for discrete drawing, palette mapping, structural maps,
-Theory diagrams, and Music sonification. They are not a perceptually uniform
-color space and do not guarantee accessibility contrast by themselves.
+CHROMALUM is built around eight RGB vertices and a GRB Binary Tone ordering:
+`level = 4G + 2R + B`, normalized as `tone = level / 7`. The levels are useful
+for discrete drawing, palette mapping, structural maps, Theory diagrams, and
+Music sonification. They are not a perceptually uniform color space and do not
+guarantee accessibility contrast by themselves.
 
 Glaze overrides change the displayed color candidate for selected pixels, but
-they do not change the source luma level. This is what lets the app compare
+they do not change the source tone level. This is what lets the app compare
 source structure, color mapping, glaze variants, gallery patterns, map
 analysis, and sonification as views of the same compact canvas.

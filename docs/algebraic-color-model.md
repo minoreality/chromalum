@@ -12,7 +12,7 @@
 
 この核そのものは既知である。RGB 色立方体、Z2 x Z2 x Z2 による色加算、Fano 平面 PG(2,2)、Hamming(7,4) 符号との関係は、既存の数学教材・レクリエーショナル数学・色空間解説に現れる。
 
-本モデルの独自性は、これら既知構造を、BT.601 luma による一意な GRB レベル順序、補色 luma 定理、標準サイコロの対面和 7、色相グレイ巡回、Fano/Hamming 対応、多面体双対、K8 の Hamming 距離分解として、単一の 8 色体系へ統合する点にある。
+本モデルの独自性は、これら既知構造を、`level = 4G + 2R + B` による GRB Binary Tone 順序、補色トーン定理、標準サイコロの対面和 7、色相グレイ巡回、Fano/Hamming 対応、多面体双対、K8 の Hamming 距離分解として、単一の 8 色体系へ統合する点にある。
 
 ## Model Assumptions
 
@@ -24,32 +24,32 @@
 4. 加法的な構造は GF(2)^3 上の XOR で読む。
 5. 集合論的な構造は `{G,R,B}` の部分集合束 B3 として読む。
 6. 補色は `c' = c xor 7` で定義する。
-7. 明るさ指標には、BT.601 型の luma
+7. トーン指標には、GRB Binary Tone
 
    ```text
-   Y = 0.299 R + 0.587 G + 0.114 B
+   T = (4G + 2R + B) / 7
    ```
 
    を用いる。
 
-この luma は CIE の知覚明度でも、WCAG の相対輝度でもない。BT.601 はガンマ補正済み信号から Y' を構成する規格であり、WCAG の相対輝度は sRGB を線形化したうえで `0.2126, 0.7152, 0.0722` を用いる。したがって本モデルの「luma順」は、知覚的均等性やアクセシビリティ・コントラストを直接保証しない。
+このトーンは CIE の知覚明度でも、WCAG の相対輝度でもない。外部の輝度規格を導入せず、3 ビットの GRB 番号そのものを `0..1` に正規化した離散指標である。したがって本モデルの「トーン順」は、知覚的均等性やアクセシビリティ・コントラストを直接保証しない。
 
 ## Color Labels
 
 本モデルでは、8 色を次のようにラベル付けする。
 
-| lv | bits `[G,R,B]` | set | color | short | luma |
+| lv | bits `[G,R,B]` | set | color | short | tone |
 | ---: | :---: | :--- | :--- | :---: | ---: |
-| 0 | 000 | empty | Black | K | 0 |
-| 1 | 001 | {B} | Blue | B | 29 |
-| 2 | 010 | {R} | Red | R | 76 |
-| 3 | 011 | {R,B} | Magenta | M | 105 |
-| 4 | 100 | {G} | Green | G | 150 |
-| 5 | 101 | {G,B} | Cyan | C | 179 |
-| 6 | 110 | {G,R} | Yellow | Y | 226 |
-| 7 | 111 | {G,R,B} | White | W | 255 |
+| 0 | 000 | empty | Black | K | 0/7 |
+| 1 | 001 | {B} | Blue | B | 1/7 |
+| 2 | 010 | {R} | Red | R | 2/7 |
+| 3 | 011 | {R,B} | Magenta | M | 3/7 |
+| 4 | 100 | {G} | Green | G | 4/7 |
+| 5 | 101 | {G,B} | Cyan | C | 5/7 |
+| 6 | 110 | {G,R} | Yellow | Y | 6/7 |
+| 7 | 111 | {G,R,B} | White | W | 7/7 |
 
-ここで luma は 8 ビット RGB 値 `0` または `255` に対する丸め値である。
+ここで tone は `level / 7` である。8 ビット値は Canvas/PNG/画像入力の表示・入出力用にだけ `round(255 * level / 7)` として派生させる。
 
 ## Known Structures
 
@@ -89,7 +89,7 @@ c xor c = K
 c xor (c xor 7) = W
 ```
 
-この種の色加算モデルは既知であり、既存文献では 8 色を `Z2 x Z2 x Z2` の元として扱う例がある。本ノートでは、これを CHROMALUM の luma レベル、Fano/Hamming、多面体構造へ接続する。
+この種の色加算モデルは既知であり、既存文献では 8 色を `Z2 x Z2 x Z2` の元として扱う例がある。本ノートでは、これを CHROMALUM のトーンレベル、Fano/Hamming、多面体構造へ接続する。
 
 ### Hue Hexagon / Gray Cycle
 
@@ -107,23 +107,23 @@ CHROMALUM のレベル順で書くと、
 
 であり、各ステップは 1 ビットだけを反転する。したがってこれは、立方体 Q3 の有彩色頂点上の 6-cycle であり、Gray code 的な巡回である。
 
-### Pure-Color Luma Intersections
+### Pure-Color Tone Intersections
 
 上の色相六角形は、純色条件
 
 ```text
-max(R,G,B) = 255, min(R,G,B) = 0
+max(R,G,B) = 1, min(R,G,B) = 0
 ```
 
-を満たす RGB cube の境界閉路でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `255`、または `255` から `0` へ線形に変化し、他の 2 成分は `0` または `255` に固定される。
+を満たす RGB cube の境界閉路でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `1`、または `1` から `0` へ線形に変化し、他の 2 成分は `0` または `1` に固定される。
 
-BT.601 luma
+GRB Binary Tone
 
 ```text
-Y = 0.299 R + 0.587 G + 0.114 B
+T = (4G + 2R + B) / 7
 ```
 
-は RGB 成分の線形関数なので、色相六角形の各辺上では luma も単調な一次関数として変化する。したがって、隣接する 2 頂点のレベル差が `d` のとき、その辺は端点を含めて `d + 1` 個の離散 luma レベルを横切る。
+は RGB 成分の線形関数なので、色相六角形の各辺上では tone も単調な一次関数として変化する。したがって、隣接する 2 頂点のレベル差が `d` のとき、その辺は端点を含めて `d + 1` 個の離散 tone レベルを横切る。
 
 色相閉路
 
@@ -148,7 +148,7 @@ L5: 3
 L6: 1
 ```
 
-である。ゆえに、純色条件のもとでは、有彩レベル `L2,L3,L4,L5` はそれぞれ 3 つの同一 luma 候補を持ち、端の有彩レベル `L1,L6` はそれぞれ 1 つだけを持つ。
+である。ゆえに、純色条件のもとでは、有彩レベル `L2,L3,L4,L5` はそれぞれ 3 つの同一 tone 候補を持ち、端の有彩レベル `L1,L6` はそれぞれ 1 つだけを持つ。421 正規化では、これらの候補角は 15 度刻みのきれいな値になる。
 
 `L0` Black と `L7` White は色相六角形上の点ではなく、RGB cube の黒白軸の端点であるため、候補数はそれぞれ 1 として扱う。したがって CHROMALUM の Hex/Color タブで用いる候補数は
 
@@ -211,60 +211,51 @@ P4 = Green = position bit 100
 
 本節は、既知構造を前提に、本モデルとして新規性を主張しやすい部分を整理する。
 
-### Contribution 1: GRB Luma Monotone Labeling
+### Contribution 1: GRB Binary Tone Labeling
 
-BT.601 係数
+GRB Binary Tone は、チャンネルを `[G,R,B]` の 3 ビットとして読み、
 
 ```text
-G = 0.587
-R = 0.299
-B = 0.114
+level = 4G + 2R + B
+T = level / 7
 ```
 
-は
+と定義する。したがって、3 ビット番号 `4G + 2R + B` は、8 つの RGB 頂点の tone 順と定義上一致する。
+
+これは外部の明るさ係数から GRB を導く主張ではなく、CHROMALUM の正準レベル番号を 4:2:1 の GRB 順として固定する定義である。
+
+### Contribution 2: Complement Tone Theorem
+
+色 `c = (G,R,B)` の補色を
 
 ```text
-G > R + B
-R > B
-```
-
-を満たす。このため、3 ビット番号 `4G + 2R + B` は、8 つの RGB 頂点の luma 順と一致する。
-
-6 通りのチャンネル割当のうち、レベル番号が luma に対して単調増加する割当は GRB だけである。
-
-### Contribution 2: Complement Luma Theorem
-
-任意の係数 `w_R, w_G, w_B` が
-
-```text
-w_R + w_G + w_B = 1
-```
-
-を満たすとする。色 `c = (R,G,B)` の補色を
-
-```text
-c' = (1-R, 1-G, 1-B)
+c' = (1-G, 1-R, 1-B)
 ```
 
 とすると、
 
 ```text
-Y(c) + Y(c') = 255
+T(c) + T(c') = 1
 ```
 
 が成り立つ。
 
-これは BT.601 に限らず、係数和が 1 の任意の線形 luma に対して成り立つ。
+```text
+T(c') = (4(1-G) + 2(1-R) + (1-B)) / 7
+      = 1 - T(c)
+```
+
+8 ビット表示単位で書く場合だけ、この関係は `tone8(c) + tone8(c') = 255` と読める。
 
 ### Contribution 3: Standard Die Rule from Complement Reversal
 
-有彩色 6 色を luma の昇順に 1 から 6 として並べる。
+有彩色 6 色を tone の昇順に 1 から 6 として並べる。
 
 ```text
 B < R < M < G < C < Y
 ```
 
-補色は luma 順序を反転するため、補色ペアは必ず順位和 7 になる。
+補色は tone 順序を反転するため、補色ペアは必ず順位和 7 になる。
 
 ```text
 B(1) + Y(6) = 7
@@ -274,11 +265,11 @@ M(3) + G(4) = 7
 
 これは標準的な六面サイコロの対面和 7 と同じ規則である。したがって、6 つの有彩色をサイコロ面に配置する場合、補色ペアを対面に置く自然な理由が得られる。
 
-### Contribution 4: Hue Gray Cycle, Luma Zigzag, and Die Net
+### Contribution 4: Hue Gray Cycle, Tone Zigzag, and Die Net
 
-有彩色六角形 `R -> Y -> G -> C -> B -> M` は、各ステップが 1 ビット反転であるため、Gray code 的な巡回である。同じ経路は、BT.601 luma の 6 区間ジグザグを与える。
+有彩色六角形 `R -> Y -> G -> C -> B -> M` は、各ステップが 1 ビット反転であるため、Gray code 的な巡回である。同じ経路は、GRB Binary Tone の 6 区間ジグザグを与える。
 
-さらに、このジグザグを純色境界上の同一 luma 交点として読むと、Hex/Color タブの候補数 `1,1,3,3,3,3,1,1` が得られる。これは一般的な連続色空間の自由な色選択ではなく、8 つの離散 luma レベルと純色境界の交点を有限個の候補として数える読みである。
+さらに、このジグザグを純色境界上の同一 tone 交点として読むと、Hex/Color タブの候補数 `1,1,3,3,3,3,1,1` が得られる。これは一般的な連続色空間の自由な色選択ではなく、8 つの離散 tone レベルと純色境界の交点を有限個の候補として数える読みである。
 
 この経路をサイコロの面隣接木として要求すると、6 面の隣接 5 本がすべて使われるため、面隣接木全体がこの Hamilton path に固定される。そこから得られる自由立方体展開図は 2-2-2 型の階段形になる。
 
@@ -306,45 +297,37 @@ E(K8) = E(Q3) disjoint union E(Stella) disjoint union M4
 
 ## Core Theorems and Proof Sketches
 
-### Theorem 1: GRB is the unique luma-monotone bit assignment
+### Theorem 1: GRB binary tone identity
 
-Let the 3 bit weights be assigned to color channels. A binary level order is luma-monotone if
+Let each color be a binary vector `[G,R,B]`. Define
 
 ```text
-Y(000) < Y(001) < Y(010) < Y(011) < Y(100) < Y(101) < Y(110) < Y(111).
+level(c) = 4G + 2R + B
+T(c) = level(c) / 7.
 ```
 
-For BT.601 coefficients, the unique assignment is
+Then binary numeric order and tone order are identical:
 
 ```text
-bit 2 = G
-bit 1 = R
-bit 0 = B
+T(000) < T(001) < T(010) < T(011) < T(100) < T(101) < T(110) < T(111).
 ```
 
 Proof sketch:
 
-For binary numeric order to be luma-monotone, the most significant bit must exceed the sum of the two lower bits, and the middle bit must exceed the lowest bit. BT.601 satisfies
+`T(c)` is `level(c)` multiplied by the positive constant `1/7`, so it preserves the ordinary numeric order of the GRB bit pattern.
 
-```text
-0.587 > 0.299 + 0.114
-0.299 > 0.114
-```
-
-so the only possible assignment is `G,R,B` in descending bit significance.
-
-### Theorem 2: Complement luma sum
+### Theorem 2: Complement tone sum
 
 Let
 
 ```text
-Y(c) = 255 (w_R R + w_G G + w_B B)
+T(c) = (4G + 2R + B) / 7
 ```
 
-where each channel is 0 or 1 and `w_R + w_G + w_B = 1`. Then
+where each channel is 0 or 1. Then
 
 ```text
-Y(c) + Y(c xor 7) = 255.
+T(c) + T(c xor 7) = 1.
 ```
 
 Proof:
@@ -352,14 +335,14 @@ Proof:
 The complement replaces each bit `x` by `1-x`. Therefore
 
 ```text
-Y(c') = 255 (w_R(1-R) + w_G(1-G) + w_B(1-B))
-      = 255 ((w_R+w_G+w_B) - (w_R R + w_G G + w_B B))
-      = 255 - Y(c).
+T(c') = (4(1-G) + 2(1-R) + (1-B)) / 7
+      = (7 - (4G + 2R + B)) / 7
+      = 1 - T(c).
 ```
 
 ### Theorem 3: Die opposite faces sum to 7
 
-Assume the six chromatic colors have distinct luma values. Rank them from darkest to brightest as `d(c) in {1,...,6}`. Then
+Assume the six chromatic colors have distinct tone values. Rank them from lowest to highest as `d(c) in {1,...,6}`. Then
 
 ```text
 d(c) + d(c') = 7.
@@ -367,7 +350,7 @@ d(c) + d(c') = 7.
 
 Proof sketch:
 
-By Theorem 2, complementation maps luma `Y` to `255-Y`, so it reverses the strict order. An order-reversing involution on a 6 element chain pairs rank `k` with rank `7-k`.
+By Theorem 2, complementation maps tone `T` to `1-T`, so it reverses the strict order. An order-reversing involution on a 6 element chain pairs rank `k` with rank `7-k`.
 
 ### Theorem 4: Fano lines are XOR-zero triples
 
@@ -411,7 +394,7 @@ The distance 1 edges form Q3, the distance 2 edges form two inscribed tetrahedra
 | GF(2)^3 | 8 vectors | 8 color levels |
 | Q3 cube | Hamming distance 1 graph | single-channel toggles |
 | Gray cycle | chromatic 6-cycle | hue order R -> Y -> G -> C -> B -> M |
-| Pure-color luma intersections | hexagon boundary crossings | candidate counts 1,1,3,3,3,3,1,1 |
+| Pure-color tone intersections | hexagon boundary crossings | candidate counts 1,1,3,3,3,3,1,1 |
 | Fano plane PG(2,2) | 7 nonzero vectors | non-black colors |
 | Hamming(7,4) | 7 coordinate positions | nonzero color labels as syndrome positions |
 | Octahedron | 6 chromatic vertices | complement axes R-C, G-M, B-Y |
@@ -427,13 +410,13 @@ This model does not claim the following:
 2. It does not model CIE XYZ, CIELAB, OKLab, cone response, chromatic adaptation, or color difference.
 3. It does not claim that XOR is physical additive light mixing.
 4. It does not claim that AND is real pigment or ink mixing.
-5. It does not claim that BT.601 luma is perceptual lightness.
+5. It does not claim that GRB Binary Tone is perceptual lightness.
 6. It does not claim that the Fano/Hamming correspondence is newly discovered.
 7. It does not claim that the RGB cube itself is newly discovered.
 
 The accurate claim is narrower:
 
-> This is a unified discrete algebraic color model for the 8 binary RGB vertices, combining known GF(2)^3, Fano, Hamming, and cube structures with a luma-induced GRB order, complement-die duality, hue Gray cycle, pure-color luma intersections, and polyhedral decomposition.
+> This is a unified discrete algebraic color model for the 8 binary RGB vertices, combining known GF(2)^3, Fano, Hamming, and cube structures with a GRB Binary Tone order, complement-die duality, hue Gray cycle, pure-color tone intersections, and polyhedral decomposition.
 
 ## Implementation Notes
 
@@ -454,11 +437,11 @@ src/components/theory/__tests__/
 Important invariants currently tested include:
 
 1. Fano lines form a Steiner triple system.
-2. BT.601 coefficients make `GRB` the unique luma-monotone bit assignment over the six RGB channel-to-bit permutations.
-3. Complementation `lv xor 7` reverses the six chromatic BT.601 luma ranks, so die-opposite rank sums are 7.
+2. GRB Binary Tone makes `level = 4G + 2R + B` identical to tone order.
+3. Complementation `lv xor 7` reverses the six chromatic tone ranks, so die-opposite rank sums are 7.
 4. CMY line is treated as an even-parity tetrahedron rather than a literal Euclidean plane slice.
 5. Gray cycle uses only one-bit flips.
-6. Pure-color luma intersections produce candidate counts `1,1,3,3,3,3,1,1`.
+6. Pure-color tone intersections produce candidate counts `1,1,3,3,3,3,1,1`.
 7. K8 edges partition by Hamming distance.
 8. T0 is closed under XOR.
 9. Subtractive CMY examples are Boolean AND identities, not XOR identities.
@@ -467,10 +450,6 @@ Important invariants currently tested include:
 
 ## References
 
-- ITU-R, Recommendation BT.601-7: digital component video and luma construction.
-  https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.601-7-201103-I!!PDF-E.pdf
-- W3C, WCAG 2.2 relative luminance definition, used only to distinguish relative luminance from BT.601 luma.
-  https://www.w3.org/TR/WCAG22/relative-luminance.html
 - Alvy Ray Smith, "Color Gamut Transform Pairs", RGB cube / HSV / hue hexagon.
   https://alvyray.com/Papers/CG/color78.pdf
 - 玉垣庸一・小原康裕・宮崎紀郎「CMYカラーキューブに基づく新たなカラーモデル II」, Boolean lattice / Hasse / RGB-CMY duality.

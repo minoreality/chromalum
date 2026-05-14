@@ -15,7 +15,7 @@ import { GrayCodeHex } from "./theory/GrayCodeHex";
 import { XorDemo } from "./theory/XorDemo";
 import { HammingDiagram } from "./theory/HammingDiagram";
 import { Octahedron } from "./theory/Octahedron";
-import { LuminanceZigzag } from "./theory/LuminanceZigzag";
+import { ToneZigzag } from "./theory/ToneZigzag";
 import { TetraDecomposition } from "./theory/TetraDecomposition";
 import { StellaOctangula } from "./theory/StellaOctangula";
 import { ConnectionsSummary, PolyhedraNetwork, ScopeSummary } from "./theory/ConnectionsSummary";
@@ -158,9 +158,9 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           <hr style={S_DIVIDER} />
 
-          {/* §5 Luma Zigzag */}
+          {/* §5 Tone Zigzag */}
           <Section title={t("theory_zigzag_title")} desc={t("theory_zigzag_desc")}>
-            <LuminanceZigzag hlLevel={hlLevel} onHover={onHover} />
+            <ToneZigzag hlLevel={hlLevel} onHover={onHover} />
           </Section>
 
           <hr style={S_DIVIDER} />

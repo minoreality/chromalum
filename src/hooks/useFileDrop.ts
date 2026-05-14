@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MAX_IMAGE_SIZE, MAX_FILE_BYTES, MAX_IMAGE_PIXELS, isAllowedCanvasSize } from "../constants";
-import { LUMA_R, LUMA_G, LUMA_B, GRAY_LUT } from "../color-engine";
+import { GRAY_LUT, rgbGrbTone8 } from "../color-engine";
 import { useSyncRef } from "./useSyncRef";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"]);
@@ -146,7 +146,7 @@ export function useFileDrop(
               const px = id.data;
               for (let i = 0; i < w * h; i++) {
                 const off = i * 4;
-                const gray = Math.min(255, Math.round(LUMA_R * px[off] + LUMA_G * px[off + 1] + LUMA_B * px[off + 2]));
+                const gray = rgbGrbTone8(px[off], px[off + 1], px[off + 2]);
                 nd[i] = GRAY_LUT[gray];
               }
               dispatch({ type: "load_image", width: w, height: h, levelData: nd });
