@@ -595,7 +595,7 @@ export const en = {
   music_duality_pitch: "Pitch",
   music_duality_rhythm: "Rhythm",
   music_tone_title: "Symmetry",
-  music_tone_flat: "Flat",
+  music_tone_flat: "Even",
   music_tone_grb: "Tone",
   music_stop_all: "Stop All",
   music_reset: "Reset",

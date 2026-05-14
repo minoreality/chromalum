@@ -596,7 +596,7 @@ export const ja = {
   music_duality_pitch: "音程",
   music_duality_rhythm: "リズム",
   music_tone_title: "対称性",
-  music_tone_flat: "Flat",
+  music_tone_flat: "Even",
   music_tone_grb: "Tone",
   music_stop_all: "全停止",
   music_reset: "\u30ea\u30bb\u30c3\u30c8",

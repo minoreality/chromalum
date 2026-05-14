@@ -1,7 +1,7 @@
 import { FANO_LINES } from "../data/theory-data";
 import { TONE_8_VALUES, bitSpectrumComponents } from "../data/music-data";
 import { BASE_FREQ, angleToFreq, type ScaleMode } from "../data/music-frequency";
-import { GRB_TONE_BY_LEVEL, MAX_GRB_TONE, toneToFreq } from "./music-engine-core";
+import { toneToFreq } from "./music-engine-core";
 
 export interface SonificationLevel {
   levelIndex: number;
@@ -325,15 +325,10 @@ export function applyParams(
     const rotatedAngle = levelData.hueAngleDeg + activeAlpha;
     nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(rotatedAngle, scaleMode), now, RAMP_TC);
 
-    // Gain: hover logic with Fano line boost
-    // L0 mode: higher tone levels are louder (tone/255)
-    // L7 mode: lower tone levels are louder (1 - tone/255), matching the inverted radius
-    const gainScale =
-      toneMode === "grbTone" && GRB_TONE_BY_LEVEL[levelIndex] !== undefined
-        ? (GRB_TONE_BY_LEVEL[levelIndex] / MAX_GRB_TONE) * GAIN_SCALE
-        : GAIN_SCALE;
-    const toneNorm = originMode === 0 ? levelData.tone8 / 255 : 1 - levelData.tone8 / 255;
-    const baseGain = toneNorm * gainScale;
+    // Gain: Even mode keeps chromatic drones level-matched. Tone mode follows the
+    // active GRB 4:2:1 tone radius from the selected origin.
+    const toneRadius = originMode === 0 ? levelData.tone8 / 255 : 1 - levelData.tone8 / 255;
+    const baseGain = toneMode === "grbTone" ? toneRadius * GAIN_SCALE : GAIN_SCALE;
     let targetGain: number;
 
     if (hoveredLevelIndex !== null) {

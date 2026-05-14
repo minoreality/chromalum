@@ -235,6 +235,35 @@ describe("music-audio-graph", () => {
     expect(noiseGain.gain.targetValues.length).toBeGreaterThan(0);
   });
 
+  it("keeps even drone mode independent of GRB tone rank", () => {
+    const nodes = buildAudioGraph(makeContext());
+
+    applyParams(nodes, levels, null, 0, 0, 1, "diatonic7", false, false, null, "symmetric", 0, false);
+
+    const lowToneGain = nodes.gains[0] as unknown as FakeGainNode;
+    const highToneGain = nodes.gains[5] as unknown as FakeGainNode;
+
+    expect(last(lowToneGain.gain.targetValues)).toBeCloseTo(last(highToneGain.gain.targetValues));
+  });
+
+  it("maps tone drone mode to the active 4:2:1 tone radius", () => {
+    const l0OriginNodes = buildAudioGraph(makeContext());
+    const l7OriginNodes = buildAudioGraph(makeContext());
+
+    applyParams(l0OriginNodes, levels, null, 0, 0, 1, "diatonic7", false, false, null, "grbTone", 0, false);
+    applyParams(l7OriginNodes, levels, null, 0, 0, 1, "diatonic7", false, false, null, "grbTone", 7, false);
+
+    const l0LowToneGain = l0OriginNodes.gains[0] as unknown as FakeGainNode;
+    const l0HighToneGain = l0OriginNodes.gains[5] as unknown as FakeGainNode;
+    const l7LowToneGain = l7OriginNodes.gains[0] as unknown as FakeGainNode;
+    const l7HighToneGain = l7OriginNodes.gains[5] as unknown as FakeGainNode;
+
+    expect(last(l0HighToneGain.gain.targetValues)).toBeGreaterThan(last(l0LowToneGain.gain.targetValues));
+    expect(last(l0HighToneGain.gain.targetValues) / last(l0LowToneGain.gain.targetValues)).toBeCloseTo(219 / 36);
+    expect(last(l7LowToneGain.gain.targetValues)).toBeGreaterThan(last(l7HighToneGain.gain.targetValues));
+    expect(last(l7LowToneGain.gain.targetValues) / last(l7HighToneGain.gain.targetValues)).toBeCloseTo(219 / 36);
+  });
+
   it("rebuilds and tears down FM modulator nodes", () => {
     const nodes = buildAudioGraph(makeContext());
 
