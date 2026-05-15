@@ -15,12 +15,12 @@
 
 Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 集合に対する離散代数的色彩アトラス」として位置づけるのが最も強い。
 
-残すべき先行研究は、次の 6 系統に絞る。
+残すべき先行研究は、次の 5 系統に絞る。
 
 1. Smith 1978: RGB cube / HSV / hue hexagon。
 2. JSSD CMY color cube II: Boolean lattice / Hasse / RGB-CMY duality。
 3. Taylor 2013: `Z2^3` color addition / Fano plane coloring。
-4. Fano/Hamming 標準資料: `PG(2,2)` と Hamming(7,4) の既知対応。
+4. Hamming 1950 / Fano/Hamming 標準資料: Hamming code の原典と `PG(2,2)` / Hamming(7,4) の既知対応。
 5. MathWorld Cube / Tetrahedron 2-Compound: cube nets、tetrahedra、stella octangula。
 
 この範囲で見ると、Theory タブの独自性は、個別構造の発見ではなく、GRB Binary Tone による `GRB` 順序、補色-dice 定理、hue Gray cycle、tone zigzag、Fano/Hamming、K8/polyhedra を単一 UI に統合する点にある。
@@ -44,7 +44,7 @@ Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 
 | RGB cube / hue hexagon | Smith 1978 | RGB cube、black-white axis、hue hexagon | hue path を Gray cycle、tone zigzag、dice adjacency と重ねる |
 | Boolean lattice | JSSD CMY color cube II | `B3`、Hasse、補元、join/meet、RGB-CMY 双対 | `B3` を GRB Binary Tone 順、Fano/Hamming、dice に接続する |
 | `Z2^3` color addition | Taylor 2013 | 8 色の XOR 群、Fano plane coloring | RGB display primaries、GRB Binary Tone、Hamming labels、K8 分解へ接続する |
-| Fano/Hamming | Lavrauw / Error Correction Zoo | Fano 平面と Hamming(7,4) の対応 | 色を符号語ではなく syndrome / coordinate labels として UI 化する |
+| Fano/Hamming | Hamming 1950 / Lavrauw / Error Correction Zoo | Hamming code、Fano 平面と Hamming(7,4) の対応 | 色を符号語ではなく syndrome / coordinate labels として UI 化する |
 | Tone | CHROMALUM model definition | `level = 4G + 2R + B`, `tone = level / 7` | 外部の輝度規格を導入せず、8 頂点 RGB の正準 GRB 順を固定する |
 | Cube nets / stella | MathWorld Cube / Tetrahedron 2-Compound | 11 cube nets、2 tetrahedra compound | complement-dice、hue path、K8 Hamming-distance color atlas に統合する |
 
@@ -89,7 +89,7 @@ Theory タブ末尾または各セクションに References drawer を置く場
 1. Smith 1978。
 2. JSSD CMY color cube II。
 3. Taylor 2013。
-4. Lavrauw / Error Correction Zoo。
+4. Hamming 1950 / Lavrauw / Error Correction Zoo。
 5. MathWorld Cube / Tetrahedron 2-Compound。
 
 ### P1: Formal Proof Cards
@@ -170,6 +170,8 @@ known finite algebra + known RGB/CMY lattice geometry + GRB Binary Tone order
   https://www.jstage.jst.go.jp/article/jssd/47/0/47_290/_article/-char/ja/
 - Ron Taylor, "Color Addition Across the Spectrum of Mathematics", 2013.
   https://www.gathering4gardner.org/g4g11gift/Taylor_Ron-Color_Addition.pdf
+- R. W. Hamming, "Error Detecting and Error Correcting Codes", Bell System Technical Journal 29(2), 147-160, 1950.
+  https://doi.org/10.1002/j.1538-7305.1950.tb00463.x
 - Michel Lavrauw, "Incidence Geometry and Buildings", lecture notes.
   https://osebje.famnit.upr.si/~michel.lavrauw/inc_geom_buildings_notes.pdf
 - Error Correction Zoo, "Incidence-matrix projective code".

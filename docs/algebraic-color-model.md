@@ -197,7 +197,7 @@ M ⊕ C ⊕ Y = K
 
 ### Hamming(7,4)
 
-Fano 平面の 7 点は、Hamming(7,4) 符号のパリティ検査行列の 7 列として読むことができる。CHROMALUM では、色そのものを符号語とは呼ばず、1..7 を符号語の座標位置ラベルとして扱う。
+Hamming code は Hamming 1950 に由来する error-detecting / error-correcting code である。Fano 平面の 7 点は、Hamming(7,4) 符号のパリティ検査行列の 7 列として読むことができる。CHROMALUM では、色そのものを符号語とは呼ばず、1..7 を符号語の座標位置ラベルとして扱う。
 
 ```text
 P1 = Blue  = position bit 001
@@ -456,6 +456,8 @@ Important invariants currently tested include:
   https://www.jstage.jst.go.jp/article/jssd/47/0/47_290/_article/-char/ja/
 - Ron Taylor, "Color Addition Across the Spectrum of Mathematics."  
   https://www.gathering4gardner.org/g4g11gift/Taylor_Ron-Color_Addition.pdf
+- R. W. Hamming, "Error Detecting and Error Correcting Codes", Bell System Technical Journal 29(2), 147-160, 1950.
+  https://doi.org/10.1002/j.1538-7305.1950.tb00463.x
 - Michel Lavrauw, "Incidence Geometry and Buildings" lecture notes, Fano plane and Hamming code construction.  
   https://osebje.famnit.upr.si/~michel.lavrauw/inc_geom_buildings_notes.pdf
 - Error Correction Zoo, "Incidence-matrix projective code", Fano / Hamming correspondence.
