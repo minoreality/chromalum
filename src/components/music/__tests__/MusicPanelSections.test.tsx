@@ -580,6 +580,13 @@ describe("MusicPanel section components", () => {
     fireEvent.click(validOcta);
     expect(engine.playOctahedronMix).toHaveBeenCalledWith(1, 2, expect.any(Function));
 
+    view.rerender(
+      <LanguageProvider>
+        <MusicAlgebraPanel {...validProps} octahedron={{ ...validProps.octahedron, phase: "pair" }} />
+      </LanguageProvider>,
+    );
+    expect(screen.getByRole("button", { name: "\u23f9 Octa" })).toBeTruthy();
+
     fireEvent.click(screen.getByRole("button", { name: "Gen B" }));
     expect(engine.applyGL32Transform).toHaveBeenCalledWith("B", expect.any(Function));
     expect(props.gl32.onPermChange).toHaveBeenCalledWith([7, 6, 5, 4, 3, 2, 1, 0]);

@@ -17,7 +17,7 @@ describe("LinkedVisualization split", () => {
 
     expect(screen.getByText("linkedviz_mode_l0")).toBeTruthy();
     expect(screen.getByText("linkedviz_legend_l0_origin")).toBeTruthy();
-    expect(screen.queryByText("Diatonic (7-note)")).toBeNull();
+    expect(screen.queryByText("Diatonic C")).toBeNull();
   });
 
   it("renders normalized GRB ratios in the shared color legend", () => {
@@ -50,8 +50,27 @@ describe("LinkedVisualization split", () => {
     render(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="diatonic7" />);
 
     expect(screen.getByText("linkedviz_mode_l0")).toBeTruthy();
-    expect(screen.getByText("Diatonic (7-note)")).toBeTruthy();
+    expect(screen.getByText("Diatonic C")).toBeTruthy();
     expect(screen.queryByText("linkedviz_legend_l0_origin")).toBeNull();
+  });
+
+  it("formats music pitch legends without mixing tone and byte notation", () => {
+    const view = render(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="ji" />);
+
+    expect(screen.getByText("Palindromic JI")).toBeTruthy();
+    expect(screen.getAllByText("\u00b7 8:7 251Hz").length).toBeGreaterThan(0);
+
+    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="diatonic7" />);
+    expect(screen.getByText("Diatonic C")).toBeTruthy();
+    expect(screen.getByText("262Hz +2st")).toBeTruthy();
+
+    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="octatonic" />);
+    expect(screen.getByText("Octatonic C")).toBeTruthy();
+    expect(screen.getByText("277Hz +2st")).toBeTruthy();
+
+    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="12tet" />);
+    expect(screen.getByText("12-TET Hue")).toBeTruthy();
+    expect(screen.getByText("\u00b7 C\u266f4 277Hz")).toBeTruthy();
   });
 
   it("notifies controlled mode and alpha changes from the toolbar", () => {

@@ -26,16 +26,18 @@ interface IntervalRatiosProps extends LinkedVisualizationOverlayContext {
 const TITLE_FONT_SIZE = 15;
 const ROW_FONT_SIZE = 14;
 const LABEL_W = 32;
-const NOTE_NAMES = ["C", "C\u266f", "D", "D\u266f", "E", "F", "F\u266f", "G", "G\u266f", "A", "A\u266f", "B"] as const;
+const SCALE_LABEL_W = 30;
+const MEMBER_SQ = 12;
+const SCALE_MEMBER_SQ = 12;
+const MEMBER_GAP = 2;
+const SCALE_MEMBER_GAP = 1.5;
+const SCALE_MEMBER_LABEL_OPACITY = 0.85;
 const JI_RATIOS = [1, 8 / 7, 7 / 5, 8 / 5, 2] as const;
 const JI_RATIO_LABELS = ["1:1", "8:7", "7:5", "8:5", "2:1"] as const;
 const JI_ANGLES = [0, 72, 144, 216, 288] as const;
 
-function notePad3(hz: number): string {
-  const midi = Math.round(69 + 12 * Math.log2(hz / 440));
-  const n = NOTE_NAMES[((midi % 12) + 12) % 12];
-  const oct = Math.floor(midi / 12) - 1;
-  return (n.length === 1 ? n + " " : n) + oct;
+function memberTextColor(levelIndex: number): string {
+  return levelIndex >= 4 ? "#000" : "#fff";
 }
 
 function buildRatioRows(
@@ -62,7 +64,7 @@ function buildRatioRows(
       const hz = 220 * JI_RATIOS[snapIdx];
       rows.push({
         label: `L${d.levelIndex}`,
-        value: `${notePad3(hz)} ${String(Math.round(hz)).padStart(3, " ")}Hz ${JI_RATIO_LABELS[snapIdx]}`,
+        value: `\u00b7 ${JI_RATIO_LABELS[snapIdx]} ${Math.round(hz)}Hz`,
         color: `rgb(${d.rgb.join(",")})`,
         levelIndex: d.levelIndex,
         candidateIndex: d.candidateIndex,
@@ -80,19 +82,15 @@ function buildRatioRows(
     for (const d of sorted) {
       const f = levelFreq(d);
       const hz = Math.round(f);
-      const midi = Math.round(69 + 12 * Math.log2(f / 440));
-      const name = NOTE_NAMES[((midi % 12) + 12) % 12];
-      const octave = Math.floor(midi / 12) - 1;
-      const noteStr = (name.length === 1 ? name + " " : name) + octave;
       rows.push({
         label: `L${d.levelIndex}`,
-        value: `${noteStr}  ${hz}Hz`,
+        value: `\u00b7 ${freqToNote(f)} ${hz}Hz`,
         color: `rgb(${d.rgb.join(",")})`,
         levelIndex: d.levelIndex,
         candidateIndex: d.candidateIndex,
       });
     }
-    return { title: "12-TET (Equal)", rows };
+    return { title: "12-TET Hue", rows };
   }
 
   const isOcta = scaleMode === "octatonic";
@@ -112,11 +110,11 @@ function buildRatioRows(
     const diff = (next - steps[i] + 12) % 12;
     rows.push({
       label: note,
-      value: `${Math.round(hz)}Hz · \u0394${diff}`,
+      value: `${Math.round(hz)}Hz +${diff}st`,
       members: perDegree[i].length > 0 ? perDegree[i] : undefined,
     });
   }
-  return { title: isOcta ? "Octatonic Scale" : "Diatonic (7-note)", rows };
+  return { title: isOcta ? "Octatonic C" : "Diatonic C", rows };
 }
 
 export function IntervalRatios({
@@ -132,8 +130,9 @@ export function IntervalRatios({
 }: IntervalRatiosProps) {
   const { title, rows } = buildRatioRows(activeDots, activeAlpha, scaleMode);
   const swatchSize = ROW_FONT_SIZE - 2;
-  const memberSq = 12;
-  const memberGap = 2;
+  const isScaleLegend = scaleMode === "diatonic7" || scaleMode === "octatonic";
+  const memberSq = isScaleLegend ? SCALE_MEMBER_SQ : MEMBER_SQ;
+  const memberGap = isScaleLegend ? SCALE_MEMBER_GAP : MEMBER_GAP;
 
   return (
     <g>
@@ -145,6 +144,7 @@ export function IntervalRatios({
         const isDimmed = hoveredDot !== null && r.levelIndex != null && !isHovered;
         const textFill = r.dim ? C.textDimmer : isHovered ? "#fff" : C.textDim;
         const textX = r.color ? x + swatchSize + 4 : x;
+        const labelW = isScaleLegend && !r.color ? SCALE_LABEL_W : LABEL_W;
         const rowY = y + (i + 1) * rowHeight;
         return (
           <g
@@ -171,7 +171,7 @@ export function IntervalRatios({
               {r.label}
             </text>
             <text
-              x={textX + LABEL_W}
+              x={textX + labelW}
               y={rowY}
               fontSize={ROW_FONT_SIZE}
               fill={textFill}
@@ -182,7 +182,7 @@ export function IntervalRatios({
             </text>
             {r.members?.map((m, mi) => {
               const mx = width - 4 - (r.members!.length - mi) * (memberSq + memberGap);
-              const my = rowY - memberSq;
+              const my = rowY - memberSq + (isScaleLegend ? 1 : 0);
               const isMHovered = hoveredDot !== null && hoveredDot.levelIndex === m.levelIndex;
               return (
                 <g
@@ -201,9 +201,24 @@ export function IntervalRatios({
                     stroke={isMHovered ? "#fff" : C.border}
                     strokeWidth={isMHovered ? 1.5 : 0.5}
                   />
-                  <text x={mx + memberSq / 2} y={my - 1} fontSize={8} fill={C.textDim} textAnchor="middle" fontFamily="var(--font-sans)">
-                    {m.levelIndex}
-                  </text>
+                  {isScaleLegend ? (
+                    <text
+                      x={mx + memberSq / 2}
+                      y={my + memberSq / 2 + 3}
+                      fontSize={8}
+                      fill={memberTextColor(m.levelIndex)}
+                      textAnchor="middle"
+                      fontWeight="bold"
+                      opacity={SCALE_MEMBER_LABEL_OPACITY}
+                      fontFamily="var(--font-sans)"
+                    >
+                      {m.levelIndex}
+                    </text>
+                  ) : (
+                    <text x={mx + memberSq / 2} y={my - 1} fontSize={8} fill={C.textDim} textAnchor="middle" fontFamily="var(--font-sans)">
+                      {m.levelIndex}
+                    </text>
+                  )}
                 </g>
               );
             })}

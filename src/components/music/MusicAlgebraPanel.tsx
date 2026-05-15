@@ -464,7 +464,7 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
                 }}
                 disabled={!octaPlayable}
               >
-                {t("music_octa_play")}
+                {octaPhase !== null ? t("music_octa_stop") : t("music_octa_play")}
               </button>
             </div>
           </div>

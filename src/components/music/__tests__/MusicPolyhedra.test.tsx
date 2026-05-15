@@ -35,6 +35,14 @@ describe("Music polyhedra widgets", () => {
     expect(screen.getByText("1⊕2=3")).toBeTruthy();
   });
 
+  it("places the invalid xor mixer hint below the diagram", () => {
+    renderWithLanguage(<OctahedronMix lvA={1} lvB={1} phase={null} activeLevels={[]} />);
+
+    const hint = screen.getByText("Choose two different non-complementary colors");
+    expect(hint.getAttribute("y")).toBe("146");
+    expect(screen.queryByText("1⊕1=0")).toBeNull();
+  });
+
   it("draws the xor mixer as a star while still showing selected outer pairs", () => {
     const view = renderWithLanguage(<OctahedronMix lvA={1} lvB={2} phase="pair" activeLevels={[]} />);
 
