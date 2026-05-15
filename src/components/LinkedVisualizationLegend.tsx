@@ -23,6 +23,17 @@ interface LinkedVisualizationLegendProps {
   legendL7: string;
 }
 
+const QUARTER_LABELS = ["0", "1/4", "1/2", "3/4", "1"] as const;
+
+function formatQuarter(value: number): string {
+  const idx = Math.max(0, Math.min(4, Math.round((value / 255) * 4)));
+  return QUARTER_LABELS[idx];
+}
+
+function formatGrbRatio(rgb: readonly number[]): string {
+  return `(${formatQuarter(rgb[1] ?? 0)}, ${formatQuarter(rgb[0] ?? 0)}, ${formatQuarter(rgb[2] ?? 0)})`;
+}
+
 export function LinkedVisualizationLegend({
   activeDots,
   hoveredDot,
@@ -35,8 +46,8 @@ export function LinkedVisualizationLegend({
     ? activeDots.findIndex((d) => d.levelIndex === hoveredDot.levelIndex && d.candidateIndex === hoveredDot.candidateIndex)
     : -1;
   const ix = BXright + 12;
-  const ixRgb = ix + 60;
-  const ixC2 = ixRgb + 70;
+  const ixRatio = ix + 60;
+  const ixC2 = ixRatio + 70;
   const ROW_H = 18;
   let yOffset = BY + 20;
 
@@ -56,8 +67,8 @@ export function LinkedVisualizationLegend({
           L{d.levelIndex}{" "}
           <tspan style={{ fontVariantNumeric: "tabular-nums" }}>{String(Math.round(d.angleDeg)).padStart(3, "\u2007")}°</tspan>
         </text>
-        <text x={ixRgb} y={y + 9} fontSize={10} fill={C.textDimmer}>
-          ({d.rgb.join(",")})
+        <text x={ixRatio} y={y + 9} fontSize={10} fill={C.textDimmer}>
+          {formatGrbRatio(d.rgb)}
         </text>
         {(() => {
           const pairLv = C2_PAIR[d.levelIndex];
@@ -106,8 +117,8 @@ export function LinkedVisualizationLegend({
         <text x={ix + 15} y={l0y + 9} fontSize={10} fill={hovL0 ? C.textPrimary : C.textDimmer}>
           {legendL0}
         </text>
-        <text x={ixRgb} y={l0y + 9} fontSize={10} fill={C.textDimmer}>
-          (0,0,0)
+        <text x={ixRatio} y={l0y + 9} fontSize={10} fill={C.textDimmer}>
+          {formatGrbRatio([0, 0, 0])}
         </text>
         <text x={ixC2} y={l0y + 9} fontSize={10} fill={C.textDimmer}>
           ↔
@@ -139,8 +150,8 @@ export function LinkedVisualizationLegend({
         <text x={ix + 15} y={l7y + 9} fontSize={10} fill={hovL7 ? C.textPrimary : C.textDimmer}>
           {legendL7}
         </text>
-        <text x={ixRgb} y={l7y + 9} fontSize={10} fill={C.textDimmer}>
-          (255,255,255)
+        <text x={ixRatio} y={l7y + 9} fontSize={10} fill={C.textDimmer}>
+          {formatGrbRatio([255, 255, 255])}
         </text>
         <text x={ixC2} y={l7y + 9} fontSize={10} fill={C.textDimmer}>
           ↔
