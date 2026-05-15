@@ -183,9 +183,9 @@ export const en = {
   header_shortcuts: "Shortcuts",
   about_title: "Overview",
   about_body_1:
-    "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, plus white and black. It rearranges brightness into relationships of color, supported by an algebraic structure behind the eight-color system.",
+    "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, plus white and black. It turns discrete GRB Binary Tone levels into color relationships, supported by an algebraic structure behind the eight-color system.",
   about_body_2:
-    "Start by drawing in the Source tab or loading an image. In the Hex and Color tabs, assign colors to the eight brightness levels and shape the palette. The Gallery tab lets you browse all resulting pattern combinations. In the Glaze tab, you can overlay alternative candidate colors, while the Map tab analyzes information in the canvas.",
+    "Start by drawing in the Source tab or loading an image. In the Hex and Color tabs, assign colors to the eight tone levels and shape the palette. The Gallery tab lets you browse all resulting pattern combinations. In the Glaze tab, you can overlay alternative candidate colors, while the Map tab analyzes information in the canvas.",
   about_body_3: "The Theory tab explains the underlying color system, and the Music tab explores the same color structure through sound.",
 
   // Tablist
@@ -214,7 +214,7 @@ export const en = {
   label_theory: "ALGEBRAIC COLOR THEORY",
   theory_title: "Discrete Algebraic Color Theory",
   theory_intro:
-    "In CHROMALUM, the 8 vertices where each RGB channel is 0 or 255 are encoded as the 3-bit vector `[G,R,B]`. Each bit represents Green, Red, and Blue on/off states, and these 8 vectors correspond to the 8 colors.\n\nThis 8-point set can be read as the 3-dimensional vector space GF(2)\u00b3 over GF(2). GF(2) is the smallest finite field, consisting only of 0 and 1; since 1+1=0, vector addition becomes bitwise XOR.\n\nThe full 8-point set can be read as the Color Cube, the 6 chromatic colors as a Gray-code cycle, the 7 nonzero points as the Fano plane, and the same 7 points as position labels for the Hamming code. The Theory tab integrates these as multiple readings of the same 8-color model into an algebraic color system.",
+    "In CHROMALUM, the 8 vertices where each RGB channel is treated as 0 or 1 are encoded as the 3-bit vector `[G,R,B]`. Each bit represents Green, Red, and Blue on/off states, and these 8 vectors correspond to the 8 colors.\n\nThis 8-point set can be read as the 3-dimensional vector space GF(2)\u00b3 over GF(2). GF(2) is the smallest finite field, consisting only of 0 and 1; since 1+1=0, vector addition becomes bitwise XOR.\n\nThe full 8-point set can be read as the Color Cube, the 6 chromatic colors as a Gray-code cycle, the 7 nonzero points as the Fano plane, and the same 7 points as position labels for the Hamming code. The Theory tab integrates these as multiple readings of the same 8-color model into an algebraic color system.",
   theory_venn_title: "Venn Diagram",
   theory_venn_desc:
     "The 3 channels {G,R,B} admit 2\u00b3 = 8 subsets. The 8 regions formed by 3 overlapping circles correspond exactly to the 8 colors: the outside is the empty set \u2205 (Black); the triple overlap is the full set {G,R,B} (White). Each color is in one-to-one correspondence with a subset A \u2286 {G,R,B}, readable as a characteristic function \u03c7_A (1 if the channel is in A, else 0). Every section below views this same 8-element set through a different lens.",
@@ -279,7 +279,7 @@ export const en = {
   theory_hamming_correct: "Correct \u2713",
   theory_connections_title: "Connections",
   theory_connections_desc:
-    "GF(2)\u00b3 is the common vector space that gathers the eight RGB 0/255 vertices. Multiple mathematical constructions emerge from it. Choosing the generators {B,R,G} = {1,2,4}, the Cayley graph of one-bit differences becomes the Color Cube Q\u2083. Projectivizing the seven points other than the zero point Black(0) gives the Fano plane PG(2,2), and the same seven nonzero vectors can also be read as the columns of the Hamming(7,4) parity-check matrix.\n\nLooking only at the six chromatic points, R→Y→G→C→B→M→R is a Gray-code cycle of one-bit flips. Viewing the eight points as subsets of {G,R,B}, XOR becomes symmetric difference and AND becomes intersection, giving the structure of a Boolean ring. Therefore, the diagrams in this tab are not a juxtaposition of separate theories; they are readings of the same 8-color model from the viewpoints of algebra, geometry, and coding theory.",
+    "GF(2)\u00b3 is the common vector space that gathers the eight RGB 0/1 vertices. Multiple mathematical constructions emerge from it. Choosing the generators {B,R,G} = {1,2,4}, the Cayley graph of one-bit differences becomes the Color Cube Q\u2083. Projectivizing the seven points other than the zero point Black(0) gives the Fano plane PG(2,2), and the same seven nonzero vectors can also be read as the columns of the Hamming(7,4) parity-check matrix.\n\nLooking only at the six chromatic points, R→Y→G→C→B→M→R is a Gray-code cycle of one-bit flips. Viewing the eight points as subsets of {G,R,B}, XOR becomes symmetric difference and AND becomes intersection, giving the structure of a Boolean ring. Therefore, the diagrams in this tab are not a juxtaposition of separate theories; they are readings of the same 8-color model from the viewpoints of algebra, geometry, and coding theory.",
   theory_conn_fano: "Fano",
   theory_conn_cube: "Cube",
   theory_conn_gray: "Gray",

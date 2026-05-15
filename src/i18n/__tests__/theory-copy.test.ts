@@ -76,6 +76,8 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
     expect(en.theory_binary_desc).not.toContain("consequence of human color vision");
     expect(en.theory_binary_desc).not.toContain("BT.601");
+    expect(en.theory_intro).not.toContain("0 or 255");
+    expect(en.theory_connections_desc).not.toContain("0/255");
     expect(en.theory_dice_desc).toContain("c ↦ c ⊕ 7 reverses tone order");
     expect(en.theory_dice_desc3).toContain("11 free cube nets");
     expect(en.theory_dice_desc3).toContain("face-adjacency tree");
@@ -92,6 +94,8 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
     expect(ja.theory_binary_desc).not.toContain("人間の色覚の帰結です");
     expect(ja.theory_binary_desc).not.toContain("BT.601");
+    expect(ja.theory_intro).not.toContain("0 または 255");
+    expect(ja.theory_connections_desc).not.toContain("0/255");
     expect(ja.theory_dice_desc).toContain("補色写像 c ↦ c ⊕ 7 はトーン順を反転");
     expect(ja.theory_dice_desc3).toContain("11種類の立方体展開図（回転・反転は同一視）");
     expect(ja.theory_dice_desc3).toContain("R→Y→G→C→B→M");

@@ -168,12 +168,12 @@ test("does not exceed four Structural Sonification columns on wide portrait", as
   expect(columnCount).toBeLessThanOrEqual(4);
 });
 
-test("keeps the luma zigzag graph fixed when playback starts", async ({ page }) => {
+test("keeps the tone zigzag graph fixed when playback starts", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("tab", { name: "Music" }).click();
 
   const zigzagButton = page.getByRole("button", { name: "▶ Zigzag" });
-  const zigzagCard = page.getByTestId("luma-zigzag-card");
+  const zigzagCard = page.getByTestId("tone-zigzag-card");
   await expect(zigzagCard).toBeVisible();
   await zigzagCard.scrollIntoViewIfNeeded();
 

@@ -85,9 +85,10 @@ The app has English and Japanese UI text. When changing user-facing copy, update
 both `src/i18n/en.ts` and `src/i18n/ja.ts` unless the change is intentionally
 language-specific.
 
-Theory copy should keep the established claim boundaries: use BT.601 `luma` /
-`ルマ` wording for this signal model, avoid implying perceptual uniformity, and
-describe XOR as an algebraic operation rather than physical color mixing.
+Theory copy should keep the established claim boundaries: use GRB Binary Tone /
+`Tone` / `トーン` wording for this signal model, avoid implying perceptual
+uniformity or external brightness-standard derivation, and describe XOR as an
+algebraic operation rather than physical color mixing.
 
 ## Security
 
