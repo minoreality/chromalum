@@ -15,6 +15,10 @@ function renderWithLanguage(node: ReactNode) {
   return render(<LanguageProvider>{node}</LanguageProvider>);
 }
 
+function lineKey(line: SVGLineElement): string {
+  return `${line.getAttribute("x1")},${line.getAttribute("y1")}->${line.getAttribute("x2")},${line.getAttribute("y2")}`;
+}
+
 describe("Music polyhedra widgets", () => {
   it("renders the subtractive AND triads", () => {
     renderWithLanguage(<AndTriads activeStep={null} activeLevels={[]} />);
@@ -29,6 +33,24 @@ describe("Music polyhedra widgets", () => {
     renderWithLanguage(<OctahedronMix lvA={1} lvB={2} phase="result" activeLevels={[]} />);
 
     expect(screen.getByText("1⊕2=3")).toBeTruthy();
+  });
+
+  it("draws the xor mixer as a star while still showing selected outer pairs", () => {
+    const view = renderWithLanguage(<OctahedronMix lvA={1} lvB={2} phase="pair" activeLevels={[]} />);
+
+    const lineKeys = Array.from(view.container.querySelectorAll("line")).map(lineKey);
+    expect(lineKeys).toContain("90,26->136,105.5");
+    expect(lineKeys).not.toContain("90,26->136,52.5");
+    expect(lineKeys).not.toContain("136,52.5->90,26");
+
+    view.rerender(
+      <LanguageProvider>
+        <OctahedronMix lvA={2} lvB={6} phase="pair" activeLevels={[]} />
+      </LanguageProvider>,
+    );
+
+    const selectedOuterEdge = Array.from(view.container.querySelectorAll("line")).find((line) => lineKey(line) === "90,26->136,52.5");
+    expect(selectedOuterEdge?.getAttribute("stroke")).toBe("#00ff00");
   });
 
   it("shows the selected K8 layer label", () => {

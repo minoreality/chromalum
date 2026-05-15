@@ -494,8 +494,12 @@ describe("MusicPanel section components", () => {
 
     const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
     const circles = Array.from(container.querySelectorAll("circle"));
+    const lines = Array.from(container.querySelectorAll("line"));
     expect(circles).toHaveLength(14);
     expect(circles.some((circle) => circle.getAttribute("cx") === "172")).toBe(false);
+    expect(
+      lines.some((line) => line.getAttribute("stroke") === "url(#zg-crossing-terminal-grad)" && line.getAttribute("x2") === "172"),
+    ).toBe(true);
     expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "24"]));
     expect(labels).not.toContain("+4");
   });

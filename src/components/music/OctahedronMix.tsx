@@ -14,6 +14,21 @@ const PTS: Record<number, [number, number]> = {
 };
 
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
+const OUTER_HEX_EDGES: readonly (readonly [number, number])[] = [
+  [2, 6],
+  [6, 4],
+  [4, 5],
+  [5, 1],
+  [1, 3],
+  [3, 2],
+];
+
+function edgeKey(a: number, b: number): string {
+  return a < b ? `${a}-${b}` : `${b}-${a}`;
+}
+
+const OUTER_HEX_EDGE_KEYS = new Set(OUTER_HEX_EDGES.map(([a, b]) => edgeKey(a, b)));
+const STAR_EDGES = OCTA_EDGES.filter(([a, b]) => !OUTER_HEX_EDGE_KEYS.has(edgeKey(a, b)));
 
 function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[]): string {
   const found = activeLevels.find((level) => level.levelIndex === lv);
@@ -23,10 +38,6 @@ function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonl
 
 function textColor(lv: number): string {
   return lv >= 4 ? "#000" : "#fff";
-}
-
-function isSameEdge(a: number, b: number, x: number, y: number): boolean {
-  return (a === x && b === y) || (a === y && b === x);
 }
 
 interface Props {
@@ -53,21 +64,30 @@ export const OctahedronMix = React.memo(function OctahedronMix({ lvA, lvB, phase
         </filter>
       </defs>
 
-      {OCTA_EDGES.map(([a, b], i) => {
-        const selected = valid && lvA != null && lvB != null && isSameEdge(a, b, lvA, lvB);
-        return (
-          <line
-            key={`${a}-${b}-${i}`}
-            x1={PTS[a][0]}
-            y1={PTS[a][1]}
-            x2={PTS[b][0]}
-            y2={PTS[b][1]}
-            stroke={selected ? pointColor(xorResult!, activeLevels) : "rgba(255,255,255,0.18)"}
-            strokeWidth={selected ? 2.5 : 1}
-            opacity={selected ? 1 : 0.6}
-          />
-        );
-      })}
+      {STAR_EDGES.map(([a, b], i) => (
+        <line
+          key={`${a}-${b}-${i}`}
+          x1={PTS[a][0]}
+          y1={PTS[a][1]}
+          x2={PTS[b][0]}
+          y2={PTS[b][1]}
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth={1}
+          opacity={0.6}
+        />
+      ))}
+      {valid && lvA != null && lvB != null && xorResult !== null ? (
+        <line
+          x1={PTS[lvA][0]}
+          y1={PTS[lvA][1]}
+          x2={PTS[lvB][0]}
+          y2={PTS[lvB][1]}
+          stroke={pointColor(xorResult, activeLevels)}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          opacity={1}
+        />
+      ) : null}
 
       {[1, 2, 3, 4, 5, 6].map((lv) => {
         const [x, y] = PTS[lv];

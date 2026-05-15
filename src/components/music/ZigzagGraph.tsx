@@ -9,6 +9,8 @@ const NAMES = ["", "B", "R", "M", "G", "C", "Y"];
 const CH_COLORS: Record<string, string> = { G: "#00cc00", R: "#cc0000", B: "#4466ff" };
 const CROSSING_GRAPH_POINTS = TONE_CROSSING_SEQUENCE.slice(0, -1);
 const CROSSING_TERMINAL_INDEX = TONE_CROSSING_SEQUENCE.length - 1;
+const CROSSING_TERMINAL_POINT = TONE_CROSSING_SEQUENCE[CROSSING_TERMINAL_INDEX];
+const CROSSING_FINAL_GRAPH_POINT = CROSSING_GRAPH_POINTS[CROSSING_GRAPH_POINTS.length - 1];
 
 const W = 180,
   H = 100;
@@ -48,6 +50,10 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <linearGradient id="zg-crossing-terminal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor={hueColor(CROSSING_FINAL_GRAPH_POINT.angleDeg)} />
+          <stop offset="100%" stopColor={hueColor(CROSSING_TERMINAL_POINT.angleDeg)} />
+        </linearGradient>
       </defs>
       {/* Y-axis midline (1/2) */}
       <line x1={ML} y1={yPos(3.5)} x2={W - MR} y2={yPos(3.5)} stroke={C.textDimmer} strokeWidth={0.5} strokeDasharray="3,2" opacity={0.4} />
@@ -74,6 +80,24 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
               />
             );
           })}
+          {(() => {
+            const x0 = xAngle(CROSSING_FINAL_GRAPH_POINT.angleDeg),
+              y0 = yPos(CROSSING_FINAL_GRAPH_POINT.lv);
+            const x1 = xAngle(CROSSING_TERMINAL_POINT.angleDeg),
+              y1 = yPos(CROSSING_TERMINAL_POINT.lv);
+            const isActive = currentStep === CROSSING_GRAPH_POINTS.length - 1 || currentStep === CROSSING_TERMINAL_INDEX;
+            return (
+              <line
+                x1={x0}
+                y1={y0}
+                x2={x1}
+                y2={y1}
+                stroke="url(#zg-crossing-terminal-grad)"
+                strokeWidth={isActive ? 2.3 : 1.3}
+                opacity={isActive ? 0.9 : 0.42}
+              />
+            );
+          })()}
           {CROSSING_GRAPH_POINTS.map((point, i) => {
             const x = xAngle(point.angleDeg),
               y = yPos(point.lv);
