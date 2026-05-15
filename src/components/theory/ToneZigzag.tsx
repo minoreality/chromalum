@@ -11,11 +11,14 @@ const MT = 28; // top margin
 const PW = 420; // plot width
 const PH = 200; // plot height (maps normalized tone 0-1)
 const MB = 28; // bottom margin
-const MR = 28;
+const MR = 44;
 const VB_W = ML + PW + MR;
 const VB_H = MT + PH + MB;
 const TONE_CYCLE_LABEL_Y = MT - 14;
 const HUE_AXIS_LABEL_Y = MT + PH + 12;
+const TONE_AXIS_LABEL_X = ML - 10;
+const SIDE_LABEL_GAP = 10;
+const RIGHT_AXIS_LABEL_X = ML + PW + SIDE_LABEL_GAP;
 
 const xH = (h: number) => ML + (h / 360) * PW;
 const yT = (tone: number) => MT + PH - tone * PH;
@@ -57,6 +60,22 @@ const HUE_AXIS_TICKS = [0, 60, 120, 180, 240, 300, 360] as const;
 const SEG_COLORS = ["#00cc00", "#cc0000", "#4466ff", "#00cc00", "#cc0000", "#4466ff"];
 const SEG_LABELS = ["+4", "-2", "+1", "-4", "+2", "-1"];
 const SEG_LABEL_FONT_SIZE = 9;
+const SEG_LABEL_OFFSET = 13;
+
+function segmentLabelPoint(v: { h: number; tone: number }, v2: { h: number; tone: number }): { x: number; y: number } {
+  const x1 = xH(v.h);
+  const y1 = yT(v.tone);
+  const x2 = xH(v2.h);
+  const y2 = yT(v2.tone);
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const side = dy < 0 ? -1 : 1;
+  return {
+    x: (x1 + x2) / 2 + side * (-dy / len) * SEG_LABEL_OFFSET,
+    y: (y1 + y2) / 2 + side * (dx / len) * SEG_LABEL_OFFSET,
+  };
+}
 
 function hueToRgbString(h: number): string {
   const hNorm = (((h % 360) + 360) % 360) / 360;
@@ -134,7 +153,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
         {/* Complement midline T=1/2 */}
         <line x1={ML} y1={yT(0.5)} x2={ML + PW} y2={yT(0.5)} stroke={C.textDimmer} strokeWidth={0.5} strokeDasharray="6,4" opacity={0.4} />
         <text
-          x={ML - 4}
+          x={TONE_AXIS_LABEL_X}
           y={yT(0.5)}
           textAnchor="end"
           dominantBaseline="central"
@@ -150,7 +169,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
         <rect x={ML} y={yT(LEVELS[5])} width={PW} height={yT(LEVELS[4]) - yT(LEVELS[5])} fill="#ffffff" fillOpacity={0.03} />
         {/* N=4 labels */}
         <text
-          x={ML + PW + 4}
+          x={RIGHT_AXIS_LABEL_X}
           y={(yT(LEVELS[2]) + yT(LEVELS[3])) / 2}
           textAnchor="start"
           dominantBaseline="central"
@@ -161,7 +180,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
           N=4
         </text>
         <text
-          x={ML + PW + 4}
+          x={RIGHT_AXIS_LABEL_X}
           y={(yT(LEVELS[4]) + yT(LEVELS[5])) / 2}
           textAnchor="start"
           dominantBaseline="central"
@@ -192,7 +211,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
               />
               {/* Tone-axis label */}
               <text
-                x={ML - 4}
+                x={TONE_AXIS_LABEL_X}
                 y={yT(y)}
                 textAnchor="end"
                 dominantBaseline="central"
@@ -209,14 +228,13 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
           );
         })}
 
-        {/* Complement pair bracket when hovering */}
+        {/* Complement sum when hovering */}
         {hlTone !== null && compTone !== null && hlLevel !== compLevel && (
           <g>
-            <line x1={ML - 8} y1={yT(hlTone)} x2={ML - 8} y2={yT(compTone)} stroke={C.textMuted} strokeWidth={1} opacity={0.5} />
             <text
-              x={ML - 10}
+              x={RIGHT_AXIS_LABEL_X}
               y={(yT(hlTone) + yT(compTone)) / 2}
-              textAnchor="end"
+              textAnchor="start"
               dominantBaseline="central"
               fontSize={FS.xxs}
               fill={C.textMuted}
@@ -248,15 +266,14 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
         {/* Segment channel labels */}
         {VERTS.slice(0, 6).map((v, i) => {
           const v2 = VERTS[i + 1];
-          const mx = (xH(v.h) + xH(v2.h)) / 2;
-          const my = (yT(v.tone) + yT(v2.tone)) / 2;
-          const rising = v2.tone > v.tone;
+          const labelPoint = segmentLabelPoint(v, v2);
           return (
             <text
               key={`sl${i}`}
-              x={mx}
-              y={my + (rising ? -6 : 8)}
+              x={labelPoint.x}
+              y={labelPoint.y}
               textAnchor="middle"
+              dominantBaseline="central"
               fontSize={SEG_LABEL_FONT_SIZE}
               fontFamily="var(--font-mono)"
               fontWeight={FW.bold}

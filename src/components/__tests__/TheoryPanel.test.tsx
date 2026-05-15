@@ -90,6 +90,23 @@ describe("TheoryPanel", () => {
 
     expect(textContent).toEqual(expect.arrayContaining(["0/7", "1/7", "2/7", "3/7", "4/7", "5/7", "6/7", "7/7", "1/2"]));
     expect(textContent).toEqual(expect.arrayContaining(["+4", "-2", "+1", "-4", "+2", "-1"]));
+    const segmentLines = Array.from(zigzag.querySelectorAll('line[stroke-width="2"]'));
+    const segmentLabels = ["+4", "-2", "+1", "-4", "+2", "-1"].map((label) =>
+      Array.from(zigzag.querySelectorAll("text")).find((node) => node.textContent === label),
+    );
+    expect(segmentLines).toHaveLength(6);
+    for (const [i, label] of segmentLabels.entries()) {
+      expect(label?.getAttribute("dominant-baseline")).toBe("central");
+      const line = segmentLines[i];
+      const x0 = Number(label?.getAttribute("x"));
+      const y0 = Number(label?.getAttribute("y"));
+      const x1 = Number(line.getAttribute("x1"));
+      const y1 = Number(line.getAttribute("y1"));
+      const x2 = Number(line.getAttribute("x2"));
+      const y2 = Number(line.getAttribute("y2"));
+      const distance = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1) / Math.hypot(y2 - y1, x2 - x1);
+      expect(distance).toBeGreaterThan(10);
+    }
     const toneCycleLabels = Array.from(zigzag.querySelectorAll('[data-tone-cycle-label="true"]'));
     expect(toneCycleLabels.map((node) => node.textContent)).toEqual(["2", "3", "4", "5", "6", "5", "4", "5", "4", "3", "2", "1", "2", "3"]);
     expect(toneCycleLabels.map((node) => node.getAttribute("fill"))).toEqual([
@@ -131,6 +148,18 @@ describe("TheoryPanel", () => {
     fireEvent.mouseEnter(hoverTargets[2]);
     const levelTwoText = Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent);
     expect(levelTwoText).toContain("=1");
+    const complementSumLabel = Array.from(zigzag.querySelectorAll("text")).find((node) => node.textContent === "=1");
+    const nRegionLabel = Array.from(zigzag.querySelectorAll("text")).find((node) => node.textContent === "N=4");
+    expect(complementSumLabel?.getAttribute("x")).toBe(nRegionLabel?.getAttribute("x"));
+    expect(Number(complementSumLabel?.getAttribute("x"))).toBeGreaterThan(
+      Number(hueAxisLabels[hueAxisLabels.length - 1].getAttribute("x")),
+    );
+    const rightSideVerticalLines = Array.from(zigzag.querySelectorAll("line")).filter(
+      (line) =>
+        line.getAttribute("x1") === line.getAttribute("x2") &&
+        Number(line.getAttribute("x1")) > Number(hueAxisLabels[hueAxisLabels.length - 1].getAttribute("x")),
+    );
+    expect(rightSideVerticalLines).toHaveLength(0);
     expect(levelTwoText).toEqual(expect.arrayContaining(["0turn", "5/8turn", "3/4turn"]));
     expect(levelTwoText).not.toContain("225°");
 
