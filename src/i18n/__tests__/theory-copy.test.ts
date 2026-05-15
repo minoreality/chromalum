@@ -110,7 +110,7 @@ describe("theory copy high-risk claims", () => {
 
   it("keeps reviewed color labels stable where abbreviation changes would alter meaning", () => {
     expect(en.theory_intro).toContain("encoded as the 3-bit vector `[G,R,B]`");
-    expect(ja.theory_intro).toContain("3 ビットベクトル `[G,R,B]` として符号化します");
+    expect(ja.theory_intro).toContain("3ビットベクトル `[G,R,B]` として符号化します");
     expect(en.theory_tetra_desc).toContain("T0 (even weight: K, M, C, Y)");
     expect(en.theory_tetra_desc).not.toContain("T0 (even weight: Black, M, C, Y)");
     expect(en.theory_dice_tetra_subgroup).toContain("T0 = {K, M, C, Y}");
