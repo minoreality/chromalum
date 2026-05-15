@@ -21,7 +21,7 @@ import {
   S_CARD_CONTROL_BTN,
   S_CARD_CONTROL_BTN_ACTIVE,
   S_CARD_CUBE,
-  S_CARD_LUMA,
+  S_CARD_TONE,
   S_CARD_POLY,
   S_CARD_SYM,
   S_LABEL,
@@ -501,11 +501,11 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
           <K8Explorer engine={engine} activeLevels={activeLevels} stopSignal={stopSignal} resetSignal={resetSignal} />
         </div>
 
-        <div style={S_CARD_LUMA}>
+        <div style={S_CARD_TONE}>
           <ComplementPairsCard engine={engine} stopSignal={stopSignal} />
         </div>
 
-        <div style={S_CARD_LUMA}>
+        <div style={S_CARD_TONE}>
           <ZigzagCard engine={engine} stopSignal={stopSignal} />
         </div>
 

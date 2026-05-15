@@ -134,4 +134,4 @@ export const S_CARD_CODE: CSSProperties = { ...S_CARD, borderTop: "2px solid #40
 export const S_CARD_CUBE: CSSProperties = { ...S_CARD, borderTop: "2px solid #40a0a0" };
 export const S_CARD_POLY: CSSProperties = { ...S_CARD, borderTop: "2px solid #40a060" };
 export const S_CARD_SYM: CSSProperties = { ...S_CARD, borderTop: "2px solid #8040c0" };
-export const S_CARD_LUMA: CSSProperties = { ...S_CARD, borderTop: "2px solid #c04060" };
+export const S_CARD_TONE: CSSProperties = { ...S_CARD, borderTop: "2px solid #c04060" };
