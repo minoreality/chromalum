@@ -56,7 +56,7 @@ interface MusicAudioSessionReturn {
   triggerToneBurst: (levelIndex: number, hueAngleDeg: number) => void;
   playPitchLevel: (levelIndex: number) => void;
   playBitVectorLevel: (levelIndex: number) => void;
-  triggerToneValueBurst: (tone8: number) => void;
+  triggerToneValueBurst: (toneNorm: number) => void;
   triggerErrorMarker: () => void;
   setToneMode: (mode: MusicToneMode) => void;
   setDroneMuted: (muted: boolean) => void;
@@ -225,10 +225,10 @@ export function useMusicAudioSession({
     triggerBitSpectrumBurst(nodes, levelIndex, -1, false);
   }, []);
 
-  const triggerToneValueBurstForSession = useCallback((tone8: number) => {
+  const triggerToneValueBurstForSession = useCallback((toneNorm: number) => {
     const nodes = nodesRef.current;
     if (nodes) {
-      triggerToneValueBurst(nodes, tone8);
+      triggerToneValueBurst(nodes, toneNorm);
     }
   }, []);
 

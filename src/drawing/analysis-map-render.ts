@@ -1,4 +1,4 @@
-import { LEVEL_CANDIDATES, LEVEL_INFO, rgbGrbTone8, rgbGrbToneNorm } from "../color-engine";
+import { LEVEL_CANDIDATES, LEVEL_INFO, rgbGrbToneNorm } from "../color-engine";
 import { LEVEL_MASK } from "../constants";
 import type { AnalysisPixelMaps, CanvasData, MapMode } from "../types";
 import { hexStr } from "../utils";
@@ -95,6 +95,19 @@ function signedInt(v: number): string {
   return `${v > 0 ? "+" : ""}${v}`;
 }
 
+function toneStepLabel(level: number): string {
+  return `${Math.max(0, Math.min(7, Math.round(level)))}/7`;
+}
+
+function signedToneStep(levelDelta: number): string {
+  if (levelDelta === 0) return "0/7";
+  return `${levelDelta > 0 ? "+" : "-"}${Math.abs(levelDelta)}/7`;
+}
+
+function toneNormStep(toneNorm: number): number {
+  return Math.max(0, Math.min(7, Math.round(clamp01(toneNorm) * 7)));
+}
+
 function normalizeCandidateIndex(lv: number, idx: number): number {
   const count = LEVEL_CANDIDATES[lv]?.length ?? 1;
   return count > 0 ? ((idx % count) + count) % count : 0;
@@ -134,8 +147,8 @@ function compactParts(...parts: string[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-function tone8(rgb: readonly [number, number, number]): number {
-  return rgbGrbTone8(rgb[0], rgb[1], rgb[2]);
+function toneNorm(rgb: readonly [number, number, number]): number {
+  return rgbGrbToneNorm(rgb[0], rgb[1], rgb[2]);
 }
 
 function gradientVector(canvasData: CanvasData, x: number, y: number): { gx: number; gy: number } {
@@ -431,18 +444,18 @@ export function getAnalysisMapHoverInfo({
       compact: compactParts(compactPrefix, compactOverrideLabel(canvasData, idx, lv), `unlike=${unlike}/4`),
     };
   } else if (mode === "levelTone") {
-    const g = LEVEL_INFO[lv].gray;
     return {
-      full: `${prefix} ${LEVEL_INFO[lv].name} gray=${g}`,
-      compact: `${compactPrefix} gray=${g}`,
+      full: `${prefix} ${LEVEL_INFO[lv].name} T=${toneStepLabel(lv)}`,
+      compact: `${compactPrefix} T=${toneStepLabel(lv)}`,
     };
   } else if (mode === "colorTone") {
     const rgb = colorLUT[lv];
     const candidate = resolveCandidate(lv, candidateIndexByLevel[lv] ?? 0);
-    const t8 = tone8(rgb);
+    const toneStep = toneNormStep(toneNorm(rgb));
+    const toneDelta = toneStep - lv;
     return {
-      full: `${prefix} ${candidateLabel(candidate)} ${hexStr(rgb)} T=${t8}/255 dTone=${signedInt(t8 - LEVEL_INFO[lv].gray)}`,
-      compact: `${compactPrefix} ${candidateLabel(candidate)} T=${t8} dT=${signedInt(t8 - LEVEL_INFO[lv].gray)}`,
+      full: `${prefix} ${candidateLabel(candidate)} ${hexStr(rgb)} T=${toneStepLabel(toneStep)} dT=${signedToneStep(toneDelta)}`,
+      compact: `${compactPrefix} ${candidateLabel(candidate)} T=${toneStepLabel(toneStep)} dT=${signedToneStep(toneDelta)}`,
     };
   } else if (mode === "region") {
     const id = valueAt(pixelMaps.regionId, idx);

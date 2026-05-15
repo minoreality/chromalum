@@ -1,4 +1,4 @@
-import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate } from "../color-engine";
+import { LEVEL_CANDIDATES, findClosestCandidate, levelToneNorm } from "../color-engine";
 
 export interface LinkedVisualizationDot {
   levelIndex: number;
@@ -51,8 +51,8 @@ export const HUE_LABELS = [0, 60, 120, 180, 240, 300, 360] as const;
 export const LV_COLORS = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", ""] as const;
 export const C2_PAIR: Readonly<Record<number, number>> = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
 
-export const lumR0 = (levelIndex: number) => (LEVEL_INFO[levelIndex].gray / 255) * WR;
-export const lumR7 = (levelIndex: number) => (1 - LEVEL_INFO[levelIndex].gray / 255) * WR;
+export const toneR0 = (levelIndex: number) => levelToneNorm(levelIndex) * WR;
+export const toneR7 = (levelIndex: number) => (1 - levelToneNorm(levelIndex)) * WR;
 
 export function wheelPoint(
   angle: number,

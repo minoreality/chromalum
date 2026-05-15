@@ -5,7 +5,7 @@ import {
   COMPLEMENT_PAIRS,
   FANO_RHYTHM_PATTERNS,
   GRB_TONE_VALUES,
-  TONE_8_VALUES,
+  TONE_NORM_VALUES,
   ZIGZAG_CHANNELS,
   ZIGZAG_PATH,
   bitSpectrumComponents,
@@ -18,15 +18,15 @@ describe("music-data invariants", () => {
     expect([...CHROMA_LEVELS]).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it("TONE_8_VALUES are derived from level / 7 with complement symmetry T_c + T_(7-c) = 255", () => {
-    expect(TONE_8_VALUES).toHaveLength(8);
+  it("TONE_NORM_VALUES are derived from level / 7 with complement symmetry T_c + T_(7-c) = 1", () => {
+    expect(TONE_NORM_VALUES).toHaveLength(8);
     for (let c = 0; c < 8; c++) {
-      expect(TONE_8_VALUES[c] + TONE_8_VALUES[7 - c]).toBe(255);
+      expect(TONE_NORM_VALUES[c] + TONE_NORM_VALUES[7 - c]).toBeCloseTo(1, 10);
     }
     for (let c = 1; c < 8; c++) {
-      expect(TONE_8_VALUES[c]).toBeGreaterThan(TONE_8_VALUES[c - 1]);
+      expect(TONE_NORM_VALUES[c]).toBeGreaterThan(TONE_NORM_VALUES[c - 1]);
     }
-    expect([...TONE_8_VALUES]).toEqual(Array.from({ length: 8 }, (_, lv) => Math.round((255 * lv) / 7)));
+    for (let lv = 0; lv < 8; lv++) expect(TONE_NORM_VALUES[lv]).toBeCloseTo(lv / 7, 10);
   });
 
   it("GRB_TONE_VALUES sums to 1 across each complement pair and to 3 over the chromatic levels", () => {

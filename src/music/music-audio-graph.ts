@@ -1,12 +1,12 @@
 import { FANO_LINES } from "../data/theory-data";
-import { TONE_8_VALUES, bitSpectrumComponents } from "../data/music-data";
+import { TONE_NORM_VALUES, bitSpectrumComponents } from "../data/music-data";
 import { BASE_FREQ, angleToFreq, type ScaleMode } from "../data/music-frequency";
 import { toneToFreq } from "./music-engine-core";
 
 export interface SonificationLevel {
   levelIndex: number;
   hueAngleDeg: number;
-  tone8: number;
+  toneNorm: number;
 }
 
 export interface AudioNodes {
@@ -159,7 +159,7 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
     modOsc.frequency.value = angleToFreq(modulatorLevel.hueAngleDeg, scaleMode);
 
     const modGain = nodes.ctx.createGain();
-    const modIndex = (Math.abs(carrierLevel.tone8 - modulatorLevel.tone8) / 255) * 400;
+    const modIndex = Math.abs(carrierLevel.toneNorm - modulatorLevel.toneNorm) * 400;
     modGain.gain.value = modIndex;
 
     // The carrier oscillator array is indexed by levelIndex - 1.
@@ -176,11 +176,11 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
 }
 
 /** Trigger a short tone burst at a tone-derived frequency */
-export function triggerToneValueBurst(nodes: AudioNodes, tone8: number) {
+export function triggerToneValueBurst(nodes: AudioNodes, toneNorm: number) {
   const ctx = nodes.ctx;
   const osc = ctx.createOscillator();
   osc.type = "sine";
-  osc.frequency.value = toneToFreq(tone8);
+  osc.frequency.value = toneToFreq(toneNorm);
   const gain = ctx.createGain();
   const now = ctx.currentTime;
   gain.gain.setValueAtTime(0, now);
@@ -211,7 +211,7 @@ function triggerPitchBurst(nodes: AudioNodes, hueAngleDeg: number, scaleMode: Sc
 
 export function triggerPitchOrToneBurst(nodes: AudioNodes, levelIndex: number, hueAngleDeg: number, scaleMode: ScaleMode) {
   if (hueAngleDeg < 0) {
-    triggerToneValueBurst(nodes, TONE_8_VALUES[levelIndex] ?? 0);
+    triggerToneValueBurst(nodes, TONE_NORM_VALUES[levelIndex] ?? 0);
     return;
   }
 
@@ -223,7 +223,7 @@ export function triggerBitSpectrumBurst(nodes: AudioNodes, levelIndex: number, h
   const components = bitSpectrumComponents(levelIndex);
   if (components.length === 0) return;
 
-  const toneNorm = Math.max(0, Math.min(1, (TONE_8_VALUES[levelIndex] ?? 0) / 255));
+  const toneNorm = Math.max(0, Math.min(1, TONE_NORM_VALUES[levelIndex] ?? 0));
   if (toneNorm <= 0) return;
 
   const ctx = nodes.ctx;
@@ -327,7 +327,7 @@ export function applyParams(
 
     // Gain: Even mode keeps chromatic drones level-matched. Tone mode follows the
     // active GRB 4:2:1 tone radius from the selected origin.
-    const toneRadius = originMode === 0 ? levelData.tone8 / 255 : 1 - levelData.tone8 / 255;
+    const toneRadius = originMode === 0 ? levelData.toneNorm : 1 - levelData.toneNorm;
     const baseGain = toneMode === "grbTone" ? toneRadius * GAIN_SCALE : GAIN_SCALE;
     let targetGain: number;
 
@@ -366,9 +366,8 @@ export function applyParams(
     nodes.panners[i].pan.setTargetAtTime(panValue, now, RAMP_TC);
   }
 
-  // L7 noise: gain follows wave graph radius: L0-origin -> tone/255 = 1.0, L7-origin -> 1-tone/255 = 0
-  const l7Tone8 = 255; // White
-  const l7ToneRadius = originMode === 0 ? l7Tone8 / 255 : 1 - l7Tone8 / 255;
+  // L7 noise gain follows the normalized tone radius from the selected origin.
+  const l7ToneRadius = originMode === 0 ? 1 : 0;
   const noiseBase = NOISE_GAIN * l7ToneRadius;
   let noiseTarget = noiseBase * phaseFactor;
   if (hoveredLevelIndex === 7) noiseTarget = noiseBase * HOVER_BOOST;
@@ -389,7 +388,7 @@ export function applyParams(
         continue;
       }
       nodes.fmOscs[pairIdx].frequency.setTargetAtTime(angleToFreq(modulatorLevel.hueAngleDeg + activeAlpha, scaleMode), now, RAMP_TC);
-      const modIndex = (Math.abs(carrierLevel.tone8 - modulatorLevel.tone8) / 255) * 400;
+      const modIndex = Math.abs(carrierLevel.toneNorm - modulatorLevel.toneNorm) * 400;
       nodes.fmGains[pairIdx].gain.setTargetAtTime(modIndex, now, RAMP_TC);
       pairIdx++;
     }

@@ -69,7 +69,7 @@ export const ColorMappingList = memo(
                   width: mobile ? 14 : 18,
                   height: mobile ? 14 : 18,
                   borderRadius: R.md,
-                  background: `rgb(${info.gray},${info.gray},${info.gray})`,
+                  background: `rgb(${info.gray8},${info.gray8},${info.gray8})`,
                   border: `1px solid ${C.border}`,
                   flexShrink: 0,
                 }}

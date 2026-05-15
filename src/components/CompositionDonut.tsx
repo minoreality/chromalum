@@ -120,13 +120,13 @@ export const CompositionDonut = React.memo(function CompositionDonut({
     // === Layer 1: Gray ===
     const grayEntries: { count: number; color: string; info: string[] }[] = [];
     for (let lv = 0; lv < 8; lv++) {
-      const g = LEVEL_INFO[lv].gray;
+      const g = LEVEL_INFO[lv].gray8;
       grayEntries.push({
         count: levelHistogram[lv],
         color: `rgb(${g},${g},${g})`,
         info: [
           `L${lv} ${LEVEL_INFO[lv].name}`,
-          t("donut_tone_value", g),
+          t("donut_tone_value", `${lv}/7`),
           t("donut_count_pct", pct(levelHistogram[lv]), levelHistogram[lv].toLocaleString()),
         ],
       });

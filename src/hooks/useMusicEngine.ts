@@ -1,5 +1,5 @@
 import { useRef, useCallback, useMemo } from "react";
-import { FANO_RHYTHM_PATTERNS, TONE_8_VALUES } from "../data/music-data";
+import { FANO_RHYTHM_PATTERNS, TONE_NORM_VALUES } from "../data/music-data";
 import { angleToFreq, type ScaleMode } from "../data/music-frequency";
 import { RAMP_TC, type SonificationLevel } from "../music/music-audio-graph";
 import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, toneToFreq } from "../music/music-engine-core";
@@ -389,7 +389,7 @@ export function useMusicEngine({
       const newPerm = gl32PermRef.current;
       const activeAlpha = p.originMode === 0 ? p.alpha0 : p.alpha7;
       const freqForLevel = (levelIndex: number): number => {
-        if (levelIndex === 0 || levelIndex === 7) return toneToFreq(TONE_8_VALUES[levelIndex]);
+        if (levelIndex === 0 || levelIndex === 7) return toneToFreq(TONE_NORM_VALUES[levelIndex]);
         const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
         return angleToFreq((levelData?.hueAngleDeg ?? 0) + activeAlpha, p.scaleMode);
       };
@@ -446,7 +446,7 @@ export function useMusicEngine({
         () => {
           if (!nodesRef.current) return;
           const { index, lv } = zigzagStep(step);
-          triggerToneValueBurst(TONE_8_VALUES[lv]);
+          triggerToneValueBurst(TONE_NORM_VALUES[lv]);
           onStep(index);
           step++;
         },

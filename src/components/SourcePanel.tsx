@@ -483,7 +483,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                   border: `2px solid ${brushLevel === i ? C.accent : C.border}`,
                   borderRadius: R.lg,
                   cursor: "pointer",
-                  background: `rgb(${info.gray},${info.gray},${info.gray})`,
+                  background: `rgb(${info.gray8},${info.gray8},${info.gray8})`,
                   position: "relative",
                 }}
               >
@@ -493,7 +493,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                     bottom: 1,
                     right: 2,
                     fontSize: FS.xs,
-                    color: info.gray > 128 ? "#000" : "#fff",
+                    color: info.gray8 > 128 ? "#000" : "#fff",
                     fontWeight: FW.bold,
                   }}
                 >
@@ -511,7 +511,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                 height: 24,
                 borderRadius: R.lg,
                 border: `2px solid ${C.accent}`,
-                background: `rgb(${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray},${LEVEL_INFO[brushLevel].gray})`,
+                background: `rgb(${LEVEL_INFO[brushLevel].gray8},${LEVEL_INFO[brushLevel].gray8},${LEVEL_INFO[brushLevel].gray8})`,
               }}
             />
             <div style={{ fontSize: FS.md, color: C.textSecondary, lineHeight: 1, display: "flex", alignItems: "center" }}>{"\u2192"}</div>

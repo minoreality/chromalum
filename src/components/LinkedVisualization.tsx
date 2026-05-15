@@ -15,8 +15,8 @@ import {
   cosinePath,
   CX,
   CY,
-  lumR0,
-  lumR7,
+  toneR0,
+  toneR7,
   LV_COLORS,
   sinePath,
   TH,
@@ -139,7 +139,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const dragRef = useRef<{ type: "wheel"; startAngle: number; startAlpha: number } | { type: "hue" } | { type: "hue-bottom" } | null>(null);
 
   const activeAlpha = mode === 0 ? alpha0 : alpha7;
-  const activeRadiusFn = mode === 0 ? lumR0 : lumR7;
+  const activeRadiusFn = mode === 0 ? toneR0 : toneR7;
 
   // Compute dots
   const dots = useMemo(() => {
@@ -227,8 +227,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     const r0: Record<number, string> = {};
     const r7: Record<number, string> = {};
     for (let levelIndex = 0; levelIndex <= 7; levelIndex++) {
-      r0[levelIndex] = sinePath(levelIndex, lumR0, alpha0);
-      r7[levelIndex] = sinePath(levelIndex, lumR7, alpha7);
+      r0[levelIndex] = sinePath(levelIndex, toneR0, alpha0);
+      r7[levelIndex] = sinePath(levelIndex, toneR7, alpha7);
     }
     return { r0, r7 };
   }, [alpha0, alpha7]);
@@ -237,8 +237,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     const r0: Record<number, string> = {};
     const r7: Record<number, string> = {};
     for (let levelIndex = 0; levelIndex <= 7; levelIndex++) {
-      r0[levelIndex] = cosinePath(levelIndex, lumR0, alpha0);
-      r7[levelIndex] = cosinePath(levelIndex, lumR7, alpha7);
+      r0[levelIndex] = cosinePath(levelIndex, toneR0, alpha0);
+      r7[levelIndex] = cosinePath(levelIndex, toneR7, alpha7);
     }
     return { r0, r7 };
   }, [alpha0, alpha7]);

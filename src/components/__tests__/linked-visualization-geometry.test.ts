@@ -11,8 +11,8 @@ import {
   cosinePath,
   CX,
   CY,
-  lumR0,
-  lumR7,
+  toneR0,
+  toneR7,
   rightProjectionX,
   RX,
   sinePath,
@@ -46,15 +46,15 @@ describe("linked-visualization geometry", () => {
   });
 
   it("keeps L0 and L7 radii complementary", () => {
-    expect(lumR0(0)).toBe(0);
-    expect(lumR7(7)).toBe(0);
-    expect(lumR0(1)).toBeCloseTo(lumR7(6), 6);
-    expect(lumR0(3)).toBeCloseTo(lumR7(4), 6);
+    expect(toneR0(0)).toBe(0);
+    expect(toneR7(7)).toBe(0);
+    expect(toneR0(1)).toBeCloseTo(toneR7(6), 6);
+    expect(toneR0(3)).toBeCloseTo(toneR7(4), 6);
   });
 
   it("maps wheel and projection coordinates consistently", () => {
-    const radius = lumR0(6);
-    const point = wheelPoint(0, 6, 0, lumR0);
+    const radius = toneR0(6);
+    const point = wheelPoint(0, 6, 0, toneR0);
 
     expect(point.x).toBeCloseTo(CX, 6);
     expect(point.y).toBeCloseTo(CY - radius, 6);
@@ -74,17 +74,17 @@ describe("linked-visualization geometry", () => {
   });
 
   it("generates stable sine, cosine, and composite projection paths", () => {
-    expect(sinePath(0, lumR0, 0)).toBe("");
-    expect(cosinePath(7, lumR7, 0)).toBe("");
+    expect(sinePath(0, toneR0, 0)).toBe("");
+    expect(cosinePath(7, toneR7, 0)).toBe("");
 
-    const sine = pathPoints(sinePath(6, lumR0, 0));
-    const cosine = pathPoints(cosinePath(6, lumR0, 0));
-    const cancelledComposite = pathPoints(compositeSinePath(lumR0(1), 0, 180));
+    const sine = pathPoints(sinePath(6, toneR0, 0));
+    const cosine = pathPoints(cosinePath(6, toneR0, 0));
+    const cancelledComposite = pathPoints(compositeSinePath(toneR0(1), 0, 180));
 
     expect(sine).toHaveLength(181);
     expect(cosine).toHaveLength(181);
     expect(sine[0].x).toBeCloseTo(rightProjectionX(0), 1);
-    expect(sine[0].y).toBeCloseTo(CY - lumR0(6), 1);
+    expect(sine[0].y).toBeCloseTo(CY - toneR0(6), 1);
     expect(cosine[0].x).toBeCloseTo(CX, 1);
     expect(cosine[0].y).toBeCloseTo(bottomProjectionY(0), 1);
     expect(cancelledComposite.every((point) => Math.abs(point.y - CY) < 0.2)).toBe(true);

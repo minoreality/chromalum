@@ -5,8 +5,8 @@ import { formatColorPixelStatus, formatGlazePixelStatus, formatHexPixelStatus, f
 describe("pixel status formatters", () => {
   it("formats source pixels as source tone data", () => {
     expect(formatSourcePixelStatus({ x: 4, y: 2, lv: 3 })).toEqual({
-      full: "(4,2) Source L3 Magenta gray=109 bits=011",
-      compact: "(4,2) Src L3 gray=109",
+      full: "(4,2) Source L3 Magenta T=3/7 bits=011",
+      compact: "(4,2) Src L3 T=3/7",
     });
   });
 

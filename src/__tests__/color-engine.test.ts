@@ -100,16 +100,16 @@ describe("LEVEL_INFO", () => {
 
   it("level 0 is Black with gray 0", () => {
     expect(LEVEL_INFO[0].name).toBe("Black");
-    expect(LEVEL_INFO[0].gray).toBe(0);
+    expect(LEVEL_INFO[0].gray8).toBe(0);
   });
 
   it("level 7 is White with gray 255", () => {
     expect(LEVEL_INFO[7].name).toBe("White");
-    expect(LEVEL_INFO[7].gray).toBe(255);
+    expect(LEVEL_INFO[7].gray8).toBe(255);
   });
 
   it("uses derived 8-bit GRB tone values", () => {
-    expect(LEVEL_INFO.map(({ gray }) => gray)).toEqual([0, 36, 73, 109, 146, 182, 219, 255]);
+    expect(LEVEL_INFO.map(({ gray8 }) => gray8)).toEqual([0, 36, 73, 109, 146, 182, 219, 255]);
   });
 });
 

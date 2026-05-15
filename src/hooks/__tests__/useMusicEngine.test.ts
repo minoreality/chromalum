@@ -164,12 +164,12 @@ afterEach(() => {
 type MusicEngineParams = Parameters<typeof useMusicEngine>[0];
 
 const DEFAULT_LEVELS: MusicEngineParams["levels"] = [
-  { levelIndex: 1, hueAngleDeg: 240, tone8: 36 },
-  { levelIndex: 2, hueAngleDeg: 0, tone8: 73 },
-  { levelIndex: 3, hueAngleDeg: 300, tone8: 109 },
-  { levelIndex: 4, hueAngleDeg: 120, tone8: 146 },
-  { levelIndex: 5, hueAngleDeg: 180, tone8: 182 },
-  { levelIndex: 6, hueAngleDeg: 60, tone8: 219 },
+  { levelIndex: 1, hueAngleDeg: 240, toneNorm: 1 / 7 },
+  { levelIndex: 2, hueAngleDeg: 0, toneNorm: 2 / 7 },
+  { levelIndex: 3, hueAngleDeg: 300, toneNorm: 3 / 7 },
+  { levelIndex: 4, hueAngleDeg: 120, toneNorm: 4 / 7 },
+  { levelIndex: 5, hueAngleDeg: 180, toneNorm: 5 / 7 },
+  { levelIndex: 6, hueAngleDeg: 60, toneNorm: 6 / 7 },
 ];
 
 function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {

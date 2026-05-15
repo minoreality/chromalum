@@ -23,7 +23,7 @@ describe("music-engine-core", () => {
     }
 
     expect(toneToFreq(0)).toBe(220);
-    expect(toneToFreq(255)).toBe(880);
+    expect(toneToFreq(1)).toBe(880);
     expect(MAX_GRB_TONE).toBe(GRB_TONE_BY_LEVEL[6]);
   });
 

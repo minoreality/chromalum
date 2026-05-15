@@ -62,9 +62,9 @@ export const K8_LAYER_EDGES = {
   3: COMPLEMENT_EDGES,
 } as const;
 
-/** Tone value -> frequency (distinct from angleToFreq: sonifies complement tone symmetry). */
-export function toneToFreq(tone8: number): number {
-  return 220 + (tone8 / 255) * 660; // 220-880 Hz linear
+/** Normalized tone -> frequency (distinct from angleToFreq: sonifies complement tone symmetry). */
+export function toneToFreq(toneNorm: number): number {
+  return 220 + Math.max(0, Math.min(1, toneNorm)) * 660; // 220-880 Hz linear
 }
 
 /** Lines through a Fano point */

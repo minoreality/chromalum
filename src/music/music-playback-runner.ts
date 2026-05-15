@@ -1,4 +1,4 @@
-import { TONE_8_VALUES } from "../data/music-data";
+import { TONE_NORM_VALUES } from "../data/music-data";
 import { FANO_LINES } from "../data/theory-data";
 import {
   andTriadEvents,
@@ -19,7 +19,7 @@ export interface MusicPlaybackRuntime {
   clear: () => void;
   schedule: (fn: () => void, ms: number) => void;
   playBitVectorLevel: (lv: number) => void;
-  triggerToneValueBurst: (tone8: number) => void;
+  triggerToneValueBurst: (toneNorm: number) => void;
   triggerErrorMarker: () => void;
 }
 
@@ -100,8 +100,8 @@ export function scheduleComplementCanon(onStep: ComplementCanonStepHandler, reve
   for (const event of complementCanonPairs(reverse)) {
     runtime.schedule(() => {
       const [a, b] = event.pair;
-      runtime.triggerToneValueBurst(TONE_8_VALUES[a]);
-      runtime.triggerToneValueBurst(TONE_8_VALUES[b]);
+      runtime.triggerToneValueBurst(TONE_NORM_VALUES[a]);
+      runtime.triggerToneValueBurst(TONE_NORM_VALUES[b]);
       onStep(event.pairIndex, "playing");
     }, event.at);
   }

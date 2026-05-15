@@ -181,7 +181,7 @@ Music タブの手動バーストは `Pitch` 固定にする。一方で、Fano 
 - `Pitch`: Gray traversal melody や GL(3,2) のドローン変換など、色相角・回転・既存ドローンの幾何的配置を聴かせるデモ。
 - Dedicated sonification: Fano rhythm, complement/tone canon, tone zigzag, Hamming error marker など、ビット音色でも音高でもなく、その構造固有の時間・トーン・誤りマーカーを聴かせるデモ。
 
-この分離により、代数的構造を説明するデモでは `Pitch` による色相写像を混ぜず、幾何的・輝度的・リズム的なデモでは `Bit Spectrum` を無理に適用しない。
+この分離により、代数的構造を説明するデモでは `Pitch` による色相写像を混ぜず、幾何的・トーン的・リズム的なデモでは `Bit Spectrum` を無理に適用しない。
 
 ## Implementation Map
 

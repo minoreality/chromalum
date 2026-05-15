@@ -3,8 +3,8 @@ import {
   C2_PAIR,
   CX,
   CY,
-  lumR0,
-  lumR7,
+  toneR0,
+  toneR7,
   rightProjectionX,
   wheelPoint,
   type LinkedVisualizationDot,
@@ -109,7 +109,7 @@ export function LinkedVisualizationGuides({
           const pairDot = activeDots.find((dot) => dot.levelIndex === pairLevel);
           if (!pairDot) return null;
 
-          const otherRadiusFn = mode === 0 ? lumR7 : lumR0;
+          const otherRadiusFn = mode === 0 ? toneR7 : toneR0;
           const otherAlpha = mode === 0 ? alpha7 : alpha0;
           const rad = ((pairDot.angleDeg - otherAlpha - 90) * Math.PI) / 180;
           const radius = otherRadiusFn(pairLevel);

@@ -71,6 +71,8 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_binary_desc).toContain("tone = level / 7");
     expect(en.theory_binary_tone_formula).toContain("T = (4G + 2R + B) / 7 = level / 7");
     expect(en.theory_binary_tone_complement).toContain("Tₖ + T₇₋ₖ = 1");
+    expect(en.theory_binary_tone_complement).not.toContain("255");
+    expect(en.theory_binary_tone_complement).not.toContain("8-bit");
     expect(en.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
     expect(en.theory_binary_desc).not.toContain("consequence of human color vision");
     expect(en.theory_binary_desc).not.toContain("BT.601");
@@ -85,6 +87,8 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_binary_desc).toContain("tone = level / 7");
     expect(ja.theory_binary_tone_formula).toContain("T = (4G + 2R + B) / 7 = level / 7");
     expect(ja.theory_binary_tone_complement).toContain("Tₖ + T₇₋ₖ = 1");
+    expect(ja.theory_binary_tone_complement).not.toContain("255");
+    expect(ja.theory_binary_tone_complement).not.toContain("8ビット");
     expect(ja.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
     expect(ja.theory_binary_desc).not.toContain("人間の色覚の帰結です");
     expect(ja.theory_binary_desc).not.toContain("BT.601");

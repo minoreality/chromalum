@@ -18,7 +18,7 @@ import { recordDebugPerf, startDebugPerf } from "../utils/perf-debug";
 
 function buildGrayValues(): Uint8Array {
   const values = new Uint8Array(8);
-  for (let i = 0; i < 8; i++) values[i] = LEVEL_INFO[i].gray;
+  for (let i = 0; i < 8; i++) values[i] = LEVEL_INFO[i].gray8;
   return values;
 }
 

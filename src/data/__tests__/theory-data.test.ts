@@ -278,9 +278,9 @@ describe("theory-data invariants", () => {
 
     expect(assignments).toHaveLength(6);
     expect(monotoneAssignments).toEqual([["G", "R", "B"]]);
-    expect(Array.from({ length: 8 }, (_, lv) => Math.round(255 * toneWeightForAssignment(["G", "R", "B"], lv)))).toEqual([
-      0, 36, 73, 109, 146, 182, 219, 255,
-    ]);
+    for (let lv = 0; lv < 8; lv++) {
+      expect(toneWeightForAssignment(["G", "R", "B"], lv)).toBeCloseTo(lv / 7, 10);
+    }
   });
 
   it("reverses chromatic tone ranks under complement, matching die opposite sums", () => {

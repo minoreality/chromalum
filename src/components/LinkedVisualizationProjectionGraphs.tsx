@@ -13,7 +13,7 @@ import {
   CX,
   CY,
   HUE_LABELS,
-  lumR0,
+  toneR0,
   RH,
   rightProjectionX,
   RX,
@@ -247,7 +247,7 @@ export function RightProjectionGraph({
         />
       ))}
       {C2_PAIRS.map(([levelIndex, pairLevel]) => {
-        const rA = lumR0(levelIndex);
+        const rA = toneR0(levelIndex);
         if (rA < 1) return null;
         const colA = activeDots.find((d) => d.levelIndex === levelIndex);
         const colB = activeDots.find((d) => d.levelIndex === pairLevel);
@@ -509,7 +509,7 @@ export function BottomProjectionGraph({
         />
       ))}
       {C2_PAIRS.map(([levelIndex, pairLevel]) => {
-        const rA = lumR0(levelIndex);
+        const rA = toneR0(levelIndex);
         if (rA < 1) return null;
         const colA = activeDots.find((d) => d.levelIndex === levelIndex);
         const colB = activeDots.find((d) => d.levelIndex === pairLevel);

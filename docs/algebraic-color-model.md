@@ -49,7 +49,7 @@
 | 6 | 110 | {G,R} | Yellow | Y | 6/7 |
 | 7 | 111 | {G,R,B} | White | W | 7/7 |
 
-ここで tone は `level / 7` である。8 ビット値は Canvas/PNG/画像入力の表示・入出力用にだけ `round(255 * level / 7)` として派生させる。
+ここで tone は `level / 7` である。Canvas/PNG/画像入力では、この正準 tone を表示・入出力用の RGB バイト値へ写像するが、モデル上のトーンは常に `0/7..7/7` として扱う。
 
 ## Known Structures
 
@@ -245,7 +245,7 @@ T(c') = (4(1-G) + 2(1-R) + (1-B)) / 7
       = 1 - T(c)
 ```
 
-8 ビット表示単位で書く場合だけ、この関係は `tone8(c) + tone8(c') = 255` と読める。
+したがって補色対のトーン和は、正準形では常に `1` である。
 
 ### Contribution 3: Standard Die Rule from Complement Reversal
 

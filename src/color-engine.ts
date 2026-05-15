@@ -26,12 +26,12 @@ const EIGHT_LEVEL_TONE_TARGETS = Array.from({ length: 8 }, (_, level) => 255 * l
 
 interface LevelInfo {
   readonly name: string;
-  readonly gray: number;
+  readonly gray8: number;
 }
 
 export const LEVEL_INFO: readonly LevelInfo[] = ["Black", "Blue", "Red", "Magenta", "Green", "Cyan", "Yellow", "White"].map((name, i) => ({
   name,
-  gray: levelTone8(i),
+  gray8: levelTone8(i),
 }));
 
 export function hue2rgb(h: number): [number, number, number] {
@@ -154,7 +154,7 @@ function buildGrayLut(): Uint8Array {
     let best = 0,
       bestDist = Infinity;
     for (let i = 0; i < 8; i++) {
-      const d = Math.abs(g - LEVEL_INFO[i].gray);
+      const d = Math.abs(g - LEVEL_INFO[i].gray8);
       if (d < bestDist) {
         bestDist = d;
         best = i;

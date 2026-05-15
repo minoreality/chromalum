@@ -223,7 +223,7 @@ export const en = {
     "Here we restrict the model to the eight RGB vertices where each channel is 0 or 1, number each color as the 3-bit integer 4x₂ + 2x₁ + x₀, and define levels 0..7.\n\nIn the GRB Binary Tone model, bit2=Green, bit1=Red, bit0=Blue, so level = 4G + 2R + B and tone = level / 7. The bit weights are 4:2:1, making numeric level order identical to tone order without introducing an external brightness standard.\n\nUnder this assignment, B=1, R=2, G=4, so the primary numbers are {1, 2, 4}. This set is the unique 3-element set whose elements, pairwise sums, and total sum (all under ordinary integer addition) fill {1, …, 7} without overlap, and is exactly the minimal binary basis for this 8-color model.",
   theory_binary_color: "Color",
   theory_binary_tone_formula: "Tone (GRB 4:2:1): T = (4G + 2R + B) / 7 = level / 7",
-  theory_binary_tone_complement: "Complement tone: T\u2096 + T\u2087\u208b\u2096 = 1 (255 in 8-bit display units)",
+  theory_binary_tone_complement: "Complement tone: T\u2096 + T\u2087\u208b\u2096 = 1",
   theory_zigzag_title: "Tone Zigzag",
   theory_zigzag_desc:
     "How does tone change as you rotate through hues? Fully saturated colors (max channel = 1, min = 0) trace a zigzag of 6 segments as hue rotates. Each segment toggles one channel; under GRB Binary Tone, the slope magnitudes follow G:R:B = 4:2:1. On the hue circle, horizontal lines at each vertex tone value intersect the zigzag at 1 or 3 points. For any hue angle h, T(h) + T(h+180°) = 1, so complementary colors always sum to the same tone.",

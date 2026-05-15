@@ -154,8 +154,8 @@ describe("analysis-map-render", () => {
 
     expect(regionSizeById.get(1)).toBe(2);
     const cases: Array<[MapMode, string, string]> = [
-      ["levelTone", "(0,0) MapTone L0 Black gray=0", "(0,0) Tone L0 gray=0"],
-      ["colorTone", "(0,0) MapColorTone L0 c1/1 #000000 T=0/255 dTone=0", "(0,0) ColorTone L0 c1/1 T=0 dT=0"],
+      ["levelTone", "(0,0) MapTone L0 Black T=0/7", "(0,0) Tone L0 T=0/7"],
+      ["colorTone", "(0,0) MapColorTone L0 c1/1 #000000 T=0/7 dT=0/7", "(0,0) ColorTone L0 c1/1 T=0/7 dT=0/7"],
       ["region", "(0,0) MapRegion L0 base c1/1 #000000 region#1 size=2px interior small", "(0,0) Region L0 r#1 2px int small"],
       ["gradient", "(0,0) MapToneGrad L0 g=(+2,+5) dir=180° mag=0% flat", "(0,0) ToneGrad L0 dir=180° mag=0%"],
       ["boundaryDistance", "(0,0) MapBoundaryDist L0 base c1/1 #000000 distance=0% near", "(0,0) BoundaryDist L0 d=0% near"],

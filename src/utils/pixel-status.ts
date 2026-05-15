@@ -62,6 +62,10 @@ function levelBits(lv: number): string {
   return (lv & 7).toString(2).padStart(3, "0");
 }
 
+function toneLabel(lv: number): string {
+  return `${Math.max(0, Math.min(7, lv | 0))}/7`;
+}
+
 function formatCount(n: number): string {
   return Math.max(0, n)
     .toString()
@@ -107,8 +111,8 @@ function compactParts(...parts: Array<string | false>): string {
 export function formatSourcePixelStatus({ x, y, lv }: PixelStatusBase): StatusText {
   const info = LEVEL_INFO[lv];
   return {
-    full: `(${x},${y}) Source L${lv} ${info.name} gray=${info.gray} bits=${levelBits(lv)}`,
-    compact: `(${x},${y}) Src L${lv} gray=${info.gray}`,
+    full: `(${x},${y}) Source L${lv} ${info.name} T=${toneLabel(lv)} bits=${levelBits(lv)}`,
+    compact: `(${x},${y}) Src L${lv} T=${toneLabel(lv)}`,
   };
 }
 

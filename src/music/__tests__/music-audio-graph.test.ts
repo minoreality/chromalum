@@ -191,12 +191,12 @@ function last(values: number[]) {
 }
 
 const levels: SonificationLevel[] = [
-  { levelIndex: 1, hueAngleDeg: 240, tone8: 36 },
-  { levelIndex: 2, hueAngleDeg: 0, tone8: 73 },
-  { levelIndex: 3, hueAngleDeg: 300, tone8: 109 },
-  { levelIndex: 4, hueAngleDeg: 120, tone8: 146 },
-  { levelIndex: 5, hueAngleDeg: 180, tone8: 182 },
-  { levelIndex: 6, hueAngleDeg: 60, tone8: 219 },
+  { levelIndex: 1, hueAngleDeg: 240, toneNorm: 1 / 7 },
+  { levelIndex: 2, hueAngleDeg: 0, toneNorm: 2 / 7 },
+  { levelIndex: 3, hueAngleDeg: 300, toneNorm: 3 / 7 },
+  { levelIndex: 4, hueAngleDeg: 120, toneNorm: 4 / 7 },
+  { levelIndex: 5, hueAngleDeg: 180, toneNorm: 5 / 7 },
+  { levelIndex: 6, hueAngleDeg: 60, toneNorm: 6 / 7 },
 ];
 
 describe("music-audio-graph", () => {
@@ -259,9 +259,9 @@ describe("music-audio-graph", () => {
     const l7HighToneGain = l7OriginNodes.gains[5] as unknown as FakeGainNode;
 
     expect(last(l0HighToneGain.gain.targetValues)).toBeGreaterThan(last(l0LowToneGain.gain.targetValues));
-    expect(last(l0HighToneGain.gain.targetValues) / last(l0LowToneGain.gain.targetValues)).toBeCloseTo(219 / 36);
+    expect(last(l0HighToneGain.gain.targetValues) / last(l0LowToneGain.gain.targetValues)).toBeCloseTo(6);
     expect(last(l7LowToneGain.gain.targetValues)).toBeGreaterThan(last(l7HighToneGain.gain.targetValues));
-    expect(last(l7LowToneGain.gain.targetValues) / last(l7HighToneGain.gain.targetValues)).toBeCloseTo(219 / 36);
+    expect(last(l7LowToneGain.gain.targetValues) / last(l7HighToneGain.gain.targetValues)).toBeCloseTo(6);
   });
 
   it("rebuilds and tears down FM modulator nodes", () => {

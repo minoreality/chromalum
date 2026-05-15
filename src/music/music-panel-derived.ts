@@ -1,4 +1,4 @@
-import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate } from "../color-engine";
+import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate, levelToneNorm } from "../color-engine";
 import { FANO_LINES } from "../data/theory-data";
 import type { SonificationLevel } from "./music-audio-graph";
 import { MUSIC_ACTIVE_LEVELS, type ActiveMusicLevel, type MusicHueTick, type MusicLevelPreview } from "./types";
@@ -26,8 +26,8 @@ export function buildMusicSonificationLevels(
     const candidateIndex = getCandidateIndex(candidateOverridesByLevel, levelIndex, hueAngleDeg);
     const cand = LEVEL_CANDIDATES[levelIndex][candidateIndex];
     return cand
-      ? { levelIndex, hueAngleDeg: cand.hueAngleDeg, tone8: LEVEL_INFO[levelIndex].gray }
-      : { levelIndex, hueAngleDeg: 0, tone8: 0 };
+      ? { levelIndex, hueAngleDeg: cand.hueAngleDeg, toneNorm: levelToneNorm(levelIndex) }
+      : { levelIndex, hueAngleDeg: 0, toneNorm: 0 };
   });
 }
 

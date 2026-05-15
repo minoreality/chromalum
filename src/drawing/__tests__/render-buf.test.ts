@@ -8,9 +8,9 @@ describe("GRAY_VALUES", () => {
     expect(GRAY_VALUES.length).toBe(8);
   });
 
-  it("matches LEVEL_INFO gray values", () => {
+  it("matches LEVEL_INFO derived grayscale byte values", () => {
     for (let i = 0; i < 8; i++) {
-      expect(GRAY_VALUES[i]).toBe(LEVEL_INFO[i].gray);
+      expect(GRAY_VALUES[i]).toBe(LEVEL_INFO[i].gray8);
     }
   });
 
