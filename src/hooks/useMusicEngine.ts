@@ -1,9 +1,15 @@
 import { useRef, useCallback, useMemo } from "react";
 import { FANO_RHYTHM_PATTERNS, TONE_NORM_VALUES } from "../data/music-data";
 import { angleToFreq, type ScaleMode } from "../data/music-frequency";
-import { RAMP_TC, type SonificationLevel } from "../music/music-audio-graph";
+import { RAMP_TC, triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
 import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, toneToFreq } from "../music/music-engine-core";
-import { complementOfLine, k8LayerStep, zigzagStep } from "../music/music-playback-sequences";
+import {
+  TONE_CROSSING_BASE_INTERVAL_MS,
+  complementOfLine,
+  k8LayerStep,
+  toneCrossingStep,
+  zigzagStep,
+} from "../music/music-playback-sequences";
 import {
   scheduleAndTriads,
   scheduleComplementCanon,
@@ -20,8 +26,10 @@ import {
 import {
   clearIntervalSlot,
   clearIntervalSlots,
+  clearTimeoutSlot,
   clearTimeoutList,
   replaceInterval,
+  replaceTimeout,
   scheduleTimeout,
   type IntervalHandle,
   type TimeoutHandle,
@@ -70,6 +78,8 @@ export interface MusicEngineReturn {
   playComplementCanon: (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse?: boolean) => void;
   playZigzagMelody: (onStep: (stepIndex: number | null) => void) => void;
   stopZigzagMelody: () => void;
+  playToneCrossingMelody: (onStep: (stepIndex: number | null) => void) => void;
+  stopToneCrossingMelody: () => void;
   playPointFanoContext: (point: number, onStep: (lineIdx: number | null) => void) => void;
   playExtendedHamming: (onStep: (positions: number[], weight: number, index: number) => void) => void;
   playDistributiveLaw: (
@@ -103,12 +113,14 @@ export function useMusicEngine({
   const algebraTimersRef = useRef<TimeoutHandle[]>([]);
   const gray3IntervalRef = useRef<IntervalHandle | null>(null);
   const zigzagIntervalRef = useRef<IntervalHandle | null>(null);
+  const toneCrossingTimeoutRef = useRef<TimeoutHandle | null>(null);
   const cayleyIntervalRef = useRef<IntervalHandle | null>(null);
   const k8IntervalRef = useRef<IntervalHandle | null>(null);
   const gl32PermRef = useRef<number[]>([1, 2, 3, 4, 5, 6, 7]); // identity permutation
 
   const clearPlayback = useCallback(() => {
     clearIntervalSlots(grayIntervalRef, fanoIntervalRef, zigzagIntervalRef, gray3IntervalRef, cayleyIntervalRef, k8IntervalRef);
+    clearTimeoutSlot(toneCrossingTimeoutRef);
     clearTimeoutList(algebraTimersRef);
   }, []);
 
@@ -250,6 +262,7 @@ export function useMusicEngine({
   const stopAlgebra = useCallback(() => {
     clearAlgebraTimers();
     clearIntervalSlots(gray3IntervalRef, cayleyIntervalRef, zigzagIntervalRef, k8IntervalRef);
+    clearTimeoutSlot(toneCrossingTimeoutRef);
   }, [clearAlgebraTimers]);
 
   /* ── 1. playXorTriple ── */
@@ -460,6 +473,32 @@ export function useMusicEngine({
     clearIntervalSlot(zigzagIntervalRef);
   }, []);
 
+  const playToneCrossingMelody = useCallback(
+    (onStep: (stepIndex: number | null) => void) => {
+      const nodes = nodesRef.current;
+      if (!nodes) return;
+      let step = 0;
+      clearTimeoutSlot(toneCrossingTimeoutRef);
+
+      const playNext = () => {
+        const currentNodes = nodesRef.current;
+        if (!currentNodes) return;
+        const { index, crossing, delayMs } = toneCrossingStep(step);
+        triggerSemitoneBurst(currentNodes, crossing.semitone);
+        onStep(index);
+        step++;
+        replaceTimeout(toneCrossingTimeoutRef, playNext, delayMs);
+      };
+
+      replaceTimeout(toneCrossingTimeoutRef, playNext, TONE_CROSSING_BASE_INTERVAL_MS);
+    },
+    [nodesRef],
+  );
+
+  const stopToneCrossingMelody = useCallback(() => {
+    clearTimeoutSlot(toneCrossingTimeoutRef);
+  }, []);
+
   /* ── 14. playPointFanoContext ── */
   const playPointFanoContext = useCallback(
     (point: number, onStep: (lineIdx: number | null) => void) => {
@@ -550,6 +589,8 @@ export function useMusicEngine({
     playComplementCanon,
     playZigzagMelody,
     stopZigzagMelody,
+    playToneCrossingMelody,
+    stopToneCrossingMelody,
     playPointFanoContext,
     playExtendedHamming,
     playDistributiveLaw,

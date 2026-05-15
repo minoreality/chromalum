@@ -1,5 +1,5 @@
 import { FANO_LINES } from "../data/theory-data";
-import { COMPLEMENT_PAIRS, ZIGZAG_PATH } from "../data/music-data";
+import { COMPLEMENT_PAIRS, TONE_CROSSING_SEQUENCE, ZIGZAG_PATH } from "../data/music-data";
 import { ALL_POINTS, AND_TRIADS, K8_LAYER_EDGES, extendedHammingCodewords, linesThrough } from "./music-engine-core";
 
 interface Codeword {
@@ -136,6 +136,28 @@ export function complementCanonPairs(reverse = false): Array<{ at: number; pairI
 export function zigzagStep(step: number): { index: number; lv: number } {
   const index = step % ZIGZAG_PATH.length;
   return { index, lv: ZIGZAG_PATH[index] };
+}
+
+export const TONE_CROSSING_BASE_INTERVAL_MS = 200;
+
+function toneCrossingDelayMs(index: number): number {
+  const current = TONE_CROSSING_SEQUENCE[index];
+  const next = TONE_CROSSING_SEQUENCE[index + 1];
+  if (!current || !next) return TONE_CROSSING_BASE_INTERVAL_MS;
+  return ((next.angleDeg - current.angleDeg) / 15) * TONE_CROSSING_BASE_INTERVAL_MS;
+}
+
+export function toneCrossingStep(step: number): {
+  index: number;
+  crossing: (typeof TONE_CROSSING_SEQUENCE)[number];
+  delayMs: number;
+} {
+  const index = step % TONE_CROSSING_SEQUENCE.length;
+  return {
+    index,
+    crossing: TONE_CROSSING_SEQUENCE[index],
+    delayMs: toneCrossingDelayMs(index),
+  };
 }
 
 export function pointFanoContextLines(point: number): number[] {

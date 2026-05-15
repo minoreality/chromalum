@@ -102,6 +102,7 @@ class FakeAudioContext {
   readonly currentTime = 0;
   readonly destination = new FakeAudioNode();
   readonly gains: FakeGainNode[] = [];
+  readonly oscillators: FakeOscillatorNode[] = [];
   readonly sampleRate: number;
   state: AudioContextState = "running";
 
@@ -125,7 +126,9 @@ class FakeAudioContext {
   }
 
   createOscillator() {
-    return new FakeOscillatorNode();
+    const oscillator = new FakeOscillatorNode();
+    this.oscillators.push(oscillator);
+    return oscillator;
   }
 
   createStereoPanner() {
@@ -402,6 +405,84 @@ describe("useMusicEngine", () => {
     expect(onGray3).not.toHaveBeenCalled();
     expect(onCayley).not.toHaveBeenCalled();
     expect(onK8).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  it("plays tone crossing melody as fixed 12-TET semitone steps", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderMusicEngine({ alpha0: 90, scaleMode: "ji" });
+    act(() => {
+      result.current.initAudio();
+    });
+    const ctx = FakeAudioContext.instances[0];
+
+    const onStep = vi.fn();
+    act(() => {
+      result.current.playToneCrossingMelody(onStep);
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(onStep).toHaveBeenCalledWith(0);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(220);
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(onStep).toHaveBeenLastCalledWith(1);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(220 * Math.pow(2, 1 / 12));
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(onStep).toHaveBeenLastCalledWith(4);
+
+    onStep.mockClear();
+    act(() => {
+      vi.advanceTimersByTime(399);
+    });
+    expect(onStep).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onStep).toHaveBeenLastCalledWith(5);
+
+    onStep.mockClear();
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(onStep).toHaveBeenLastCalledWith(6);
+
+    onStep.mockClear();
+    act(() => {
+      vi.advanceTimersByTime(799);
+    });
+    expect(onStep).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onStep).toHaveBeenLastCalledWith(7);
+
+    act(() => {
+      vi.advanceTimersByTime(2400);
+    });
+
+    expect(onStep).toHaveBeenLastCalledWith(14);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(880);
+
+    onStep.mockClear();
+    act(() => {
+      result.current.stopToneCrossingMelody();
+      vi.advanceTimersByTime(720);
+    });
+
+    expect(onStep).not.toHaveBeenCalled();
 
     unmount();
   });

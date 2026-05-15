@@ -41,6 +41,10 @@ export function angleToFreq(angle: number, mode: ScaleMode): number {
   return 261.63 * Math.pow(2, DIATONIC7_SEMITONES[idx] / 12);
 }
 
+export function semitoneToFreq(semitone: number): number {
+  return BASE_FREQ * Math.pow(2, semitone / 12);
+}
+
 /** Frequency -> "A4" or "A4 −12¢" style label (cents shown only when non-zero). */
 export function freqToNote(hz: number): string {
   if (!isFinite(hz) || hz <= 0) return "—";

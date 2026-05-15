@@ -10,6 +10,7 @@ import {
   octahedronMixSequence,
   pointFanoContextLines,
   syndromeDemoEvents,
+  toneCrossingStep,
   weightSpectrumTimeline,
   zigzagStep,
 } from "../music-playback-sequences";
@@ -64,6 +65,10 @@ describe("music-playback-sequences", () => {
   it("builds reusable algebraic playback sequences", () => {
     expect(complementCanonPairs(true).map((event) => event.pairIndex)).toEqual([2, 1, 0]);
     expect(zigzagStep(9)).toEqual({ index: 3, lv: 5 });
+    expect(toneCrossingStep(0)).toMatchObject({ index: 0, crossing: { angleDeg: 0, semitone: 0, lv: 2 }, delayMs: 200 });
+    expect(toneCrossingStep(4)).toMatchObject({ index: 4, crossing: { angleDeg: 60, semitone: 4, lv: 6 }, delayMs: 400 });
+    expect(toneCrossingStep(6)).toMatchObject({ index: 6, crossing: { angleDeg: 120, semitone: 8, lv: 4 }, delayMs: 800 });
+    expect(toneCrossingStep(14)).toMatchObject({ index: 14, crossing: { angleDeg: 360, semitone: 24, lv: 2 }, delayMs: 200 });
     expect(pointFanoContextLines(1)).toEqual([0, 1, 3]);
 
     expect(distributiveEvents(5, 3, 6)).toEqual([

@@ -52,6 +52,7 @@ export function useMusicStopAllHandler({ engine, transport, fano, algebra, signa
     engine.stopFanoRhythm?.();
     engine.stopAlgebra?.();
     engine.stopZigzagMelody?.();
+    engine.stopToneCrossingMelody?.();
     setAlphaDir(0);
     setHueDir(0);
     setGrayStep(null);

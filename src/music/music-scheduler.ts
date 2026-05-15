@@ -16,6 +16,13 @@ export function clearIntervalSlot(slot: TimerSlot<IntervalHandle>) {
   }
 }
 
+export function clearTimeoutSlot(slot: TimerSlot<TimeoutHandle>) {
+  if (slot.current !== null) {
+    clearTimeout(slot.current);
+    slot.current = null;
+  }
+}
+
 export function clearIntervalSlots(...slots: TimerSlot<IntervalHandle>[]) {
   for (const slot of slots) {
     clearIntervalSlot(slot);
@@ -25,6 +32,15 @@ export function clearIntervalSlots(...slots: TimerSlot<IntervalHandle>[]) {
 export function replaceInterval(slot: TimerSlot<IntervalHandle>, fn: () => void, ms: number) {
   clearIntervalSlot(slot);
   slot.current = setInterval(fn, ms);
+  return slot.current;
+}
+
+export function replaceTimeout(slot: TimerSlot<TimeoutHandle>, fn: () => void, ms: number) {
+  clearTimeoutSlot(slot);
+  slot.current = setTimeout(() => {
+    slot.current = null;
+    fn();
+  }, ms);
   return slot.current;
 }
 

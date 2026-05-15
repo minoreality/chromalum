@@ -153,6 +153,30 @@ freq = 220 * 2^((liveAngle mod 360) / 360 * 2)
 
 単音バースト、持続音、音程表示はいずれも `activeAlpha` を含む角度を使う。これにより、色相位相を回転させた後にクリックした単音と、画面上の音程表示・ドローン音高が一致する。
 
+Music タブの Zigzag Tone カードの Crossings 再生だけは例外として、色相位相や現在の音律選択から独立した固定 12 平均律を使う。これは、純色エッジ上で tone 水平線と交差する角度
+
+```text
+0, 15, 30, 45, 60, 90, 120, 180, 195, 210, 225, 240, 270, 300, 360 deg
+```
+
+を、2 オクターブ内の半音列
+
+```text
+0, 1, 2, 3, 4, 6, 8, 12, 13, 14, 15, 16, 18, 20, 24
+```
+
+として鳴らすためである。ラジアン表記では 15deg = pi/12 なので、Crossings 再生では「角度格子 15deg」と「12 平均律の 1 半音」が一致する。
+
+さらに、Crossings 再生では次の点までの待ち時間も角度差に比例させる。
+
+```text
+15deg gap = 200 ms
+30deg gap = 400 ms
+60deg gap = 800 ms
+```
+
+これにより、R-Y 側の密な交点列は短い間隔で進み、C-B や M-R の広い区間は長い間を置いて進む。終端の 360deg は 0deg に巻き戻さず、半音 24 として鳴らすことで、閉じた色相周期と上昇する 2 オクターブ音型を同時に示す。次ループの 0deg へのリセットだけは基準間隔 200 ms を使う。
+
 ## Algebraic Timbre / Bit Spectrum
 
 代数的デモで使う `Bit Spectrum` では、色相角そのものを音高へ写すのではなく、Theory タブと同じ `GF(2)^3` のビット構造を音色成分へ写す。
@@ -179,7 +203,7 @@ Music タブの手動バーストは `Pitch` 固定にする。一方で、Fano 
 
 - `Bit Spectrum`: XOR, Fano incidence, line/coset, Hamming labels, Boolean operations, Cayley rows, K8/tetra/octahedron など、`GF(2)^3` の点・部分集合・演算を聴かせるデモ。
 - `Pitch`: Gray traversal melody や GL(3,2) のドローン変換など、色相角・回転・既存ドローンの幾何的配置を聴かせるデモ。
-- Dedicated sonification: Fano rhythm, complement/tone canon, tone zigzag, Hamming error marker など、ビット音色でも音高でもなく、その構造固有の時間・トーン・誤りマーカーを聴かせるデモ。
+- Dedicated sonification: Fano rhythm, complement/tone canon, tone zigzag, tone crossing, Hamming error marker など、ビット音色でも通常の hue pitch でもなく、その構造固有の時間・トーン・角度格子・誤りマーカーを聴かせるデモ。
 
 この分離により、代数的構造を説明するデモでは `Pitch` による色相写像を混ぜず、幾何的・トーン的・リズム的なデモでは `Bit Spectrum` を無理に適用しない。
 
@@ -190,7 +214,7 @@ Music タブの手動バーストは `Pitch` 固定にする。一方で、Fano 
 | responsibility | implementation |
 | --- | --- |
 | GRB Binary Tone, hue candidates, default candidates | `src/color-engine.ts` |
-| bit-spectrum timbre basis and music constants | `src/data/music-data.ts` |
+| bit-spectrum timbre basis, tone zigzag, and tone crossing constants | `src/data/music-data.ts` |
 | tone radii, hue-phase (`alpha`) rotation, x/y projections, complement curves | `src/components/linked-visualization-geometry.ts`, `src/components/LinkedVisualization.tsx`, `src/components/LinkedVisualizationWheel.tsx`, `src/components/LinkedVisualizationProjectionGraphs.tsx`, `src/components/LinkedVisualizationGuides.tsx`, `src/components/LinkedVisualizationLegend.tsx` |
 | Music-specific wrapper, candidate grid, transport, interval overlay, and algebra panels | `src/components/music/` |
 | angle-to-frequency mapping | `src/data/music-frequency.ts` |

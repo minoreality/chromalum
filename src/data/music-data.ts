@@ -23,6 +23,24 @@ export const COMPLEMENT_PAIRS: readonly (readonly [number, number])[] = [
 export const ZIGZAG_PATH = [2, 6, 4, 5, 1, 3] as const;
 export const ZIGZAG_CHANNELS = ["G", "R", "B", "G", "R", "B"] as const;
 
+export const TONE_CROSSING_SEQUENCE = [
+  { angleDeg: 0, semitone: 0, lv: 2 },
+  { angleDeg: 15, semitone: 1, lv: 3 },
+  { angleDeg: 30, semitone: 2, lv: 4 },
+  { angleDeg: 45, semitone: 3, lv: 5 },
+  { angleDeg: 60, semitone: 4, lv: 6 },
+  { angleDeg: 90, semitone: 6, lv: 5 },
+  { angleDeg: 120, semitone: 8, lv: 4 },
+  { angleDeg: 180, semitone: 12, lv: 5 },
+  { angleDeg: 195, semitone: 13, lv: 4 },
+  { angleDeg: 210, semitone: 14, lv: 3 },
+  { angleDeg: 225, semitone: 15, lv: 2 },
+  { angleDeg: 240, semitone: 16, lv: 1 },
+  { angleDeg: 270, semitone: 18, lv: 2 },
+  { angleDeg: 300, semitone: 20, lv: 3 },
+  { angleDeg: 360, semitone: 24, lv: 2 },
+] as const;
+
 export const FANO_RHYTHM_PATTERNS: readonly (readonly number[])[] = Array.from({ length: 7 }, (_, i) => [
   (0 + i) % 7,
   (1 + i) % 7,

@@ -18,6 +18,12 @@ const S_HEADER: React.CSSProperties = {
   flex: "0 0 var(--music-card-header-size, 38px)",
   justifyContent: "flex-start",
 };
+const S_BUTTON_ROW: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "var(--music-card-control-gap, 3px)",
+  width: "100%",
+};
 const S_TOGGLE_BTN: React.CSSProperties = {
   ...S_CARD_CONTROL_BTN,
   width: "var(--music-card-toggle-width, 70px)",
@@ -27,9 +33,20 @@ const S_TOGGLE_BTN_ACTIVE: React.CSSProperties = {
   width: "var(--music-card-toggle-width, 70px)",
 };
 
+type ZigzagPlaybackMode = "vertices" | "crossings";
+
 export const ZigzagCard = React.memo(function ZigzagCard({ engine, stopSignal }: Props) {
   const { t } = useTranslation();
   const [zigzagStep, setZigzagStep] = useState<number | null>(null);
+  const [activeMode, setActiveMode] = useState<ZigzagPlaybackMode | null>(null);
+  const [graphMode, setGraphMode] = useState<ZigzagPlaybackMode>("vertices");
+
+  const stopPlayback = useCallback(() => {
+    engine.stopZigzagMelody?.();
+    engine.stopToneCrossingMelody?.();
+    setActiveMode(null);
+    setZigzagStep(null);
+  }, [engine]);
 
   const mountedRef = useRef(false);
   useEffect(() => {
@@ -37,18 +54,33 @@ export const ZigzagCard = React.memo(function ZigzagCard({ engine, stopSignal }:
       mountedRef.current = true;
       return;
     }
+    setActiveMode(null);
     setZigzagStep(null);
   }, [stopSignal]);
 
-  const handleToggle = useCallback(() => {
-    if (zigzagStep !== null) {
-      engine.stopZigzagMelody?.();
+  const handleToggle = useCallback(
+    (mode: ZigzagPlaybackMode) => {
+      if (activeMode === mode) {
+        stopPlayback();
+        return;
+      }
+
+      if (activeMode !== null) {
+        stopPlayback();
+      }
+
+      setGraphMode(mode);
       setZigzagStep(null);
-    } else {
       engine.initAudio();
-      engine.playZigzagMelody?.((step) => setZigzagStep(step));
-    }
-  }, [engine, zigzagStep]);
+      setActiveMode(mode);
+      if (mode === "vertices") {
+        engine.playZigzagMelody?.((step) => setZigzagStep(step));
+      } else {
+        engine.playToneCrossingMelody?.((step) => setZigzagStep(step));
+      }
+    },
+    [activeMode, engine, stopPlayback],
+  );
 
   return (
     <div
@@ -57,11 +89,24 @@ export const ZigzagCard = React.memo(function ZigzagCard({ engine, stopSignal }:
     >
       <div style={S_HEADER}>
         <span style={S_LABEL}>{t("music_zigzag_title")}</span>
-        <button type="button" style={zigzagStep !== null ? S_TOGGLE_BTN_ACTIVE : S_TOGGLE_BTN} onClick={handleToggle}>
-          {zigzagStep !== null ? t("music_zigzag_stop") : t("music_zigzag_play")}
-        </button>
+        <div style={S_BUTTON_ROW}>
+          <button
+            type="button"
+            style={activeMode === "vertices" ? S_TOGGLE_BTN_ACTIVE : S_TOGGLE_BTN}
+            onClick={() => handleToggle("vertices")}
+          >
+            {activeMode === "vertices" ? t("music_zigzag_stop") : t("music_zigzag_play")}
+          </button>
+          <button
+            type="button"
+            style={activeMode === "crossings" ? S_TOGGLE_BTN_ACTIVE : S_TOGGLE_BTN}
+            onClick={() => handleToggle("crossings")}
+          >
+            {activeMode === "crossings" ? t("music_crossing_stop") : t("music_crossing_play")}
+          </button>
+        </div>
       </div>
-      <ZigzagGraph currentStep={zigzagStep} />
+      <ZigzagGraph currentStep={zigzagStep} mode={graphMode} />
     </div>
   );
 });

@@ -1,6 +1,6 @@
 import { FANO_LINES } from "../data/theory-data";
 import { TONE_NORM_VALUES, bitSpectrumComponents } from "../data/music-data";
-import { BASE_FREQ, angleToFreq, type ScaleMode } from "../data/music-frequency";
+import { BASE_FREQ, angleToFreq, semitoneToFreq, type ScaleMode } from "../data/music-frequency";
 import { toneToFreq } from "./music-engine-core";
 
 export interface SonificationLevel {
@@ -175,12 +175,11 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
   nodes.fmGains = fmGains;
 }
 
-/** Trigger a short tone burst at a tone-derived frequency */
-export function triggerToneValueBurst(nodes: AudioNodes, toneNorm: number) {
+function triggerSineBurst(nodes: AudioNodes, frequency: number) {
   const ctx = nodes.ctx;
   const osc = ctx.createOscillator();
   osc.type = "sine";
-  osc.frequency.value = toneToFreq(toneNorm);
+  osc.frequency.value = frequency;
   const gain = ctx.createGain();
   const now = ctx.currentTime;
   gain.gain.setValueAtTime(0, now);
@@ -191,22 +190,19 @@ export function triggerToneValueBurst(nodes: AudioNodes, toneNorm: number) {
   osc.stop(now + 0.35);
 }
 
+/** Trigger a short tone burst at a tone-derived frequency */
+export function triggerToneValueBurst(nodes: AudioNodes, toneNorm: number) {
+  triggerSineBurst(nodes, toneToFreq(toneNorm));
+}
+
 /** Trigger a short tone burst at a hue-derived pitch. */
 function triggerPitchBurst(nodes: AudioNodes, hueAngleDeg: number, scaleMode: ScaleMode) {
-  const ctx = nodes.ctx;
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.value = angleToFreq(hueAngleDeg, scaleMode);
+  triggerSineBurst(nodes, angleToFreq(hueAngleDeg, scaleMode));
+}
 
-  const gain = ctx.createGain();
-  const now = ctx.currentTime;
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
-  gain.gain.linearRampToValueAtTime(0.0, now + 0.31);
-
-  osc.connect(gain).connect(nodes.master);
-  osc.start(now);
-  osc.stop(now + 0.35);
+/** Trigger a short tone burst at a fixed 12-TET semitone offset from BASE_FREQ. */
+export function triggerSemitoneBurst(nodes: AudioNodes, semitone: number) {
+  triggerSineBurst(nodes, semitoneToFreq(semitone));
 }
 
 export function triggerPitchOrToneBurst(nodes: AudioNodes, levelIndex: number, hueAngleDeg: number, scaleMode: ScaleMode) {

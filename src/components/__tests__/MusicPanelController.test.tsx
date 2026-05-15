@@ -33,6 +33,8 @@ const musicEngineMock = vi.hoisted(() => {
     playComplementCanon: vi.fn(),
     playZigzagMelody: vi.fn(),
     stopZigzagMelody: vi.fn(),
+    playToneCrossingMelody: vi.fn(),
+    stopToneCrossingMelody: vi.fn(),
     playPointFanoContext: vi.fn(),
     playExtendedHamming: vi.fn(),
     playDistributiveLaw: vi.fn(),
@@ -216,6 +218,7 @@ describe("MusicPanel controller integration", () => {
     expect(musicEngineMock.engine.stopFanoRhythm).toHaveBeenCalled();
     expect(musicEngineMock.engine.stopAlgebra).toHaveBeenCalled();
     expect(musicEngineMock.engine.stopZigzagMelody).toHaveBeenCalled();
+    expect(musicEngineMock.engine.stopToneCrossingMelody).toHaveBeenCalled();
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(true);
     expect(musicEngineMock.engine.stopAudio).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "\u25b6 Gray" })).toBeTruthy();

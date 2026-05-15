@@ -30,6 +30,8 @@ const mockEngine = vi.hoisted(() => ({
   playComplementCanon: vi.fn(),
   playZigzagMelody: vi.fn(),
   stopZigzagMelody: vi.fn(),
+  playToneCrossingMelody: vi.fn(),
+  stopToneCrossingMelody: vi.fn(),
   playPointFanoContext: vi.fn(),
   playExtendedHamming: vi.fn(),
   playDistributiveLaw: vi.fn(),
@@ -70,6 +72,7 @@ describe("MusicPanel accessibility", () => {
     expect(mockEngine.stopFanoRhythm).toHaveBeenCalled();
     expect(mockEngine.stopAlgebra).toHaveBeenCalled();
     expect(mockEngine.stopZigzagMelody).toHaveBeenCalled();
+    expect(mockEngine.stopToneCrossingMelody).toHaveBeenCalled();
     expect(mockEngine.setDroneMuted).toHaveBeenCalledWith(true);
     expect(mockEngine.stopAudio).toHaveBeenCalled();
   });

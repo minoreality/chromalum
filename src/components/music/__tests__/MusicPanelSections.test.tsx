@@ -13,6 +13,7 @@ import { MusicFanoControls } from "../MusicFanoControls";
 import { MusicHueAlphaControls } from "../MusicHueAlphaControls";
 import { MusicLevelCandidateGrid } from "../MusicLevelCandidateGrid";
 import { MusicTransportControls } from "../MusicTransportControls";
+import { ZigzagCard } from "../ZigzagCard";
 import { ZigzagGraph } from "../ZigzagGraph";
 
 type TransportProps = ComponentProps<typeof MusicTransportControls>;
@@ -56,6 +57,8 @@ function makeMusicEngine(overrides: Partial<MusicEngineReturn> = {}): MusicEngin
     playComplementCanon: vi.fn(),
     playZigzagMelody: vi.fn(),
     stopZigzagMelody: vi.fn(),
+    playToneCrossingMelody: vi.fn(),
+    stopToneCrossingMelody: vi.fn(),
     playPointFanoContext: vi.fn(),
     playExtendedHamming: vi.fn(),
     playDistributiveLaw: vi.fn(),
@@ -484,6 +487,30 @@ describe("MusicPanel section components", () => {
     for (const staleLabel of ["0", "255", "+146", "-73", "+36", "-146", "+73"]) {
       expect(labels).not.toContain(staleLabel);
     }
+  });
+
+  it("renders tone crossing points as a separate zigzag graph mode", () => {
+    const { container } = renderWithLanguage(<ZigzagGraph currentStep={14} mode="crossings" />);
+
+    const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
+    const circles = Array.from(container.querySelectorAll("circle"));
+    expect(circles).toHaveLength(14);
+    expect(circles.some((circle) => circle.getAttribute("cx") === "172")).toBe(false);
+    expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "24"]));
+    expect(labels).not.toContain("+4");
+  });
+
+  it("starts tone crossing playback from the zigzag card", () => {
+    const playToneCrossingMelody = vi.fn((onStep: (stepIndex: number | null) => void) => onStep(1));
+    const engine = makeMusicEngine({ playToneCrossingMelody });
+    const { container } = renderWithLanguage(<ZigzagCard engine={engine} stopSignal={0} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "\u25b6 Crossings" }));
+
+    expect(engine.initAudio).toHaveBeenCalled();
+    expect(playToneCrossingMelody).toHaveBeenCalledWith(expect.any(Function));
+    expect(screen.getByRole("button", { name: "\u23f9 Crossings" })).toBeTruthy();
+    expect(Array.from(container.querySelectorAll("text")).map((node) => node.textContent)).toContain("1");
   });
 
   it("uses normalized 4:2:1 tone labels in complement pairs", () => {
