@@ -60,7 +60,7 @@ describe("theory copy high-risk claims", () => {
 
     expect(ja.theory_octa_desc).not.toContain("中間点として視認できます");
     expect(ja.theory_octa_desc).toContain("B↔Y、R↔C、M↔G");
-    expect(ja.theory_octa_desc2).toContain("6つの有彩色 XOR 結果が各2回ずつ");
+    expect(ja.theory_octa_desc2).toContain("6 つの有彩色 XOR 結果が各2回ずつ");
     expect(ja.theory_conn_polyhedra_desc).toContain("本タブの4つの多面体");
     expect(ja.theory_conn_polyhedra_desc).not.toContain("§9");
   });
@@ -74,6 +74,9 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_binary_tone_complement).not.toContain("255");
     expect(en.theory_binary_tone_complement).not.toContain("8-bit");
     expect(en.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
+    expect(en.theory_zigzag_desc).toContain("chromatic levels L1-L6");
+    expect(en.theory_zigzag_desc).toContain("L0/L7 are not on the hue hexagon");
+    expect(en.theory_zigzag_desc).not.toContain("each vertex tone value");
     expect(en.theory_binary_desc).not.toContain("consequence of human color vision");
     expect(en.theory_binary_desc).not.toContain("BT.601");
     expect(en.theory_intro).not.toContain("0 or 255");
@@ -84,7 +87,7 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_dice_desc3).toContain("R→Y→G→C→B→M");
     expect(en.theory_dice_desc3).toContain("equivalently its reverse");
 
-    expect(ja.theory_binary_desc).toContain("GRBバイナリトーンモデル");
+    expect(ja.theory_binary_desc).toContain("GRB Binary Tone モデル");
     expect(ja.theory_binary_desc).toContain("level = 4G + 2R + B");
     expect(ja.theory_binary_desc).toContain("tone = level / 7");
     expect(ja.theory_binary_tone_formula).toContain("T = (4G + 2R + B) / 7 = level / 7");
@@ -92,6 +95,9 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_binary_tone_complement).not.toContain("255");
     expect(ja.theory_binary_tone_complement).not.toContain("8ビット");
     expect(ja.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
+    expect(ja.theory_zigzag_desc).toContain("有彩レベル L1-L6");
+    expect(ja.theory_zigzag_desc).toContain("L0/L7 は色相六角形上ではなく");
+    expect(ja.theory_zigzag_desc).not.toContain("各頂点トーン値");
     expect(ja.theory_binary_desc).not.toContain("人間の色覚の帰結です");
     expect(ja.theory_binary_desc).not.toContain("BT.601");
     expect(ja.theory_intro).not.toContain("0 または 255");
@@ -104,7 +110,7 @@ describe("theory copy high-risk claims", () => {
 
   it("keeps reviewed color labels stable where abbreviation changes would alter meaning", () => {
     expect(en.theory_intro).toContain("encoded as the 3-bit vector `[G,R,B]`");
-    expect(ja.theory_intro).toContain("3ビットベクトル `[G,R,B]` として符号化します");
+    expect(ja.theory_intro).toContain("3 ビットベクトル `[G,R,B]` として符号化します");
     expect(en.theory_tetra_desc).toContain("T0 (even weight: K, M, C, Y)");
     expect(en.theory_tetra_desc).not.toContain("T0 (even weight: Black, M, C, Y)");
     expect(en.theory_dice_tetra_subgroup).toContain("T0 = {K, M, C, Y}");

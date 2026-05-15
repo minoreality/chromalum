@@ -226,7 +226,7 @@ export const en = {
   theory_binary_tone_complement: "Complement tone: T\u2096 + T\u2087\u208b\u2096 = 1",
   theory_zigzag_title: "Tone Zigzag",
   theory_zigzag_desc:
-    "How does tone change as you rotate through hues? Fully saturated colors (max channel = 1, min = 0) trace a zigzag of 6 segments as hue rotates. Each segment toggles one channel; under GRB Binary Tone, the slope magnitudes follow G:R:B = 4:2:1. On the hue circle, horizontal lines at each vertex tone value intersect the zigzag at 1 or 3 points. For any hue angle h, T(h) + T(h+180°) = 1, so complementary colors always sum to the same tone.",
+    "How does tone change as you rotate through hues? Fully saturated colors (max channel = 1, min = 0) trace a zigzag of 6 segments as hue rotates. Each segment toggles one channel; under GRB Binary Tone, the slope magnitudes follow G:R:B = 4:2:1. On the hue circle, horizontal lines for chromatic levels L1-L6 intersect the zigzag at 1 or 3 points. L0/L7 are not on the hue hexagon; they are treated separately as endpoints of the black-white axis. For any hue angle h, T(h) + T(h+180°) = 1, so complementary tones always sum to 1.",
   theory_dice_title: "Color Die",
   theory_dice_desc:
     "Rank the 6 colors (RGB primaries plus CMY secondaries) by GRB Binary Tone, low to high (1\u20136), and place them on a cube\u2019s faces. The complement map c \u21a6 c \u2295 7 reverses tone order, so complementary pairs land on opposite faces and every opposite pair sums to 7 \u2014 exactly the standard-die rule.",
