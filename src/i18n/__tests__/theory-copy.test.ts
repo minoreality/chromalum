@@ -87,7 +87,7 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_dice_desc3).toContain("R→Y→G→C→B→M");
     expect(en.theory_dice_desc3).toContain("equivalently its reverse");
 
-    expect(ja.theory_binary_desc).toContain("GRB Binary Tone モデル");
+    expect(ja.theory_binary_desc).toContain("GRB Binary Tone Model");
     expect(ja.theory_binary_desc).toContain("level = 4G + 2R + B");
     expect(ja.theory_binary_desc).toContain("tone = level / 7");
     expect(ja.theory_binary_tone_formula).toContain("T = (4G + 2R + B) / 7 = level / 7");
@@ -95,11 +95,11 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_binary_tone_complement).not.toContain("255");
     expect(ja.theory_binary_tone_complement).not.toContain("8ビット");
     expect(ja.theory_zigzag_desc).toContain("T(h) + T(h+180°) = 1");
-    expect(ja.theory_zigzag_desc).toContain("有彩レベル L1-L6");
-    expect(ja.theory_zigzag_desc).toContain("L0/L7 は色相六角形上ではなく");
+    expect(ja.theory_zigzag_desc).toContain("各頂点 L1-L6");
+    expect(ja.theory_zigzag_desc).toContain("非頂点の水平線では最大 4 点");
     expect(ja.theory_zigzag_desc).not.toContain("各頂点トーン値");
     expect(ja.theory_binary_desc).not.toContain("人間の色覚の帰結です");
-    expect(ja.theory_binary_desc).not.toContain("BT.601");
+    expect(ja.theory_binary_desc).toContain("ITU-R BT.601 luma 係数の不等式");
     expect(ja.theory_intro).not.toContain("0 または 255");
     expect(ja.theory_connections_desc).not.toContain("0/255");
     expect(ja.theory_dice_desc).toContain("補色写像 c ↦ c ⊕ 7 はトーン順を反転");
