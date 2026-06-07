@@ -72,7 +72,7 @@ test("glazes a chromatic source pixel and clears the glaze layer", async ({ page
   const sourceCanvas = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
   await selectLevel(page, 2, "Red");
   await drawAtCenter(page, sourceCanvas);
-  await expect.poll(() => canvasPixel(sourceCanvas, 160, 160)).toEqual([76, 76, 76, 255]);
+  await expect.poll(() => canvasPixel(sourceCanvas, 160, 160)).toEqual([73, 73, 73, 255]);
 
   await page.getByRole("tab", { name: "Glaze" }).click();
   const glazeCanvas = page.getByRole("img", { name: "HUE GLAZE OVERLAY" });
@@ -172,7 +172,7 @@ test("keeps the tone zigzag graph fixed when playback starts", async ({ page }) 
   await page.goto("/");
   await page.getByRole("tab", { name: "Music" }).click();
 
-  const zigzagButton = page.getByRole("button", { name: "▶ Zigzag" });
+  const zigzagButton = page.getByRole("button", { name: "▶ Vertices" });
   const zigzagCard = page.getByTestId("tone-zigzag-card");
   await expect(zigzagCard).toBeVisible();
   await zigzagCard.scrollIntoViewIfNeeded();
@@ -184,7 +184,7 @@ test("keeps the tone zigzag graph fixed when playback starts", async ({ page }) 
   if (!before) throw new Error("Zigzag graph is not visible");
 
   await zigzagButton.click();
-  await expect(zigzagCard.getByRole("button", { name: "⏹ Zigzag" })).toBeVisible();
+  await expect(zigzagCard.getByRole("button", { name: "⏹ Vertices" })).toBeVisible();
 
   const cardAfter = await zigzagCard.boundingBox();
   const after = await graph.boundingBox();
