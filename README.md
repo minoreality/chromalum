@@ -127,10 +127,23 @@ Install dependencies:
 npm install
 ```
 
+Install or refresh the Playwright Chromium browser after first setup or after
+`@playwright/test` updates:
+
+```bash
+npm run playwright:install
+```
+
 Start the local development server:
 
 ```bash
 npm run dev
+```
+
+Start the development server on the fixed local address used for manual checks:
+
+```bash
+npm run dev:local
 ```
 
 Create a production build:
@@ -157,6 +170,12 @@ Run unit tests:
 
 ```bash
 npm test
+```
+
+Run the focused Theory copy guard test:
+
+```bash
+npm run test:theory-copy
 ```
 
 Run coverage:
@@ -195,7 +214,11 @@ Update visual baselines after an intentional UI change:
 npm run test:visual:update
 ```
 
-Visual regression is currently a manual/local check, not a required CI gate.
+Visual regression is also part of the pull-request CI gate on Ubuntu. Local
+updates are useful for inspection, but accepted baselines should be generated in
+the same Linux environment as CI. Use the manual "Visual Snapshot Artifacts"
+GitHub Actions workflow to generate Ubuntu baselines and download the
+`visual-snapshots` artifact.
 
 Run linting and formatting checks:
 
@@ -208,6 +231,12 @@ Run the standard local verification set:
 
 ```bash
 npm run verify
+```
+
+Run the same verification command used by the pre-push hook:
+
+```bash
+npm run verify:prepush
 ```
 
 Run broader browser/PWA or full coverage verification:

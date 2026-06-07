@@ -11,6 +11,15 @@ updates:
       - javascript
     open-pull-requests-limit: 5
     groups:
+      react-family:
+        patterns:
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - minor
+          - patch
       dev-dependencies:
         dependency-type: development
         update-types:

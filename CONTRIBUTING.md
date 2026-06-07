@@ -16,8 +16,12 @@ Install dependencies and start the development server:
 
 ```bash
 npm install
+npm run playwright:install
 npm run dev
 ```
+
+Use `npm run dev:local` when you need a fixed `127.0.0.1:5173` development
+server for manual browser checks.
 
 ## Local Checks
 
@@ -38,7 +42,11 @@ npm run deadcode
 npm run typecheck:all
 npm run build
 npm test
+npm run test:theory-copy
 ```
+
+The pre-push hook runs `npm run verify:prepush`, which currently delegates to
+the standard verification set above.
 
 For browser, PWA, or layout-sensitive changes, also run the relevant Playwright
 checks:
@@ -49,9 +57,13 @@ npm run test:pwa
 npm run test:visual
 ```
 
-Visual regression is a local/manual gate. Update visual baselines with
-`npm run test:visual:update` only after intentionally accepting the rendered UI
-change.
+Visual regression is a pull-request CI gate and a manual acceptance step. Update
+visual baselines with `npm run test:visual:update` only after intentionally
+accepting the rendered UI change. Pull-request CI runs visual regression on
+Ubuntu, so accepted baselines should be generated in the same Linux environment
+as CI. For intentional visual changes, run the manual "Visual Snapshot
+Artifacts" GitHub Actions workflow and download the `visual-snapshots`
+artifact.
 
 ## Documentation
 
@@ -89,6 +101,9 @@ Theory copy should keep the established claim boundaries: use GRB Binary Tone /
 `Tone` / `トーン` wording for this signal model, avoid implying perceptual
 uniformity or external brightness-standard derivation, and describe XOR as an
 algebraic operation rather than physical color mixing.
+
+After changing Theory-tab copy, run `npm run test:theory-copy` before the wider
+verification set.
 
 ## Security
 
