@@ -4,7 +4,7 @@ import type { CanvasData, MapMode } from "../types";
 import { S_BTN, S_BTN_ACTIVE, S_PANEL_SUBTITLE } from "../styles/shared";
 import { MapCanvas } from "./MapCanvas";
 import { usePixelMaps } from "../hooks/usePixelMaps";
-import { CompositionDonut } from "./CompositionDonut";
+import { COMPOSITION_DONUT_PRESERVE_ATTR, CompositionDonut } from "./CompositionDonut";
 import { C, SP, FS, FW } from "../styles/tokens";
 import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 
@@ -68,6 +68,7 @@ export const AnalyzePanel = React.memo(
         <div style={S_PANEL_SUBTITLE}>{t("map_title")}</div>
         <div className={getPanelLayoutClassName(displayWidth, displayHeight)}>
           <div
+            {...{ [COMPOSITION_DONUT_PRESERVE_ATTR]: "true" }}
             className={`${getCanvasPanelClassName(displayWidth, displayHeight)} panel-canvas--map`}
             style={getCanvasPanelStyle(displayWidth, displayHeight)}
           >

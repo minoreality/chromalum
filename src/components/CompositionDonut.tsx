@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { LEVEL_INFO, LEVEL_CANDIDATES, rgb2hue } from "../color-engine";
 import { rgbStr, hexStr } from "../utils";
 import { C, FS, SP, FONT } from "../styles/tokens";
@@ -15,6 +15,10 @@ interface Slice {
   /** Whether this slice represents a glaze change (used to control border rendering) */
   isGlazed?: boolean;
 }
+
+const DONUT_SLICE_ATTR = "data-composition-donut-slice";
+export const COMPOSITION_DONUT_PRESERVE_ATTR = "data-composition-donut-preserve";
+const DONUT_PRESERVE_SELECTOR = `[${DONUT_SLICE_ATTR}="true"], [${COMPOSITION_DONUT_PRESERVE_ATTR}="true"]`;
 
 function computeSlices(entries: { count: number; color: string; info: string[]; isGlazed?: boolean }[], total: number): Slice[] {
   const slices: Slice[] = [];
@@ -52,6 +56,7 @@ function drawRing(
         onActivate(sliceId, s.info, s.color);
       },
       style: S_CURSOR_POINTER,
+      [DONUT_SLICE_ATTR]: "true",
     };
 
     if (s.fraction > 0.999) {
@@ -113,6 +118,20 @@ export const CompositionDonut = React.memo(function CompositionDonut({
     setPreview(null);
     setSelected((current) => (current?.id === id ? null : { id, info, color }));
   }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(DONUT_PRESERVE_SELECTOR)) return;
+      setPreview(null);
+      setSelected(null);
+    };
+
+    document.addEventListener("pointerdown", onDocumentPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocumentPointerDown);
+  }, [selected]);
 
   const { graySlices, colorSlices, glazeSlices, hasGlaze } = useMemo(() => {
     const pct = (n: number) => ((n / Math.max(1, total)) * 100).toFixed(1);

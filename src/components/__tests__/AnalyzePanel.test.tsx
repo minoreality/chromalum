@@ -3,6 +3,7 @@ import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MapMode } from "../../types";
+import { COMPOSITION_DONUT_PRESERVE_ATTR } from "../CompositionDonut";
 import { AnalyzePanel } from "../AnalyzePanel";
 
 const analyzeMocks = vi.hoisted(() => ({
@@ -110,6 +111,14 @@ describe("AnalyzePanel", () => {
       expect(setMapMode).toHaveBeenLastCalledWith(mode);
     }
     expect(setMapMode).toHaveBeenCalledTimes(7);
+  });
+
+  it("keeps map canvas and mode buttons outside donut clear behavior", () => {
+    render(<AnalyzePanel {...makeProps()} />);
+
+    const mapPanel = screen.getByTestId("map-canvas").parentElement;
+    expect(mapPanel?.getAttribute(COMPOSITION_DONUT_PRESERVE_ATTR)).toBe("true");
+    expect(screen.getByRole("button", { name: "map_map_levelTone" }).closest(`[${COMPOSITION_DONUT_PRESERVE_ATTR}="true"]`)).toBe(mapPanel);
   });
 
   it("passes map state into usePixelMaps and MapCanvas", () => {
