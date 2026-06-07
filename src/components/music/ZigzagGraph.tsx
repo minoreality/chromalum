@@ -25,7 +25,7 @@ const xPos = (i: number) => ML + (i / (ZIGZAG_PATH.length - 1)) * PW;
 const xAngle = (angleDeg: number) => ML + (angleDeg / 360) * PW;
 const yPos = (level: number) => MT + PH - (level / 7) * PH;
 
-export type ZigzagGraphMode = "vertices" | "crossings";
+type ZigzagGraphMode = "vertices" | "crossings";
 
 interface Props {
   currentStep: number | null;
