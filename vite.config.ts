@@ -91,7 +91,7 @@ async function networkFirstNavigation(request) {
 
 async function cacheFirst(request) {
   const requestUrl = new URL(request.url);
-  const cached = await caches.match(request, { ignoreSearch: true });
+  const cached = await caches.match(request, { ignoreSearch: true, ignoreVary: true });
   if (cached) return cached;
 
   const response = await fetch(request);
