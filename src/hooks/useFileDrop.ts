@@ -7,11 +7,7 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "i
 
 type DecodedImage = CanvasImageSource & { readonly width: number; readonly height: number };
 type ImageLoadSource =
-  | "stable Blob ImageBitmap"
-  | "stable Blob object URL"
-  | "stable Blob Data URL"
-  | "direct ImageBitmap"
-  | "direct object URL";
+  "stable Blob ImageBitmap" | "stable Blob object URL" | "stable Blob Data URL" | "direct ImageBitmap" | "direct object URL";
 
 function isImageLoadDebugEnabled(): boolean {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debugImageLoad");
