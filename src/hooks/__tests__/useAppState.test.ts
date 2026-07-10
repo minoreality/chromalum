@@ -7,7 +7,7 @@ vi.mock("../../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
   loadState: vi.fn(() => Promise.resolve(null)),
   loadStateWithStatus: vi.fn(() => Promise.resolve({ status: "empty", state: null })),
-  saveState: vi.fn(() => Promise.resolve()),
+  saveState: vi.fn(() => Promise.resolve(1)),
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
@@ -26,6 +26,7 @@ describe("useAppState", () => {
     vi.clearAllMocks();
     localStorage.clear();
     vi.mocked(loadStateWithStatus).mockResolvedValue({ status: "empty", state: null });
+    vi.mocked(saveState).mockResolvedValue(1);
   });
 
   afterEach(() => {
@@ -125,7 +126,7 @@ describe("useAppState", () => {
     let rejectFirst!: (reason?: unknown) => void;
     saveStateMock.mockImplementationOnce(
       () =>
-        new Promise<void>((_resolve, reject) => {
+        new Promise<number>((_resolve, reject) => {
           rejectFirst = reject;
         }),
     );
@@ -197,6 +198,79 @@ describe("useAppState", () => {
 
     expect(saveStateMock).toHaveBeenCalledTimes(1);
     warnSpy.mockRestore();
+    unmount();
+  });
+
+  it("keeps edits made while restore is pending and saves them against the loaded revision", async () => {
+    vi.useFakeTimers();
+    let resolveRestore!: (value: Awaited<ReturnType<typeof loadStateWithStatus>>) => void;
+    vi.mocked(loadStateWithStatus).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRestore = resolve;
+        }),
+    );
+    vi.mocked(saveState).mockResolvedValueOnce(8);
+    const { result, unmount } = renderHook(() => useAppState(t));
+
+    act(() => {
+      result.current.dispatch({ type: "new_canvas", width: 8, height: 8 });
+    });
+    expect(result.current.canvasData.width).toBe(8);
+
+    await act(async () => {
+      resolveRestore({
+        status: "loaded",
+        state: {
+          width: 16,
+          height: 16,
+          levelData: new Uint8Array(256),
+          pixelCandidateOverrideMap: new Uint8Array(256),
+          candidateIndexByLevel: [0, 0, 0, 0, 0, 0, 0, 0],
+          lockedLevels: new Array(8).fill(false),
+          version: 1,
+          revision: 7,
+        },
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.loaded).toBe(true);
+    expect(result.current.canvasData.width).toBe(8);
+    expect(result.current.canvasData.height).toBe(8);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(saveState).toHaveBeenCalledWith(expect.objectContaining({ width: 8, height: 8, revision: 7 }), { expectedRevision: 7 });
+    unmount();
+  });
+
+  it("stops autosave for the session when restore fails", async () => {
+    vi.useFakeTimers();
+    vi.mocked(loadStateWithStatus).mockRejectedValueOnce(new DOMException("temporary failure", "UnknownError"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { result, unmount } = renderHook(() => useAppState(t));
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loaded).toBe(true);
+    act(() => {
+      result.current.dispatch({ type: "new_canvas", width: 8, height: 8 });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+      await Promise.resolve();
+    });
+
+    expect(saveState).not.toHaveBeenCalled();
+    expect(result.current.toast).toEqual({ message: "toast_restore_failed", type: "error" });
+    errorSpy.mockRestore();
     unmount();
   });
 

@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useLayoutEffect } from "react";
 import { LEVEL_MASK } from "../constants";
 import type { ToolId } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
@@ -105,6 +105,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   } | null>(null);
   const fillPendingRef = useRef(false);
   const pendingUpRef = useRef(false);
+  const fillGenerationRef = useRef(0);
   const pendingWorkspaceStartRef = useRef<{
     refEl: HTMLCanvasElement | null;
     cursorTrack: (e: React.PointerEvent) => void;
@@ -112,6 +113,18 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     startPos: Point;
   } | null>(null);
   const floodFillWorker = useFloodFillWorker();
+
+  // A New/Open/Undo/Redo can replace the canvas while a Worker fill is in
+  // flight. Invalidate that request immediately so its result cannot be
+  // committed into a different canvas or keep drawing blocked.
+  useLayoutEffect(() => {
+    fillGenerationRef.current++;
+    if (!fillPendingRef.current) return;
+    fillPendingRef.current = false;
+    pendingUpRef.current = false;
+    strokeRef.current = null;
+    drawingRef.current = false;
+  }, [canvasData]);
 
   // Refs needed by useCursorOverlay (individual for interface compatibility)
   const brushSizeRef = useSyncRef(brushSize);
@@ -232,10 +245,19 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       H = cv.height;
 
     if (curTool === "fill") {
+      const fillGeneration = fillGenerationRef.current;
+      const fillStroke = strokeRef.current;
       fillPendingRef.current = true;
       floodFillWorker
         .requestCanvasFill(workingData, pos.x, pos.y, lv, W, H)
         .then((res) => {
+          if (
+            fillGenerationRef.current !== fillGeneration ||
+            canvasDataRef.current !== cv ||
+            strokeRef.current !== fillStroke ||
+            res.levelData.length !== W * H
+          )
+            return;
           const st = strokeRef.current;
           if (!st) {
             fillPendingRef.current = false;
@@ -262,6 +284,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
           }
         })
         .catch((err) => {
+          if (fillGenerationRef.current !== fillGeneration || canvasDataRef.current !== cv || strokeRef.current !== fillStroke) return;
           fillPendingRef.current = false;
           pendingUpRef.current = false;
           strokeRef.current = null;

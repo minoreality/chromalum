@@ -18,6 +18,10 @@ const cursorOverlayMocks = vi.hoisted(() => ({
   trackCursor: vi.fn(),
   clearCursor: vi.fn(),
 }));
+const floodFillMocks = vi.hoisted(() => ({
+  requestCanvasFill: vi.fn(),
+  requestGlazeFill: vi.fn(),
+}));
 
 vi.mock("../../state/DrawingContext", () => ({
   useDrawingContext: () => ({
@@ -36,14 +40,7 @@ vi.mock("../../state/DrawingContext", () => ({
 }));
 
 vi.mock("../useFloodFillWorker", () => ({
-  useFloodFillWorker: () => ({
-    requestCanvasFill: vi.fn(() =>
-      Promise.resolve({ levelData: new Uint8Array(100), changedIndices: new Uint32Array(0), truncated: false }),
-    ),
-    requestGlazeFill: vi.fn(() =>
-      Promise.resolve({ pixelCandidateOverrideMap: new Uint8Array(100), changedIndices: new Uint32Array(0), truncated: false }),
-    ),
-  }),
+  useFloodFillWorker: () => floodFillMocks,
 }));
 
 vi.mock("../useCursorOverlay", () => ({
@@ -126,6 +123,57 @@ describe("useGlazeDrawing", () => {
     mockPanningRef.current = false;
     mockZoomRef.current = 1;
     mockPanRef.current = { x: 0, y: 0 };
+    floodFillMocks.requestCanvasFill.mockResolvedValue({
+      levelData: new Uint8Array(100),
+      changedIndices: new Uint32Array(0),
+      truncated: false,
+    });
+    floodFillMocks.requestGlazeFill.mockResolvedValue({
+      pixelCandidateOverrideMap: new Uint8Array(100),
+      changedIndices: new Uint32Array(0),
+      truncated: false,
+    });
+  });
+
+  it("discards a pending glaze fill when the canvas is replaced", async () => {
+    let resolveFill!: (value: { pixelCandidateOverrideMap: Uint8Array; changedIndices: Uint32Array; truncated: boolean }) => void;
+    floodFillMocks.requestGlazeFill.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFill = resolve;
+        }),
+    );
+    const dispatch = vi.fn();
+    const originalCanvas = makeCvs();
+    originalCanvas.levelData.fill(2);
+    const replacementCanvas = makeCvs(8, 8);
+    const { result, rerender } = renderHook(
+      ({ canvasData }) => useGlazeDrawing(makeOpts({ canvasData, dispatch, glazeTool: "glaze_fill" })),
+      { initialProps: { canvasData: originalCanvas } },
+    );
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onDown(pointerEvent({ target: canvas }));
+      result.current.onUp();
+    });
+    expect(result.current.drawingRef.current).toBe(true);
+
+    rerender({ canvasData: replacementCanvas });
+    expect(result.current.drawingRef.current).toBe(false);
+
+    await act(async () => {
+      resolveFill({
+        pixelCandidateOverrideMap: new Uint8Array(100).fill(1),
+        changedIndices: new Uint32Array([0]),
+        truncated: false,
+      });
+      await Promise.resolve();
+    });
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(false);
   });
 
   it("onUp during pan calls endPan", () => {

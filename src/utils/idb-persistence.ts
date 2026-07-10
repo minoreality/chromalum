@@ -6,7 +6,7 @@ const KEY = "current";
 /** Increment when schema changes; add migration logic in onupgradeneeded. */
 const DB_VERSION = 2;
 /** Increment when the serialized SavedState shape changes. */
-export const SAVED_STATE_VERSION = 3;
+export const SAVED_STATE_VERSION = 4;
 
 export interface SavedState {
   width: number;
@@ -15,7 +15,26 @@ export interface SavedState {
   pixelCandidateOverrideMap?: Uint8Array;
   candidateIndexByLevel: number[];
   version: number;
+  /** Monotonic compare-and-swap token used to reject stale-tab writes. */
+  revision: number;
   lockedLevels?: boolean[];
+}
+
+export interface SaveStateOptions {
+  /** When provided, save only if the stored revision still matches. */
+  expectedRevision?: number;
+}
+
+export class SaveConflictError extends Error {
+  readonly expectedRevision: number;
+  readonly actualRevision: number;
+
+  constructor(expectedRevision: number, actualRevision: number) {
+    super(`Saved state changed in another tab (expected revision ${expectedRevision}, found ${actualRevision})`);
+    this.name = "SaveConflictError";
+    this.expectedRevision = expectedRevision;
+    this.actualRevision = actualRevision;
+  }
 }
 
 type RawSavedState = Partial<SavedState> & {
@@ -101,11 +120,20 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveState(state: SavedState): Promise<void> {
+function storedRevision(value: unknown): number {
+  if (!value || typeof value !== "object") return 0;
+  const revision = (value as { revision?: unknown }).revision;
+  return typeof revision === "number" && Number.isInteger(revision) && revision >= 0 ? revision : 0;
+}
+
+export async function saveState(state: SavedState, options: SaveStateOptions = {}): Promise<number> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(state, KEY);
+    const store = tx.objectStore(STORE_NAME);
+    const getRequest = store.get(KEY);
+    let nextRevision = 0;
+    let conflictError: SaveConflictError | null = null;
     let settled = false;
     const settle = (fn: () => void) => {
       if (settled) return;
@@ -119,9 +147,23 @@ export async function saveState(state: SavedState): Promise<void> {
         settle(() => reject(err ?? new Error("Transaction aborted")));
       }
     };
-    tx.oncomplete = () => settle(() => resolve());
+    getRequest.onsuccess = () => {
+      const currentRevision = storedRevision(getRequest.result);
+      if (options.expectedRevision !== undefined && currentRevision !== options.expectedRevision) {
+        conflictError = new SaveConflictError(options.expectedRevision, currentRevision);
+        tx.abort();
+        return;
+      }
+      nextRevision = currentRevision + 1;
+      store.put({ ...state, revision: nextRevision }, KEY);
+    };
+    getRequest.onerror = () => settle(() => reject(getRequest.error ?? new Error("Failed to read saved state revision")));
+    tx.oncomplete = () => settle(() => resolve(nextRevision));
     tx.onerror = () => rejectWith(tx.error);
-    tx.onabort = () => rejectWith(tx.error);
+    tx.onabort = () => {
+      if (conflictError) settle(() => reject(conflictError));
+      else rejectWith(tx.error);
+    };
   });
 }
 
@@ -178,6 +220,8 @@ function normalizeLoadedState(val: unknown): LoadStateResult {
   if (!Number.isInteger(saved.version) || saved.version < 1) {
     return invalidResult("saved state version is invalid");
   }
+
+  saved.revision = storedRevision(saved);
 
   if (saved.version > SAVED_STATE_VERSION) {
     return invalidResult(`saved state version ${saved.version} is newer than supported version ${SAVED_STATE_VERSION}`);

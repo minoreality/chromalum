@@ -22,6 +22,9 @@ const cursorOverlayMocks = vi.hoisted(() => ({
   trackPreviewCursor: vi.fn(),
   clearPreviewCursor: vi.fn(),
 }));
+const floodFillMocks = vi.hoisted(() => ({
+  requestCanvasFill: vi.fn(),
+}));
 
 vi.mock("../../state/DrawingContext", () => ({
   useDrawingContext: () => ({
@@ -40,11 +43,7 @@ vi.mock("../../state/DrawingContext", () => ({
 }));
 
 vi.mock("../useFloodFillWorker", () => ({
-  useFloodFillWorker: () => ({
-    requestCanvasFill: vi.fn(() =>
-      Promise.resolve({ levelData: new Uint8Array(100), changedIndices: new Uint32Array(0), truncated: false }),
-    ),
-  }),
+  useFloodFillWorker: () => floodFillMocks,
 }));
 
 vi.mock("../useCursorOverlay", () => ({
@@ -130,6 +129,46 @@ describe("useCanvasDrawing", () => {
     mockSpaceRef.current = false;
     mockZoomRef.current = 1;
     mockPanRef.current = { x: 0, y: 0 };
+    floodFillMocks.requestCanvasFill.mockResolvedValue({
+      levelData: new Uint8Array(100),
+      changedIndices: new Uint32Array(0),
+      truncated: false,
+    });
+  });
+
+  it("discards a pending fill when the canvas is replaced", async () => {
+    let resolveFill!: (value: { levelData: Uint8Array; changedIndices: Uint32Array; truncated: boolean }) => void;
+    floodFillMocks.requestCanvasFill.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFill = resolve;
+        }),
+    );
+    const dispatch = vi.fn();
+    const originalCanvas = makeCvs();
+    const replacementCanvas = makeCvs(8, 8);
+    const { result, rerender } = renderHook(({ canvasData }) => useCanvasDrawing(makeOpts({ canvasData, dispatch, tool: "fill" })), {
+      initialProps: { canvasData: originalCanvas },
+    });
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onDown(pointerEvent({ target: canvas }));
+      result.current.onUp();
+    });
+    expect(result.current.drawingRef.current).toBe(true);
+
+    rerender({ canvasData: replacementCanvas });
+    expect(result.current.drawingRef.current).toBe(false);
+
+    await act(async () => {
+      resolveFill({ levelData: new Uint8Array(100).fill(3), changedIndices: new Uint32Array([0]), truncated: false });
+      await Promise.resolve();
+    });
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(result.current.drawingRef.current).toBe(false);
   });
 
   it("onUp during pan calls endPan", () => {

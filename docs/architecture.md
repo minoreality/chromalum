@@ -125,7 +125,8 @@ The stored state includes:
 - optional `pixelCandidateOverrideMap`;
 - `candidateIndexByLevel`;
 - `lockedLevels`;
-- persistence schema version.
+- persistence schema version;
+- a monotonic `revision` used for compare-and-swap writes.
 
 Two version numbers have separate roles. `DB_VERSION` controls the IndexedDB
 database structure and should change when object stores or indexes need an
@@ -141,6 +142,15 @@ reported to the UI and ignored for the session, but the first baseline autosave
 does not immediately overwrite it. A later explicit user change can then create
 a fresh valid save.
 
+Restore and autosave also defend against asynchronous and multi-tab races. If
+persisted canvas data changes locally while the initial IndexedDB read is still
+pending, the late restore is ignored and the local edit is saved against the
+loaded revision. A rejected restore disables autosave for that page session so
+a transient read error cannot overwrite an intact record with the default
+canvas. Each save compares its expected revision and writes the next revision
+inside one read-write transaction; a stale tab therefore receives a conflict
+instead of replacing newer work.
+
 ## Workers
 
 Two worker paths keep expensive pixel operations away from the main thread:
@@ -148,6 +158,11 @@ Two worker paths keep expensive pixel operations away from the main thread:
 - `flood-fill.worker.ts` handles large source and glaze flood fills.
 - `pixel-analysis.worker.ts` computes map data for isolation, diversity, boundary
   distance, gradient, and regions.
+
+Source and Glaze fills capture the owning canvas generation. Replacing the
+canvas invalidates an in-flight fill immediately, and any later Worker response
+is ignored. `canvasReducer` independently verifies result dimensions, diff
+indices, and old/new values before changing canvas state, histogram, or history.
 
 Both paths have synchronous fallbacks so tests and restricted browser
 environments can still run the same behavior. `usePixelMaps` also caches results

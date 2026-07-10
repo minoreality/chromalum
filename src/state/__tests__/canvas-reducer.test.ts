@@ -37,6 +37,20 @@ describe("canvasReducer", () => {
       const next = canvasReducer(state, { type: "stroke_end", finalLevelData: new Uint8Array(state.canvasData.levelData), diff: null });
       expect(next).toBe(state);
     });
+
+    it("rejects a stale stroke result whose buffer belongs to another canvas", () => {
+      const oldFinalLevelData = new Uint8Array(initialState.canvasData.levelData.length);
+      oldFinalLevelData[0] = 3;
+      const oldDiff = computeDiff(initialState.canvasData.levelData, oldFinalLevelData);
+      const replacementState = canvasReducer(initialState, { type: "new_canvas", width: 8, height: 8 });
+
+      const next = canvasReducer(replacementState, { type: "stroke_end", finalLevelData: oldFinalLevelData, diff: oldDiff });
+
+      expect(next).toBe(replacementState);
+      expect(next.canvasData.levelData).toHaveLength(64);
+      expect(next.levelHistogram).toEqual([64, 0, 0, 0, 0, 0, 0, 0]);
+      expect(next.undoStack.length).toBe(0);
+    });
   });
 
   describe("undo / redo", () => {

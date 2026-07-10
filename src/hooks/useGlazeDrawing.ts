@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useLayoutEffect } from "react";
 import { LEVEL_MASK } from "../constants";
 import type { GlazeToolId } from "../constants";
 import { LEVEL_CANDIDATES, findClosestCandidate, rgb2hue } from "../color-engine";
@@ -116,8 +116,20 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   } | null>(null);
   const fillPendingRef = useRef(false);
   const pendingUpRef = useRef(false);
+  const fillGenerationRef = useRef(0);
   const pendingWorkspaceStartRef = useRef<{ startPos: Point } | null>(null);
   const floodFillWorker = useFloodFillWorker();
+
+  // Invalidate an in-flight fill when the owning canvas is replaced. The
+  // Worker itself may still finish, but its stale result is ignored.
+  useLayoutEffect(() => {
+    fillGenerationRef.current++;
+    if (!fillPendingRef.current) return;
+    fillPendingRef.current = false;
+    pendingUpRef.current = false;
+    strokeRef.current = null;
+    drawingRef.current = false;
+  }, [canvasData]);
 
   // Refs needed by useCursorOverlay (individual for interface compatibility)
   const brushSizeRef = useSyncRef(brushSize);
@@ -286,10 +298,19 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
       const targetPixelCandidateOverrideValue = isDirect
         ? nextCandidateOverrides.get(seedLv)! + 1
         : findClosestCandidate(seedLv, curHue) + 1;
+      const fillGeneration = fillGenerationRef.current;
+      const fillStroke = strokeRef.current;
       fillPendingRef.current = true;
       floodFillWorker
         .requestGlazeFill(cv.levelData, workingOverrideMap, pos.x, pos.y, targetPixelCandidateOverrideValue, W, H)
         .then((res) => {
+          if (
+            fillGenerationRef.current !== fillGeneration ||
+            canvasDataRef.current !== cv ||
+            strokeRef.current !== fillStroke ||
+            res.pixelCandidateOverrideMap.length !== W * H
+          )
+            return;
           const st = strokeRef.current;
           if (!st) {
             fillPendingRef.current = false;
@@ -319,6 +340,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
           }
         })
         .catch((err) => {
+          if (fillGenerationRef.current !== fillGeneration || canvasDataRef.current !== cv || strokeRef.current !== fillStroke) return;
           fillPendingRef.current = false;
           pendingUpRef.current = false;
           strokeRef.current = null;

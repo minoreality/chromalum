@@ -8,6 +8,7 @@ import {
   checkStorageQuota,
   requestPersistentStorage,
   resetPersistenceConnectionForTests,
+  SaveConflictError,
 } from "../idb-persistence";
 import type { SavedState } from "../idb-persistence";
 
@@ -23,6 +24,7 @@ function makeState(overrides?: Partial<SavedState>): SavedState {
     levelData: new Uint8Array(16),
     candidateIndexByLevel: [0, 0, 0, 0, 0, 0, 0, 0],
     version: SAVED_STATE_VERSION,
+    revision: 0,
     ...overrides,
   };
 }
@@ -79,6 +81,7 @@ describe("saveState / loadState roundtrip", () => {
     expect(Array.from(loaded!.levelData)).toEqual(Array.from(state.levelData));
     expect(loaded!.candidateIndexByLevel).toEqual(state.candidateIndexByLevel);
     expect(loaded!.version).toBe(SAVED_STATE_VERSION);
+    expect(loaded!.revision).toBe(1);
   });
 
   it("save with pixelCandidateOverrideMap then load preserves pixelCandidateOverrideMap", async () => {
@@ -100,6 +103,27 @@ describe("saveState / loadState roundtrip", () => {
     const loaded = await loadState();
     expect(loaded).not.toBeNull();
     expect(loaded!.lockedLevels).toEqual([true, false, true, false, false, false, false, true]);
+  });
+
+  it("atomically rejects a stale revision without overwriting newer work", async () => {
+    const firstRevision = await saveState(makeState({ width: 8, height: 8, levelData: new Uint8Array(64) }), {
+      expectedRevision: 0,
+    });
+    expect(firstRevision).toBe(1);
+
+    await expect(
+      saveState(makeState({ width: 16, height: 16, levelData: new Uint8Array(256) }), { expectedRevision: 0 }),
+    ).rejects.toBeInstanceOf(SaveConflictError);
+
+    const afterConflict = await loadState();
+    expect(afterConflict?.width).toBe(8);
+    expect(afterConflict?.height).toBe(8);
+    expect(afterConflict?.revision).toBe(1);
+
+    const secondRevision = await saveState(makeState({ width: 4, height: 4, levelData: new Uint8Array(16), revision: firstRevision }), {
+      expectedRevision: firstRevision,
+    });
+    expect(secondRevision).toBe(2);
   });
 });
 
@@ -152,6 +176,7 @@ describe("loadState validation", () => {
 
     expect(loaded).not.toBeNull();
     expect(loaded!.candidateIndexByLevel).toEqual([0, 1, 2, 3, 0, 1, 2, 0]);
+    expect(loaded!.revision).toBe(1);
     expect("cc" in loaded!).toBe(false);
   });
 

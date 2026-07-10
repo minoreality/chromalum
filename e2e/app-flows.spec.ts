@@ -37,6 +37,34 @@ async function canvasPixel(canvas: Locator, x: number, y: number) {
   );
 }
 
+async function createCanvas(page: Page, size: number) {
+  await page.getByRole("button", { name: /New/ }).click();
+  const dialog = page.getByRole("dialog", { name: "New Canvas" });
+  await dialog.getByRole("button", { name: `${size}×${size}`, exact: true }).click();
+  await dialog.getByRole("button", { name: "Create" }).click();
+}
+
+async function readSavedCanvas(page: Page): Promise<{ width: number; height: number; revision: number } | null> {
+  return page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const openRequest = indexedDB.open("chromalum");
+        openRequest.onerror = () => reject(openRequest.error);
+        openRequest.onsuccess = () => {
+          const db = openRequest.result;
+          const tx = db.transaction("state", "readonly");
+          const getRequest = tx.objectStore("state").get("current");
+          getRequest.onerror = () => reject(getRequest.error);
+          getRequest.onsuccess = () => {
+            const value = getRequest.result as { width: number; height: number; revision: number } | undefined;
+            resolve(value ? { width: value.width, height: value.height, revision: value.revision } : null);
+          };
+          tx.oncomplete = () => db.close();
+        };
+      }),
+  );
+}
+
 test("draws, undoes, redoes, saves, and restores the source canvas", async ({ page }) => {
   await gotoSource(page);
 
@@ -64,6 +92,23 @@ test("draws, undoes, redoes, saves, and restores the source canvas", async ({ pa
   await page.reload();
   const restored = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
   await expect.poll(() => canvasPixel(restored, 160, 160)).toEqual([255, 255, 255, 255]);
+});
+
+test("rejects a stale tab save instead of rolling back newer canvas work", async ({ page, context }) => {
+  await gotoSource(page);
+  await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 320, height: 320, revision: 1 });
+
+  const stalePage = await context.newPage();
+  await gotoSource(stalePage);
+  await stalePage.waitForTimeout(200);
+
+  await createCanvas(page, 8);
+  await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 8, height: 8, revision: 2 });
+
+  await createCanvas(stalePage, 16);
+  await expect(stalePage.getByText("Auto-save failed")).toBeVisible();
+  await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 8, height: 8, revision: 2 });
+  await stalePage.close();
 });
 
 test("glazes a chromatic source pixel and clears the glaze layer", async ({ page }) => {

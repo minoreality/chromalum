@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useReducer, useMemo } from "react";
+import { useState, useRef, useEffect, useReducer, useMemo, useLayoutEffect } from "react";
 import { DISPLAY_MIN, DISPLAY_MAX_LIMIT } from "../constants";
 import { canvasReducer, createInitialState } from "../state/canvas-reducer";
 import { SAVED_STATE_VERSION, saveState, loadStateWithStatus, requestPersistentStorage } from "../utils/idb-persistence";
@@ -102,7 +102,11 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushSaveRef = useRef<(() => void) | null>(null);
   const saveRequestIdRef = useRef(0);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const baselineSaveCompleteRef = useRef(false);
+  const skipNextAutosaveRef = useRef(false);
+  const persistenceRevisionRef = useRef(0);
+  const persistenceBlockedRef = useRef(false);
   const persistentStorageRequestInFlightRef = useRef(false);
   const lastSavedRef = useRef<{
     levelData: Uint8Array | null;
@@ -116,23 +120,49 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     lockedLevels: null,
   });
 
+  const currentPersistedStateRef = useRef({
+    levelData: canvasData.levelData,
+    pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
+    candidateIndexByLevel,
+    lockedLevels,
+  });
+  useLayoutEffect(() => {
+    currentPersistedStateRef.current = {
+      levelData: canvasData.levelData,
+      pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
+      candidateIndexByLevel,
+      lockedLevels,
+    };
+  }, [canvasData.levelData, canvasData.pixelCandidateOverrideMap, candidateIndexByLevel, lockedLevels]);
+
   // Restore state from IndexedDB on mount
   const loadedOnceRef = useRef(false);
   useEffect(() => {
     if (loadedOnceRef.current) return;
     loadedOnceRef.current = true;
+    const restoreBaseline = currentPersistedStateRef.current;
     loadStateWithStatus()
       .then((result) => {
         if (result.state) {
-          dispatch({
-            type: "load_image",
-            width: result.state.width,
-            height: result.state.height,
-            levelData: result.state.levelData,
-            ...(result.state.pixelCandidateOverrideMap ? { pixelCandidateOverrideMap: result.state.pixelCandidateOverrideMap } : {}),
-          });
-          candidateIndexDispatch({ type: "load_all", values: result.state.candidateIndexByLevel });
-          if (result.state.lockedLevels) setLockedLevels(result.state.lockedLevels);
+          persistenceRevisionRef.current = result.state.revision;
+          const current = currentPersistedStateRef.current;
+          const changedWhileRestoring =
+            current.levelData !== restoreBaseline.levelData ||
+            current.pixelCandidateOverrideMap !== restoreBaseline.pixelCandidateOverrideMap ||
+            current.candidateIndexByLevel !== restoreBaseline.candidateIndexByLevel ||
+            current.lockedLevels !== restoreBaseline.lockedLevels;
+          if (!changedWhileRestoring) {
+            skipNextAutosaveRef.current = true;
+            dispatch({
+              type: "load_image",
+              width: result.state.width,
+              height: result.state.height,
+              levelData: result.state.levelData,
+              ...(result.state.pixelCandidateOverrideMap ? { pixelCandidateOverrideMap: result.state.pixelCandidateOverrideMap } : {}),
+            });
+            candidateIndexDispatch({ type: "load_all", values: result.state.candidateIndexByLevel });
+            if (result.state.lockedLevels) setLockedLevels(result.state.lockedLevels);
+          }
           return;
         }
 
@@ -148,7 +178,13 @@ export function useAppState(t: import("../i18n").TranslationFn) {
           baselineSaveCompleteRef.current = true;
         }
       })
-      .catch(createErrorHandler("Restore", () => showToast(t("toast_restore_failed"), "error")))
+      .catch((err: unknown) => {
+        // A transient read failure must never turn into permission to overwrite
+        // a record that may still be intact. Keep editing available, but stop
+        // autosave for this session until the page is reloaded successfully.
+        persistenceBlockedRef.current = true;
+        createErrorHandler("Restore", () => showToast(t("toast_restore_failed"), "error"))(err);
+      })
       .finally(() => setLoaded(true));
   }, [
     showToast,
@@ -163,7 +199,18 @@ export function useAppState(t: import("../i18n").TranslationFn) {
 
   // Auto-save to IndexedDB on changes (debounced, skip if unchanged)
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || persistenceBlockedRef.current) return;
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      lastSavedRef.current = {
+        levelData: canvasData.levelData,
+        pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
+        candidateIndexByLevel,
+        lockedLevels,
+      };
+      baselineSaveCompleteRef.current = true;
+      return;
+    }
     const prev = lastSavedRef.current;
     if (
       prev.levelData === canvasData.levelData &&
@@ -178,16 +225,23 @@ export function useAppState(t: import("../i18n").TranslationFn) {
       pendingLockedLevels = lockedLevels;
     const doSave = () => {
       const requestId = ++saveRequestIdRef.current;
-      saveState({
-        width: pendingCanvas.width,
-        height: pendingCanvas.height,
-        levelData: pendingCanvas.levelData,
-        pixelCandidateOverrideMap: new Uint8Array(pendingCanvas.pixelCandidateOverrideMap),
-        candidateIndexByLevel: [...pendingCandidateIndexByLevel],
-        lockedLevels: [...pendingLockedLevels],
-        version: SAVED_STATE_VERSION,
-      })
-        .then(() => {
+      const save = async () => {
+        if (persistenceBlockedRef.current) return;
+        try {
+          const nextRevision = await saveState(
+            {
+              width: pendingCanvas.width,
+              height: pendingCanvas.height,
+              levelData: pendingCanvas.levelData,
+              pixelCandidateOverrideMap: new Uint8Array(pendingCanvas.pixelCandidateOverrideMap),
+              candidateIndexByLevel: [...pendingCandidateIndexByLevel],
+              lockedLevels: [...pendingLockedLevels],
+              version: SAVED_STATE_VERSION,
+              revision: persistenceRevisionRef.current,
+            },
+            { expectedRevision: persistenceRevisionRef.current },
+          );
+          persistenceRevisionRef.current = nextRevision;
           if (requestId === saveRequestIdRef.current) {
             lastSavedRef.current = {
               levelData: pendingCanvas.levelData,
@@ -211,8 +265,18 @@ export function useAppState(t: import("../i18n").TranslationFn) {
                 });
             }
           }
-        })
-        .catch(createErrorHandler("AutoSave", () => showToast(t("toast_autosave_failed"), "error")));
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === "SaveConflictError") {
+            persistenceBlockedRef.current = true;
+            flushSaveRef.current = null;
+            console.warn("CHROMALUM: auto-save stopped because saved state changed in another tab", err);
+            showToast(t("toast_autosave_failed"), "error");
+            return;
+          }
+          createErrorHandler("AutoSave", () => showToast(t("toast_autosave_failed"), "error"))(err);
+        }
+      };
+      saveQueueRef.current = saveQueueRef.current.then(save, save);
     };
     flushSaveRef.current = () => {
       if (saveTimerRef.current) {

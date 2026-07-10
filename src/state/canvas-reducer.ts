@@ -48,6 +48,50 @@ function computeLevelHistogram(levelData: Uint8Array): number[] {
   return levelHistogram;
 }
 
+/**
+ * Reject asynchronous stroke results that no longer describe the current
+ * canvas. Hook-level generation checks normally catch these first, but the
+ * reducer is the final integrity boundary before state and history mutate.
+ */
+function isValidStrokeResult(
+  state: AppState,
+  finalLevelData: Uint8Array,
+  finalPixelCandidateOverrideMap: Uint8Array | undefined,
+  diff: Diff,
+): boolean {
+  const n = state.canvasData.width * state.canvasData.height;
+  if (finalLevelData.length !== n) return false;
+  if (finalPixelCandidateOverrideMap && finalPixelCandidateOverrideMap.length !== n) return false;
+
+  const count = diff.indices.length;
+  if (diff.oldLevelValues.length !== count || diff.newLevelValues.length !== count) return false;
+
+  const hasOldOverrideValues = diff.oldPixelCandidateOverrideValues !== undefined;
+  const hasNewOverrideValues = diff.newPixelCandidateOverrideValues !== undefined;
+  if (hasOldOverrideValues !== hasNewOverrideValues) return false;
+  if (
+    hasOldOverrideValues &&
+    (diff.oldPixelCandidateOverrideValues!.length !== count ||
+      diff.newPixelCandidateOverrideValues!.length !== count ||
+      !finalPixelCandidateOverrideMap)
+  )
+    return false;
+
+  for (let i = 0; i < count; i++) {
+    const index = diff.indices[i];
+    if (index >= n) return false;
+    if (state.canvasData.levelData[index] !== diff.oldLevelValues[i] || finalLevelData[index] !== diff.newLevelValues[i]) return false;
+    if (
+      hasOldOverrideValues &&
+      (state.canvasData.pixelCandidateOverrideMap[index] !== diff.oldPixelCandidateOverrideValues![i] ||
+        finalPixelCandidateOverrideMap![index] !== diff.newPixelCandidateOverrideValues![i])
+    )
+      return false;
+  }
+
+  return true;
+}
+
 /** Apply diff delta to histogram. Set reverse=true for undo (swap oldLevelValues/newLevelValues). */
 function applyLevelHistogramDelta(
   levelHistogram: number[],
@@ -122,6 +166,7 @@ export function canvasReducer(state: AppState, action: CanvasAction): AppState {
     case "stroke_end": {
       const { finalLevelData, finalPixelCandidateOverrideMap, diff } = action;
       if (!diff || diff.indices.length === 0) return state;
+      if (!isValidStrokeResult(state, finalLevelData, finalPixelCandidateOverrideMap, diff)) return state;
       const overrideUpdate = finalPixelCandidateOverrideMap
         ? { pixelCandidateOverrideMap: finalPixelCandidateOverrideMap, diff }
         : clearOverridesForLevelChanges(state.canvasData.pixelCandidateOverrideMap, diff);

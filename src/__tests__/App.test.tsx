@@ -9,7 +9,7 @@ vi.mock("../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
   loadState: vi.fn(() => Promise.resolve(null)),
   loadStateWithStatus: vi.fn(() => Promise.resolve({ status: "empty", state: null })),
-  saveState: vi.fn(() => Promise.resolve()),
+  saveState: vi.fn(() => Promise.resolve(1)),
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
