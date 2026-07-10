@@ -69,10 +69,29 @@ T = (4G + 2R + B) / 7
 | L5 | 45deg: `GRB(3,4,0)`, 90deg: `GRB(4,2,0)`, 180deg: `GRB(4,0,4)` |
 | L6 | 60deg: `GRB(4,4,0)` |
 
-色相角を `theta`、色相位相・原点回転角を `alpha` とする。`alpha` も同じく時計回りを正とし、実効角 `beta` と円上の点を次のように定義する。
+ここでは「角度」という語を次のように分離する。
+
+| symbol | role |
+| --- | --- |
+| `h` | CHROMALUM 色相六角形の辺を線形補間する正準 hue parameter。実装の `hueAngleDeg`、既存コード説明の `theta` に対応する。 |
+| `phi` | 正準 GRB 点を正六角形へ置いた後、中心から見た実際のユークリッド偏角。 |
+| `alpha` | UI が加える色相位相・原点回転角。 |
+| `beta` | Music 単位円上の実効角 `normalize(h+alpha)`。 |
+| `vartheta` | M/G と R/C の研究作図から生じる約 `21.786789deg` の創発角。Music の通常入力角ではない。 |
+
+`15deg`, `30deg`, `45deg` などの候補ラベルは `h` であり、`phi` とは一般に一致しない。たとえば R-Y 辺では `t=h/60deg` として
 
 ```text
-beta = normalize(theta + alpha)
+hex point H(t) = (sqrt(3)t/2, -1+t/2)
+phi(t) = atan2(sqrt(3)t, 2-t)
+```
+
+なので、`h=15deg` の実偏角は約 `13.8979deg`、`h=45deg` の実偏角は約 `46.1021deg` になる。一方、Music は候補ラベル `h` をそのまま単位円の位相へ写す。これは、GRB の線形補間と `15deg` 格子を保つ Hex 座標、実際の Hex 偏角、Music 位相を意図的に別の写像として扱う設計である。
+
+正準 hue parameter を `h`、色相位相・原点回転角を `alpha` とする。`alpha` も同じく時計回りを正とし、実効角 `beta` と円上の点を次のように定義する。
+
+```text
+beta = normalize(h + alpha)
 rad = beta - 90deg
 x = cx + r cos(rad)
 y = cy + r sin(rad)
@@ -89,8 +108,8 @@ math-y            =  r cos(beta)
 したがって Music タブ上のグラフラベルは、画面座標の射影として読む。
 
 ```text
-right graph  = screen-y projection = -r cos(theta + alpha)
-bottom graph = screen-x projection =  r sin(theta + alpha)
+right graph  = screen-y projection = -r cos(h + alpha)
+bottom graph = screen-x projection =  r sin(h + alpha)
 ```
 
 ## Hue Phase and `alpha`
@@ -104,7 +123,7 @@ activeAlpha = alpha0  when L0 is origin
 activeAlpha = alpha7  when L7 is origin
 ```
 
-を選び、音高写像にも `theta + activeAlpha` を使う。これにより、視覚上の位相回転と音高の回転が一致する。
+を選び、音高写像にも `h + activeAlpha` を使う。これにより、視覚上の位相回転と音高の回転が一致する。
 
 ## Hue Angle and Color Candidates
 
@@ -157,7 +176,7 @@ r0(L) = r7(7 - L)
 deltaAlpha = alpha7 - alpha0
 ```
 
-とする。色相 `theta` の L0 ベクトルと、その補色 `theta + 180deg` の L7 ベクトルを画面上で直接足すと、両ベクトル間の角度は `180deg + deltaAlpha` になる。等しい半径 `r` の補色ペアの合成振幅は次の形になる。
+とする。色相 `h` の L0 ベクトルと、その補色 `h + 180deg` の L7 ベクトルを画面上で直接足すと、両ベクトル間の角度は `180deg + deltaAlpha` になる。等しい半径 `r` の補色ペアの合成振幅は次の形になる。
 
 ```text
 amplitude = 2 r abs(sin(deltaAlpha / 2))
@@ -166,12 +185,22 @@ phaseFactor = amplitude / (2 r) = abs(sin(deltaAlpha / 2))
 
 したがって、`deltaAlpha = 0deg` では表示上の補色ベクトルが逆位相になって相殺し、`deltaAlpha = 180deg` では同位相になって最大になる。UI の **Antiphase** / **逆位相** と **In phase** / **同位相** はこの位相関係を簡潔に示す。Music タブの持続音ゲインも、同じベクトル和から求めた `phaseFactor` を使う。初期値と共通位相操作は `alpha0 = 0deg`, `alpha7 = 180deg` を基準にするため、通常状態では最大ゲインを保ったまま全体が回転する。
 
+同じ 2 ベクトルの差の振幅を併記すると、
+
+```text
+sumAmplitude  = 2 r abs(sin(deltaAlpha / 2))
+diffAmplitude = 2 r abs(cos(deltaAlpha / 2))
+sumAmplitude^2 + diffAmplitude^2 = 4 r^2
+```
+
+となる。これは共通位相回転で変わらないフェーザー幾何の厳密な収支式である。実装がゲインへ使うのは二乗前の `phaseFactor` であり、光強度、音響パワー、知覚的明るさの物理保存則を主張するものではない。
+
 ## Pitch Mapping
 
 Music タブでは、色相角を音高空間へ写す。基本は
 
 ```text
-liveAngle = theta + activeAlpha
+liveAngle = h + activeAlpha
 ```
 
 である。12 平均律モードでは、`liveAngle` を 2 オクターブ分の連続的な指数写像へ送る。
@@ -262,7 +291,8 @@ Music タブの手動バーストは `Pitch` 固定にする。一方で、Fano 
 ## Scope Limits
 
 1. The graph is a trigonometric projection of a tone-radius hue circle; it is not a model of tone varying sinusoidally with hue.
-2. The hue angle is CHROMALUM's exact hue-hexagon coordinate, not a hue recovered from device RGB and not a perceptually uniform hue angle.
+2. The canonical hue parameter `h`, the actual polar angle `phi` of a point embedded on the hexagon, and the Music unit-circle phase `beta` are distinct coordinates. None is recovered from device RGB or claimed to be perceptually uniform.
 3. GRB Binary Tone is a discrete model coordinate, not CIE lightness or a WCAG contrast metric.
 4. The sonification is a mapping from this discrete color atlas to pitch, gain, and phase behavior. It is not a psychoacoustic model of color-hearing correspondence.
 5. The trigonometric and pitch-mapping pieces are mathematically standard. CHROMALUM's contribution is the integration of these pieces with GRB Binary Tone order, complement symmetry, GRB bit order, and the Fano/Hamming/polyhedral color atlas.
+6. A simple-harmonic-motion or conserved-energy reading is valid only after an explicit time law such as `beta(t)=omega*t+beta0` and a physical oscillator model are added. Hue and UI phase values alone are not physical time, force, mass, or energy.
