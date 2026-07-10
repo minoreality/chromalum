@@ -1,6 +1,6 @@
 import { useRef, useCallback, useMemo } from "react";
 import { FANO_RHYTHM_PATTERNS, TONE_NORM_VALUES } from "../data/music-data";
-import { angleToFreq, type ScaleMode } from "../data/music-frequency";
+import { angleToFreq, type PitchMappingMode } from "../data/music-frequency";
 import { RAMP_TC, triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
 import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, toneToFreq } from "../music/music-engine-core";
 import { hueStereoPan, liveHueAngleDeg } from "../music/music-phase";
@@ -37,7 +37,7 @@ import {
 } from "../music/music-scheduler";
 import { useMusicAudioSession } from "./useMusicAudioSession";
 
-export type { ScaleMode } from "../data/music-frequency";
+export type { PitchMappingMode } from "../data/music-frequency";
 
 interface MusicEngineParams {
   enabled: boolean;
@@ -46,7 +46,7 @@ interface MusicEngineParams {
   alpha0: number;
   alpha7: number;
   volume: number; // 0-1
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null; // 0-6 or null
@@ -102,7 +102,7 @@ export function useMusicEngine({
   alpha0,
   alpha7,
   volume,
-  scaleMode,
+  pitchMappingMode,
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
@@ -145,7 +145,7 @@ export function useMusicEngine({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -405,7 +405,7 @@ export function useMusicEngine({
       const freqForLevel = (levelIndex: number): number => {
         if (levelIndex === 0 || levelIndex === 7) return toneToFreq(TONE_NORM_VALUES[levelIndex]);
         const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
-        return angleToFreq(liveHueAngleDeg(levelData?.hueAngleDeg ?? 0, activeAlpha), p.scaleMode);
+        return angleToFreq(liveHueAngleDeg(levelData?.hueAngleDeg ?? 0, activeAlpha), p.pitchMappingMode);
       };
       const panForLevel = (levelIndex: number): number => {
         if (!p.panEnabled || levelIndex === 0 || levelIndex === 7) return 0;
@@ -440,7 +440,7 @@ export function useMusicEngine({
         const levelData = p.levels.find((level) => level.levelIndex === i + 1);
         if (!levelData) continue;
         nodes.oscs[i].frequency.setTargetAtTime(
-          angleToFreq(liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha), p.scaleMode),
+          angleToFreq(liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha), p.pitchMappingMode),
           now,
           RAMP_TC,
         );

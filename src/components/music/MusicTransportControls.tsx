@@ -1,13 +1,13 @@
 import React from "react";
+import type { PitchMappingMode } from "../../data/music-frequency";
 import { useTranslation } from "../../i18n";
 import { C, FS, SP } from "../../styles/tokens";
 import { S_BTN_SM, S_BTN_SM_ACTIVE } from "../../styles/shared";
-import type { ScaleMode } from "../../hooks/useMusicEngine";
 import { S_LABEL, S_MUSIC_MODE_BTN, S_MUSIC_MODE_BTN_ACTIVE } from "./music-panel-styles";
 
 interface MusicTransportControlsProps {
-  scaleMode: ScaleMode;
-  onScaleModeChange: (mode: ScaleMode) => void;
+  pitchMappingMode: PitchMappingMode;
+  onPitchMappingModeChange: (mode: PitchMappingMode) => void;
   onStopAll: () => void;
   onResetDefaults: () => void;
   toneMode: "symmetric" | "grbTone";
@@ -32,7 +32,12 @@ interface MusicTransportControlsProps {
   onVolumeChange: (volume: number) => void;
 }
 
-const SCALE_MODES: ScaleMode[] = ["ji", "diatonic7", "octatonic", "12tet"];
+const PRIMARY_PITCH_MAPPINGS = [
+  { mode: "chromalum", labelKey: "music_pitch_chromalum", titleKey: "music_pitch_chromalum_title" },
+  { mode: "major", labelKey: "music_pitch_major", titleKey: "music_pitch_major_title" },
+  { mode: "octatonic", labelKey: "music_pitch_octatonic", titleKey: "music_pitch_octatonic_title" },
+  { mode: "wholeTone", labelKey: "music_pitch_whole_tone", titleKey: "music_pitch_whole_tone_title" },
+] as const satisfies ReadonlyArray<{ mode: PitchMappingMode; labelKey: string; titleKey: string }>;
 
 const S_TRANSPORT_BTN: React.CSSProperties = {
   ...S_BTN_SM,
@@ -53,8 +58,8 @@ const S_TRANSPORT_BTN_ACTIVE: React.CSSProperties = {
 };
 
 export const MusicTransportControls = React.memo(function MusicTransportControls({
-  scaleMode,
-  onScaleModeChange,
+  pitchMappingMode,
+  onPitchMappingModeChange,
   onStopAll,
   onResetDefaults,
   toneMode,
@@ -79,21 +84,29 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
   onVolumeChange,
 }: MusicTransportControlsProps) {
   const { t } = useTranslation();
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: SP.md, width: "100%" }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: SP.md, width: "100%", flexWrap: "wrap" }}>
-        {SCALE_MODES.map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            aria-pressed={scaleMode === mode}
-            style={scaleMode === mode ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
-            onClick={() => onScaleModeChange(mode)}
-          >
-            {t(`music_scale_${mode}`)}
-          </button>
-        ))}
+      <div
+        role="radiogroup"
+        aria-label={t("music_pitch_mapping")}
+        style={{ display: "flex", justifyContent: "center", gap: SP.md, width: "100%", flexWrap: "wrap" }}
+      >
+        {PRIMARY_PITCH_MAPPINGS.map(({ mode, labelKey, titleKey }) => {
+          const active = pitchMappingMode === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              title={t(titleKey)}
+              style={active ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
+              onClick={() => onPitchMappingModeChange(mode)}
+            >
+              {t(labelKey)}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ display: "flex", justifyContent: "center", gap: SP.md, width: "100%", flexWrap: "wrap" }}>

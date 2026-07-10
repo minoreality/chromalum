@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type ScaleMode } from "../data/music-frequency";
+import { type PitchMappingMode } from "../data/music-frequency";
 import { liveHueAngleDeg } from "../music/music-phase";
 import {
   applyParams,
@@ -25,7 +25,7 @@ interface MusicAudioSessionParams {
   alpha0: number;
   alpha7: number;
   volume: number;
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null;
@@ -40,7 +40,7 @@ interface MusicAudioSessionSnapshot {
   alpha0: number;
   alpha7: number;
   volume: number;
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null;
@@ -70,7 +70,7 @@ export function useMusicAudioSession({
   alpha0,
   alpha7,
   volume,
-  scaleMode,
+  pitchMappingMode,
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
@@ -88,7 +88,7 @@ export function useMusicAudioSession({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -101,7 +101,7 @@ export function useMusicAudioSession({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -118,7 +118,7 @@ export function useMusicAudioSession({
       p.alpha0,
       p.alpha7,
       p.volume,
-      p.scaleMode,
+      p.pitchMappingMode,
       p.fmEnabled,
       p.panEnabled,
       p.hoveredFanoLine,
@@ -143,7 +143,7 @@ export function useMusicAudioSession({
 
     const p = paramsRef.current;
     if (p.fmEnabled) {
-      buildFM(nodes, p.levels, p.scaleMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
+      buildFM(nodes, p.levels, p.pitchMappingMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
     }
 
     applyCurrentParams(nodes);
@@ -170,11 +170,11 @@ export function useMusicAudioSession({
     if (!enabled || !nodesRef.current) return;
     if (fmEnabled) {
       const p = paramsRef.current;
-      buildFM(nodesRef.current, levels, scaleMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
+      buildFM(nodesRef.current, levels, pitchMappingMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
     } else {
       teardownFM(nodesRef.current);
     }
-  }, [enabled, fmEnabled, scaleMode, levels]);
+  }, [enabled, fmEnabled, pitchMappingMode, levels]);
 
   useEffect(() => {
     if (!enabled || !nodesRef.current) return;
@@ -186,7 +186,7 @@ export function useMusicAudioSession({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -206,7 +206,7 @@ export function useMusicAudioSession({
     const nodes = nodesRef.current;
     if (!nodes) return;
     const p = paramsRef.current;
-    triggerPitchOrToneBurst(nodes, levelIndex, hueAngleDeg, p.scaleMode, p.panEnabled);
+    triggerPitchOrToneBurst(nodes, levelIndex, hueAngleDeg, p.pitchMappingMode, p.panEnabled);
   }, []);
 
   const playPitchLevel = useCallback(
@@ -215,10 +215,10 @@ export function useMusicAudioSession({
       if (!nodes) return;
       const p = paramsRef.current;
       if (levelIndex === 0 || levelIndex === 7) {
-        triggerPitchOrToneBurst(nodes, levelIndex, -1, p.scaleMode, false);
+        triggerPitchOrToneBurst(nodes, levelIndex, -1, p.pitchMappingMode, false);
         return;
       }
-      triggerPitchOrToneBurst(nodes, levelIndex, hueAngleForLevel(levelIndex), p.scaleMode, p.panEnabled);
+      triggerPitchOrToneBurst(nodes, levelIndex, hueAngleForLevel(levelIndex), p.pitchMappingMode, p.panEnabled);
     },
     [hueAngleForLevel],
   );

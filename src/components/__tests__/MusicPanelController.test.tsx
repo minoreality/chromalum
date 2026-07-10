@@ -92,14 +92,14 @@ describe("MusicPanel controller integration", () => {
     renderWithLanguage(<MusicPanel />);
 
     expect(latestEngineParams()).toMatchObject({
-      scaleMode: "diatonic7",
+      pitchMappingMode: "chromalum",
       fmEnabled: false,
       toneMode: "symmetric",
       volume: 0.7,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Just" }));
-    expect(latestEngineParams().scaleMode).toBe("ji");
+    fireEvent.click(screen.getByRole("radio", { name: "Whole-tone" }));
+    expect(latestEngineParams().pitchMappingMode).toBe("wholeTone");
 
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     expect(latestEngineParams().fmEnabled).toBe(true);
@@ -254,7 +254,7 @@ describe("MusicPanel controller integration", () => {
   it("resets transport settings back to defaults", () => {
     renderWithLanguage(<MusicPanel />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Just" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Whole-tone" }));
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     fireEvent.click(screen.getByRole("button", { name: "Tone" }));
     fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "180" } });
@@ -266,7 +266,7 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
 
     expect(latestEngineParams()).toMatchObject({
-      scaleMode: "ji",
+      pitchMappingMode: "wholeTone",
       fmEnabled: true,
       toneMode: "grbTone",
       volume: 0,
@@ -280,7 +280,7 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
     expect(latestEngineParams()).toMatchObject({
-      scaleMode: "diatonic7",
+      pitchMappingMode: "chromalum",
       fmEnabled: false,
       toneMode: "symmetric",
       volume: 0.7,

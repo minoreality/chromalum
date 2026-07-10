@@ -1,48 +1,47 @@
-export type ScaleMode = "12tet" | "ji" | "octatonic" | "diatonic7";
+export type PitchMappingMode = "chromalum" | "major" | "octatonic" | "wholeTone";
 
+/** Legacy base used by the bit-spectrum sonification. */
 export const BASE_FREQ = 220;
 
-const JI_RATIOS = [1, 8 / 7, 7 / 5, 8 / 5, 2] as const;
-const JI_ANGLES = [0, 72, 144, 216, 288] as const;
-const OCTATONIC_SEMITONES = [0, 1, 3, 4, 6, 7, 9, 10] as const;
-const DIATONIC7_SEMITONES = [0, 2, 4, 5, 7, 9, 11] as const;
+/** Exact C4 in 12-EDO with A4 = 440 Hz. */
+export const PITCH_BASE_FREQ = 440 * Math.pow(2, -9 / 12);
+
+export const OCTATONIC_SEMITONES = [0, 1, 3, 4, 6, 7, 9, 10] as const;
+export const MAJOR_SEMITONES = [0, 2, 4, 5, 7, 9, 11] as const;
+export const WHOLE_TONE_SEMITONES = [0, 2, 4, 6, 8, 10] as const;
 const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"] as const;
 
 function normalizeAngle(angle: number): number {
   return ((angle % 360) + 360) % 360;
 }
 
-export function angleToFreq(angle: number, mode: ScaleMode): number {
+function scaleAngleToFreq(angle: number, semitones: readonly number[]): number {
+  const idx = Math.round((angle / 360) * semitones.length);
+  if (idx === semitones.length) return semitoneToFreq(12);
+  return semitoneToFreq(semitones[idx]);
+}
+
+export function angleToFreq(angle: number, mode: PitchMappingMode): number {
   const norm = normalizeAngle(angle);
 
-  if (mode === "12tet") {
-    return BASE_FREQ * Math.pow(2, (norm / 360) * 2);
-  }
-
-  if (mode === "ji") {
-    let closest = 0;
-    let minDist = 360;
-    for (let i = 0; i < JI_ANGLES.length; i++) {
-      const d = Math.min(Math.abs(norm - JI_ANGLES[i]), 360 - Math.abs(norm - JI_ANGLES[i]));
-      if (d < minDist) {
-        minDist = d;
-        closest = i;
-      }
-    }
-    return BASE_FREQ * JI_RATIOS[closest];
+  if (mode === "chromalum") {
+    const semitone = Math.round(norm / 15);
+    return semitoneToFreq(semitone);
   }
 
   if (mode === "octatonic") {
-    const idx = Math.round((norm / 360) * OCTATONIC_SEMITONES.length) % OCTATONIC_SEMITONES.length;
-    return 261.63 * Math.pow(2, OCTATONIC_SEMITONES[idx] / 12);
+    return scaleAngleToFreq(norm, OCTATONIC_SEMITONES);
   }
 
-  const idx = Math.round((norm / 360) * DIATONIC7_SEMITONES.length) % DIATONIC7_SEMITONES.length;
-  return 261.63 * Math.pow(2, DIATONIC7_SEMITONES[idx] / 12);
+  if (mode === "wholeTone") {
+    return scaleAngleToFreq(norm, WHOLE_TONE_SEMITONES);
+  }
+
+  return scaleAngleToFreq(norm, MAJOR_SEMITONES);
 }
 
 export function semitoneToFreq(semitone: number): number {
-  return BASE_FREQ * Math.pow(2, semitone / 12);
+  return PITCH_BASE_FREQ * Math.pow(2, semitone / 12);
 }
 
 /** Frequency -> "A4" or "A4 −12¢" style label (cents shown only when non-zero). */

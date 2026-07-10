@@ -219,7 +219,7 @@ describe("music-audio-graph", () => {
   it("applies drone params to oscillator frequency, gain, pan, and noise gain", () => {
     const nodes = buildAudioGraph(makeContext());
 
-    applyParams(nodes, levels, 3, 0, 180, 0.5, "diatonic7", false, true, null, "symmetric", 0, false);
+    applyParams(nodes, levels, 3, 0, 180, 0.5, "major", false, true, null, "symmetric", 0, false);
 
     const master = nodes.master as unknown as FakeGainNode;
     const gain0 = nodes.gains[0] as unknown as FakeGainNode;
@@ -238,7 +238,7 @@ describe("music-audio-graph", () => {
   it("keeps even drone mode independent of GRB tone rank", () => {
     const nodes = buildAudioGraph(makeContext());
 
-    applyParams(nodes, levels, null, 0, 180, 1, "diatonic7", false, false, null, "symmetric", 0, false);
+    applyParams(nodes, levels, null, 0, 180, 1, "major", false, false, null, "symmetric", 0, false);
 
     const lowToneGain = nodes.gains[0] as unknown as FakeGainNode;
     const highToneGain = nodes.gains[5] as unknown as FakeGainNode;
@@ -250,8 +250,8 @@ describe("music-audio-graph", () => {
     const l0OriginNodes = buildAudioGraph(makeContext());
     const l7OriginNodes = buildAudioGraph(makeContext());
 
-    applyParams(l0OriginNodes, levels, null, 0, 180, 1, "diatonic7", false, false, null, "grbTone", 0, false);
-    applyParams(l7OriginNodes, levels, null, 0, 180, 1, "diatonic7", false, false, null, "grbTone", 7, false);
+    applyParams(l0OriginNodes, levels, null, 0, 180, 1, "major", false, false, null, "grbTone", 0, false);
+    applyParams(l7OriginNodes, levels, null, 0, 180, 1, "major", false, false, null, "grbTone", 7, false);
 
     const l0LowToneGain = l0OriginNodes.gains[0] as unknown as FakeGainNode;
     const l0HighToneGain = l0OriginNodes.gains[5] as unknown as FakeGainNode;
@@ -267,11 +267,11 @@ describe("music-audio-graph", () => {
   it("uses one live angle for persistent pitch and screen-matched pan", () => {
     const nodes = buildAudioGraph(makeContext());
 
-    applyParams(nodes, levels, null, 60, 240, 1, "12tet", false, true, null, "symmetric", 0, false);
+    applyParams(nodes, levels, null, 60, 240, 1, "chromalum", false, true, null, "symmetric", 0, false);
 
     const redOscillator = nodes.oscs[1] as unknown as FakeOscillatorNode;
     const redPanner = nodes.panners[1] as unknown as FakeStereoPannerNode;
-    expect(last(redOscillator.frequency.targetValues)).toBeCloseTo(angleToFreq(60, "12tet"), 10);
+    expect(last(redOscillator.frequency.targetValues)).toBeCloseTo(angleToFreq(60, "chromalum"), 10);
     expect(last(redPanner.pan.targetValues)).toBeCloseTo(Math.sin(Math.PI / 3), 10);
   });
 
@@ -279,8 +279,8 @@ describe("music-audio-graph", () => {
     const cancelledNodes = buildAudioGraph(makeContext());
     const alignedNodes = buildAudioGraph(makeContext());
 
-    applyParams(cancelledNodes, levels, null, 30, 30, 1, "12tet", false, false, null, "symmetric", 0, false);
-    applyParams(alignedNodes, levels, null, 30, 210, 1, "12tet", false, false, null, "symmetric", 0, false);
+    applyParams(cancelledNodes, levels, null, 30, 30, 1, "chromalum", false, false, null, "symmetric", 0, false);
+    applyParams(alignedNodes, levels, null, 30, 210, 1, "chromalum", false, false, null, "symmetric", 0, false);
 
     const cancelledGain = cancelledNodes.gains[0] as unknown as FakeGainNode;
     const alignedGain = alignedNodes.gains[0] as unknown as FakeGainNode;
@@ -291,12 +291,12 @@ describe("music-audio-graph", () => {
   it("rebuilds and tears down FM modulator nodes", () => {
     const nodes = buildAudioGraph(makeContext());
 
-    buildFM(nodes, levels, "diatonic7");
+    buildFM(nodes, levels, "major");
     expect(nodes.fmOscs).toHaveLength(3);
     expect(nodes.fmGains).toHaveLength(3);
     const firstFmOscs = nodes.fmOscs as unknown as FakeOscillatorNode[];
 
-    buildFM(nodes, levels, "diatonic7");
+    buildFM(nodes, levels, "major");
     expect(firstFmOscs.every((osc) => osc.stopCount === 1 && osc.disconnectCount === 1)).toBe(true);
     expect(nodes.fmOscs).toHaveLength(3);
 
@@ -308,10 +308,10 @@ describe("music-audio-graph", () => {
   it("builds FM modulators from the active live hue angle", () => {
     const nodes = buildAudioGraph(makeContext());
 
-    buildFM(nodes, levels, "12tet", 60);
+    buildFM(nodes, levels, "chromalum", 60);
 
     const blueModulator = nodes.fmOscs[0] as unknown as FakeOscillatorNode;
-    expect(blueModulator.frequency.value).toBeCloseTo(angleToFreq(300, "12tet"), 10);
+    expect(blueModulator.frequency.value).toBeCloseTo(angleToFreq(300, "chromalum"), 10);
   });
 
   it("creates transient tone, bit-spectrum, and error-marker nodes", () => {
@@ -320,8 +320,8 @@ describe("music-audio-graph", () => {
     const nodes = buildAudioGraph(ctx);
     const initialOscCount = fake.oscs.length;
 
-    triggerPitchOrToneBurst(nodes, 0, -1, "diatonic7");
-    triggerPitchOrToneBurst(nodes, 2, 120, "diatonic7");
+    triggerPitchOrToneBurst(nodes, 0, -1, "major");
+    triggerPitchOrToneBurst(nodes, 2, 120, "major");
     triggerBitSpectrumBurst(nodes, 3, -1, false);
     triggerErrorMarker(nodes);
 
@@ -336,9 +336,9 @@ describe("music-audio-graph", () => {
     const nodes = buildAudioGraph(ctx);
     const initialOscCount = fake.oscs.length;
 
-    triggerPitchOrToneBurst(nodes, 2, 60, "12tet", true);
+    triggerPitchOrToneBurst(nodes, 2, 60, "chromalum", true);
 
-    expect(fake.oscs[initialOscCount].frequency.value).toBeCloseTo(angleToFreq(60, "12tet"), 10);
+    expect(fake.oscs[initialOscCount].frequency.value).toBeCloseTo(angleToFreq(60, "chromalum"), 10);
     expect(fake.panners[fake.panners.length - 1].pan.value).toBeCloseTo(Math.sin(Math.PI / 3), 10);
   });
 

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../color-engine";
 import type { DecoderPhase, MusicCandidateHover } from "../music/types";
-import type { ScaleMode } from "./useMusicEngine";
+import type { PitchMappingMode } from "./useMusicEngine";
 
 type MusicWeightStep = { positions: number[]; weight: number; index: number } | null;
 type MusicAndStep = { pairIndex: number; phase: "operands" | "result" } | null;
@@ -44,7 +44,7 @@ export function useMusicTransportState(hueAngleDeg: number) {
   const [volume, setVolume] = useState(0.7);
   const [muted, setMuted] = useState(false);
   const preMuteVolumeRef = useRef(0.7);
-  const [scaleMode, setScaleMode] = useState<ScaleMode>("diatonic7");
+  const [pitchMappingMode, setPitchMappingMode] = useState<PitchMappingMode>("chromalum");
   const [fmEnabled, setFmEnabled] = useState(false);
   const [alphaSpeed, setAlphaSpeed] = useState(36);
   const [phaseSpeed, setPhaseSpeed] = useState(0);
@@ -69,8 +69,8 @@ export function useMusicTransportState(hueAngleDeg: number) {
     muted,
     setMuted,
     preMuteVolumeRef,
-    scaleMode,
-    setScaleMode,
+    pitchMappingMode,
+    setPitchMappingMode,
     fmEnabled,
     setFmEnabled,
     alphaSpeed,

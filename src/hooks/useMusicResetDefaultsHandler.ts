@@ -25,7 +25,7 @@ interface UseMusicResetDefaultsHandlerOptions {
     | "setDroneMuted"
     | "setMuted"
     | "setVolume"
-    | "setScaleMode"
+    | "setPitchMappingMode"
     | "setFmEnabled"
     | "setAlphaSpeed"
     | "setPhaseSpeed"
@@ -54,7 +54,7 @@ export function useMusicResetDefaultsHandler({
     setDroneMuted,
     setMuted,
     setVolume,
-    setScaleMode,
+    setPitchMappingMode,
     setFmEnabled,
     setAlphaSpeed,
     setPhaseSpeed,
@@ -77,7 +77,7 @@ export function useMusicResetDefaultsHandler({
     setSelectedLevels(new Set());
     setMuted(false);
     setVolume(0.7);
-    setScaleMode("diatonic7");
+    setPitchMappingMode("chromalum");
     setFmEnabled(false);
     setAlphaSpeed(36);
     setPhaseSpeed(0);
@@ -119,7 +119,7 @@ export function useMusicResetDefaultsHandler({
     setPhaseSpeed,
     setResetSignal,
     setRhythmTempo,
-    setScaleMode,
+    setPitchMappingMode,
     setMuted,
     setSelectedLevels,
     setVolume,

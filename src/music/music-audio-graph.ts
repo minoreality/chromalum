@@ -1,6 +1,6 @@
 import { FANO_LINES } from "../data/theory-data";
 import { TONE_NORM_VALUES, bitSpectrumComponents } from "../data/music-data";
-import { BASE_FREQ, angleToFreq, semitoneToFreq, type ScaleMode } from "../data/music-frequency";
+import { BASE_FREQ, angleToFreq, semitoneToFreq, type PitchMappingMode } from "../data/music-frequency";
 import { toneToFreq } from "./music-engine-core";
 import { complementPhaseFactor, hueStereoPan, liveHueAngleDeg } from "./music-phase";
 
@@ -145,7 +145,7 @@ export function teardown(nodes: AudioNodes) {
 }
 
 /** Build or rebuild FM modulator nodes */
-export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMode: ScaleMode, activeAlpha = 0) {
+export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], pitchMappingMode: PitchMappingMode, activeAlpha = 0) {
   teardownFM(nodes);
   const fmOscs: OscillatorNode[] = [];
   const fmGains: GainNode[] = [];
@@ -157,7 +157,7 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
 
     const modOsc = nodes.ctx.createOscillator();
     modOsc.type = "sine";
-    modOsc.frequency.value = angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), scaleMode);
+    modOsc.frequency.value = angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), pitchMappingMode);
 
     const modGain = nodes.ctx.createGain();
     const modIndex = Math.abs(carrierLevel.toneNorm - modulatorLevel.toneNorm) * 400;
@@ -199,11 +199,11 @@ export function triggerToneValueBurst(nodes: AudioNodes, toneNorm: number) {
 }
 
 /** Trigger a short tone burst at a hue-derived pitch. */
-function triggerPitchBurst(nodes: AudioNodes, hueAngleDeg: number, scaleMode: ScaleMode, panEnabled: boolean) {
-  triggerSineBurst(nodes, angleToFreq(hueAngleDeg, scaleMode), panEnabled ? hueStereoPan(hueAngleDeg, 0) : 0);
+function triggerPitchBurst(nodes: AudioNodes, hueAngleDeg: number, pitchMappingMode: PitchMappingMode, panEnabled: boolean) {
+  triggerSineBurst(nodes, angleToFreq(hueAngleDeg, pitchMappingMode), panEnabled ? hueStereoPan(hueAngleDeg, 0) : 0);
 }
 
-/** Trigger a short tone burst at a fixed 12-TET semitone offset from BASE_FREQ. */
+/** Trigger a short tone burst at a fixed 12-EDO semitone offset from C4. */
 export function triggerSemitoneBurst(nodes: AudioNodes, semitone: number) {
   triggerSineBurst(nodes, semitoneToFreq(semitone));
 }
@@ -212,7 +212,7 @@ export function triggerPitchOrToneBurst(
   nodes: AudioNodes,
   levelIndex: number,
   hueAngleDeg: number,
-  scaleMode: ScaleMode,
+  pitchMappingMode: PitchMappingMode,
   panEnabled = false,
 ) {
   if (hueAngleDeg < 0) {
@@ -220,7 +220,7 @@ export function triggerPitchOrToneBurst(
     return;
   }
 
-  triggerPitchBurst(nodes, hueAngleDeg, scaleMode, panEnabled);
+  triggerPitchBurst(nodes, hueAngleDeg, pitchMappingMode, panEnabled);
 }
 
 /** Trigger a bit-basis timbre burst: GF(2)^3 bits select spectral basis components. */
@@ -294,7 +294,7 @@ export function applyParams(
   alpha0: number,
   alpha7: number,
   volume: number,
-  scaleMode: ScaleMode,
+  pitchMappingMode: PitchMappingMode,
   fmEnabled: boolean,
   panEnabled: boolean,
   hoveredFanoLine: number | null,
@@ -326,7 +326,7 @@ export function applyParams(
 
     // Frequency: active alpha rotates pitch mapping around the hue wheel
     const rotatedAngle = liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha);
-    nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(rotatedAngle, scaleMode), now, RAMP_TC);
+    nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(rotatedAngle, pitchMappingMode), now, RAMP_TC);
 
     // Gain: Even mode keeps chromatic drones level-matched. Tone mode follows the
     // active GRB 4:2:1 tone radius from the selected origin.
@@ -391,7 +391,7 @@ export function applyParams(
         continue;
       }
       nodes.fmOscs[pairIdx].frequency.setTargetAtTime(
-        angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), scaleMode),
+        angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), pitchMappingMode),
         now,
         RAMP_TC,
       );

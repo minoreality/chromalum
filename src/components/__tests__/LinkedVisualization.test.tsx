@@ -7,7 +7,7 @@ import { MusicLinkedVisualization } from "../music/MusicLinkedVisualization";
 
 vi.mock("../../i18n", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, ...params: (string | number)[]) => (key === "music_pitch_step" ? `+${params[0]} st` : key),
   }),
 }));
 
@@ -17,7 +17,7 @@ describe("LinkedVisualization split", () => {
 
     expect(screen.getByText("linkedviz_mode_l0")).toBeTruthy();
     expect(screen.getByText("linkedviz_legend_l0_origin")).toBeTruthy();
-    expect(screen.queryByText("Diatonic C")).toBeNull();
+    expect(screen.queryByText("music_pitch_legend_major")).toBeNull();
   });
 
   it("renders normalized GRB ratios from canonical integer coordinates in the shared color legend", () => {
@@ -47,30 +47,32 @@ describe("LinkedVisualization split", () => {
   });
 
   it("renders interval ratios only through the music wrapper", () => {
-    render(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="diatonic7" />);
+    render(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} pitchMappingMode="major" />);
 
     expect(screen.getByText("linkedviz_mode_l0")).toBeTruthy();
-    expect(screen.getByText("Diatonic C")).toBeTruthy();
+    expect(screen.getByText("music_pitch_legend_major")).toBeTruthy();
     expect(screen.queryByText("linkedviz_legend_l0_origin")).toBeNull();
   });
 
   it("formats music pitch legends without mixing tone and byte notation", () => {
-    const view = render(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="ji" />);
+    const view = render(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} pitchMappingMode="chromalum" />);
 
-    expect(screen.getByText("Palindromic JI")).toBeTruthy();
-    expect(screen.getAllByText("\u00b7 8:7 251Hz").length).toBeGreaterThan(0);
-
-    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="diatonic7" />);
-    expect(screen.getByText("Diatonic C")).toBeTruthy();
-    expect(screen.getByText("262Hz +2st")).toBeTruthy();
-
-    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="octatonic" />);
-    expect(screen.getByText("Octatonic C")).toBeTruthy();
-    expect(screen.getByText("277Hz +2st")).toBeTruthy();
-
-    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} scaleMode="12tet" />);
-    expect(screen.getByText("12-TET Hue")).toBeTruthy();
+    expect(screen.getByText("music_pitch_legend_chromalum")).toBeTruthy();
     expect(screen.getByText("\u00b7 C\u266f4 277Hz")).toBeTruthy();
+
+    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} pitchMappingMode="major" />);
+    expect(screen.getByText("music_pitch_legend_major")).toBeTruthy();
+    expect(screen.getByText("262Hz +2 st")).toBeTruthy();
+    expect(screen.getByText("C5")).toBeTruthy();
+    expect(screen.getByText("523Hz")).toBeTruthy();
+
+    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} pitchMappingMode="octatonic" />);
+    expect(screen.getByText("music_pitch_legend_octatonic")).toBeTruthy();
+    expect(screen.getByText("277Hz +2 st")).toBeTruthy();
+
+    view.rerender(<MusicLinkedVisualization hueAngleDeg={0} brushLevel={0} pitchMappingMode="wholeTone" />);
+    expect(screen.getByText("music_pitch_legend_whole_tone")).toBeTruthy();
+    expect(screen.getByText("262Hz +2 st")).toBeTruthy();
   });
 
   it("notifies controlled mode and alpha changes from the toolbar", () => {

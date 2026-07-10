@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { PITCH_BASE_FREQ } from "../../data/music-frequency";
 import { useMusicEngine } from "../useMusicEngine";
 
 class FakeAudioParam {
@@ -187,7 +188,7 @@ function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {
       alpha0: 0,
       alpha7: 180,
       volume: 0.7,
-      scaleMode: "diatonic7",
+      pitchMappingMode: "chromalum",
       fmEnabled: false,
       panEnabled: true,
       hoveredFanoLine: null,
@@ -252,7 +253,7 @@ describe("useMusicEngine", () => {
           alpha0: 0,
           alpha7: 180,
           volume: 0.7,
-          scaleMode: "diatonic7",
+          pitchMappingMode: "chromalum",
           fmEnabled: false,
           panEnabled: true,
           hoveredFanoLine: null,
@@ -375,7 +376,7 @@ describe("useMusicEngine", () => {
   it("keeps GL(3,2) transformed pitch and pan on the same target hue", () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
 
-    const { result, unmount } = renderMusicEngine({ scaleMode: "12tet", panEnabled: true });
+    const { result, unmount } = renderMusicEngine({ pitchMappingMode: "chromalum", panEnabled: true });
     act(() => {
       result.current.initAudio();
     });
@@ -441,7 +442,7 @@ describe("useMusicEngine", () => {
     vi.useFakeTimers();
     vi.stubGlobal("AudioContext", FakeAudioContext);
 
-    const { result, unmount } = renderMusicEngine({ alpha0: 90, scaleMode: "ji" });
+    const { result, unmount } = renderMusicEngine({ alpha0: 90, pitchMappingMode: "wholeTone" });
     act(() => {
       result.current.initAudio();
     });
@@ -454,14 +455,14 @@ describe("useMusicEngine", () => {
     });
 
     expect(onStep).toHaveBeenCalledWith(0);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(220);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ);
 
     act(() => {
       vi.advanceTimersByTime(200);
     });
 
     expect(onStep).toHaveBeenLastCalledWith(1);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(220 * Math.pow(2, 1 / 12));
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * Math.pow(2, 1 / 12));
 
     act(() => {
       vi.advanceTimersByTime(600);
@@ -502,7 +503,7 @@ describe("useMusicEngine", () => {
     });
 
     expect(onStep).toHaveBeenLastCalledWith(14);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(880);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * 4);
 
     onStep.mockClear();
     act(() => {

@@ -24,7 +24,7 @@
 3. 極座標上の点を `sin` / `cos` で画面 x/y へ射影すること。
 4. 色相、彩度、明度などをピッチ、音色、音量、定位へ写像する色ソニフィケーション。
 5. 位相差に応じて合成振幅が変化する三角関数的干渉式。
-6. 12 平均律、純正律、ダイアトニック、オクタトニックなどの既存音階への角度写像。
+6. CHROMALUM、Major、Octatonic、Whole-tone の構造的な色相→音高写像。
 
 特に、色を音へ写す研究・装置には [See ColOr](https://icad.org/Proceedings/2010/BolognaDevillePun2010.pdf)、[Colorophone 2.0](https://www.mdpi.com/1424-8220/21/21/7351)、[Sonifyd:Colormatrics](https://nime.pubpub.org/pub/efyd2zra) などの先行例がある。また、色相と音高の対応は心理物理的に安定した普遍対応として扱うべきではない。この境界線については、色聴・カラーオルガン史を批判的に整理する [Spence & Di Stefano のレビュー](https://doi.org/10.1177/20416695221092802) を主要参考にする。
 
@@ -197,23 +197,40 @@ sumAmplitude^2 + diffAmplitude^2 = 4 r^2
 
 ## Pitch Mapping
 
-Music タブでは、色相角を音高空間へ写す。基本は
+Music タブでは、色相角を音高空間へ写す。UI ではこの選択を音律や音階ではなく **Pitch mapping / 色相→音高** と呼ぶ。基本は
 
 ```text
 liveAngle = h + activeAlpha
 ```
 
-である。12 平均律モードでは、`liveAngle` を 2 オクターブ分の連続的な指数写像へ送る。
+である。すべての mapping は `A4 = 440 Hz` から求めた正確な `C4` を共通基準音 `f_C4` とする。
+
+### CHROMALUM
+
+CHROMALUM は正準 hue parameter と 15deg 半音格子の関係を前面に出す固有 mapping で、`liveAngle` を 2 オクターブ分の 12-EDO 半音格子へ量子化する。
 
 ```text
-freq = 220 * 2^((liveAngle mod 360) / 360 * 2)
+semitone = round((liveAngle mod 360) / 15)
+freq = f_C4 * 2^(semitone / 12)
 ```
 
-純正律、オクタトニック、ダイアトニックの各モードでは、連続角度をそれぞれのスケール度数へスナップする。したがって、これらは連続的な三角関数音高ではなく、角度から離散音階への量子化である。
+したがって 15deg が 100 cent、180deg の補色差が正確な 1 オクターブになる。`352.5deg <= liveAngle < 360deg` は上端の `C6` へ丸め、色相の seam である `360deg = 0deg` だけを `C4` へ戻す。
+
+### Conventional pitch collections
+
+残る 3 mapping は 12-EDO 上の 1 オクターブ音集合へ、連続角度を等角度の scale degree としてスナップする。
+
+| UI | semitone set from C | complement relation |
+| --- | --- | --- |
+| Major | `0,2,4,5,7,9,11` | varies with hue; the six RGB/CMY vertices form fifth/fourth inversion pairs |
+| Octatonic | `0,1,3,4,6,7,9,10` (half-whole) | tritone |
+| Whole-tone | `0,2,4,6,8,10` | tritone; six hue anchors map one-to-one to six pitches |
+
+主ボタンは `CHROMALUM / Major / Octatonic / Whole-tone` という短い名称だけを表示し、`15deg / C / H-W / 12-EDO` などの定義は tooltip と音高凡例に表示する。これは異なる分類階層を「音律」4択として扱うものではなく、完成した structural / compositional mapping の比較である。
 
 単音バースト、持続音、FM 変調器、音程表示はいずれも `activeAlpha` を含む角度を使う。ステレオ定位を有効にした場合も、同じ実効角の画面 x 座標 `sin(liveAngle)` を pan 値に使う。これにより、色相位相を回転させた後の画面位置・単音・ドローン音高・FM・音程表示・定位が一致する。
 
-Music タブの Zigzag Tone カードの Crossings 再生だけは例外として、色相位相や現在の音律選択から独立した固定 12 平均律を使う。これは、純色エッジ上で tone 水平線と交差する角度
+Music タブの Zigzag Tone カードの Crossings 再生だけは例外として、色相位相や現在の pitch mapping から独立した、C4 基準の固定 12-EDO を使う。これは、純色エッジ上で tone 水平線と交差する角度
 
 ```text
 0, 15, 30, 45, 60, 90, 120, 180, 195, 210, 225, 240, 270, 300, 360 deg
