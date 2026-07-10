@@ -95,7 +95,7 @@ bottom graph = screen-x projection =  r sin(theta + alpha)
 
 ## Hue Phase and `alpha`
 
-UI 上ではこの操作を **Hue Phase** / **色相位相** と呼ぶ。ここでの `alpha` は CSS や画像処理でいう透明度ではなく、実装上の内部名である。`LinkedVisualization` では、`alpha0` と `alpha7` は L0 原点系・L7 原点系それぞれの色相位相回転角である。上部の **Common Hue Phase** / **共通色相位相** スライダーは両方を同じ量だけ回し、`alpha7 - alpha0 = 180deg` を保つ。
+UI 上ではこの操作を **Hue Phase** / **色相位相** と呼ぶ。ここでの `alpha` は CSS や画像処理でいう透明度ではなく、実装上の内部名である。`LinkedVisualization` では、`alpha0` と `alpha7` は L0 原点系・L7 原点系それぞれの色相位相回転角である。上部の **Hue Phase** / **色相位相** スライダーは両方を同じ量だけ回し、`alpha7 - alpha0 = 180deg` を保つ。
 
 Music タブでは、現在の原点モードに応じて
 
@@ -162,7 +162,7 @@ amplitude = 2 r abs(sin(deltaAlpha / 2))
 phaseFactor = amplitude / (2 r) = abs(sin(deltaAlpha / 2))
 ```
 
-したがって、`deltaAlpha = 0deg` では表示上の補色ベクトルが反対向きになって相殺し、`deltaAlpha = 180deg` では同じ向きに整列して最大になる。UI の **Cancel (0deg)** / **Align (180deg)** はこの表示上の状態を明示する。Music タブの持続音ゲインも、同じベクトル和から求めた `phaseFactor` を使う。初期値と共通位相操作は `alpha0 = 0deg`, `alpha7 = 180deg` を基準にするため、通常状態では最大ゲインを保ったまま全体が回転する。
+したがって、`deltaAlpha = 0deg` では表示上の補色ベクトルが逆位相になって相殺し、`deltaAlpha = 180deg` では同位相になって最大になる。UI の **Antiphase** / **逆位相** と **In phase** / **同位相** はこの位相関係を簡潔に示す。Music タブの持続音ゲインも、同じベクトル和から求めた `phaseFactor` を使う。初期値と共通位相操作は `alpha0 = 0deg`, `alpha7 = 180deg` を基準にするため、通常状態では最大ゲインを保ったまま全体が回転する。
 
 ## Pitch Mapping
 

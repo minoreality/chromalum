@@ -283,12 +283,12 @@ describe("MusicPanel section components", () => {
     renderWithLanguage(<MusicHueAlphaControls {...props} />);
 
     expect(screen.getByText("Hue Angle: 90°")).toBeTruthy();
-    expect(screen.getByText("Common Hue Phase: 45°")).toBeTruthy();
+    expect(screen.getByText("Hue Phase: 45°")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "120" } });
     expect(props.onHueChange).toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Common hue phase"), { target: { value: "180" } });
+    fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "180" } });
     expect(props.onAlphaChange).toHaveBeenCalled();
   });
 

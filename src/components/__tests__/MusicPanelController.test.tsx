@@ -165,7 +165,7 @@ describe("MusicPanel controller integration", () => {
     expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("180");
     expect(getMainCandidateButton(2).getAttribute("aria-pressed")).toBe("false");
 
-    fireEvent.change(screen.getByLabelText("Common hue phase"), { target: { value: "90" } });
+    fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "90" } });
     expect(latestEngineParams()).toMatchObject({ alpha0: 90, alpha7: 270 });
   });
 
@@ -190,10 +190,10 @@ describe("MusicPanel controller integration", () => {
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
     expect(latestEngineParams().originMode).toBe(7);
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel (0°)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Antiphase" }));
     expect(latestEngineParams().alpha7).toBe(0);
 
-    fireEvent.click(screen.getByRole("button", { name: "Align (180°)" }));
+    fireEvent.click(screen.getByRole("button", { name: "In phase" }));
     expect(latestEngineParams().alpha7).toBe(180);
   });
 
@@ -258,7 +258,7 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     fireEvent.click(screen.getByRole("button", { name: "Tone" }));
     fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "180" } });
-    fireEvent.change(screen.getByLabelText("Common hue phase"), { target: { value: "90" } });
+    fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "90" } });
     fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
     fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "160" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Fano point" }), { target: { value: "6" } });
@@ -272,7 +272,7 @@ describe("MusicPanel controller integration", () => {
       volume: 0,
     });
     expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("180");
-    expect((screen.getByLabelText("Common hue phase") as HTMLInputElement).value).toBe("90");
+    expect((screen.getByLabelText("Hue phase") as HTMLInputElement).value).toBe("90");
     expect((screen.getByLabelText("BPM") as HTMLInputElement).value).toBe("160");
     expect((screen.getByRole("combobox", { name: "Fano point" }) as HTMLSelectElement).value).toBe("6");
     expect((screen.getByRole("combobox", { name: "Fano line" }) as HTMLSelectElement).value).toBe("2");
@@ -287,7 +287,7 @@ describe("MusicPanel controller integration", () => {
     });
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
     expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("0");
-    expect((screen.getByLabelText("Common hue phase") as HTMLInputElement).value).toBe("0");
+    expect((screen.getByLabelText("Hue phase") as HTMLInputElement).value).toBe("0");
     expect((screen.getByLabelText("BPM") as HTMLInputElement).value).toBe("120");
     expect((screen.getByRole("combobox", { name: "Fano point" }) as HTMLSelectElement).value).toBe("1");
     expect((screen.getByRole("combobox", { name: "Fano line" }) as HTMLSelectElement).value).toBe("0");
