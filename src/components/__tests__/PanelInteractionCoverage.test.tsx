@@ -578,6 +578,19 @@ describe("CropModal interactions", () => {
 
     expect(onConfirm).toHaveBeenCalledWith(10, 12, 54, 52);
   });
+
+  it("resets the crop rectangle when a new image replaces the pending image", () => {
+    const onConfirm = vi.fn();
+    const firstImage = document.createElement("img");
+    const replacementImage = document.createElement("img");
+    const { rerender } = render(<CropModal img={firstImage} imgW={10} imgH={10} onConfirm={onConfirm} onCancel={vi.fn()} />);
+
+    rerender(<CropModal img={replacementImage} imgW={20} imgH={5} onConfirm={onConfirm} onCancel={vi.fn()} />);
+
+    expect(screen.getByText("20 × 5 px")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "btn_ok" }));
+    expect(onConfirm).toHaveBeenCalledWith(0, 0, 20, 5);
+  });
 });
 
 describe("MapCanvas rendering and inspection", () => {

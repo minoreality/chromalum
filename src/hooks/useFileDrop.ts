@@ -33,11 +33,22 @@ export function useFileDrop(
 ): FileDropResult {
   const [dragging, setDragging] = useState(false);
   const dragCountRef = useRef(0);
+  const loadRequestRef = useRef(0);
+  const invalidateLoadRequests = useCallback(() => {
+    loadRequestRef.current++;
+  }, []);
 
   const loadImg = useCallback(
     (file: File) => {
       return new Promise<void>((resolve) => {
-        const finish = () => resolve();
+        const requestId = ++loadRequestRef.current;
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        const isCurrent = () => loadRequestRef.current === requestId;
         if (!file || !ALLOWED_IMAGE_TYPES.has(file.type)) {
           finish();
           return;
@@ -55,7 +66,7 @@ export function useFileDrop(
           return String(err);
         };
         const debug = (message: string) => {
-          if (!debugImageLoad) return;
+          if (!debugImageLoad || !isCurrent()) return;
           console.info("CHROMALUM image load:", message, {
             name: file.name,
             size: file.size,
@@ -64,6 +75,10 @@ export function useFileDrop(
           showToast(`[img] ${message}`, "info");
         };
         const failLoad = (message: string) => {
+          if (!isCurrent()) {
+            finish();
+            return;
+          }
           if (debugImageLoad) {
             console.info("CHROMALUM image load:", message, {
               name: file.name,
@@ -92,6 +107,12 @@ export function useFileDrop(
             cleaned = true;
             cleanup?.();
           };
+
+          if (!isCurrent()) {
+            cleanupOnce();
+            finish();
+            return;
+          }
 
           try {
             const iw = Math.max(1, img.width),
@@ -128,6 +149,10 @@ export function useFileDrop(
               // Create a new image from the resized canvas for the crop modal.
               const resizedImg = new Image();
               resizedImg.onload = () => {
+                if (!isCurrent()) {
+                  finish();
+                  return;
+                }
                 debug(`${source} ready: ${iw}x${ih} -> ${w}x${h}`);
                 onCropRequest(resizedImg, w, h);
                 finish();
@@ -158,6 +183,10 @@ export function useFileDrop(
         };
 
         const tryObjectUrl = (blob: Blob, source: ImageLoadSource, reason: string, onError: (reason: string) => void) => {
+          if (!isCurrent()) {
+            finish();
+            return;
+          }
           debug(`${reason}; trying ${source}`);
           const url = URL.createObjectURL(blob);
           const img = new Image();
@@ -173,6 +202,10 @@ export function useFileDrop(
         };
 
         const tryStableBlobDataUrl = (blob: Blob, reason: string, onError: (reason: string) => void) => {
+          if (!isCurrent()) {
+            finish();
+            return;
+          }
           debug(`${reason}; trying stable Blob Data URL`);
           const fr = new FileReader();
           fr.onerror = () => {
@@ -233,6 +266,10 @@ export function useFileDrop(
         };
 
         const tryDirectFallbacks = (reason: string) => {
+          if (!isCurrent()) {
+            finish();
+            return;
+          }
           debug(`${reason}; trying direct ImageBitmap`);
           if ("createImageBitmap" in window) {
             window
@@ -251,6 +288,10 @@ export function useFileDrop(
         };
 
         const decodeStableBlob = (blob: Blob) => {
+          if (!isCurrent()) {
+            finish();
+            return;
+          }
           debug("decoding stable Blob with ImageBitmap");
           if ("createImageBitmap" in window) {
             window
@@ -275,9 +316,17 @@ export function useFileDrop(
         readStableBlob()
           .then(decodeStableBlob)
           .catch((err: unknown) => {
+            if (!isCurrent()) {
+              finish();
+              return;
+            }
             readStableBlobWithFileReader()
               .then(decodeStableBlob)
               .catch((readerErr: unknown) => {
+                if (!isCurrent()) {
+                  finish();
+                  return;
+                }
                 tryDirectFallbacks(
                   `stable byte copy failed (${describeError(err)}); FileReader byte copy failed (${describeError(readerErr)})`,
                 );
@@ -309,8 +358,11 @@ export function useFileDrop(
       }
     };
     window.addEventListener("paste", f);
-    return () => window.removeEventListener("paste", f);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      window.removeEventListener("paste", f);
+      invalidateLoadRequests();
+    };
+  }, [invalidateLoadRequests, loadImgRef]);
 
   const onDragEnter = useCallback(
     (e: React.DragEvent) => {

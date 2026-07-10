@@ -74,6 +74,18 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
     origCh: number;
   } | null>(null);
 
+  // The modal remains mounted when a second paste/drop replaces the pending
+  // image. Reset all image-relative state so the new image is never confirmed
+  // with the previous image's crop rectangle.
+  useEffect(() => {
+    setCx(0);
+    setCy(0);
+    setCw(imgW);
+    setCh(imgH);
+    dragRef.current = null;
+    setActiveMode(null);
+  }, [img, imgW, imgH]);
+
   const clamp = useCallback(
     (nx: number, ny: number, nw: number, nh: number) => {
       nw = Math.max(MIN_CROP, Math.min(nw, imgW));

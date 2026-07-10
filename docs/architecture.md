@@ -112,6 +112,13 @@ The app intentionally keeps rendering close to browser primitives:
 - Typed arrays hold source levels, candidate overrides, and analysis buffers.
 - Reusable image caches avoid unnecessary allocation in repeated renders.
 
+Chunked Gallery thumbnail generation uses a monotonic generation id. Changing
+the canvas, palette inputs, locks, histogram, or active state invalidates the
+previous generation before another chunk can update React state or the shared
+thumbnail cache. Image imports use the same latest-request-wins rule across all
+decode fallbacks. When a new decoded image replaces an open crop request, the
+crop rectangle and drag state reset to the new image dimensions.
+
 ## Persistence
 
 `useAppState` restores saved state from IndexedDB on mount and autosaves after

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { LEVEL_CANDIDATES, buildColorLUT } from "../color-engine";
 import { LEVEL_MASK } from "../constants";
 import type { CanvasData } from "../types";
@@ -157,11 +157,27 @@ export function useGallery(
   const [items, setItems] = useState<GalleryItem[]>(_cache.items);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const cancelRef = useRef(false);
+  const generationRef = useRef(0);
+  const generatingRef = useRef(false);
+  const candidateKey = candidateIndexByLevel.join(",");
+  const lockedKey = lockedLevels.join(",");
+  const histogramKey = levelHistogram.join(",");
+  const generationInputs = useMemo(
+    () => ({
+      canvasData,
+      candidateIndexByLevel: [...candidateIndexByLevel],
+      lockedLevels: [...lockedLevels],
+      levelHistogram: [...levelHistogram],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- value keys intentionally stabilize equivalent array props
+    [canvasData.levelData, canvasData.width, canvasData.height, candidateKey, lockedKey, histogramKey],
+  );
 
   const generate = useCallback(() => {
-    cancelRef.current = false;
+    const generation = ++generationRef.current;
+    generatingRef.current = true;
     setGenerating(true);
+    const { canvasData, candidateIndexByLevel, lockedLevels, levelHistogram } = generationInputs;
     const variants = generateAllVariants(candidateIndexByLevel, lockedLevels, levelHistogram);
     const { tw, th } = calcThumbSize(canvasData.width, canvasData.height);
     // Initialize items without thumbnails
@@ -173,10 +189,7 @@ export function useGallery(
     // Generate thumbnails in chunks to avoid blocking
     let idx = 0;
     const processChunk = () => {
-      if (cancelRef.current) {
-        setGenerating(false);
-        return;
-      }
+      if (generationRef.current !== generation) return;
       const end = Math.min(idx + CHUNK_SIZE, newItems.length);
       for (let i = idx; i < end; i++) {
         const lut = buildColorLUT(newItems[i].candidateIndexByLevel);
@@ -189,22 +202,29 @@ export function useGallery(
       if (idx < newItems.length) {
         setTimeout(processChunk, 0);
       } else {
+        generatingRef.current = false;
         setGenerating(false);
       }
     };
     processChunk();
-  }, [canvasData, candidateIndexByLevel, lockedLevels, levelHistogram]);
+  }, [generationInputs]);
 
   const cancel = useCallback(() => {
-    cancelRef.current = true;
+    generationRef.current++;
+    if (generatingRef.current) {
+      generatingRef.current = false;
+      setGenerating(false);
+    }
   }, []);
 
   // Auto-generate only while Gallery is visible; hidden generation is expensive
   // and makes controls in other tabs feel sluggish.
   useEffect(() => {
+    const { canvasData, candidateIndexByLevel, lockedLevels, levelHistogram } = generationInputs;
+    const wasGenerating = generatingRef.current;
+    cancel();
     if (!active) {
-      if (generating) clearGenerationCache();
-      cancel();
+      if (wasGenerating) clearGenerationCache();
       return;
     }
 
@@ -215,12 +235,13 @@ export function useGallery(
       }, 0);
       return () => clearTimeout(timeout);
     }
-  }, [active, cancel, canvasData, candidateIndexByLevel, lockedLevels, levelHistogram, generate, generating]);
+  }, [active, cancel, generationInputs, generate]);
 
   // Clear module-level cache on unmount to free memory
   useEffect(
     () => () => {
-      cancelRef.current = true;
+      generationRef.current++;
+      generatingRef.current = false;
       _cache.items = [];
       clearGenerationCache();
     },

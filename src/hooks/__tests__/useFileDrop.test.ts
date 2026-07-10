@@ -189,6 +189,45 @@ describe("useFileDrop", () => {
     expect(setPan).not.toHaveBeenCalled();
   });
 
+  it("ignores an older image decode that completes after a newer crop request", async () => {
+    let resolveFirstBitmap!: (bitmap: ImageBitmap) => void;
+    const firstClose = vi.fn();
+    const secondClose = vi.fn();
+    const firstBitmap = { width: 10, height: 10, close: firstClose } as unknown as ImageBitmap;
+    const secondBitmap = { width: 20, height: 5, close: secondClose } as unknown as ImageBitmap;
+    const firstBitmapPromise = new Promise<ImageBitmap>((resolve) => {
+      resolveFirstBitmap = resolve;
+    });
+    const createImageBitmap = vi
+      .fn()
+      .mockImplementationOnce(() => firstBitmapPromise)
+      .mockResolvedValueOnce(secondBitmap);
+    Object.defineProperty(window, "createImageBitmap", { value: createImageBitmap, configurable: true, writable: true });
+    window.Image = AutoLoadImage as unknown as typeof Image;
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue("data:image/png;base64,ok");
+    const onCropRequest = vi.fn<(img: HTMLImageElement, w: number, h: number) => void>();
+    const { result } = setup(onCropRequest);
+
+    const firstLoad = result.current.loadImg(makeFile("image/png", 4, "first.png"));
+    await waitFor(() => expect(createImageBitmap).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      await result.current.loadImg(makeFile("image/png", 4, "second.png"));
+    });
+    expect(onCropRequest).toHaveBeenCalledTimes(1);
+    expect(onCropRequest.mock.calls[0].slice(1)).toEqual([20, 5]);
+
+    await act(async () => {
+      resolveFirstBitmap(firstBitmap);
+      await firstLoad;
+    });
+
+    expect(firstClose).toHaveBeenCalledTimes(1);
+    expect(secondClose).toHaveBeenCalledTimes(1);
+    expect(onCropRequest).toHaveBeenCalledTimes(1);
+    expect(onCropRequest.mock.calls[0].slice(1)).toEqual([20, 5]);
+  });
+
   it("reports processing failure when the canvas context cannot be created", async () => {
     installImageBitmap(3, 2);
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);

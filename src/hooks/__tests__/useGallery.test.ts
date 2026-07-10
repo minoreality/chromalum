@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { generateAllVariants, renderThumbnail, useGallery } from "../useGallery";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL, buildColorLUT, LEVEL_CANDIDATES } from "../../color-engine";
 import type { CanvasData } from "../../types";
@@ -210,6 +210,49 @@ describe("useGallery", () => {
 
     hook.rerender({ canvasData: second });
     await waitFor(() => expect(hook.result.current.items).not.toBe(firstItems));
+
+    hook.unmount();
+  });
+
+  it("does not let an older chunked generation overwrite a newer gallery", async () => {
+    const manyVariantsLocked = new Array(8).fill(false);
+    const oneVariantLocked = new Array(8).fill(true);
+    const manyVariantsHistogram = new Array(8).fill(1);
+    const oneVariantHistogram = new Array(8).fill(0);
+    oneVariantHistogram[0] = 1;
+    const candidateIndexByLevel = [...DEFAULT_CANDIDATE_INDEX_BY_LEVEL];
+    const firstCanvas = makeCvs();
+    const replacementCanvas = makeCvs(8, 8);
+    const hook = renderHook(
+      ({ canvasData, lockedLevels, levelHistogram, active }) =>
+        useGallery(canvasData, candidateIndexByLevel, lockedLevels, levelHistogram, active),
+      {
+        initialProps: {
+          canvasData: firstCanvas,
+          lockedLevels: manyVariantsLocked,
+          levelHistogram: manyVariantsHistogram,
+          active: false,
+        },
+      },
+    );
+
+    act(() => hook.result.current.generate());
+    expect(hook.result.current.items.length).toBeGreaterThan(1);
+
+    hook.rerender({
+      canvasData: replacementCanvas,
+      lockedLevels: oneVariantLocked,
+      levelHistogram: oneVariantHistogram,
+      active: true,
+    });
+
+    await waitFor(() => {
+      expect(hook.result.current.items).toHaveLength(1);
+      expect(hook.result.current.items[0].imageData).not.toBeNull();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(hook.result.current.items).toHaveLength(1);
+    expect(hook.result.current.progress).toEqual({ current: 1, total: 1 });
 
     hook.unmount();
   });
