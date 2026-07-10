@@ -37,6 +37,7 @@ export const AboutModal = React.memo(function AboutModal({ open, onClose }: Abou
         role="dialog"
         aria-modal="true"
         aria-label={t("about_title")}
+        tabIndex={-1}
         style={{
           background: C.bgModal,
           border: `1px solid ${C.borderHover}`,

@@ -31,6 +31,13 @@ interface KeyCommand {
   action: () => void;
 }
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('button, a[href], input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="button"]') !== null
+  );
+}
+
 export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
   const {
     setTool,
@@ -159,7 +166,9 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     ];
 
     const down = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Native/custom controls own their keystrokes. In particular, Space must
+      // remain available to activate focused buttons instead of arming canvas pan.
+      if (isInteractiveTarget(e.target)) return;
 
       // Space key for pan (stateful, handle separately)
       if (e.code === "Space" && !e.repeat) {

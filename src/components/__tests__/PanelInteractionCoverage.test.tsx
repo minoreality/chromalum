@@ -591,6 +591,20 @@ describe("CropModal interactions", () => {
     fireEvent.click(screen.getByRole("button", { name: "btn_ok" }));
     expect(onConfirm).toHaveBeenCalledWith(0, 0, 20, 5);
   });
+
+  it("moves and resizes the crop rectangle with the keyboard", () => {
+    const onConfirm = vi.fn();
+    render(<CropModal img={document.createElement("img")} imgW={64} imgH={64} onConfirm={onConfirm} onCancel={vi.fn()} />);
+
+    fireEvent.keyDown(screen.getByRole("group", { name: "crop_resize_e_aria" }), { key: "ArrowLeft" });
+    fireEvent.keyDown(screen.getByRole("group", { name: "crop_resize_s_aria" }), { key: "ArrowUp" });
+    const moveControl = screen.getByRole("group", { name: "crop_move_aria" });
+    fireEvent.keyDown(moveControl, { key: "ArrowRight" });
+    fireEvent.keyDown(moveControl, { key: "ArrowDown" });
+    fireEvent.click(screen.getByRole("button", { name: "btn_ok" }));
+
+    expect(onConfirm).toHaveBeenCalledWith(1, 1, 63, 63);
+  });
 });
 
 describe("MapCanvas rendering and inspection", () => {

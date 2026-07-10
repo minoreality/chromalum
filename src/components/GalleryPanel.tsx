@@ -10,6 +10,7 @@ import type { GalleryFilter, GallerySortMode } from "../hooks/galleryView";
 import type { CanvasData } from "../types";
 import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { C, SP, FS, R, DUR, Z, HUE_GRADIENT, FONT } from "../styles/tokens";
 
 interface GalleryPanelProps {
@@ -245,6 +246,8 @@ export const GalleryPanel = React.memo(function GalleryPanel({
   }, [filter, items, bookmarkItems, sortMode, filterHue, filterRange, candidateIndexByLevel]);
 
   const [thumbSize, setThumbSize] = useState<ThumbSize>("M");
+  const previewDialogRef = useRef<HTMLDivElement>(null);
+  const closePreview = useCallback(() => setExpandedIndex(null), []);
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
   useEffect(() => {
     const handleResize = () => setViewportWidth(getViewportWidth());
@@ -272,6 +275,8 @@ export const GalleryPanel = React.memo(function GalleryPanel({
     const lut = buildColorLUT(item.candidateIndexByLevel);
     return renderThumbnail(canvasData.levelData, canvasData.width, canvasData.height, lut, expandedRenderW, expandedRenderH);
   }, [expandedIndex, displayItems, canvasData, expandedRenderW, expandedRenderH]);
+  const previewOpen = expandedImageData !== null && expandedIndex !== null && expandedIndex < displayItems.length;
+  useFocusTrap(previewDialogRef, previewOpen, closePreview);
 
   return (
     <div ref={panelRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}>
@@ -454,12 +459,14 @@ export const GalleryPanel = React.memo(function GalleryPanel({
       }
 
       {/* Expanded preview modal */}
-      {expandedImageData && expandedIndex !== null && expandedIndex < displayItems.length && (
+      {previewOpen && expandedImageData && expandedIndex !== null && (
         <div
+          ref={previewDialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={t("gallery_preview_dialog")}
-          onClick={() => setExpandedIndex(null)}
+          tabIndex={-1}
+          onClick={closePreview}
           style={{
             position: "fixed",
             inset: 0,

@@ -120,4 +120,40 @@ describe("useFocusTrap", () => {
 
     document.body.removeChild(container);
   });
+
+  it("moves focus from the background to the dialog on touch devices without opening a form field", () => {
+    const background = document.createElement("button");
+    const container = document.createElement("div");
+    container.tabIndex = -1;
+    container.appendChild(document.createElement("input"));
+    document.body.append(background, container);
+    background.focus();
+    Object.defineProperty(navigator, "maxTouchPoints", { configurable: true, value: 1 });
+
+    const ref = { current: container } as React.RefObject<HTMLElement | null>;
+    const { unmount } = renderHook(() => useFocusTrap(ref, true));
+
+    expect(document.activeElement).toBe(container);
+    unmount();
+    background.remove();
+    container.remove();
+    Object.defineProperty(navigator, "maxTouchPoints", { configurable: true, value: 0 });
+  });
+
+  it("recaptures Tab from outside the dialog", () => {
+    const outside = document.createElement("button");
+    const container = document.createElement("div");
+    const first = document.createElement("button");
+    container.appendChild(first);
+    document.body.append(outside, container);
+    const ref = { current: container } as React.RefObject<HTMLElement | null>;
+    renderHook(() => useFocusTrap(ref, true));
+    outside.focus();
+
+    outside.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
+
+    expect(document.activeElement).toBe(first);
+    outside.remove();
+    container.remove();
+  });
 });

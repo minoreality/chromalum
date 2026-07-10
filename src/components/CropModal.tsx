@@ -88,13 +88,49 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
 
   const clamp = useCallback(
     (nx: number, ny: number, nw: number, nh: number) => {
-      nw = Math.max(MIN_CROP, Math.min(nw, imgW));
-      nh = Math.max(MIN_CROP, Math.min(nh, imgH));
+      nw = Math.max(Math.min(MIN_CROP, imgW), Math.min(nw, imgW));
+      nh = Math.max(Math.min(MIN_CROP, imgH), Math.min(nh, imgH));
       nx = Math.max(0, Math.min(nx, imgW - nw));
       ny = Math.max(0, Math.min(ny, imgH - nh));
       return { nx, ny, nw, nh };
     },
     [imgW, imgH],
+  );
+
+  const handleCropKeyDown = useCallback(
+    (e: React.KeyboardEvent, mode: Exclude<DragMode, null>) => {
+      const horizontal = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+      const vertical = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+      const relevant =
+        mode === "move" ||
+        (horizontal !== 0 && (mode.includes("w") || mode.includes("e"))) ||
+        (vertical !== 0 && (mode.includes("n") || mode.includes("s")));
+      if (!relevant) return;
+
+      e.preventDefault();
+      const step = e.shiftKey ? 10 : 1;
+      if (mode === "move") {
+        setCx(Math.max(0, Math.min(imgW - cw, cx + horizontal * step)));
+        setCy(Math.max(0, Math.min(imgH - ch, cy + vertical * step)));
+        return;
+      }
+
+      const minW = Math.min(MIN_CROP, imgW);
+      const minH = Math.min(MIN_CROP, imgH);
+      let left = cx;
+      let right = cx + cw;
+      let top = cy;
+      let bottom = cy + ch;
+      if (horizontal !== 0 && mode.includes("w")) left = Math.max(0, Math.min(right - minW, left + horizontal * step));
+      if (horizontal !== 0 && mode.includes("e")) right = Math.max(left + minW, Math.min(imgW, right + horizontal * step));
+      if (vertical !== 0 && mode.includes("n")) top = Math.max(0, Math.min(bottom - minH, top + vertical * step));
+      if (vertical !== 0 && mode.includes("s")) bottom = Math.max(top + minH, Math.min(imgH, bottom + vertical * step));
+      setCx(left);
+      setCy(top);
+      setCw(right - left);
+      setCh(bottom - top);
+    },
+    [cx, cy, cw, ch, imgW, imgH],
   );
 
   const handlePointerDown = useCallback(
@@ -206,6 +242,27 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
     pointerEvents: "none",
   });
 
+  const keyboardControlProps = (mode: Exclude<DragMode, null>, label: string) => ({
+    role: "group" as const,
+    tabIndex: 0,
+    "aria-label": label,
+    "aria-describedby": "crop-keyboard-instructions",
+    onKeyDown: (e: React.KeyboardEvent) => handleCropKeyDown(e, mode),
+    onFocus: () => setActiveMode(mode),
+    onBlur: () => setActiveMode(null),
+  });
+
+  const resizeLabels = {
+    nw: t("crop_resize_nw_aria"),
+    ne: t("crop_resize_ne_aria"),
+    sw: t("crop_resize_sw_aria"),
+    se: t("crop_resize_se_aria"),
+    n: t("crop_resize_n_aria"),
+    s: t("crop_resize_s_aria"),
+    w: t("crop_resize_w_aria"),
+    e: t("crop_resize_e_aria"),
+  };
+
   return (
     <div
       style={{
@@ -226,6 +283,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
         role="dialog"
         aria-modal="true"
         aria-label={t("crop_image_title")}
+        tabIndex={-1}
         style={{
           background: C.bgModal,
           border: `1px solid ${C.borderHover}`,
@@ -269,6 +327,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
 
           {/* Crop border */}
           <div
+            {...keyboardControlProps("move", t("crop_move_aria"))}
             style={{
               position: "absolute",
               left: sx,
@@ -287,24 +346,28 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
           {/* Resize handles — 44px touch target, 10px visual square */}
           {/* Corners */}
           <div
+            {...keyboardControlProps("nw", resizeLabels.nw)}
             style={{ ...mkHandle(), left: sx - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "nw-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "nw")}
           >
             <div style={mkHandleVisual("nw")} />
           </div>
           <div
+            {...keyboardControlProps("ne", resizeLabels.ne)}
             style={{ ...mkHandle(), left: sx + sw - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "ne-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "ne")}
           >
             <div style={mkHandleVisual("ne")} />
           </div>
           <div
+            {...keyboardControlProps("sw", resizeLabels.sw)}
             style={{ ...mkHandle(), left: sx - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "sw-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "sw")}
           >
             <div style={mkHandleVisual("sw")} />
           </div>
           <div
+            {...keyboardControlProps("se", resizeLabels.se)}
             style={{ ...mkHandle(), left: sx + sw - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "se-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "se")}
           >
@@ -312,30 +375,51 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
           </div>
           {/* Edges */}
           <div
+            {...keyboardControlProps("n", resizeLabels.n)}
             style={{ ...mkHandle(), left: sx + sw / 2 - HANDLE_TOUCH / 2, top: sy - HANDLE_TOUCH / 2, cursor: "n-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "n")}
           >
             <div style={mkHandleVisual("n")} />
           </div>
           <div
+            {...keyboardControlProps("s", resizeLabels.s)}
             style={{ ...mkHandle(), left: sx + sw / 2 - HANDLE_TOUCH / 2, top: sy + sh - HANDLE_TOUCH / 2, cursor: "s-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "s")}
           >
             <div style={mkHandleVisual("s")} />
           </div>
           <div
+            {...keyboardControlProps("w", resizeLabels.w)}
             style={{ ...mkHandle(), left: sx - HANDLE_TOUCH / 2, top: sy + sh / 2 - HANDLE_TOUCH / 2, cursor: "w-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "w")}
           >
             <div style={mkHandleVisual("w")} />
           </div>
           <div
+            {...keyboardControlProps("e", resizeLabels.e)}
             style={{ ...mkHandle(), left: sx + sw - HANDLE_TOUCH / 2, top: sy + sh / 2 - HANDLE_TOUCH / 2, cursor: "e-resize" }}
             onPointerDown={(e) => handlePointerDown(e, "e")}
           >
             <div style={mkHandleVisual("e")} />
           </div>
         </div>
+
+        <p
+          id="crop-keyboard-instructions"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          {t("crop_keyboard_instructions")}
+        </p>
 
         {/* Info */}
         <div style={{ fontSize: FS.lg, color: C.textDim, fontFamily: FONT.mono }}>

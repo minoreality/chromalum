@@ -276,8 +276,10 @@ describe("GalleryPanel", () => {
     const { props } = renderGallery();
 
     const preview = screen.getByRole("button", { name: /gallery_preview/ });
+    preview.focus();
     fireEvent.keyDown(preview, { key: "Enter" });
     expect(screen.getByRole("dialog", { name: "gallery_preview_dialog" })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "gallery_apply_btn" }));
 
     fireEvent.click(screen.getByRole("button", { name: "gallery_save_btn" }));
     expect(props.saveColorWithLUT).toHaveBeenCalledWith(
@@ -292,6 +294,11 @@ describe("GalleryPanel", () => {
     expect(props.candidateIndexDispatch).toHaveBeenCalledWith({ type: "load_all", values: itemCandidateIndexByLevel });
     expect(props.showToast).toHaveBeenCalledWith("gallery_apply", "success");
     expect(screen.queryByRole("dialog", { name: "gallery_preview_dialog" })).toBeNull();
+
+    fireEvent.click(preview);
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "gallery_preview_dialog" })).toBeNull();
+    expect(document.activeElement).toBe(preview);
 
     fireEvent.click(preview);
     fireEvent.click(screen.getByRole("dialog", { name: "gallery_preview_dialog" }));

@@ -88,6 +88,7 @@ export const NewCanvasModal = React.memo(function NewCanvasModal({ open, onConfi
         role="dialog"
         aria-modal="true"
         aria-label={t("new_canvas_title")}
+        tabIndex={-1}
         style={{
           background: C.bgModal,
           border: `1px solid ${C.borderHover}`,

@@ -221,4 +221,21 @@ describe("useKeyboardShortcuts", () => {
 
     expect(vi.mocked(setTool)).not.toHaveBeenCalled();
   });
+
+  it("leaves Space available to focused buttons", () => {
+    const { deps, spaceRef, setCursorMode } = makeArgs();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
+    cleanup = unmount;
+    const button = document.createElement("button");
+    document.body.appendChild(button);
+    const event = new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true });
+    const preventDefault = vi.spyOn(event, "preventDefault");
+
+    button.dispatchEvent(event);
+    button.remove();
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(spaceRef.current).toBe(false);
+    expect(vi.mocked(setCursorMode)).not.toHaveBeenCalled();
+  });
 });
