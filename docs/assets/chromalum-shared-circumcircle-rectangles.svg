@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" role="img" aria-labelledby="title desc">
+  <title id="title">CHROMALUM shared circumcircle rectangles</title>
+  <desc id="desc">The M-G near-square rectangle and the R-C perpendicular rectangle are overlaid on the same circumcircle. Every rectangle vertex lies on the circle, and every diagonal is a diameter through the common center.</desc>
+  <defs>
+    <filter id="pointGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="700" rx="24" fill="#090b16"/>
+  <text x="450" y="38" text-anchor="middle" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="22" font-weight="700">同一外接円に内接する 2 つの長方形</text>
+  <text x="450" y="62" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="13">M/G 構成と R/C 垂線構成は形が異なるが、外接円・中心・直径を共有する</text>
+
+  <!-- Shared circumcircle and reference hexagon -->
+  <circle cx="330" cy="350" r="245" fill="#111827" fill-opacity=".55" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="8 8"/>
+  <path d="M330 105 L542.176 227.5 L542.176 472.5 L330 595 L117.824 472.5 L117.824 227.5 Z" fill="none" stroke="#64748b" stroke-width="1.5"/>
+  <text x="103" y="109" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="12">共通外接円  r = 1</text>
+  <path d="M217 112 C239 116 247 127 254 143" fill="none" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- Diameters -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M117.824 227.5 L542.176 472.5 M420.933 122.5 L239.067 577.5" stroke="#ffb454" stroke-width="1.5" stroke-dasharray="5 6" opacity=".66"/>
+    <path d="M330 105 L330 595 M498.875 172.5 L161.125 527.5" stroke="#67e8f9" stroke-width="1.5" stroke-dasharray="5 6" opacity=".66"/>
+  </g>
+
+  <!-- M/G rectangle -->
+  <path d="M117.824 227.5 L420.933 122.5 L542.176 472.5 L239.067 577.5 Z" fill="#ff9f43" fill-opacity=".075" stroke="#ffb454" stroke-width="3" stroke-linejoin="round"/>
+  <!-- R/C rectangle -->
+  <path d="M330 105 L498.875 172.5 L330 595 L161.125 527.5 Z" fill="#22d3ee" fill-opacity=".075" stroke="#67e8f9" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Common center -->
+  <circle cx="330" cy="350" r="6" fill="#f8fafc" stroke="#090b16" stroke-width="2"/>
+  <text x="342" y="343" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="12" font-weight="700">O</text>
+  <text x="342" y="359" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">L = 3.5</text>
+
+  <!-- Hexagon color vertices -->
+  <g font-family="system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">
+    <g><circle cx="330" cy="105" r="9" fill="#ff334d" stroke="#fff" stroke-width="1.5"/><text x="330" y="88" fill="#ff6678">R · L2</text></g>
+    <g><circle cx="542.176" cy="227.5" r="7" fill="#facc15" stroke="#fff" stroke-width="1.2"/><text x="562" y="222" text-anchor="start" fill="#fde047">Y · L6</text></g>
+    <g><circle cx="542.176" cy="472.5" r="9" fill="#4ade80" stroke="#fff" stroke-width="1.5"/><text x="563" y="478" text-anchor="start" fill="#86efac">G · L4</text></g>
+    <g><circle cx="330" cy="595" r="9" fill="#22d3ee" stroke="#fff" stroke-width="1.5"/><text x="330" y="620" fill="#67e8f9">C · L5</text></g>
+    <g><circle cx="117.824" cy="472.5" r="7" fill="#3b82f6" stroke="#fff" stroke-width="1.2"/><text x="97" y="478" text-anchor="end" fill="#60a5fa">B · L1</text></g>
+    <g><circle cx="117.824" cy="227.5" r="9" fill="#d946ef" stroke="#fff" stroke-width="1.5"/><text x="96" y="222" text-anchor="end" fill="#e879f9">M · L3</text></g>
+  </g>
+
+  <!-- Constructed circle points -->
+  <g font-family="system-ui, sans-serif" font-size="11" font-weight="700">
+    <g filter="url(#pointGlow)"><circle cx="420.933" cy="122.5" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.4"/></g>
+    <text x="430" y="112" fill="#ffd29a">Xₘɢ</text>
+    <g filter="url(#pointGlow)"><circle cx="239.067" cy="577.5" r="7" fill="#ffb454" stroke="#fff" stroke-width="1.4"/></g>
+    <text x="206" y="583" fill="#ffd29a">Zₘɢ</text>
+    <g filter="url(#pointGlow)"><circle cx="498.875" cy="172.5" r="7" fill="#67e8f9" stroke="#fff" stroke-width="1.4"/></g>
+    <text x="508" y="164" fill="#a5f3fc">Fᵣᴄ</text>
+    <g filter="url(#pointGlow)"><circle cx="161.125" cy="527.5" r="7" fill="#67e8f9" stroke="#fff" stroke-width="1.4"/></g>
+    <text x="127" y="545" fill="#a5f3fc">−Fᵣᴄ</text>
+  </g>
+
+  <!-- Explanation panel -->
+  <g font-family="system-ui, sans-serif">
+    <rect x="608" y="102" width="262" height="496" rx="18" fill="#111827" stroke="#334155"/>
+    <text x="632" y="137" fill="#f8fafc" font-size="17" font-weight="700">共有する不変量</text>
+    <circle cx="640" cy="170" r="6" fill="#ffb454"/>
+    <text x="657" y="175" fill="#ffd29a" font-size="14" font-weight="700">M/G 長方形</text>
+    <text x="632" y="199" fill="#cbd5e1" font-size="12">M — Xₘɢ — G — Zₘɢ</text>
+    <text x="632" y="219" fill="#cbd5e1" font-size="12">辺比  2/√3 ≈ 1.155</text>
+    <text x="632" y="239" fill="#94a3b8" font-size="11">正方形に近いが、厳密には長方形</text>
+
+    <circle cx="640" cy="278" r="6" fill="#67e8f9"/>
+    <text x="657" y="283" fill="#a5f3fc" font-size="14" font-weight="700">R/C 垂線長方形</text>
+    <text x="632" y="307" fill="#cbd5e1" font-size="12">R — Fᵣᴄ — C — (−Fᵣᴄ)</text>
+    <text x="632" y="327" fill="#cbd5e1" font-size="12">辺比  13/(3√3) ≈ 2.502</text>
+    <text x="632" y="347" fill="#94a3b8" font-size="11">同じ円上にある細長い長方形</text>
+
+    <path d="M632 372 H846" stroke="#334155"/>
+    <text x="632" y="404" fill="#f8fafc" font-size="13" font-weight="700">両方に共通</text>
+    <text x="632" y="431" fill="#cbd5e1" font-size="12">• 4 頂点すべてで |P| = 1</text>
+    <text x="632" y="455" fill="#cbd5e1" font-size="12">• 全内角 = 90°</text>
+    <text x="632" y="479" fill="#cbd5e1" font-size="12">• 2 本の対角線 = 直径 2</text>
+    <text x="632" y="503" fill="#cbd5e1" font-size="12">• 対角線は O で二等分</text>
+    <text x="632" y="527" fill="#cbd5e1" font-size="12">• O は補色平均 L = 3.5</text>
+
+    <rect x="627" y="548" width="224" height="34" rx="8" fill="#1e293b"/>
+    <text x="739" y="562" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">円に「接する」のではなく</text>
+    <text x="739" y="576" text-anchor="middle" fill="#cbd5e1" font-size="11">4 頂点が円周上にある（内接）</text>
+  </g>
+</svg>

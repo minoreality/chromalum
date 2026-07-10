@@ -46,9 +46,7 @@ describe("linked-visualization geometry", () => {
     );
 
     expect(anglesByLevel).toEqual([[240], [0, 225, 270], [15, 210, 300], [30, 120, 195], [45, 90, 180], [60]]);
-    expect(buildLinkedVisualizationDots(30).find((dot) => dot.levelIndex === 4 && dot.angleDeg === 30)?.chromalumChannels).toEqual([
-      4, 2, 0,
-    ]);
+    expect(buildLinkedVisualizationDots(30).find((dot) => dot.levelIndex === 4 && dot.angleDeg === 30)?.chromalumGrb).toEqual([2, 4, 0]);
   });
 
   it("respects direct candidate overrides when selecting active dots", () => {

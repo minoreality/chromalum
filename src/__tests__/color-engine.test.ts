@@ -12,7 +12,7 @@ import {
   LEVEL_INFO,
   LEVEL_CANDIDATES,
   buildColorLUT,
-  chromalumChannelsToRgb8,
+  chromalumGrbToRgb8,
   DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
   findClosestCandidate,
 } from "../color-engine";
@@ -175,13 +175,17 @@ describe("LEVEL_CANDIDATES", () => {
     ]);
   });
 
+  it("reorders canonical GRB coordinates only at the RGB output boundary", () => {
+    expect(chromalumGrbToRgb8([3, 4, 0])).toEqual([255, 191, 0]);
+  });
+
   it("intermediate levels have pure color candidates", () => {
     for (let lv = 1; lv <= 6; lv++) {
       LEVEL_CANDIDATES[lv].forEach((c) => {
         // Each candidate should have max=255 and min=0 (pure color)
         expect(Math.max(...c.rgb)).toBe(255);
         expect(Math.min(...c.rgb)).toBe(0);
-        expect(c.rgb).toEqual(chromalumChannelsToRgb8(c.chromalumChannels));
+        expect(c.rgb).toEqual(chromalumGrbToRgb8(c.chromalumGrb));
         // Device RGB is only an output projection; its re-measured byte tone
         // may land one code point away and must not redefine the model level.
         expect(Math.abs(rgbGrbTone8(...c.rgb) - levelTone8(lv))).toBeLessThanOrEqual(1);

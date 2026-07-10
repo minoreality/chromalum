@@ -4,8 +4,8 @@ import {
   CHROMALUM_CHANNEL_MAX,
   CHROMALUM_GRB_WEIGHTS,
   CHROMALUM_TONE_DENOMINATOR,
-  hueToChromalumChannels,
-  type ChromalumChannels,
+  hueToChromalumGrb,
+  type ChromalumGrb,
 } from "./chromalum-color-model";
 
 /* ═══════════════════════════════════════════
@@ -43,41 +43,41 @@ export const LEVEL_INFO: readonly LevelInfo[] = ["Black", "Blue", "Red", "Magent
 }));
 
 /** Canvas/PNG adapter. Device bytes are not used to recover model coordinates. */
-export function chromalumChannelsToRgb8([r, g, b]: ChromalumChannels): [number, number, number] {
+export function chromalumGrbToRgb8([g, r, b]: ChromalumGrb): [number, number, number] {
   const toByte = (channel: number) => Math.round(255 * clamp01(channel / CHROMALUM_CHANNEL_MAX));
   return [toByte(r), toByte(g), toByte(b)];
 }
 
 /** Convenience display adapter for arbitrary CHROMALUM hue angles. */
 export function hue2rgb(h: number): [number, number, number] {
-  return chromalumChannelsToRgb8(hueToChromalumChannels(h));
+  return chromalumGrbToRgb8(hueToChromalumGrb(h));
 }
 
 export interface ColorCandidate {
   readonly hueAngleDeg: number;
-  readonly chromalumChannels: ChromalumChannels;
+  readonly chromalumGrb: ChromalumGrb;
   /** 8-bit display/output projection; never the source of hue or tone. */
   readonly rgb: readonly [number, number, number];
   readonly hueLabel: string;
 }
 
 export const LEVEL_CANDIDATES: readonly (readonly ColorCandidate[])[] = LEVEL_INFO.map((_, i) => {
-  if (i === 0) return [{ hueAngleDeg: -1, chromalumChannels: [0, 0, 0], rgb: [0, 0, 0], hueLabel: "—" }];
+  if (i === 0) return [{ hueAngleDeg: -1, chromalumGrb: [0, 0, 0], rgb: [0, 0, 0], hueLabel: "—" }];
   if (i === 7)
     return [
       {
         hueAngleDeg: -1,
-        chromalumChannels: [CHROMALUM_CHANNEL_MAX, CHROMALUM_CHANNEL_MAX, CHROMALUM_CHANNEL_MAX],
+        chromalumGrb: [CHROMALUM_CHANNEL_MAX, CHROMALUM_CHANNEL_MAX, CHROMALUM_CHANNEL_MAX],
         rgb: [255, 255, 255],
         hueLabel: "—",
       },
     ];
   return CANONICAL_HUE_ANGLES_BY_LEVEL[i].map((hueAngleDeg) => {
-    const chromalumChannels = hueToChromalumChannels(hueAngleDeg);
+    const chromalumGrb = hueToChromalumGrb(hueAngleDeg);
     return {
       hueAngleDeg,
-      chromalumChannels,
-      rgb: chromalumChannelsToRgb8(chromalumChannels),
+      chromalumGrb,
+      rgb: chromalumGrbToRgb8(chromalumGrb),
       hueLabel: hueAngleDeg + "°",
     };
   });

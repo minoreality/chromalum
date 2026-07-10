@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="610" viewBox="0 0 760 610" role="img" aria-labelledby="title desc">
+  <title id="title">CHROMALUM complement half-turn, equitone rectangle, and L3.5 center</title>
+  <desc id="desc">L3 and L4 equitone triangles form a centrally symmetric rectangle whose four vertices lie on the hue hexagon circumcircle. Three complement diameters meet at normalized GRB one half, one half, one half, level 3.5.</desc>
+  <style>
+    text { font-family: Inter, "Noto Sans JP", system-ui, sans-serif; font-size: 14px; fill: #f4f7ff; }
+    .muted { fill: #9aa5c2; }
+    .l3-label { fill: #ee5cff; font-weight: 600; }
+    .l4-label { fill: #63e77d; font-weight: 600; }
+    .halo { paint-order: stroke; stroke: #080a14; stroke-width: 7px; stroke-linejoin: round; }
+    .leader { stroke: #9aa5c2; stroke-width: 1; }
+  </style>
+  <rect width="760" height="610" fill="#080a14" />
+
+  <circle cx="380" cy="300" r="220" fill="none" stroke="#77819d" stroke-width="1.5" stroke-dasharray="5 6" opacity="0.75" />
+  <polygon points="380,80 570.526,190 570.526,410 380,520 189.474,410 189.474,190" fill="none" stroke="#505a74" stroke-width="1.5" />
+
+  <g stroke="#a4aec7" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.85">
+    <line x1="189.474" y1="190" x2="570.526" y2="410" />
+    <line x1="427.632" y1="107.5" x2="332.368" y2="492.5" />
+    <line x1="284.737" y1="465" x2="475.263" y2="135" />
+  </g>
+
+  <polygon points="189.474,190 427.632,107.5 284.737,465" fill="#d946ef" fill-opacity="0.08" stroke="#ee5cff" stroke-width="2.5" stroke-dasharray="7 5" />
+  <polygon points="570.526,410 475.263,135 332.368,492.5" fill="#22c55e" fill-opacity="0.08" stroke="#63e77d" stroke-width="2.5" stroke-dasharray="7 5" />
+
+  <polygon points="189.474,190 461.654,95.714 570.526,410 298.346,504.286" fill="none" stroke="#f4f7ff" stroke-width="3" />
+
+  <g fill="none" stroke="#f4f7ff" stroke-width="1.5">
+    <path d="M204.59 184.76 L209.83 199.88 L194.71 205.12" />
+    <path d="M446.54 100.95 L451.78 116.07 L466.89 110.83" />
+    <path d="M555.41 415.24 L550.17 400.12 L565.29 394.88" />
+    <path d="M313.46 499.05 L308.22 483.93 L293.11 489.17" />
+  </g>
+
+  <g fill="#111522" stroke-width="2">
+    <circle cx="380" cy="80" r="5" stroke="#ff5c66" />
+    <circle cx="570.526" cy="190" r="5" stroke="#ffe45c" />
+    <circle cx="380" cy="520" r="5" stroke="#5ce8e8" />
+    <circle cx="189.474" cy="410" r="5" stroke="#6287ff" />
+  </g>
+  <g fill="#080a14" stroke="#ee5cff" stroke-width="3">
+    <circle cx="189.474" cy="190" r="8" />
+    <circle cx="427.632" cy="107.5" r="7" />
+    <circle cx="284.737" cy="465" r="7" />
+  </g>
+  <g fill="#080a14" stroke="#63e77d" stroke-width="3">
+    <circle cx="570.526" cy="410" r="8" />
+    <circle cx="475.263" cy="135" r="7" />
+    <circle cx="332.368" cy="492.5" r="7" />
+  </g>
+  <g fill="#080a14" stroke="#f4f7ff" stroke-width="3">
+    <circle cx="461.654" cy="95.714" r="7" />
+    <circle cx="298.346" cy="504.286" r="7" />
+  </g>
+  <circle cx="380" cy="300" r="10" fill="#f7ca45" stroke="#080a14" stroke-width="2" />
+
+  <text class="muted" x="380" y="61" text-anchor="middle">R · 0°</text>
+  <text class="muted" x="587" y="184">Y · 60°</text>
+  <text class="l4-label halo" x="594" y="417">G · 120° · L4</text>
+  <text class="muted" x="380" y="548" text-anchor="middle">C · 180°</text>
+  <text class="muted" x="172" y="417" text-anchor="end">B · 240°</text>
+  <text class="l3-label halo" x="166" y="184" text-anchor="end">M · 300° · L3</text>
+
+  <line class="leader" x1="427.632" y1="107.5" x2="409" y2="91" />
+  <text class="l3-label halo" x="405" y="87" text-anchor="end">15° · L3</text>
+  <line class="leader" x1="475.263" y1="135" x2="502" y2="141" />
+  <text class="l4-label halo" x="508" y="146">30° · L4</text>
+  <line class="leader" x1="284.737" y1="465" x2="254" y2="473" />
+  <text class="l3-label halo" x="248" y="479" text-anchor="end">210° · L3</text>
+  <line class="leader" x1="332.368" y1="492.5" x2="352" y2="514" />
+  <text class="l4-label halo" x="357" y="525">195° · L4</text>
+
+  <line class="leader" x1="461.654" y1="95.714" x2="502" y2="73" />
+  <text class="halo" x="508" y="72">X · 外接円上</text>
+  <line class="leader" x1="298.346" y1="504.286" x2="260" y2="540" />
+  <text class="halo" x="254" y="549" text-anchor="end">Z · 外接円上</text>
+
+  <text class="l3-label halo" x="242" y="278" text-anchor="middle">L3 等トーン三角形</text>
+  <text class="l4-label halo" x="518" y="344" text-anchor="middle">L4 等トーン三角形</text>
+
+  <text class="halo" x="380" y="278" text-anchor="middle">3本の補色対線分が共点</text>
+  <text class="halo" x="380" y="303" text-anchor="middle" font-size="18" font-weight="600">L = 3.5</text>
+  <text class="halo" x="380" y="327" text-anchor="middle">GRB(1/2,1/2,1/2)</text>
+
+  <text class="muted halo" x="617" y="277">全角 90°</text>
+  <text class="muted halo" x="617" y="300">長辺 / 短辺 = 2/√3</text>
+  <text class="muted halo" x="617" y="323">正方形ではなく長方形</text>
+</svg>

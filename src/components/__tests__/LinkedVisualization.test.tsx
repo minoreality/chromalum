@@ -20,17 +20,17 @@ describe("LinkedVisualization split", () => {
     expect(screen.queryByText("Diatonic C")).toBeNull();
   });
 
-  it("renders normalized GRB ratios in the shared color legend", () => {
+  it("renders normalized GRB ratios from canonical integer coordinates in the shared color legend", () => {
     render(<LinkedVisualization hueAngleDeg={0} brushLevel={0} />);
 
-    expect(screen.getByText("(0, 0, 0)")).toBeTruthy();
-    expect(screen.getByText("(0, 0, 1)")).toBeTruthy();
-    expect(screen.getByText("(0, 1, 0)")).toBeTruthy();
-    expect(screen.getByText("(1/4, 1, 0)")).toBeTruthy();
-    expect(screen.getByText("(1/2, 1, 0)")).toBeTruthy();
-    expect(screen.getByText("(3/4, 1, 0)")).toBeTruthy();
-    expect(screen.getByText("(1, 1, 0)")).toBeTruthy();
-    expect(screen.getByText("(1, 1, 1)")).toBeTruthy();
+    expect(screen.getByText("GRB(0,0,0)")).toBeTruthy();
+    expect(screen.getByText("GRB(0,0,1)")).toBeTruthy();
+    expect(screen.getByText("GRB(0,1,0)")).toBeTruthy();
+    expect(screen.getByText("GRB(1/4,1,0)")).toBeTruthy();
+    expect(screen.getByText("GRB(1/2,1,0)")).toBeTruthy();
+    expect(screen.getByText("GRB(3/4,1,0)")).toBeTruthy();
+    expect(screen.getByText("GRB(1,1,0)")).toBeTruthy();
+    expect(screen.getByText("GRB(1,1,1)")).toBeTruthy();
     expect(screen.queryByText("(255,64,0)")).toBeNull();
   });
 

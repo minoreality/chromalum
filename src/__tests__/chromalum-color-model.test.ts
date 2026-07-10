@@ -5,10 +5,10 @@ import {
   CANONICAL_HUE_CYCLE,
   CANONICAL_VERTEX_HUE_BY_LEVEL,
   CHROMALUM_CHANNEL_MAX,
-  chromalumChannelsToHue,
+  chromalumGrbToHue,
   chromalumGrbLevel,
   chromalumToneNorm,
-  hueToChromalumChannels,
+  hueToChromalumGrb,
 } from "../chromalum-color-model";
 
 describe("exact CHROMALUM color model", () => {
@@ -25,48 +25,48 @@ describe("exact CHROMALUM color model", () => {
   });
 
   it("represents every canonical intersection with exact quarter channels and tone", () => {
-    const channelsByLevel = CANONICAL_HUE_ANGLES_BY_LEVEL.map((angles) => angles.map(hueToChromalumChannels));
-    expect(channelsByLevel).toEqual([
+    const grbByLevel = CANONICAL_HUE_ANGLES_BY_LEVEL.map((angles) => angles.map(hueToChromalumGrb));
+    expect(grbByLevel).toEqual([
       [],
       [[0, 0, 4]],
       [
-        [4, 0, 0],
-        [0, 1, 4],
-        [2, 0, 4],
-      ],
-      [
-        [4, 1, 0],
-        [0, 2, 4],
-        [4, 0, 4],
-      ],
-      [
-        [4, 2, 0],
         [0, 4, 0],
-        [0, 3, 4],
+        [1, 0, 4],
+        [0, 2, 4],
       ],
       [
-        [4, 3, 0],
-        [2, 4, 0],
+        [1, 4, 0],
+        [2, 0, 4],
         [0, 4, 4],
+      ],
+      [
+        [2, 4, 0],
+        [4, 0, 0],
+        [3, 0, 4],
+      ],
+      [
+        [3, 4, 0],
+        [4, 2, 0],
+        [4, 0, 4],
       ],
       [[4, 4, 0]],
       [],
     ]);
 
     for (const { hueAngleDeg, levelIndex } of CANONICAL_HUE_CYCLE) {
-      const channels = hueToChromalumChannels(hueAngleDeg);
-      expect(channels.every((channel) => Number.isInteger(channel) && channel >= 0 && channel <= CHROMALUM_CHANNEL_MAX)).toBe(true);
-      expect(chromalumChannelsToHue(channels)).toBe(hueAngleDeg);
-      expect(chromalumGrbLevel(channels)).toBe(levelIndex);
-      expect(chromalumToneNorm(channels)).toBe(levelIndex / 7);
+      const grb = hueToChromalumGrb(hueAngleDeg);
+      expect(grb.every((channel) => Number.isInteger(channel) && channel >= 0 && channel <= CHROMALUM_CHANNEL_MAX)).toBe(true);
+      expect(chromalumGrbToHue(grb)).toBe(hueAngleDeg);
+      expect(chromalumGrbLevel(grb)).toBe(levelIndex);
+      expect(chromalumToneNorm(grb)).toBe(levelIndex / 7);
     }
   });
 
   it("makes a 180° hue rotation the exact channel complement", () => {
     for (const { hueAngleDeg, levelIndex } of CANONICAL_HUE_CYCLE) {
-      const channels = hueToChromalumChannels(hueAngleDeg);
-      const complement = hueToChromalumChannels(hueAngleDeg + 180);
-      expect(complement).toEqual(channels.map((channel) => CHROMALUM_CHANNEL_MAX - channel));
+      const grb = hueToChromalumGrb(hueAngleDeg);
+      const complement = hueToChromalumGrb(hueAngleDeg + 180);
+      expect(complement).toEqual(grb.map((channel) => CHROMALUM_CHANNEL_MAX - channel));
       expect(chromalumGrbLevel(complement)).toBe(7 - levelIndex);
     }
   });

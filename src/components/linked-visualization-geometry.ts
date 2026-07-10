@@ -1,4 +1,4 @@
-import { CANONICAL_HUE_ANCHORS, type ChromalumChannels } from "../chromalum-color-model";
+import { CANONICAL_HUE_ANCHORS, type ChromalumGrb } from "../chromalum-color-model";
 import { LEVEL_CANDIDATES, findClosestCandidate, levelToneNorm } from "../color-engine";
 import { complementPairScreenUnit, hueScreenUnit } from "../music/music-phase";
 
@@ -6,7 +6,7 @@ export interface LinkedVisualizationDot {
   levelIndex: number;
   candidateIndex: number;
   angleDeg: number;
-  chromalumChannels: ChromalumChannels;
+  chromalumGrb: ChromalumGrb;
   rgb: readonly [number, number, number];
   isActive: boolean;
 }
@@ -110,7 +110,7 @@ export function buildLinkedVisualizationDots(
         levelIndex,
         candidateIndex,
         angleDeg: candidate.hueAngleDeg,
-        chromalumChannels: candidate.chromalumChannels,
+        chromalumGrb: candidate.chromalumGrb,
         rgb: candidate.rgb,
         isActive: activeCandidateIndex === candidateIndex,
       });
