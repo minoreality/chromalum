@@ -1,10 +1,8 @@
+import { CANONICAL_VERTEX_HUE_BY_LEVEL } from "../chromalum-color-model";
 import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate } from "../color-engine";
 import type { GlazeToolId } from "../constants";
-import { HEX_CANDIDATE_ANGLES } from "../data/hex-data";
 import { hexStr } from "./index";
 import type { StatusText } from "./status-display";
-
-const CANONICAL_ANGLES: Array<number | null> = [null, 240, 0, 300, 120, 180, 60, null];
 
 interface PixelStatusBase {
   x: number;
@@ -50,8 +48,8 @@ function angleLabel(angle: number | null | undefined): string {
 }
 
 function signedHueDelta(lv: number, angle: number): string {
-  const canonical = CANONICAL_ANGLES[lv];
-  if (canonical == null || angle < 0 || !Number.isFinite(angle)) return "\u2014";
+  const canonical = CANONICAL_VERTEX_HUE_BY_LEVEL[lv];
+  if (canonical == null || canonical < 0 || angle < 0 || !Number.isFinite(angle)) return "\u2014";
   let delta = Math.round(angle - canonical);
   delta = ((delta + 540) % 360) - 180;
   if (delta === 0) return `0\u00B0`;
@@ -148,9 +146,8 @@ export function formatHexPixelStatus({
   isLocked: boolean;
 }): StatusText {
   const candidate = resolveGlobalCandidate(candidateIndexByLevel, lv);
-  const hexAngle = HEX_CANDIDATE_ANGLES[lv]?.[candidate.ci] ?? candidate.hueAngleDeg;
   return {
-    full: `(${x},${y}) Hex L${lv} ${candidateLabel(candidate)} @${angleLabel(hexAngle)} used=${formatCount(
+    full: `(${x},${y}) Hex L${lv} ${candidateLabel(candidate)} @${angleLabel(candidate.hueAngleDeg)} used=${formatCount(
       levelHistogram[lv] ?? 0,
     )}px factor\u00D7${patternFactor} ${isLocked ? "locked" : "unlocked"}`,
     compact: compactParts(

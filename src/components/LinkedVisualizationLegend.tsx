@@ -1,4 +1,5 @@
 import React from "react";
+import { CHROMALUM_CHANNEL_MAX, type ChromalumChannels } from "../chromalum-color-model";
 import { C } from "../styles/tokens";
 import { S_CURSOR_POINTER } from "../styles/shared";
 import { BXright, BY, C2_PAIR, LV_COLORS, TW, type LinkedVisualizationDot } from "./linked-visualization-geometry";
@@ -26,12 +27,11 @@ interface LinkedVisualizationLegendProps {
 const QUARTER_LABELS = ["0", "1/4", "1/2", "3/4", "1"] as const;
 
 function formatQuarter(value: number): string {
-  const idx = Math.max(0, Math.min(4, Math.round((value / 255) * 4)));
-  return QUARTER_LABELS[idx];
+  return QUARTER_LABELS[value] ?? `${value}/${CHROMALUM_CHANNEL_MAX}`;
 }
 
-function formatGrbRatio(rgb: readonly number[]): string {
-  return `(${formatQuarter(rgb[1] ?? 0)}, ${formatQuarter(rgb[0] ?? 0)}, ${formatQuarter(rgb[2] ?? 0)})`;
+function formatGrbRatio([r, g, b]: ChromalumChannels): string {
+  return `(${formatQuarter(g)}, ${formatQuarter(r)}, ${formatQuarter(b)})`;
 }
 
 export function LinkedVisualizationLegend({
@@ -68,7 +68,7 @@ export function LinkedVisualizationLegend({
           <tspan style={{ fontVariantNumeric: "tabular-nums" }}>{String(Math.round(d.angleDeg)).padStart(3, "\u2007")}°</tspan>
         </text>
         <text x={ixRatio} y={y + 9} fontSize={10} fill={C.textDimmer}>
-          {formatGrbRatio(d.rgb)}
+          {formatGrbRatio(d.chromalumChannels)}
         </text>
         {(() => {
           const pairLv = C2_PAIR[d.levelIndex];
@@ -151,7 +151,7 @@ export function LinkedVisualizationLegend({
           {legendL7}
         </text>
         <text x={ixRatio} y={l7y + 9} fontSize={10} fill={C.textDimmer}>
-          {formatGrbRatio([255, 255, 255])}
+          {formatGrbRatio([CHROMALUM_CHANNEL_MAX, CHROMALUM_CHANNEL_MAX, CHROMALUM_CHANNEL_MAX])}
         </text>
         <text x={ixC2} y={l7y + 9} fontSize={10} fill={C.textDimmer}>
           ↔

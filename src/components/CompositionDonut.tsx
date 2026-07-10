@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
-import { LEVEL_INFO, LEVEL_CANDIDATES, rgb2hue } from "../color-engine";
+import { LEVEL_INFO, LEVEL_CANDIDATES } from "../color-engine";
 import { rgbStr, hexStr } from "../utils";
 import { C, FS, SP, FONT } from "../styles/tokens";
 import { S_CURSOR_POINTER } from "../styles/shared";
@@ -242,12 +242,15 @@ export const CompositionDonut = React.memo(function CompositionDonut({
           lines.push(t("donut_glaze_changed", defaultColor));
           // Hue delta vs default (shortest signed difference, -180..+180)
           if (lv >= 1 && lv <= 6) {
-            const hueActual = rgb2hue(g.rgb[0], g.rgb[1], g.rgb[2]);
-            const def = colorLUT[lv];
-            const hueDef = rgb2hue(def[0], def[1], def[2]);
-            let d = hueActual - hueDef;
-            d = ((d + 540) % 360) - 180;
-            lines.push(t("donut_hue_delta", (d >= 0 ? "+" : "") + d.toFixed(0)));
+            const rawDefaultCandidateIndex = candidateIndexByLevel[lv] ?? 0;
+            const defaultCandidateIndex = ((rawDefaultCandidateIndex % alts.length) + alts.length) % alts.length;
+            const hueActual = alts[candIdx]?.hueAngleDeg;
+            const hueDefault = alts[defaultCandidateIndex]?.hueAngleDeg;
+            if (hueActual !== undefined && hueDefault !== undefined) {
+              let d = hueActual - hueDefault;
+              d = ((d + 540) % 360) - 180;
+              lines.push(t("donut_hue_delta", (d >= 0 ? "+" : "") + d.toFixed(0)));
+            }
           }
         }
         lines.push(countLine);

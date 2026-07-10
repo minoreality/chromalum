@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { CANONICAL_HUE_ANCHORS, CANONICAL_HUE_CYCLE } from "../../chromalum-color-model";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { C, FS, FW } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
@@ -28,33 +29,26 @@ const TONE_LABELS = Array.from({ length: 8 }, (_, lv) => `${lv}/7`);
 
 // 7 vertices (6 segments + wrap)
 const VERTS = [
-  { h: 0, tone: LEVELS[2], lv: 2, name: "R" },
-  { h: 60, tone: LEVELS[6], lv: 6, name: "Y" },
-  { h: 120, tone: LEVELS[4], lv: 4, name: "G" },
-  { h: 180, tone: LEVELS[5], lv: 5, name: "C" },
-  { h: 240, tone: LEVELS[1], lv: 1, name: "B" },
-  { h: 300, tone: LEVELS[3], lv: 3, name: "M" },
+  { h: CANONICAL_HUE_ANCHORS.R, tone: LEVELS[2], lv: 2, name: "R" },
+  { h: CANONICAL_HUE_ANCHORS.Y, tone: LEVELS[6], lv: 6, name: "Y" },
+  { h: CANONICAL_HUE_ANCHORS.G, tone: LEVELS[4], lv: 4, name: "G" },
+  { h: CANONICAL_HUE_ANCHORS.C, tone: LEVELS[5], lv: 5, name: "C" },
+  { h: CANONICAL_HUE_ANCHORS.B, tone: LEVELS[1], lv: 1, name: "B" },
+  { h: CANONICAL_HUE_ANCHORS.M, tone: LEVELS[3], lv: 3, name: "M" },
   { h: 360, tone: LEVELS[2], lv: 2, name: "R" },
 ];
 
-const TONE_CYCLE_TICKS = [
-  { h: 0, lv: 2 },
-  { h: 15, lv: 3 },
-  { h: 30, lv: 4 },
-  { h: 45, lv: 5 },
-  { h: 60, lv: 6 },
-  { h: 90, lv: 5 },
-  { h: 120, lv: 4 },
-  { h: 180, lv: 5 },
-  { h: 195, lv: 4 },
-  { h: 210, lv: 3 },
-  { h: 225, lv: 2 },
-  { h: 240, lv: 1 },
-  { h: 270, lv: 2 },
-  { h: 300, lv: 3 },
-] as const;
+const TONE_CYCLE_TICKS = CANONICAL_HUE_CYCLE.map(({ hueAngleDeg, levelIndex }) => ({ h: hueAngleDeg, lv: levelIndex }));
 
-const HUE_AXIS_TICKS = [0, 60, 120, 180, 240, 300, 360] as const;
+const HUE_AXIS_TICKS = [
+  CANONICAL_HUE_ANCHORS.R,
+  CANONICAL_HUE_ANCHORS.Y,
+  CANONICAL_HUE_ANCHORS.G,
+  CANONICAL_HUE_ANCHORS.C,
+  CANONICAL_HUE_ANCHORS.B,
+  CANONICAL_HUE_ANCHORS.M,
+  360,
+] as const;
 
 // Segment colors (by changing channel)
 const SEG_COLORS = ["#00cc00", "#cc0000", "#4466ff", "#00cc00", "#cc0000", "#4466ff"];

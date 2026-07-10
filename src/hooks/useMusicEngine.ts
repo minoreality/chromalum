@@ -3,6 +3,7 @@ import { FANO_RHYTHM_PATTERNS, TONE_NORM_VALUES } from "../data/music-data";
 import { angleToFreq, type ScaleMode } from "../data/music-frequency";
 import { RAMP_TC, triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
 import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, toneToFreq } from "../music/music-engine-core";
+import { hueStereoPan, liveHueAngleDeg } from "../music/music-phase";
 import {
   TONE_CROSSING_BASE_INTERVAL_MS,
   complementOfLine,
@@ -404,12 +405,18 @@ export function useMusicEngine({
       const freqForLevel = (levelIndex: number): number => {
         if (levelIndex === 0 || levelIndex === 7) return toneToFreq(TONE_NORM_VALUES[levelIndex]);
         const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
-        return angleToFreq((levelData?.hueAngleDeg ?? 0) + activeAlpha, p.scaleMode);
+        return angleToFreq(liveHueAngleDeg(levelData?.hueAngleDeg ?? 0, activeAlpha), p.scaleMode);
+      };
+      const panForLevel = (levelIndex: number): number => {
+        if (!p.panEnabled || levelIndex === 0 || levelIndex === 7) return 0;
+        const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
+        return hueStereoPan(levelData?.hueAngleDeg ?? 0, activeAlpha);
       };
 
       for (let i = 0; i < 6; i++) {
         const targetLv = newPerm[i];
         nodes.oscs[i].frequency.setTargetAtTime(freqForLevel(targetLv), now, RAMP_TC);
+        nodes.panners[i].pan.setTargetAtTime(panForLevel(targetLv), now, RAMP_TC);
       }
 
       onPerm?.([0, ...newPerm]);
@@ -432,7 +439,12 @@ export function useMusicEngine({
       for (let i = 0; i < 6; i++) {
         const levelData = p.levels.find((level) => level.levelIndex === i + 1);
         if (!levelData) continue;
-        nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(levelData.hueAngleDeg + activeAlpha, p.scaleMode), now, RAMP_TC);
+        nodes.oscs[i].frequency.setTargetAtTime(
+          angleToFreq(liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha), p.scaleMode),
+          now,
+          RAMP_TC,
+        );
+        nodes.panners[i].pan.setTargetAtTime(p.panEnabled ? hueStereoPan(levelData.hueAngleDeg, activeAlpha) : 0, now, RAMP_TC);
       }
       onPerm?.([0, 1, 2, 3, 4, 5, 6, 7]);
     },

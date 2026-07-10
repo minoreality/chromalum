@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ColorMappingList } from "../ColorMappingList";
 import { LEVEL_CANDIDATES } from "../../color-engine";
-import { HEX_CANDIDATE_ANGLES } from "../../data/hex-data";
 
 vi.mock("../../i18n", () => ({
   useTranslation: () => ({
@@ -55,7 +54,7 @@ describe("ColorMappingList", () => {
   });
 
   it("colors the hue equation endpoints with canonical and selected output colors", () => {
-    const edgeCandidateIndex = HEX_CANDIDATE_ANGLES[3].findIndex((angle) => angle === 210);
+    const edgeCandidateIndex = LEVEL_CANDIDATES[3].findIndex((candidate) => candidate.hueAngleDeg === 210);
     expect(edgeCandidateIndex).toBeGreaterThanOrEqual(0);
 
     const candidateIndexByLevel = [0, 0, 0, edgeCandidateIndex, 0, 0, 0, 0];

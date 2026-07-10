@@ -1,9 +1,12 @@
+import { CANONICAL_HUE_ANCHORS, type ChromalumChannels } from "../chromalum-color-model";
 import { LEVEL_CANDIDATES, findClosestCandidate, levelToneNorm } from "../color-engine";
+import { complementPairScreenUnit, hueScreenUnit } from "../music/music-phase";
 
 export interface LinkedVisualizationDot {
   levelIndex: number;
   candidateIndex: number;
   angleDeg: number;
+  chromalumChannels: ChromalumChannels;
   rgb: readonly [number, number, number];
   isActive: boolean;
 }
@@ -47,7 +50,15 @@ export const TW = RX + RW + 4;
 export const TH = BY + BH + 16;
 
 export const ACTIVE_LEVELS = [1, 2, 3, 4, 5, 6] as const;
-export const HUE_LABELS = [0, 60, 120, 180, 240, 300, 360] as const;
+export const HUE_LABELS = [
+  CANONICAL_HUE_ANCHORS.R,
+  CANONICAL_HUE_ANCHORS.Y,
+  CANONICAL_HUE_ANCHORS.G,
+  CANONICAL_HUE_ANCHORS.C,
+  CANONICAL_HUE_ANCHORS.B,
+  CANONICAL_HUE_ANCHORS.M,
+  360,
+] as const;
 export const LV_COLORS = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", ""] as const;
 export const C2_PAIR: Readonly<Record<number, number>> = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
 
@@ -62,9 +73,9 @@ export function wheelPoint(
   cx = CX,
   cy = CY,
 ): LinkedVisualizationPoint {
-  const rad = ((angle - alpha - 90) * Math.PI) / 180;
+  const unit = hueScreenUnit(angle, alpha);
   const r = radiusFn(level);
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  return { x: cx + r * unit.x, y: cy + r * unit.y };
 }
 
 export function rightProjectionX(angle: number): number {
@@ -99,6 +110,7 @@ export function buildLinkedVisualizationDots(
         levelIndex,
         candidateIndex,
         angleDeg: candidate.hueAngleDeg,
+        chromalumChannels: candidate.chromalumChannels,
         rgb: candidate.rgb,
         isActive: activeCandidateIndex === candidateIndex,
       });
@@ -112,8 +124,7 @@ export function sinePath(level: number, radiusFn: (levelIndex: number) => number
   if (r < 1) return "";
   const pts: string[] = [];
   for (let h = 0; h <= 360; h += 2) {
-    const rad = ((h - alpha - 90) * Math.PI) / 180;
-    const y = CY + r * Math.sin(rad);
+    const y = CY + r * hueScreenUnit(h, alpha).y;
     pts.push(`${h === 0 ? "M" : "L"}${rightProjectionX(h).toFixed(1)},${y.toFixed(1)}`);
   }
   return pts.join(" ");
@@ -124,8 +135,7 @@ export function cosinePath(level: number, radiusFn: (levelIndex: number) => numb
   if (r < 1) return "";
   const pts: string[] = [];
   for (let h = 0; h <= 360; h += 2) {
-    const rad = ((h - alpha - 90) * Math.PI) / 180;
-    const x = CX + r * Math.cos(rad);
+    const x = CX + r * hueScreenUnit(h, alpha).x;
     pts.push(`${h === 0 ? "M" : "L"}${x.toFixed(1)},${bottomProjectionY(h).toFixed(1)}`);
   }
   return pts.join(" ");
@@ -133,12 +143,9 @@ export function cosinePath(level: number, radiusFn: (levelIndex: number) => numb
 
 export function compositeSinePath(radius: number, alpha0: number, alpha7: number): string {
   if (radius < 1) return "";
-  const avgAlpha = (alpha0 + alpha7) / 2;
-  const deltaAlpha = alpha7 - alpha0;
-  const amp = 2 * radius * Math.cos(((deltaAlpha / 2) * Math.PI) / 180);
   const pts: string[] = [];
   for (let h = 0; h <= 360; h += 2) {
-    const y = CY + amp * Math.sin(((h - avgAlpha - 90) * Math.PI) / 180);
+    const y = CY + radius * complementPairScreenUnit(h, alpha0, alpha7).y;
     pts.push(`${h === 0 ? "M" : "L"}${rightProjectionX(h).toFixed(1)},${y.toFixed(1)}`);
   }
   return pts.join(" ");
@@ -146,12 +153,9 @@ export function compositeSinePath(radius: number, alpha0: number, alpha7: number
 
 export function compositeCosinePath(radius: number, alpha0: number, alpha7: number): string {
   if (radius < 1) return "";
-  const avgAlpha = (alpha0 + alpha7) / 2;
-  const deltaAlpha = alpha7 - alpha0;
-  const amp = 2 * radius * Math.cos(((deltaAlpha / 2) * Math.PI) / 180);
   const pts: string[] = [];
   for (let h = 0; h <= 360; h += 2) {
-    const x = CX + amp * Math.cos(((h - avgAlpha - 90) * Math.PI) / 180);
+    const x = CX + radius * complementPairScreenUnit(h, alpha0, alpha7).x;
     pts.push(`${h === 0 ? "M" : "L"}${x.toFixed(1)},${bottomProjectionY(h).toFixed(1)}`);
   }
   return pts.join(" ");

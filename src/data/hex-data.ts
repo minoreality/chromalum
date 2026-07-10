@@ -1,3 +1,4 @@
+import { CANONICAL_HUE_ANCHORS } from "../chromalum-color-model";
 import { hue2rgb, LEVEL_CANDIDATES } from "../color-engine";
 import { NUM_VERTICES } from "../constants";
 
@@ -5,7 +6,14 @@ import { NUM_VERTICES } from "../constants";
    HEXAGON DIAGRAM DATA
    ═══════════════════════════════════════════ */
 
-export const HEX_ANGLES: readonly number[] = [0, 60, 120, 180, 240, 300];
+export const HEX_ANGLES: readonly number[] = [
+  CANONICAL_HUE_ANCHORS.R,
+  CANONICAL_HUE_ANCHORS.Y,
+  CANONICAL_HUE_ANCHORS.G,
+  CANONICAL_HUE_ANCHORS.C,
+  CANONICAL_HUE_ANCHORS.B,
+  CANONICAL_HUE_ANCHORS.M,
+];
 
 interface HexVertex {
   readonly label: string;
@@ -111,22 +119,6 @@ function buildHexDots(): readonly HexDot[] {
 }
 
 export const HEX_DOTS = buildHexDots();
-
-/** Hex diagram angle for each (level, candidateIndex) — matches dot positions on the hex diagram */
-function buildHexCandidateAngles(): readonly (readonly (number | null)[])[] {
-  const angles: (number | null)[][] = LEVEL_CANDIDATES.map((alts) => alts.map(() => null));
-  HEX_VERTICES.forEach((v, i) => {
-    angles[v.level][HEX_VERTEX_CANDIDATE_INDICES[i]] = HEX_ANGLES[i];
-  });
-  HEX_EDGES.forEach((e, edgeIndex) => {
-    e.levels.forEach((level, segmentIndex) => {
-      angles[level][HEX_EDGE_CANDIDATE_INDICES[edgeIndex][segmentIndex]] = HEX_EDGE_COLORS[edgeIndex][segmentIndex].hue;
-    });
-  });
-  return angles;
-}
-
-export const HEX_CANDIDATE_ANGLES = buildHexCandidateAngles();
 
 export const HEX_CX = 200,
   HEX_CY = 175,

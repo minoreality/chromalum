@@ -83,7 +83,7 @@ export function useMusicResetDefaultsHandler({
     setPhaseSpeed(0);
     setHueSpeed(36);
     setAlpha0(0);
-    setAlpha7(0);
+    setAlpha7(180);
     setToneMode("symmetric");
     setRhythmTempo(120);
     setFanoContextPoint(1);

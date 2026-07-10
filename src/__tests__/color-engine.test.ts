@@ -8,12 +8,13 @@ import {
   rgbGrbTone8,
   rgbGrbToneNorm,
   hue2rgb,
-  rgb2hue,
   GRAY_LUT,
   LEVEL_INFO,
   LEVEL_CANDIDATES,
   buildColorLUT,
+  chromalumChannelsToRgb8,
   DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
+  findClosestCandidate,
 } from "../color-engine";
 
 describe("GRB Binary Tone helpers", () => {
@@ -37,21 +38,17 @@ describe("GRB Binary Tone helpers", () => {
   });
 });
 
-describe("hue2rgb / rgb2hue roundtrip", () => {
+describe("device RGB output adapter", () => {
   const testAngles = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 
   testAngles.forEach((h) => {
-    it(`roundtrip at ${h}°`, () => {
+    it(`renders ${h}° to bounded RGB bytes`, () => {
       const rgb = hue2rgb(h);
       expect(rgb.length).toBe(3);
       rgb.forEach((v) => {
         expect(v).toBeGreaterThanOrEqual(0);
         expect(v).toBeLessThanOrEqual(255);
       });
-      const recovered = rgb2hue(...rgb);
-      // Allow 1° tolerance due to rounding
-      const diff = Math.abs(recovered - h);
-      expect(Math.min(diff, 360 - diff)).toBeLessThan(1);
     });
   });
 
@@ -129,7 +126,7 @@ describe("LEVEL_CANDIDATES", () => {
   });
 
   it("aligns edge candidate hues to 4:2:1 hex angles", () => {
-    expect(LEVEL_CANDIDATES.map((alts) => alts.map(({ hueAngleDeg }) => Math.round(hueAngleDeg)))).toEqual([
+    expect(LEVEL_CANDIDATES.map((alts) => alts.map(({ hueAngleDeg }) => hueAngleDeg))).toEqual([
       [-1],
       [240],
       [0, 225, 270],
@@ -149,14 +146,53 @@ describe("LEVEL_CANDIDATES", () => {
     expect(LEVEL_CANDIDATES[7][0].rgb).toEqual([255, 255, 255]);
   });
 
+  it("projects exact CHROMALUM candidates to deterministic RGB bytes", () => {
+    expect(LEVEL_CANDIDATES.map((candidates) => candidates.map((candidate) => candidate.rgb))).toEqual([
+      [[0, 0, 0]],
+      [[0, 0, 255]],
+      [
+        [255, 0, 0],
+        [0, 64, 255],
+        [128, 0, 255],
+      ],
+      [
+        [255, 64, 0],
+        [0, 128, 255],
+        [255, 0, 255],
+      ],
+      [
+        [255, 128, 0],
+        [0, 255, 0],
+        [0, 191, 255],
+      ],
+      [
+        [255, 191, 0],
+        [128, 255, 0],
+        [0, 255, 255],
+      ],
+      [[255, 255, 0]],
+      [[255, 255, 255]],
+    ]);
+  });
+
   it("intermediate levels have pure color candidates", () => {
     for (let lv = 1; lv <= 6; lv++) {
       LEVEL_CANDIDATES[lv].forEach((c) => {
         // Each candidate should have max=255 and min=0 (pure color)
         expect(Math.max(...c.rgb)).toBe(255);
         expect(Math.min(...c.rgb)).toBe(0);
+        expect(c.rgb).toEqual(chromalumChannelsToRgb8(c.chromalumChannels));
+        // Device RGB is only an output projection; its re-measured byte tone
+        // may land one code point away and must not redefine the model level.
+        expect(Math.abs(rgbGrbTone8(...c.rgb) - levelTone8(lv))).toBeLessThanOrEqual(1);
       });
     }
+  });
+
+  it("prefers the canonical RGB vertex at exact hue midpoints", () => {
+    expect(findClosestCandidate(3, 255)).toBe(DEFAULT_CANDIDATE_INDEX_BY_LEVEL[3]);
+    expect(findClosestCandidate(4, 75)).toBe(DEFAULT_CANDIDATE_INDEX_BY_LEVEL[4]);
+    expect(findClosestCandidate(5, 135)).toBe(DEFAULT_CANDIDATE_INDEX_BY_LEVEL[5]);
   });
 });
 

@@ -1,16 +1,13 @@
 import React, { memo, useState, useEffect } from "react";
+import { CANONICAL_VERTEX_HUE_BY_LEVEL } from "../chromalum-color-model";
 import { LEVEL_INFO, LEVEL_CANDIDATES, hue2rgb } from "../color-engine";
 import { rgbStr, hexStr } from "../utils";
 import { S_NAV_ARROW, S_SWATCH } from "../styles/shared";
 import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
 import { C, SP, FS, R, DUR, FONT } from "../styles/tokens";
-import { HEX_CANDIDATE_ANGLES } from "../data/hex-data";
 
 const MOBILE_BP = 600;
-
-/** Canonical hue angles for each level (L0/L7 are achromatic) */
-const CANONICAL_ANGLES: (number | null)[] = [null, 240, 0, 300, 120, 180, 60, null];
 
 /** Compute shortest signed delta between two hue angles (-180..+180) */
 function hueDelta(current: number, canonical: number): number {
@@ -107,13 +104,11 @@ export const ColorMappingList = memo(
                   </button>
                 )}
               </div>
-              {CANONICAL_ANGLES[i] != null &&
+              {CANONICAL_VERTEX_HUE_BY_LEVEL[i] >= 0 &&
                 cur.hueAngleDeg >= 0 &&
                 (() => {
-                  const canon = CANONICAL_ANGLES[i]!;
-                  const hexAngle = HEX_CANDIDATE_ANGLES[i]?.[ci];
-                  if (hexAngle == null) return null;
-                  const d = hueDelta(hexAngle, canon);
+                  const canon = CANONICAL_VERTEX_HUE_BY_LEVEL[i];
+                  const d = hueDelta(cur.hueAngleDeg, canon);
                   const ibs = { display: "inline-block" as const, textAlign: "right" as const };
                   const ibc = { display: "inline-block" as const, textAlign: "center" as const, width: 9 };
                   const canonicalColor = rgbStr(hue2rgb(canon));
@@ -134,12 +129,12 @@ export const ColorMappingList = memo(
                       </span>
                       <span style={{ ...ibc, color: C.textDim }}>=</span>
                       <span data-a11y-color-contrast-exception="intentional-color-sample" style={{ ...ibs, color: outputColor, width: 32 }}>
-                        {hexAngle}°
+                        {cur.hueAngleDeg}°
                       </span>
                     </span>
                   );
                 })()}
-              {cur.hueLabel && CANONICAL_ANGLES[i] == null && (
+              {cur.hueLabel && CANONICAL_VERTEX_HUE_BY_LEVEL[i] < 0 && (
                 <span style={{ fontSize: FS.sm, color: C.textDimmer, whiteSpace: "nowrap", fontFamily: FONT.mono }}>{cur.hueLabel}</span>
               )}
               {has && (

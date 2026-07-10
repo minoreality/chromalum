@@ -1,4 +1,5 @@
 import { angleToFreq, freqToNote, type ScaleMode } from "../../data/music-frequency";
+import { liveHueAngleDeg } from "../../music/music-phase";
 import { C } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import type { LinkedVisualizationDot, LinkedVisualizationOverlayContext } from "../LinkedVisualization";
@@ -46,12 +47,12 @@ function buildRatioRows(
   scaleMode: ScaleMode,
 ): { title: string; rows: RatioEntry[] } {
   const rows: RatioEntry[] = [];
-  const levelFreq = (d: LinkedVisualizationDot) => angleToFreq(d.angleDeg + activeAlpha, scaleMode);
+  const levelFreq = (d: LinkedVisualizationDot) => angleToFreq(liveHueAngleDeg(d.angleDeg, activeAlpha), scaleMode);
 
   if (scaleMode === "ji") {
     const chromatic = activeDots.filter((d) => d.levelIndex !== 0 && d.levelIndex !== 7).sort((a, b) => a.levelIndex - b.levelIndex);
     for (const d of chromatic) {
-      const live = (((d.angleDeg + activeAlpha) % 360) + 360) % 360;
+      const live = liveHueAngleDeg(d.angleDeg, activeAlpha);
       let snapIdx = 0;
       let minDist = 360;
       for (let j = 0; j < JI_ANGLES.length; j++) {
@@ -99,7 +100,7 @@ function buildRatioRows(
   const perDegree: RatioMember[][] = steps.map(() => []);
   for (const d of activeDots) {
     if (d.levelIndex === 0 || d.levelIndex === 7) continue;
-    const norm = (((d.angleDeg + activeAlpha) % 360) + 360) % 360;
+    const norm = liveHueAngleDeg(d.angleDeg, activeAlpha);
     const idx = Math.round((norm / 360) * n) % n;
     perDegree[idx].push({ levelIndex: d.levelIndex, rgb: d.rgb, candidateIndex: d.candidateIndex });
   }

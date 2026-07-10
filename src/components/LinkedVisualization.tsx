@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useMemo } from "react";
 import { SP, C, R } from "../styles/tokens";
 import { S_CURSOR_POINTER } from "../styles/shared";
 import { useTranslation } from "../i18n";
+import { normalizeHueAngleDeg } from "../music/music-phase";
 import { LinkedVisualizationGuides } from "./LinkedVisualizationGuides";
 import { LinkedVisualizationLegend } from "./LinkedVisualizationLegend";
 import { BottomProjectionGraph, RightProjectionGraph } from "./LinkedVisualizationProjectionGraphs";
@@ -111,7 +112,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     [onOriginModeChange],
   );
   const [alpha0Internal, setAlpha0Internal] = useState(0);
-  const [alpha7Internal, setAlpha7Internal] = useState(0);
+  const [alpha7Internal, setAlpha7Internal] = useState(180);
   const alpha0 = alpha0Prop ?? alpha0Internal;
   const alpha7 = alpha7Prop ?? alpha7Internal;
   const setAlpha0 = useMemo<React.Dispatch<React.SetStateAction<number>>>(
@@ -204,7 +205,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       if (drag.type === "wheel") {
         const angle = (Math.atan2(pt.y - CY, pt.x - CX) * 180) / Math.PI;
         const delta = angle - drag.startAngle;
-        const newAlpha = (((drag.startAlpha - delta) % 360) + 360) % 360;
+        const newAlpha = (((drag.startAlpha + delta) % 360) + 360) % 360;
         if (mode === 0) setAlpha0(newAlpha);
         else setAlpha7(newAlpha);
       } else if (drag.type === "hue") {
@@ -360,8 +361,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     projectionDots,
   ]);
 
-  const deltaAlpha = Math.round((((alpha0 - alpha7) % 360) + 360) % 360);
-  const isInverted = deltaAlpha === 180;
+  const deltaAlpha = Math.round(normalizeHueAngleDeg(alpha7 - alpha0)) % 360;
+  const isAligned = deltaAlpha === 180;
 
   return (
     <div className="linked-viz-root" style={{ marginTop: SP.xl, textAlign: "center" }}>
@@ -387,7 +388,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         </button>
         <span
           style={{
-            color: isInverted ? C.accent : C.textDim,
+            color: isAligned ? C.accent : C.textDim,
             fontSize: "var(--linked-viz-toggle-fs, 11px)",
             width: "var(--linked-viz-delta-width, 62px)",
             textAlign: "right",
@@ -400,10 +401,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
           {"\u0394\u03b1:\u00a0" + deltaAlpha + "\u00b0"}
         </span>
         <button type="button" style={deltaAlpha === 0 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setAlpha7(alpha0)}>
-          {t("linkedviz_in_phase")}
+          {t("linkedviz_complement_cancel")}
         </button>
-        <button type="button" style={isInverted ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setAlpha7((alpha0 + 180) % 360)}>
-          {t("linkedviz_anti_phase")}
+        <button type="button" style={isAligned ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setAlpha7((alpha0 + 180) % 360)}>
+          {t("linkedviz_complement_align")}
         </button>
       </div>
 

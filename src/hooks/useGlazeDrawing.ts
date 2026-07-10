@@ -1,7 +1,7 @@
 import { useRef, useCallback, useLayoutEffect } from "react";
 import { LEVEL_MASK } from "../constants";
 import type { GlazeToolId } from "../constants";
-import { LEVEL_CANDIDATES, findClosestCandidate, rgb2hue } from "../color-engine";
+import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import {
   buildGlazeLUT,
   buildMultiDirectLUT,
@@ -627,9 +627,11 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
       const ci = (cm - 1) % candidates.length;
       angle = candidates[ci]?.hueAngleDeg ?? 0;
     } else {
-      // Default pixel: derive hue from colorLUT
-      const rgb = s.current.colorLUT[lv];
-      angle = rgb2hue(rgb[0], rgb[1], rgb[2]);
+      // Default pixel: use the candidate's model angle, never its RGB8 projection.
+      const candidates = LEVEL_CANDIDATES[lv];
+      const rawCandidateIndex = s.current.candidateIndexByLevel[lv] ?? 0;
+      const ci = ((rawCandidateIndex % candidates.length) + candidates.length) % candidates.length;
+      angle = candidates[ci]?.hueAngleDeg ?? 0;
     }
     s.current.setHueAngleDeg(angle);
     s.current.announce(s.current.t("announce_hue_picked", Math.round(angle)));

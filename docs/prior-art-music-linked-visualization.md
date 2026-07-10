@@ -108,7 +108,7 @@ CHROMALUM 側で主張しやすいのは、これらの既知要素そのもの�
 
 - 音響エンジン自体は特殊な技術ではない。
 - 品質は、クリックノイズ回避、gain ramp、limiter/compressor、mute 初期値、停止操作、同時発音数制御で決まる。
-- `deltaAlpha` の `abs(cos(deltaAlpha / 2))` は実際の音波干渉ではなく、視覚モデルに由来する symbolic / phase-derived gain として説明する。
+- `deltaAlpha` の `abs(sin(deltaAlpha / 2))` は実際の音波干渉ではなく、画面上の補色ベクトル和に由来する symbolic / phase-derived gain として説明する。
 
 ## Development Positioning
 

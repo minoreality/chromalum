@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ChangeEvent } from "react";
 
 import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
+import { liveHueAngleDeg, normalizeHueAngleDeg } from "../music/music-phase";
 import { MUSIC_ACTIVE_LEVELS } from "../music/types";
 import type { MusicEngineReturn } from "./useMusicEngine";
 import type { useMusicBurstHighlightState, useMusicPaletteState, useMusicTransportState } from "./useMusicPanelState";
@@ -62,7 +63,7 @@ export function useMusicHuePaletteHandlers({
 
   const triggerToneBurstAtActiveAlpha = useCallback(
     (levelIndex: number, hueAngleDeg: number) => {
-      engine.triggerToneBurst(levelIndex, hueAngleDeg >= 0 ? hueAngleDeg + activeAlpha : hueAngleDeg);
+      engine.triggerToneBurst(levelIndex, hueAngleDeg >= 0 ? liveHueAngleDeg(hueAngleDeg, activeAlpha) : hueAngleDeg);
     },
     [activeAlpha, engine],
   );
@@ -84,7 +85,7 @@ export function useMusicHuePaletteHandlers({
       resumeDrone();
       const v = Number(e.target.value);
       setAlpha0(v);
-      setAlpha7(v);
+      setAlpha7(normalizeHueAngleDeg(v + 180));
     },
     [engine, resumeDrone, setAlpha0, setAlpha7],
   );

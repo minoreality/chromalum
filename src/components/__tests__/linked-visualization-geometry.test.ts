@@ -7,6 +7,7 @@ import {
   BY,
   clampHueFromBottomGraphY,
   clampHueFromRightGraphX,
+  compositeCosinePath,
   compositeSinePath,
   cosinePath,
   CX,
@@ -37,6 +38,19 @@ describe("linked-visualization geometry", () => {
     ]);
   });
 
+  it("uses the canonical GRB hue coordinates for every chromatic level", () => {
+    const anglesByLevel = ACTIVE_LEVELS.map((levelIndex) =>
+      buildLinkedVisualizationDots(0)
+        .filter((dot) => dot.levelIndex === levelIndex)
+        .map((dot) => dot.angleDeg),
+    );
+
+    expect(anglesByLevel).toEqual([[240], [0, 225, 270], [15, 210, 300], [30, 120, 195], [45, 90, 180], [60]]);
+    expect(buildLinkedVisualizationDots(30).find((dot) => dot.levelIndex === 4 && dot.angleDeg === 30)?.chromalumChannels).toEqual([
+      4, 2, 0,
+    ]);
+  });
+
   it("respects direct candidate overrides when selecting active dots", () => {
     expect(LEVEL_CANDIDATES[2].length).toBeGreaterThan(1);
 
@@ -61,6 +75,10 @@ describe("linked-visualization geometry", () => {
     expect(rightProjectionX(0)).toBe(RX + 10);
     expect(rightProjectionX(360)).toBeGreaterThan(rightProjectionX(0));
     expect(bottomProjectionY(0)).toBe(BY + 8);
+
+    const greenRotatedClockwise = wheelPoint(120, 6, 300, toneR0);
+    expect(greenRotatedClockwise.x).toBeCloseTo(CX + radius * Math.sin(Math.PI / 3), 6);
+    expect(greenRotatedClockwise.y).toBeCloseTo(CY - radius * Math.cos(Math.PI / 3), 6);
   });
 
   it("clamps hue drag coordinates to the valid range", () => {
@@ -79,7 +97,7 @@ describe("linked-visualization geometry", () => {
 
     const sine = pathPoints(sinePath(6, toneR0, 0));
     const cosine = pathPoints(cosinePath(6, toneR0, 0));
-    const cancelledComposite = pathPoints(compositeSinePath(toneR0(1), 0, 180));
+    const cancelledComposite = pathPoints(compositeSinePath(toneR0(1), 0, 0));
 
     expect(sine).toHaveLength(181);
     expect(cosine).toHaveLength(181);
@@ -88,5 +106,24 @@ describe("linked-visualization geometry", () => {
     expect(cosine[0].x).toBeCloseTo(CX, 1);
     expect(cosine[0].y).toBeCloseTo(bottomProjectionY(0), 1);
     expect(cancelledComposite.every((point) => Math.abs(point.y - CY) < 0.2)).toBe(true);
+  });
+
+  it("makes each composite projection equal the displayed complementary-vector sum", () => {
+    const levelIndex = 3;
+    const hueAngleDeg = 120;
+    const alpha0 = 25;
+    const alpha7 = 205;
+    const radius = toneR0(levelIndex);
+    const complementLevelIndex = 7 - levelIndex;
+    const l0Point = wheelPoint(hueAngleDeg, levelIndex, alpha0, toneR0);
+    const l7Point = wheelPoint(hueAngleDeg + 180, complementLevelIndex, alpha7, toneR7);
+    const expectedX = l0Point.x + l7Point.x - CX;
+    const expectedY = l0Point.y + l7Point.y - CY;
+    const sampleIndex = hueAngleDeg / 2;
+    const compositeY = pathPoints(compositeSinePath(radius, alpha0, alpha7))[sampleIndex];
+    const compositeX = pathPoints(compositeCosinePath(radius, alpha0, alpha7))[sampleIndex];
+
+    expect(compositeX.x).toBeCloseTo(expectedX, 1);
+    expect(compositeY.y).toBeCloseTo(expectedY, 1);
   });
 });

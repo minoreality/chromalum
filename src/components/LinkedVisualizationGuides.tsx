@@ -10,6 +10,7 @@ import {
   type LinkedVisualizationDot,
   type LinkedVisualizationHover,
 } from "./linked-visualization-geometry";
+import { hueScreenRadians } from "../music/music-phase";
 
 interface LinkedVisualizationGuidesProps {
   dots: LinkedVisualizationDot[];
@@ -38,7 +39,7 @@ export function LinkedVisualizationGuides({
         .filter((dot) => !dot.isActive)
         .map((dot) => {
           const wheel = wheelPoint(dot.angleDeg, dot.levelIndex, activeAlpha, activeRadiusFn);
-          const rad = ((dot.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(dot.angleDeg, activeAlpha);
           const projectedY = CY + activeRadiusFn(dot.levelIndex) * Math.sin(rad);
           const projectedX = CX + activeRadiusFn(dot.levelIndex) * Math.cos(rad);
           const color = `rgb(${dot.rgb.join(",")})`;
@@ -71,7 +72,7 @@ export function LinkedVisualizationGuides({
 
       {activeDots.map((dot) => {
         const wheel = wheelPoint(dot.angleDeg, dot.levelIndex, activeAlpha, activeRadiusFn);
-        const rad = ((dot.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+        const rad = hueScreenRadians(dot.angleDeg, activeAlpha);
         const projectedY = CY + activeRadiusFn(dot.levelIndex) * Math.sin(rad);
         const projectedX = CX + activeRadiusFn(dot.levelIndex) * Math.cos(rad);
         const color = `rgb(${dot.rgb.join(",")})`;
@@ -111,7 +112,7 @@ export function LinkedVisualizationGuides({
 
           const otherRadiusFn = mode === 0 ? toneR7 : toneR0;
           const otherAlpha = mode === 0 ? alpha7 : alpha0;
-          const rad = ((pairDot.angleDeg - otherAlpha - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(pairDot.angleDeg, otherAlpha);
           const radius = otherRadiusFn(pairLevel);
           const x = CX + radius * Math.cos(rad);
           const y = CY + radius * Math.sin(rad);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type ScaleMode } from "../data/music-frequency";
+import { liveHueAngleDeg } from "../music/music-phase";
 import {
   applyParams,
   buildAudioGraph,
@@ -142,7 +143,7 @@ export function useMusicAudioSession({
 
     const p = paramsRef.current;
     if (p.fmEnabled) {
-      buildFM(nodes, p.levels, p.scaleMode);
+      buildFM(nodes, p.levels, p.scaleMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
     }
 
     applyCurrentParams(nodes);
@@ -168,7 +169,8 @@ export function useMusicAudioSession({
   useEffect(() => {
     if (!enabled || !nodesRef.current) return;
     if (fmEnabled) {
-      buildFM(nodesRef.current, levels, scaleMode);
+      const p = paramsRef.current;
+      buildFM(nodesRef.current, levels, scaleMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
     } else {
       teardownFM(nodesRef.current);
     }
@@ -197,24 +199,26 @@ export function useMusicAudioSession({
     const p = paramsRef.current;
     const d = p.levels.find((level) => level.levelIndex === levelIndex);
     const activeAlpha = p.originMode === 0 ? p.alpha0 : p.alpha7;
-    return (d?.hueAngleDeg ?? 0) + activeAlpha;
+    return liveHueAngleDeg(d?.hueAngleDeg ?? 0, activeAlpha);
   }, []);
 
   const triggerToneBurst = useCallback((levelIndex: number, hueAngleDeg: number) => {
     const nodes = nodesRef.current;
     if (!nodes) return;
-    triggerPitchOrToneBurst(nodes, levelIndex, hueAngleDeg, paramsRef.current.scaleMode);
+    const p = paramsRef.current;
+    triggerPitchOrToneBurst(nodes, levelIndex, hueAngleDeg, p.scaleMode, p.panEnabled);
   }, []);
 
   const playPitchLevel = useCallback(
     (levelIndex: number) => {
       const nodes = nodesRef.current;
       if (!nodes) return;
+      const p = paramsRef.current;
       if (levelIndex === 0 || levelIndex === 7) {
-        triggerPitchOrToneBurst(nodes, levelIndex, -1, paramsRef.current.scaleMode);
+        triggerPitchOrToneBurst(nodes, levelIndex, -1, p.scaleMode, false);
         return;
       }
-      triggerPitchOrToneBurst(nodes, levelIndex, hueAngleForLevel(levelIndex), paramsRef.current.scaleMode);
+      triggerPitchOrToneBurst(nodes, levelIndex, hueAngleForLevel(levelIndex), p.scaleMode, p.panEnabled);
     },
     [hueAngleForLevel],
   );

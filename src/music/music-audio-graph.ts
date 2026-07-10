@@ -2,6 +2,7 @@ import { FANO_LINES } from "../data/theory-data";
 import { TONE_NORM_VALUES, bitSpectrumComponents } from "../data/music-data";
 import { BASE_FREQ, angleToFreq, semitoneToFreq, type ScaleMode } from "../data/music-frequency";
 import { toneToFreq } from "./music-engine-core";
+import { complementPhaseFactor, hueStereoPan, liveHueAngleDeg } from "./music-phase";
 
 export interface SonificationLevel {
   levelIndex: number;
@@ -144,7 +145,7 @@ export function teardown(nodes: AudioNodes) {
 }
 
 /** Build or rebuild FM modulator nodes */
-export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMode: ScaleMode) {
+export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMode: ScaleMode, activeAlpha = 0) {
   teardownFM(nodes);
   const fmOscs: OscillatorNode[] = [];
   const fmGains: GainNode[] = [];
@@ -156,7 +157,7 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
 
     const modOsc = nodes.ctx.createOscillator();
     modOsc.type = "sine";
-    modOsc.frequency.value = angleToFreq(modulatorLevel.hueAngleDeg, scaleMode);
+    modOsc.frequency.value = angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), scaleMode);
 
     const modGain = nodes.ctx.createGain();
     const modIndex = Math.abs(carrierLevel.toneNorm - modulatorLevel.toneNorm) * 400;
@@ -175,17 +176,19 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], scaleMod
   nodes.fmGains = fmGains;
 }
 
-function triggerSineBurst(nodes: AudioNodes, frequency: number) {
+function triggerSineBurst(nodes: AudioNodes, frequency: number, panValue = 0) {
   const ctx = nodes.ctx;
   const osc = ctx.createOscillator();
   osc.type = "sine";
   osc.frequency.value = frequency;
   const gain = ctx.createGain();
+  const panner = ctx.createStereoPanner();
+  panner.pan.value = panValue;
   const now = ctx.currentTime;
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
   gain.gain.linearRampToValueAtTime(0.0, now + 0.31);
-  osc.connect(gain).connect(nodes.master);
+  osc.connect(gain).connect(panner).connect(nodes.master);
   osc.start(now);
   osc.stop(now + 0.35);
 }
@@ -196,8 +199,8 @@ export function triggerToneValueBurst(nodes: AudioNodes, toneNorm: number) {
 }
 
 /** Trigger a short tone burst at a hue-derived pitch. */
-function triggerPitchBurst(nodes: AudioNodes, hueAngleDeg: number, scaleMode: ScaleMode) {
-  triggerSineBurst(nodes, angleToFreq(hueAngleDeg, scaleMode));
+function triggerPitchBurst(nodes: AudioNodes, hueAngleDeg: number, scaleMode: ScaleMode, panEnabled: boolean) {
+  triggerSineBurst(nodes, angleToFreq(hueAngleDeg, scaleMode), panEnabled ? hueStereoPan(hueAngleDeg, 0) : 0);
 }
 
 /** Trigger a short tone burst at a fixed 12-TET semitone offset from BASE_FREQ. */
@@ -205,13 +208,19 @@ export function triggerSemitoneBurst(nodes: AudioNodes, semitone: number) {
   triggerSineBurst(nodes, semitoneToFreq(semitone));
 }
 
-export function triggerPitchOrToneBurst(nodes: AudioNodes, levelIndex: number, hueAngleDeg: number, scaleMode: ScaleMode) {
+export function triggerPitchOrToneBurst(
+  nodes: AudioNodes,
+  levelIndex: number,
+  hueAngleDeg: number,
+  scaleMode: ScaleMode,
+  panEnabled = false,
+) {
   if (hueAngleDeg < 0) {
     triggerToneValueBurst(nodes, TONE_NORM_VALUES[levelIndex] ?? 0);
     return;
   }
 
-  triggerPitchBurst(nodes, hueAngleDeg, scaleMode);
+  triggerPitchBurst(nodes, hueAngleDeg, scaleMode, panEnabled);
 }
 
 /** Trigger a bit-basis timbre burst: GF(2)^3 bits select spectral basis components. */
@@ -232,7 +241,7 @@ export function triggerBitSpectrumBurst(nodes: AudioNodes, levelIndex: number, h
   group.gain.linearRampToValueAtTime(0, now + 0.31);
 
   if (panEnabled && hueAngleDeg >= 0) {
-    panner.pan.value = Math.cos((hueAngleDeg * Math.PI) / 180);
+    panner.pan.value = hueStereoPan(hueAngleDeg, 0);
   }
 
   const componentNorm = 1 / Math.sqrt(components.length);
@@ -298,10 +307,8 @@ export function applyParams(
   // Active alpha: use alpha0 in L0 mode, alpha7 in L7 mode
   const activeAlpha = originMode === 0 ? alpha0 : alpha7;
 
-  // Phase modulation factor: abs(cos(deltaAlpha/2))
-  const delta = (((alpha0 - alpha7) % 360) + 360) % 360;
-  const deltaRad = (delta / 2) * (Math.PI / 180);
-  const phaseFactor = Math.abs(Math.cos(deltaRad));
+  // Normalized magnitude of the complementary vectors displayed by the UI.
+  const phaseFactor = complementPhaseFactor(alpha0, alpha7);
 
   // Master volume
   nodes.master.gain.setTargetAtTime(volume * 0.8, now, RAMP_TC);
@@ -318,7 +325,7 @@ export function applyParams(
     if (!levelData) continue;
 
     // Frequency: active alpha rotates pitch mapping around the hue wheel
-    const rotatedAngle = levelData.hueAngleDeg + activeAlpha;
+    const rotatedAngle = liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha);
     nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(rotatedAngle, scaleMode), now, RAMP_TC);
 
     // Gain: Even mode keeps chromatic drones level-matched. Tone mode follows the
@@ -358,7 +365,7 @@ export function applyParams(
     nodes.gains[i].gain.setTargetAtTime(finalGain, now, tc);
 
     // Stereo pan
-    const panValue = panEnabled ? Math.cos((levelData.hueAngleDeg * Math.PI) / 180) : 0;
+    const panValue = panEnabled ? hueStereoPan(levelData.hueAngleDeg, activeAlpha) : 0;
     nodes.panners[i].pan.setTargetAtTime(panValue, now, RAMP_TC);
   }
 
@@ -383,7 +390,11 @@ export function applyParams(
         pairIdx++;
         continue;
       }
-      nodes.fmOscs[pairIdx].frequency.setTargetAtTime(angleToFreq(modulatorLevel.hueAngleDeg + activeAlpha, scaleMode), now, RAMP_TC);
+      nodes.fmOscs[pairIdx].frequency.setTargetAtTime(
+        angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), scaleMode),
+        now,
+        RAMP_TC,
+      );
       const modIndex = Math.abs(carrierLevel.toneNorm - modulatorLevel.toneNorm) * 400;
       nodes.fmGains[pairIdx].gain.setTargetAtTime(modIndex, now, RAMP_TC);
       pairIdx++;

@@ -366,6 +366,22 @@ describe("useGlazeDrawing", () => {
     expect(mockAnnounce).toHaveBeenCalledWith("announce_hue_achromatic");
   });
 
+  it("picks the exact model hue instead of reversing the RGB8 display color", () => {
+    const canvasData = makeCvs(10, 10);
+    canvasData.levelData[0] = 4;
+    const candidateIndexByLevel = [0, 0, 0, 0, 2, 0, 0, 0];
+    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ canvasData, candidateIndexByLevel })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.pickHue(pointerEvent({ clientX: 0, clientY: 0, target: canvas }));
+    });
+
+    expect(mockSetHueAngle).toHaveBeenCalledWith(195);
+    expect(mockAnnounce).toHaveBeenCalledWith("announce_hue_picked");
+  });
+
   it("arms a background drag and starts a glaze brush only after entering the canvas", () => {
     mockZoomRef.current = 0.5;
     const canvasData = makeCvs(10, 10);

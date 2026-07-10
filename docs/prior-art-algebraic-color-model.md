@@ -57,6 +57,8 @@ Smith 1978 により、RGB 色空間を cube として扱い、黒白軸まわ�
 
 CHROMALUM 側で主張できるのは、hue hexagon 自体ではない。主張できるのは、同じ 6 色経路を `GF(2)^3` の 1-bit Gray cycle、GRB Binary Tone zigzag、dice face adjacency として同時に読む統合である。
 
+実装上の `0..4` CHROMALUM チャンネルも、新しい知覚色空間の発見を主張するものではない。既知の hue hexagon を GRB 4:2:1 の 15度交点格子と厳密に結び、sRGBバイト量子化をモデルの外へ追い出すための内部代数座標である。
+
 ### Boolean Lattice / RGB-CMY Duality
 
 JSSD の CMY color cube II は、Theory タブの Hasse diagram 説明にかなり近い。8 元の Boolean lattice、補元、join `U`、meet `∩`、RGB/CMY 双対は既知として扱う。

@@ -53,7 +53,7 @@ export function useMusicTransportState(hueAngleDeg: number) {
   const [toneMode, setToneMode] = useState<MusicToneMode>("symmetric");
 
   const [alpha0, setAlpha0] = useState(0);
-  const [alpha7, setAlpha7] = useState(0);
+  const [alpha7, setAlpha7] = useState(180);
   const [originMode, setOriginMode] = useState<MusicOriginMode>(0);
   const [droneMuted, setDroneMuted] = useState(true);
 

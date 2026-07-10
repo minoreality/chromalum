@@ -47,15 +47,38 @@ T = (4G + 2R + B) / 7
 
 を RGB 頂点へ適用した値である。この tone は CIE 明度や WCAG 相対輝度ではない。
 
-色相角を `theta`、色相位相・原点回転角を `alpha` とすると、実装上の円上の点は次の角度で置かれる。
+色相角の正準座標は、12 時方向を `0deg`、時計回りを正とする。基準となる純色は次の通りである。
+
+| color | hue angle |
+| --- | ---: |
+| Red | 0deg |
+| Yellow | 60deg |
+| Green | 120deg |
+| Cyan | 180deg |
+| Blue | 240deg |
+| Magenta | 300deg |
+
+同じ GRB Binary Tone を持つ候補色を含めた、各有彩レベルの正準座標は次の通りである。L0 Black と L7 White は無彩色なので色相角を持たない。
+
+| level | exact CHROMALUM hue coordinates: `(R4,G4,B4)` |
+| --- | --- |
+| L1 | 240deg: `(0,0,4)` |
+| L2 | 0deg: `(4,0,0)`, 225deg: `(0,1,4)`, 270deg: `(2,0,4)` |
+| L3 | 15deg: `(4,1,0)`, 210deg: `(0,2,4)`, 300deg: `(4,0,4)` |
+| L4 | 30deg: `(4,2,0)`, 120deg: `(0,4,0)`, 195deg: `(0,3,4)` |
+| L5 | 45deg: `(4,3,0)`, 90deg: `(2,4,0)`, 180deg: `(0,4,4)` |
+| L6 | 60deg: `(4,4,0)` |
+
+色相角を `theta`、色相位相・原点回転角を `alpha` とする。`alpha` も同じく時計回りを正とし、実効角 `beta` と円上の点を次のように定義する。
 
 ```text
-rad = theta - alpha - 90deg
+beta = normalize(theta + alpha)
+rad = beta - 90deg
 x = cx + r cos(rad)
 y = cy + r sin(rad)
 ```
 
-SVG 画面座標では y 軸が下向きなので、標準的な数学座標で `beta = theta - alpha` と読むと、画面上の射影は次の形になる。
+SVG 画面座標では y 軸が下向きなので、画面上の射影は次の形になる。
 
 ```text
 screen-x = x - cx =  r sin(beta)
@@ -66,13 +89,13 @@ math-y            =  r cos(beta)
 したがって Music タブ上のグラフラベルは、画面座標の射影として読む。
 
 ```text
-right graph  = screen-y projection = -r cos(theta - alpha)
-bottom graph = screen-x projection =  r sin(theta - alpha)
+right graph  = screen-y projection = -r cos(theta + alpha)
+bottom graph = screen-x projection =  r sin(theta + alpha)
 ```
 
 ## Hue Phase and `alpha`
 
-UI 上ではこの操作を **Hue Phase** / **色相位相** と呼ぶ。ここでの `alpha` は CSS や画像処理でいう透明度ではなく、実装上の内部名である。`LinkedVisualization` では、`alpha0` と `alpha7` は L0 原点系・L7 原点系それぞれの色相位相回転角である。
+UI 上ではこの操作を **Hue Phase** / **色相位相** と呼ぶ。ここでの `alpha` は CSS や画像処理でいう透明度ではなく、実装上の内部名である。`LinkedVisualization` では、`alpha0` と `alpha7` は L0 原点系・L7 原点系それぞれの色相位相回転角である。上部の **Common Hue Phase** / **共通色相位相** スライダーは両方を同じ量だけ回し、`alpha7 - alpha0 = 180deg` を保つ。
 
 Music タブでは、現在の原点モードに応じて
 
@@ -85,15 +108,20 @@ activeAlpha = alpha7  when L7 is origin
 
 ## Hue Angle and Color Candidates
 
-CHROMALUM の hue angle は、CIE L*a*b* や Oklab のような知覚均等色空間の hue angle ではない。RGB/HSV 型の純色六角形上の計算色相である。
+CHROMALUM の hue angle は、CIE L\*a\*b\* や Oklab のような知覚均等色空間の hue angle でも、量子化済み sRGB バイトから逆算する HSV hue でもない。RGB 色立方体の有彩色六角形を位相的な土台として、R/G/B を `0deg / 120deg / 240deg`、Y/C/M をその中間点に置いた CHROMALUM 内部座標である。
 
-各有彩レベルの候補色は、次の条件を満たす RGB 純色として求められる。
+候補色の正確なモデル値には、デバイスRGBではなく `0..4` の CHROMALUM チャンネル `(R4, G4, B4)` を使う。
 
-1. 1 つのチャンネルが `1`。
-2. 1 つのチャンネルが `0`。
-3. 残り 1 チャンネルを調整して、そのレベルの GRB Binary Tone に一致させる。
+```text
+max(R4, G4, B4) = 4
+min(R4, G4, B4) = 0
+level = (4 G4 + 2 R4 + B4) / 4
+tone  = level / 7
+```
 
-したがって、点群は単なる装飾ではなく、同一 tone を持つ純色候補の集合である。ただし、これは知覚的な等明度集合を意味しない。
+これにより、色相六角形の 15deg 交点はすべて整数で表せる。たとえば `15deg = (4,1,0)`、`30deg = (4,2,0)`、`45deg = (4,3,0)` であり、それぞれ厳密に L3、L4、L5 となる。補色も `(R4,G4,B4) -> (4-R4,4-G4,4-B4)` として厳密に定義できる。
+
+Canvas、PNG、CSSへ渡すRGBバイトは、この正確なモデル座標から作る外部出力アダプターである。そこで発生するデバイス量子化は表示・入出力だけに閉じ込め、角度、tone、補色、音高、pan、位相ゲインをRGBバイトから逆算しない。
 
 ## Complement Symmetry
 
@@ -127,13 +155,14 @@ r0(L) = r7(7 - L)
 deltaAlpha = alpha7 - alpha0
 ```
 
-とすると、補色ペアの合成曲線は三角関数の和積公式に従う。等しい半径 `r` の同型ペアを足すと、有効振幅は概念的に次の形になる。
+とする。色相 `theta` の L0 ベクトルと、その補色 `theta + 180deg` の L7 ベクトルを画面上で直接足すと、両ベクトル間の角度は `180deg + deltaAlpha` になる。等しい半径 `r` の補色ペアの合成振幅は次の形になる。
 
 ```text
-amplitude = 2 r cos(deltaAlpha / 2)
+amplitude = 2 r abs(sin(deltaAlpha / 2))
+phaseFactor = amplitude / (2 r) = abs(sin(deltaAlpha / 2))
 ```
 
-したがって、`deltaAlpha = 0deg` では同位相で強調され、`deltaAlpha = 180deg` では逆位相でキャンセルされる。Music タブの持続音ゲインも、この関係を反映して `abs(cos(deltaAlpha / 2))` を位相係数として使う。
+したがって、`deltaAlpha = 0deg` では表示上の補色ベクトルが反対向きになって相殺し、`deltaAlpha = 180deg` では同じ向きに整列して最大になる。UI の **Cancel (0deg)** / **Align (180deg)** はこの表示上の状態を明示する。Music タブの持続音ゲインも、同じベクトル和から求めた `phaseFactor` を使う。初期値と共通位相操作は `alpha0 = 0deg`, `alpha7 = 180deg` を基準にするため、通常状態では最大ゲインを保ったまま全体が回転する。
 
 ## Pitch Mapping
 
@@ -151,7 +180,7 @@ freq = 220 * 2^((liveAngle mod 360) / 360 * 2)
 
 純正律、オクタトニック、ダイアトニックの各モードでは、連続角度をそれぞれのスケール度数へスナップする。したがって、これらは連続的な三角関数音高ではなく、角度から離散音階への量子化である。
 
-単音バースト、持続音、音程表示はいずれも `activeAlpha` を含む角度を使う。これにより、色相位相を回転させた後にクリックした単音と、画面上の音程表示・ドローン音高が一致する。
+単音バースト、持続音、FM 変調器、音程表示はいずれも `activeAlpha` を含む角度を使う。ステレオ定位を有効にした場合も、同じ実効角の画面 x 座標 `sin(liveAngle)` を pan 値に使う。これにより、色相位相を回転させた後の画面位置・単音・ドローン音高・FM・音程表示・定位が一致する。
 
 Music タブの Zigzag Tone カードの Crossings 再生だけは例外として、色相位相や現在の音律選択から独立した固定 12 平均律を使う。これは、純色エッジ上で tone 水平線と交差する角度
 
@@ -213,7 +242,9 @@ Music タブの手動バーストは `Pitch` 固定にする。一方で、Fano 
 
 | responsibility | implementation |
 | --- | --- |
-| GRB Binary Tone, hue candidates, default candidates | `src/color-engine.ts` |
+| exact CHROMALUM hue anchors, 0..4 channels, GRB level, complement cycle | `src/chromalum-color-model.ts` |
+| Canvas/PNG RGB adapters and level candidate output colors | `src/color-engine.ts` |
+| canonical hue-phase normalization, screen vectors, pan, complement gain | `src/music/music-phase.ts` |
 | bit-spectrum timbre basis, tone zigzag, and tone crossing constants | `src/data/music-data.ts` |
 | tone radii, hue-phase (`alpha`) rotation, x/y projections, complement curves | `src/components/linked-visualization-geometry.ts`, `src/components/LinkedVisualization.tsx`, `src/components/LinkedVisualizationWheel.tsx`, `src/components/LinkedVisualizationProjectionGraphs.tsx`, `src/components/LinkedVisualizationGuides.tsx`, `src/components/LinkedVisualizationLegend.tsx` |
 | Music-specific wrapper, candidate grid, transport, interval overlay, and algebra panels | `src/components/music/` |
@@ -229,7 +260,7 @@ Music タブの手動バーストは `Pitch` 固定にする。一方で、Fano 
 ## Scope Limits
 
 1. The graph is a trigonometric projection of a tone-radius hue circle; it is not a model of tone varying sinusoidally with hue.
-2. The hue angle is RGB/HSV-style computational hue, not a perceptually uniform hue angle.
+2. The hue angle is CHROMALUM's exact hue-hexagon coordinate, not a hue recovered from device RGB and not a perceptually uniform hue angle.
 3. GRB Binary Tone is a discrete model coordinate, not CIE lightness or a WCAG contrast metric.
 4. The sonification is a mapping from this discrete color atlas to pitch, gain, and phase behavior. It is not a psychoacoustic model of color-hearing correspondence.
 5. The trigonometric and pitch-mapping pieces are mathematically standard. CHROMALUM's contribution is the integration of these pieces with GRB Binary Tone order, complement symmetry, GRB bit order, and the Fano/Hamming/polyhedral color atlas.

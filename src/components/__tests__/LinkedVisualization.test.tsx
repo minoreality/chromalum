@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { LinkedVisualization } from "../LinkedVisualization";
-import { bottomProjectionY, rightProjectionX, TH, TW } from "../linked-visualization-geometry";
+import { bottomProjectionY, CX, CY, rightProjectionX, TH, TW } from "../linked-visualization-geometry";
 import { MusicLinkedVisualization } from "../music/MusicLinkedVisualization";
 
 vi.mock("../../i18n", () => ({
@@ -89,12 +89,36 @@ describe("LinkedVisualization split", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "linkedviz_mode_l7" }));
-    fireEvent.click(screen.getByRole("button", { name: "linkedviz_in_phase" }));
-    fireEvent.click(screen.getByRole("button", { name: "linkedviz_anti_phase" }));
+    fireEvent.click(screen.getByRole("button", { name: "linkedviz_complement_cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "linkedviz_complement_align" }));
 
     expect(onOriginModeChange).toHaveBeenCalledWith(7);
     expect(onAlpha7Change).toHaveBeenNthCalledWith(1, 30);
     expect(onAlpha7Change).toHaveBeenNthCalledWith(2, 210);
+  });
+
+  it("increases alpha when the wheel is dragged clockwise", () => {
+    const onAlpha0Change = vi.fn();
+    const { container } = render(<LinkedVisualization hueAngleDeg={0} brushLevel={0} alpha0={0} onAlpha0Change={onAlpha0Change} />);
+    const svg = container.querySelector("svg") as SVGSVGElement;
+    const wheel = container.querySelector('g[style*="cursor: grab"]') as SVGGElement;
+    vi.spyOn(svg, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: TW,
+      bottom: TH,
+      width: TW,
+      height: TH,
+      toJSON: () => ({}),
+    });
+    svg.setPointerCapture = vi.fn();
+
+    fireEvent.pointerDown(wheel, { clientX: CX, clientY: CY - 40, pointerId: 3 });
+    fireEvent.pointerMove(svg, { clientX: CX + 40, clientY: CY, pointerId: 3 });
+
+    expect(onAlpha0Change).toHaveBeenLastCalledWith(90);
   });
 
   it("updates hue from the right and bottom projection drag handles", () => {

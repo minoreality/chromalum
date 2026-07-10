@@ -2,6 +2,7 @@ import type { PointerEvent as ReactPointerEvent, PointerEventHandler } from "rea
 import { LEVEL_CANDIDATES, LEVEL_INFO, hue2rgb } from "../color-engine";
 import { S_CURSOR_POINTER } from "../styles/shared";
 import { C } from "../styles/tokens";
+import { hueScreenRadians } from "../music/music-phase";
 import { CX, CY, WR, wheelPoint, type LinkedVisualizationDot, type LinkedVisualizationHover } from "./linked-visualization-geometry";
 
 interface LinkedVisualizationWheelProps {
@@ -29,14 +30,14 @@ export function LinkedVisualizationWheel({
   onPointerDown,
 }: LinkedVisualizationWheelProps) {
   const wheelPosition = (angle: number, level: number) => wheelPoint(angle, level, alpha, radiusFn);
-  const sweepRad = ((hueAngleDeg - alpha - 90) * Math.PI) / 180;
+  const sweepRad = hueScreenRadians(hueAngleDeg, alpha);
 
   return (
     <g style={{ cursor: "grab" }} onPointerDown={onPointerDown}>
       <circle cx={CX} cy={CY} r={WR + 14} fill="transparent" />
 
       {Array.from({ length: 360 }, (_, degree) => {
-        const r = ((degree - alpha - 90) * Math.PI) / 180;
+        const r = hueScreenRadians(degree, alpha);
         const [cr, cg, cb] = hue2rgb(degree);
         return (
           <line

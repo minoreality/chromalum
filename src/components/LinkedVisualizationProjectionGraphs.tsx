@@ -1,5 +1,6 @@
 import React from "react";
 import { C } from "../styles/tokens";
+import { hueScreenRadians } from "../music/music-phase";
 import {
   ACTIVE_LEVELS,
   BH,
@@ -155,7 +156,7 @@ export function RightProjectionGraph({
       {yellowDot &&
         (() => {
           const hovL7m0 = hoveredDot?.levelIndex === 7 && mode === 0;
-          const rad = ((yellowDot.angleDeg - alpha0 - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(yellowDot.angleDeg, alpha0);
           return (
             <circle
               cx={rPx(yellowDot.angleDeg)}
@@ -188,7 +189,7 @@ export function RightProjectionGraph({
       {blueDot &&
         (() => {
           const hovL0m7 = hoveredDot?.levelIndex === 0 && mode === 7;
-          const rad = ((blueDot.angleDeg - alpha7 - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(blueDot.angleDeg, alpha7);
           return (
             <circle
               cx={rPx(blueDot.angleDeg)}
@@ -278,7 +279,7 @@ export function RightProjectionGraph({
         onPointerDown={onHuePointerDown}
       />
       {projectionDots.map((d) => {
-        const rad = ((d.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+        const rad = hueScreenRadians(d.angleDeg, activeAlpha);
         const y = CY + activeRadiusFn(d.levelIndex) * Math.sin(rad);
         const hov = hoveredDot !== null && hoveredDot.levelIndex === d.levelIndex && hoveredDot.candidateIndex === d.candidateIndex;
         const dimmed = d.isActive && hoveredDot !== null && !hov;
@@ -301,7 +302,7 @@ export function RightProjectionGraph({
       {projectionDots
         .filter((d) => d.isActive)
         .map((d) => {
-          const rad = ((d.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(d.angleDeg, activeAlpha);
           const y = CY + activeRadiusFn(d.levelIndex) * Math.sin(rad);
           return (
             <circle
@@ -399,7 +400,7 @@ export function BottomProjectionGraph({
       {yellowDot &&
         (() => {
           const hovL7m0 = hoveredDot?.levelIndex === 7 && mode === 0;
-          const rad = ((yellowDot.angleDeg - alpha0 - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(yellowDot.angleDeg, alpha0);
           return (
             <circle
               cx={CX + WR * Math.cos(rad)}
@@ -432,7 +433,7 @@ export function BottomProjectionGraph({
       {blueDot &&
         (() => {
           const hovL0m7 = hoveredDot?.levelIndex === 0 && mode === 7;
-          const rad = ((blueDot.angleDeg - alpha7 - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(blueDot.angleDeg, alpha7);
           return (
             <circle
               cx={CX + WR * Math.cos(rad)}
@@ -530,7 +531,7 @@ export function BottomProjectionGraph({
         );
       })}
       {projectionDots.map((d) => {
-        const rad = ((d.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+        const rad = hueScreenRadians(d.angleDeg, activeAlpha);
         const x = CX + activeRadiusFn(d.levelIndex) * Math.cos(rad);
         const hov = hoveredDot !== null && hoveredDot.levelIndex === d.levelIndex && hoveredDot.candidateIndex === d.candidateIndex;
         const dimmed = d.isActive && hoveredDot !== null && !hov;
@@ -553,7 +554,7 @@ export function BottomProjectionGraph({
       {projectionDots
         .filter((d) => d.isActive)
         .map((d) => {
-          const rad = ((d.angleDeg - activeAlpha - 90) * Math.PI) / 180;
+          const rad = hueScreenRadians(d.angleDeg, activeAlpha);
           const x = CX + activeRadiusFn(d.levelIndex) * Math.cos(rad);
           return (
             <circle

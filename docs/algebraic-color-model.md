@@ -117,6 +117,26 @@ max(R,G,B) = 1, min(R,G,B) = 0
 
 を満たす RGB cube の境界閉路でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `1`、または `1` から `0` へ線形に変化し、他の 2 成分は `0` または `1` に固定される。
 
+CHROMALUM の内部計算では、この閉路をデバイスRGBのバイト値ではなく、`0..4` の正確なチャンネル `(R4,G4,B4)` で表す。これは正規化RGBを4倍したモデル座標であり、15度刻みの交点を整数として保持するための内部表現である。
+
+```text
+R  = (4,0,0)   Y = (4,4,0)   G = (0,4,0)
+C  = (0,4,4)   B = (0,0,4)   M = (4,0,4)
+
+15deg = (4,1,0)
+30deg = (4,2,0)
+45deg = (4,3,0)
+```
+
+この座標での正確なレベル式は
+
+```text
+L = (4G4 + 2R4 + B4) / 4
+T = L / 7
+```
+
+である。8-bit sRGB、Canvas、PNGはこのモデルの公理ではなく、最終的な表示・入出力アダプターとしてのみ扱う。デバイス値から色相角やレベルを逆算して正準座標を変更しない。
+
 GRB Binary Tone
 
 ```text
@@ -500,6 +520,8 @@ The accurate claim is narrower:
 The current CHROMALUM implementation stores the core data and invariants in:
 
 ```text
+src/chromalum-color-model.ts
+src/color-engine.ts
 src/data/theory-data.ts
 src/components/TheoryPanel.tsx
 src/components/theory/
@@ -509,6 +531,7 @@ src/data/__tests__/theory-data.test.ts
 src/i18n/__tests__/theory-copy.test.ts
 src/components/__tests__/TheoryPanel.test.tsx
 src/components/theory/__tests__/
+src/__tests__/chromalum-color-model.test.ts
 ```
 
 Important invariants currently tested include:
@@ -518,7 +541,7 @@ Important invariants currently tested include:
 3. Complementation `lv xor 7` reverses the six chromatic tone ranks, so die-opposite rank sums are 7.
 4. CMY line is treated as an even-parity tetrahedron rather than a literal Euclidean plane slice.
 5. Gray cycle uses only one-bit flips.
-6. Pure-color tone intersections produce candidate counts `1,1,3,3,3,3,1,1`.
+6. Pure-color tone intersections use exact `0..4` CHROMALUM channels, land on the 15-degree grid, and produce candidate counts `1,1,3,3,3,3,1,1`.
 7. K8 edges partition by Hamming distance.
 8. T0 is closed under XOR.
 9. Subtractive CMY examples are Boolean AND identities, not XOR identities.

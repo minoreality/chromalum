@@ -103,6 +103,7 @@ class FakeAudioContext {
   readonly destination = new FakeAudioNode();
   readonly gains: FakeGainNode[] = [];
   readonly oscillators: FakeOscillatorNode[] = [];
+  readonly panners: FakeStereoPannerNode[] = [];
   readonly sampleRate: number;
   state: AudioContextState = "running";
 
@@ -132,7 +133,9 @@ class FakeAudioContext {
   }
 
   createStereoPanner() {
-    return new FakeStereoPannerNode();
+    const panner = new FakeStereoPannerNode();
+    this.panners.push(panner);
+    return panner;
   }
 
   createBiquadFilter() {
@@ -182,7 +185,7 @@ function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {
       levels: DEFAULT_LEVELS,
       hoveredLevelIndex: null,
       alpha0: 0,
-      alpha7: 0,
+      alpha7: 180,
       volume: 0.7,
       scaleMode: "diatonic7",
       fmEnabled: false,
@@ -247,7 +250,7 @@ describe("useMusicEngine", () => {
           levels: DEFAULT_LEVELS,
           hoveredLevelIndex: null,
           alpha0: 0,
-          alpha7: 0,
+          alpha7: 180,
           volume: 0.7,
           scaleMode: "diatonic7",
           fmEnabled: false,
@@ -365,6 +368,31 @@ describe("useMusicEngine", () => {
     });
 
     expect(onPhase).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  it("keeps GL(3,2) transformed pitch and pan on the same target hue", () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderMusicEngine({ scaleMode: "12tet", panEnabled: true });
+    act(() => {
+      result.current.initAudio();
+    });
+    const ctx = FakeAudioContext.instances[0];
+    const l1VoicePan = ctx.panners[0].pan;
+
+    expect(l1VoicePan.targetValues[l1VoicePan.targetValues.length - 1]).toBeCloseTo(Math.sin((240 * Math.PI) / 180), 10);
+
+    act(() => {
+      result.current.applyGL32Transform("A");
+    });
+    expect(l1VoicePan.targetValues[l1VoicePan.targetValues.length - 1]).toBeCloseTo(Math.sin((120 * Math.PI) / 180), 10);
+
+    act(() => {
+      result.current.resetGL32Transform();
+    });
+    expect(l1VoicePan.targetValues[l1VoicePan.targetValues.length - 1]).toBeCloseTo(Math.sin((240 * Math.PI) / 180), 10);
 
     unmount();
   });
