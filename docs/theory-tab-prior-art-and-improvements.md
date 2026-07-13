@@ -131,7 +131,7 @@ x2 > x1 + x0 and x1 > x0.
 | Proposal | Status | Notes |
 | --- | --- | --- |
 | P0: Claim Hygiene | Done | UI uses `Discrete Algebraic Color Theory` / `離散代数的色彩理論`, `Tone` / `トーン`, GRB Binary Tone wording, and `XOR Operation` / `XOR 演算`. |
-| Scope card | Partial | Scope and Limits summary exists; a near-top concise scope card remains optional. |
+| Final scope section | Done | The final Scope and Limits section lists the model's principal non-claims; the UI does not duplicate them in a near-top card. |
 | Dice-net rigor | Done | Cube-net enumeration and hue-path adjacency are machine-checked. |
 | P1: Known / CHROMALUM Adds Labels | Deferred | The docs already separate known prior art from CHROMALUM-specific synthesis; compact in-app labels remain optional. |
 | P1: References Drawer | Deferred | Docs carry the bibliography; an in-app references drawer remains optional. |
@@ -145,11 +145,11 @@ x2 > x1 + x0 and x1 > x0.
 2. `GRB` Binary Tone makes numeric level order identical to tone order.
 3. Complementation `lv xor 7` reverses chromatic tone ranks and die-opposite rank sums are 7.
 4. Fano lines form a Steiner triple system.
-5. Hamming labels are coordinate positions and parity-check labels, not color codewords.
+5. Hamming labels are coordinate positions and parity-check labels, not color codewords; the demo starts from a valid codeword, computes the received-word syndrome, and restores every single-bit error position `1..7`.
 6. Gray cycle uses only one-bit flips.
 7. K8 edges partition by Hamming distance.
 8. Cube-face spanning trees enumerate the 11 free cube nets and verify the hue-order staircase.
-9. UI copy tests reject `人間の色覚の帰結` and Japanese `輝度` for tone labels.
+9. UI copy tests reject external luma/brightness derivations and Japanese `明るさ` / `輝度` for GRB Binary Tone.
 
 ## Bottom Line
 

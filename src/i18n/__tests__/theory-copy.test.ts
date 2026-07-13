@@ -29,6 +29,8 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_hamming_desc).toContain("parity-bit positions");
     expect(en.theory_hamming_desc).toContain("parity-check rows");
     expect(en.theory_hamming_desc2).toContain("parity-check row labeled B");
+    expect(en.theory_hamming_desc2).toContain("c=0110011");
+    expect(en.theory_hamming_desc2).toContain("syndrome computed from r");
     expect(en.theory_hamming_desc2).not.toContain("Blue(1) checks");
     expect(en.theory_hamming_desc.toLowerCase()).not.toContain("single channel flips");
     expect(en.theory_fano_desc.toLowerCase()).toContain("zero vector");
@@ -43,6 +45,8 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_hamming_desc).toContain("パリティビット位置");
     expect(ja.theory_hamming_desc).toContain("パリティ検査行");
     expect(ja.theory_hamming_desc2).toContain("パリティ検査行 B");
+    expect(ja.theory_hamming_desc2).toContain("c=0110011");
+    expect(ja.theory_hamming_desc2).toContain("受信語から計算したシンドローム");
     expect(ja.theory_hamming_desc2).not.toContain("Blue(1) は");
     expect(ja.theory_fano_desc).toContain("零ベクトル");
     expect(ja.theory_conn_extended).toContain("座標");
@@ -79,6 +83,9 @@ describe("theory copy high-risk claims", () => {
     expect(en.theory_zigzag_desc).not.toContain("each vertex tone value");
     expect(en.theory_binary_desc).not.toContain("consequence of human color vision");
     expect(en.theory_binary_desc).not.toContain("BT.601");
+    expect(en.theory_binary_desc.toLowerCase()).not.toContain("luma");
+    expect(en.theory_binary_desc.toLowerCase()).not.toContain("brightness");
+    expect(en.theory_binary_desc).toContain("internal definition");
     expect(en.theory_intro).not.toContain("0 or 255");
     expect(en.theory_connections_desc).not.toContain("0/255");
     expect(en.theory_dice_desc).toContain("c ↦ c ⊕ 7 reverses tone order");
@@ -99,13 +106,36 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_zigzag_desc).toContain("非頂点の水平線では最大 4 点");
     expect(ja.theory_zigzag_desc).not.toContain("各頂点トーン値");
     expect(ja.theory_binary_desc).not.toContain("人間の色覚の帰結です");
-    expect(ja.theory_binary_desc).toContain("ITU-R BT.601 luma 係数の不等式");
+    expect(ja.theory_binary_desc).not.toContain("BT.601");
+    expect(ja.theory_binary_desc.toLowerCase()).not.toContain("luma");
+    expect(ja.theory_binary_desc).not.toContain("明るさ");
+    expect(ja.theory_binary_desc).not.toContain("輝度");
+    expect(ja.theory_binary_desc).toContain("モデル内の定義");
+    expect(ja.theory_zigzag_desc).not.toContain("明るさ");
+    expect(ja.theory_dice_desc).not.toContain("暗い順");
     expect(ja.theory_intro).not.toContain("0 または 255");
     expect(ja.theory_connections_desc).not.toContain("0/255");
     expect(ja.theory_dice_desc).toContain("補色写像 c ↦ c ⊕ 7 はトーン順を反転");
     expect(ja.theory_dice_desc3).toContain("11種類の立方体展開図（回転・反転は同一視）");
     expect(ja.theory_dice_desc3).toContain("R→Y→G→C→B→M");
     expect(ja.theory_dice_desc3).toContain("逆順");
+  });
+
+  it("states the principal nonclaims in the final scope copy", () => {
+    expect(en.theory_conn_limit_vertices).toContain("eight binary RGB vertices");
+    expect(en.theory_conn_limit_tone).toMatch(/not perceptual lightness.*luminance/);
+    expect(en.theory_conn_limit_operations).toContain("XOR is not physical additive mixing of light");
+    expect(en.theory_conn_limit_operations).toContain("AND is not physical subtractive mixing of pigments");
+    expect(en.theory_conn_limit_spaces).toContain("OKLab/OKLCH");
+    expect(en.theory_conn_limit_novelty).toContain("no novelty is claimed");
+
+    expect(ja.theory_conn_limit_vertices).toContain("8つの二値頂点");
+    expect(ja.theory_conn_limit_tone).toContain("知覚的明度");
+    expect(ja.theory_conn_limit_tone).toContain("相対輝度ではありません");
+    expect(ja.theory_conn_limit_operations).toContain("光の物理的な加法混色ではなく");
+    expect(ja.theory_conn_limit_operations).toContain("顔料の物理的な減法混色ではありません");
+    expect(ja.theory_conn_limit_spaces).toContain("OKLab/OKLCH");
+    expect(ja.theory_conn_limit_novelty).toContain("新規性は主張しません");
   });
 
   it("keeps reviewed color labels stable where abbreviation changes would alter meaning", () => {

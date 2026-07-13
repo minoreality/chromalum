@@ -54,6 +54,13 @@ describe("TheoryPanel", () => {
       expect(polyhedraLabels).toContain(label);
     }
     expect(polyhedraDiagram.querySelector('line[stroke-dasharray="4,3"]')).toBeTruthy();
+
+    const scopeSection = screen.getByText("Scope and Limits").closest("section");
+    expect(scopeSection?.textContent).toContain("only the eight binary RGB vertices");
+    expect(scopeSection?.textContent).toContain("not perceptual lightness");
+    expect(scopeSection?.textContent).toContain("XOR is not physical additive mixing of light");
+    expect(scopeSection?.textContent).toContain("OKLab/OKLCH");
+    expect(scopeSection?.textContent).toContain("no novelty is claimed");
   });
 
   it("uses the horizontal space inside the binary table SVG", () => {

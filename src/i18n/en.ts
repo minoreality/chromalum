@@ -230,7 +230,7 @@ export const en = {
     "The 3 channels {G,R,B} admit 2\u00b3 = 8 subsets. The 8 regions formed by 3 overlapping circles correspond exactly to the 8 colors: the outside is the empty set \u2205 (Black); the triple overlap is the full set {G,R,B} (White). Each color is in one-to-one correspondence with a subset A \u2286 {G,R,B}, readable as a characteristic function \u03c7_A (1 if the channel is in A, else 0). Every section below views this same 8-element set through a different lens.",
   theory_binary_title: "Binary Levels",
   theory_binary_desc:
-    "Here we restrict the model to the eight RGB vertices where each channel is 0 or 1, number each color as the 3-bit integer 4x₂ + 2x₁ + x₀, and define levels 0..7.\n\nIn the GRB Binary Tone model, bit2=Green, bit1=Red, bit0=Blue, so level = 4G + 2R + B and tone = level / 7. The bit weights are 4:2:1, making numeric level order identical to tone order without introducing an external brightness standard.\n\nUnder this assignment, B=1, R=2, G=4, so the primary numbers are {1, 2, 4}. This set is the unique 3-element set whose elements, pairwise sums, and total sum (all under ordinary integer addition) fill {1, …, 7} without overlap, and is exactly the minimal binary basis for this 8-color model.",
+    "Here we restrict the model to the eight RGB vertices where each channel is 0 or 1, number each color as the 3-bit integer 4x₂ + 2x₁ + x₀, and define levels 0..7.\n\nIn the GRB Binary Tone model, bit2=Green, bit1=Red, bit0=Blue, so level = 4G + 2R + B and tone = level / 7. The 4:2:1 bit weights are an internal definition, so numeric level order and tone order coincide by definition.\n\nUnder this assignment, B=1, R=2, G=4, so the primary numbers are {1, 2, 4}. This set is the unique 3-element set whose elements, pairwise sums, and total sum (all under ordinary integer addition) fill {1, …, 7} without overlap, and is exactly the minimal binary basis for this 8-color model.",
   theory_binary_color: "Color",
   theory_binary_tone_formula: "Tone (GRB 4:2:1): T = (4G + 2R + B) / 7 = level / 7",
   theory_binary_tone_complement: "Complement tone: T\u2096 + T\u2087\u208b\u2096 = 1",
@@ -279,7 +279,7 @@ export const en = {
   theory_hamming_desc:
     "The positions 1..7 used here are the same nonzero 3-bit labels as the Fano plane\u2019s 7 points. In the standard Hamming(7,4) coordinate layout, the power-of-two coordinates B=1, R=2, and G=4 are parity-bit positions and also label the three parity-check rows for bits 0, 1, and 2.",
   theory_hamming_desc2:
-    "The parity-check row labeled B (Blue=1, bit 0) covers positions {1,3,5,7}; R (Red=2, bit 1) covers {2,3,6,7}; and G (Green=4, bit 2) covers {4,5,6,7}. The remaining coordinate labels (M=3, C=5, Y=6, W=7) occupy the data positions. If a single coordinate position is corrupted, the failed parity-check rows identify that position; this 3-bit vector (the syndrome) is precisely the error position in binary.",
+    "The parity-check row labeled B (Blue=1, bit 0) covers positions {1,3,5,7}; R (Red=2, bit 1) covers {2,3,6,7}; and G (Green=4, bit 2) covers {4,5,6,7}. The remaining coordinate labels (M=3, C=5, Y=6, W=7) occupy the data positions. If a single coordinate position is corrupted, the failed parity-check rows identify that position; this 3-bit vector (the syndrome) is precisely the error position in binary. The demo encodes data 1011 as the even-parity codeword c=0110011, then clicking flips one bit of the received word r. Correct flips the bit indicated by the syndrome computed from r and restores the original codeword.",
   theory_hamming_parity: "Parity",
   theory_hamming_checks: "Checks",
   theory_hamming_flip: "Click a position to inject an error",
@@ -329,7 +329,16 @@ export const en = {
   theory_conn_extended:
     "Adding Black(0) as an extra coordinate for overall parity to the nonzero labels 1..7 used in Hamming(7,4) lets us label the 8 coordinate positions of the [8,4,4] extended Hamming code. This correspondence does not make the colors codewords. Each codeword is a length-8 bit string; Black, Blue, …, White are names for identifying those 8 coordinates.",
   theory_conn_boundary:
-    "GL(3,2) (order 168) is the full group of invertible linear transformations of GF(2)³, and it completely preserves the incidence structure PG(2,2) on the seven nonzero points. However, a general GL(3,2) transformation sends the basis vectors {B,R,G} to other nonzero vectors, so it does not preserve their meaning as RGB primary channels. The color-theoretically natural automorphisms are exactly the S₃ subgroup (6 permutations) that permutes the basis {B,R,G}. Since GF(2)³ is a finite 8-point model, handling more colors requires a different coordinate system or algebraic structure.",
+    "GL(3,2) (order 168) preserves the incidence structure PG(2,2) on the seven nonzero points of GF(2)³, but in general it does not preserve RGB primary-channel meaning or GRB tone. S₃ is the subgroup that permutes the unlabeled basis set {B,R,G}; it is distinct from a symmetry of the full model with named G/R/B axes and fixed 4:2:1 tone.",
+  theory_conn_limit_vertices:
+    "The model covers only the eight binary RGB vertices where each channel is 0 or 1. Continuous colors and intermediate values require another coordinate system.",
+  theory_conn_limit_tone:
+    "GRB Binary Tone is an internal coordinate defined by 4:2:1 weights, not perceptual lightness, photometric luminance, or relative luminance.",
+  theory_conn_limit_operations:
+    "XOR is not physical additive mixing of light, and AND is not physical subtractive mixing of pigments. Complement is likewise defined as bitwise inversion.",
+  theory_conn_limit_spaces: "CIE XYZ/Lab/LCh, OKLab/OKLCH, gamut, chromatic adaptation, and color difference ΔE are outside this model.",
+  theory_conn_limit_novelty:
+    "GF(2)³, Boolean lattices, the Fano plane, Hamming codes, Gray cycles, and the polyhedra are established structures; no novelty is claimed for them. This tab organizes their relationships under one eight-color encoding.",
   theory_conn_boundary_title: "Scope and Limits",
   theory_xor_complement: "{0} \u2295 111 = {1}  {2} \u2194 {3}",
   theory_xor_cayley_aria: "XOR Cayley table",
