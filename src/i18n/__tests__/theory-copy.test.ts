@@ -214,17 +214,19 @@ describe("theory copy high-risk claims", () => {
     expect(ja.theory_fano_primary).toBe("基底XOR");
   });
 
-  it("distinguishes overview levels and the Map sRGB adapter from perceptual brightness", () => {
-    expect(en.about_body_1.toLowerCase()).not.toContain("brightness");
-    expect(en.about_body_1).toContain("GRB tone labels");
+  it("keeps the overview accessible while preserving the Map and Music terminology", () => {
+    expect(en.about_body_1.toLowerCase()).toContain("brightness");
+    expect(en.about_body_1).toContain("primary colors of light");
+    expect(en.about_body_1).toContain("primary colors of pigment");
     expect(en.map_map_colorTone).toBe("GRB Code Score");
     expect(en.music_octa_title).toBe("XOR Relation");
     expect(en.music_octa_first_select).toContain("XOR operand");
     expect(en.music_octa_play).toBe("▶ XOR Relation");
     expect(en.music_octa_stop).toBe("⏹ XOR Relation");
 
-    expect(ja.about_body_1).not.toContain("明るさ");
-    expect(ja.about_body_1).toContain("GRBトーンラベル");
+    expect(ja.about_body_1).toContain("明るさ");
+    expect(ja.about_body_1).toContain("光の三原色");
+    expect(ja.about_body_1).toContain("色の三原色");
     expect(ja.map_map_colorTone).toBe("GRBコードスコア");
     expect(ja.music_octa_title).toBe("XOR関係");
     expect(ja.music_octa_first_select).toContain("オペランド");

@@ -193,9 +193,9 @@ export const en = {
   header_shortcuts: "Shortcuts",
   about_title: "Overview",
   about_body_1:
-    "CHROMALUM is an art tool that starts from eight GRB tone labels: six chromatic labels plus white and black. It explores relationships among those levels through a discrete algebraic structure, while alternative hues act as visual representatives of the same level.",
+    "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, white, and black. It reorganizes brightness into relationships among colors. Behind this color expression lies an algebraic structure connecting the eight colors.",
   about_body_2:
-    "Start by drawing in the Source tab or loading an image. In the Hex and Color tabs, assign colors to the eight tone levels and shape the palette. The Gallery tab lets you browse all resulting pattern combinations. In the Glaze tab, you can overlay alternative candidate colors, while the Map tab analyzes information in the canvas.",
+    "Start by drawing in the Source tab or loading an image. Assign colors and shape the palette in the Hex and Color tabs. The Gallery tab lets you browse every possible combination. In the Glaze tab, you can overlay alternative candidate colors. Use the Map tab to analyze information in the canvas.",
   about_body_3: "The Theory tab explains the underlying color system, and the Music tab explores the same color structure through sound.",
 
   // Tablist
@@ -577,8 +577,8 @@ export const en = {
   linkedviz_legend_l7_boundary: "L7 r=max",
   linkedviz_complement_cancel: "Antiphase",
   linkedviz_complement_align: "In phase",
-  linkedviz_axis_sin: "Y projection: −cos(θ+α)",
-  linkedviz_axis_cos: "X projection: sin(θ+α)",
+  linkedviz_axis_sin: "Y projection",
+  linkedviz_axis_cos: "X projection",
   linkedviz_sound_on: "Sound ON",
   linkedviz_sound_off: "Sound",
   linkedviz_sound_title: "Toggle sonification",

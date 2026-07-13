@@ -193,9 +193,9 @@ export const ja = {
   header_shortcuts: "Shortcuts",
   about_title: "概要",
   about_body_1:
-    "CHROMALUMは、6つの有彩色ラベルと白・黒からなる8つのGRBトーンラベルを出発点に、そのレベル間の関係を離散代数で探るアートツールです。同じレベルの別候補色は、代数ラベルそのものではなく表示上の代表元として扱います。",
+    "CHROMALUMは、光の三原色と色の三原色、そして白と黒からなる八色を出発点に、明るさを色の関係へと組み替えていくアートツールです。この色彩表現の奥には、八つの色をめぐる代数的な構造があります。",
   about_body_2:
-    "まずはSourceタブで絵を描くか、画像を読み込むところから始めます。HexタブやColorタブで八段階のトーンレベルに色を割り当て、配色を決めます。その組み合わせの全パターンはGalleryタブで参照できます。Glazeタブでは別の候補色をオーバーレイすることができます。キャンバスの情報の分析にはMapタブを使います。",
+    "まずはSourceタブで絵を描くか、画像を読み込むところから始めます。HexタブやColorタブで色を割り当て、配色を決めます。その組み合わせの全パターンはGalleryタブで参照できます。Glazeタブでは別の候補色をオーバーレイすることができます。キャンバスの情報の分析にはMapタブを使います。",
   about_body_3: "Theoryタブでは色彩体系の理論を読み解き、Musicタブでは同じ色彩構造の音響化を扱います。",
 
   // Tablist
@@ -575,8 +575,8 @@ export const ja = {
   linkedviz_legend_l7_boundary: "L7 r=max",
   linkedviz_complement_cancel: "逆位相",
   linkedviz_complement_align: "同位相",
-  linkedviz_axis_sin: "Y projection: −cos(θ+α)",
-  linkedviz_axis_cos: "X projection: sin(θ+α)",
+  linkedviz_axis_sin: "Y projection",
+  linkedviz_axis_cos: "X projection",
   linkedviz_sound_on: "音声 ON",
   linkedviz_sound_off: "音声",
   linkedviz_sound_title: "音響化の切替",
