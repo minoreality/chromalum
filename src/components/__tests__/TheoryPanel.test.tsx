@@ -27,11 +27,13 @@ describe("TheoryPanel", () => {
     expect(screen.getAllByText("K₈").length).toBeGreaterThan(0);
 
     expect(Array.from(container.querySelectorAll(".theory-heading")).map((el) => el.textContent)).toEqual([
+      "Minimal Principle and Derivation",
       "Venn Diagram",
       "Binary Levels",
       "XOR Operation",
       "Color Cube",
       "Gray Code Cycle",
+      "From Six Discrete Colors to Continuous Hue and Pitch",
       "Tone Zigzag",
       "Color Die",
       "Fano Plane",
@@ -41,8 +43,13 @@ describe("TheoryPanel", () => {
       "Color Star",
       "Polyhedra network",
       "Connections",
+      "Post-Derivation External Check",
       "Scope and Limits",
     ]);
+
+    const continuousBridge = screen.getByRole("group", { name: "From Six Discrete Colors to Continuous Hue and Pitch" });
+    expect(continuousBridge.textContent).toContain("H≅ℝ/2πℤ≅S¹");
+    expect(continuousBridge.textContent).toContain("p=θ/π mod 2");
 
     const polyhedraDiagram = screen.getByRole("img", { name: "Polyhedra network" });
     expect(polyhedraDiagram.querySelector("desc")?.textContent).toContain("common composition");
@@ -57,8 +64,8 @@ describe("TheoryPanel", () => {
 
     const scopeSection = screen.getByText("Scope and Limits").closest("section");
     expect(scopeSection?.textContent).toContain("only the eight binary RGB vertices");
-    expect(scopeSection?.textContent).toContain("not perceptual lightness");
-    expect(scopeSection?.textContent).toContain("XOR is not physical additive mixing of light");
+    expect(scopeSection?.textContent).toContain("not derived by feeding perceptual lightness");
+    expect(scopeSection?.textContent).toContain("they are not physical additive mixing of light");
     expect(scopeSection?.textContent).toContain("OKLab/OKLCH");
     expect(scopeSection?.textContent).toContain("no novelty is claimed");
   });

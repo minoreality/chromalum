@@ -8,33 +8,194 @@
 
 ## Abstract
 
-本ノートは、CHROMALUM の Theory タブで用いている 8 色の代数層と、その上に置く純色色相境界層を、離散代数・有限幾何・符号理論・多面体幾何の観点から整理する。代数層の核は、RGB チャンネルのオン/オフを 3 ビットベクトルとして読み、8 つのラベルを GF(2)^3 の元に対応させることである。純色色相境界上の中間候補は、その代数層の新しい元ではなく、同じ level を表示する代表元として別に扱う。
+本ノートは、CHROMALUM の Theory タブで用いている 8 色の代数層と、それとは別に RGB 立方体上で定義する最大彩度色相環 `H`（以下、純色相環）を、離散代数・有限幾何・符号理論・多面体幾何の観点から整理する。代数層の核は、RGB チャンネルのオン/オフを 3 ビットベクトルとして読み、8 つのラベルを GF(2)^3 の元に対応させることである。純色相環上の中間候補は、その代数層の新しい元ではなく、同じ level を表示する代表元として別に扱う。
 
 この核そのものは既知である。RGB 色立方体、Z2 x Z2 x Z2 による色加算、Fano 平面 PG(2,2)、Hamming(7,4) 符号との関係は、既存の数学教材・レクリエーショナル数学・色空間解説に現れる。
 
-本モデルの独自性は、これら既知構造を、`level = 4G + 2R + B` による GRB Binary Tone 順序、補色トーン定理、標準サイコロの対面和 7、色相グレイ巡回、Fano/Hamming 対応、多面体双対、K8 の Hamming 距離分解として、単一の 8 ラベルの代数アトラスへ統合し、さらに純色色相境界上の level 交点を表示代表元として接続する点にある。
+本モデルの独自性は、これら既知構造を、`level = 4G + 2R + B` による GRB Binary Tone 順序、補色トーン定理、標準サイコロの対面和 7、色相グレイ巡回、Fano/Hamming 対応、多面体双対、K8 の Hamming 距離分解として、単一の 8 ラベルの代数アトラスへ統合し、さらに純色相環上の level 交点を表示代表元として接続する点にある。
 
-## Model Assumptions
+## Minimal Generating Principle
 
-本モデルは一般的な色彩科学全体を扱うものではない。以下はまず、有限な代数層についての仮定である。
+CHROMALUM の規則を互いに独立な仮定として並べる必要はない。最小核は、3つの名前付き二値生成元の冪集合
 
-1. 代数層のラベル集合は RGB チャンネルのオン/オフだけからなる 8 元である。
-2. 各ラベルはビット列 `[G,R,B]` で表す。
-3. レベル番号は `lv = 4G + 2R + B` で定義する。
-4. 加法的な構造は GF(2)^3 上の XOR で読む。
-5. 集合論的な構造は `{G,R,B}` の部分集合束 B3 として読む。
-6. 補色は `c' = c xor 7` で定義する。
-7. トーン指標には、GRB Binary Tone
+```text
+E = {G,R,B}
+A = P(E)
+```
+
+である。同じ `A` を、包含関係で読めば Boolean 束 `B3`、対称差で読めば `GF(2)^3`、距離 `d(S,T)=|S△T|` で読めば Hamming cube `Q3` になる。したがって Venn、Boolean、XOR、Color Cube、Fano、Hamming、偶奇分割、K8 距離分解は別々の色彩規則ではなく、この一つの有限集合から得る標準構成である。
+
+`A` から Black `K=∅` と White `W=E` を除き、Hamming 距離1の辺だけを残すと、各頂点の次数が2の連結グラフ、すなわち有彩6-cycle が現れる。
+
+```text
+R -> Y -> G -> C -> B -> M -> R
+toggle word: G, R, B, G, R, B
+```
+
+無向・無根の6-cycleには回転と反転の対称性がある。CHROMALUM は **Red を 0° とし、Yellow 方向を正方向とする** 根付き・向き付き規約を一度だけ選ぶ。この規約から、補色Cへ至るまでに初めて反転するチャンネルの順 `G,R,B` を、上位から下位への座標順として読む。これは `GF(2)^3` だけから証明される色固有の事実ではなく、モデルに必要な唯一の座標枠の選択である。
+
+この順序を正整数評価
+
+```text
+L(G,R,B) = gG + rR + bB
+```
+
+で辞書式に保つには、
+
+```text
+b >= 1
+r > b
+g > r + b
+```
+
+が必要十分である。最小の正整数解は順に `b=1`, `r=2`, `g=4` となる。等価的に、3原子の7つの非空部分和が重複なく連続整数 `{1,...,7}` を埋める正整数重みの集合は `{1,2,4}` だけであり、向き付きトグル順がその割当を `[G,R,B]=[4,2,1]` に固定する。したがって
+
+```text
+level = L = 4G + 2R + B
+tone  = T = L / 7
+```
+
+は経験的な明度係数を丸めて得る入力値ではない。「3つの二値生成元」「有彩6-cycleの根と向き」「順序を保つ最小の連続部分和評価」から得る整数座標である。ここで `L` は Boolean valuation であり、`GF(2)^3` から整数への群準同型ではない。ビットが重なると通常の整数和にはcarryが生じるため、XOR加法とは区別する。
+
+この最小核を標準単位立方体へ凸実現すると、
+
+```text
+X = [0,1]^3
+A = vertices(X)
+H = {c in X | min(c)=0 and max(c)=1}
+lambda = L restricted to H
+```
+
+が得られる。`H` はK-W軸を囲む純色相環、`lambda` はその上のlevel座標である。ここまでを固定すると、主要な規則の依存関係は次のようになる。
+
+### 離散六色の標準的な連続化
+
+三つの生成元を実立方体の基底ベクトルへ写すと、原色頂点は `R=e_R`、`G=e_G`、`B=e_B` である。互いに素な二原色では Boolean join、XOR、実座標和が同じ頂点を与えるため、
+
+```text
+Y = R join G = R xor G  ->  e_R + e_G
+C = G join B = G xor B  ->  e_G + e_B
+M = B join R = B xor R  ->  e_B + e_R
+```
+
+となる。これで得た六つの有彩頂点を `v_0=R, v_1=Y, ..., v_5=M` と巡回順に並べ、すべての隣接対へ同じアフィン補間
+
+```text
+c_i(t) = (1-t) v_i + t v_(i+1)    (0 <= t <= 1, indices mod 6)
+```
+
+を適用する。個々の色対ごとに別の混色則を足す必要はなく、一つの補間規則が六辺を同時に埋める。その和集合はちょうど
+
+```text
+H = {c in [0,1]^3 | max(c)-min(c)=1}
+  = union_i [v_i,v_(i+1)]
+```
+
+であり、離散的な有彩6-cycleの標準的な区分線形実現になる。
+
+R-Y-G 区間では、GRB座標とlevelは具体的に
+
+```text
+R -> Y: c_0(t) = (t, 1, 0),       L(c_0(t)) = 2 + 4t    // 2 -> 6
+Y -> G: c_1(t) = (1, 1-t, 0),     L(c_1(t)) = 6 - 2t    // 6 -> 4
+```
+
+となる。各辺では一つのチャンネルだけが変わるためlevelは単調だが、原色Rから原色Gまでの純色相経路はYで向きを変え、`2 -> 6 -> 4` の二つの単調区間になる。これに対しRとGを直接結ぶ弦
+
+```text
+d(t) = (t,1-t,0)
+```
+
+は `0<t<1` で `max(d)-min(d)<1` となり、純色相環 `H` の内側へ入る。したがって三原色を直接つなぐ三角形ではなく、二次色CMYを頂点として加えた六角形の境界こそが、最大チャンネル差を保った連続色相経路になる。
+
+各辺へ等しい `pi/3` を割り当て、
+
+```text
+theta(c_i(t)) = (pi/3)(i+t)   mod 2pi
+```
+
+と置けば、区分線形六角形は円周と同相になり、`H ~= R/2piZ ~= S1` を得る。「六角形を円にする」とは、この巡回順と辺内位置を保つ一様な円周パラメータ化である。補色 `kappa(c)=1-c` はここで半回転 `theta -> theta+pi` になる。UIの度数表記 `h` とは `h=180 theta/pi` で換算できる。
+
+Musicへの橋には、さらに次の二要件だけを置く。
+
+1. 等しい色相差を等しい音程差へ写す。
+2. 補色半回転 `pi` を1オクターブへ写す。
+
+円周上では、音程類を2オクターブを法とする
+
+```text
+p(theta) = theta/pi   mod 2
+```
+
+と書く。`theta` に `2pi` を加えると `p` は2だけ増え、同じ2オクターブ音程類へ戻るため、これは円周上で一価である。補色は `p -> p+1 mod 2`、すなわち1オクターブ移動になる。
+
+絶対周波数には、円周角の持ち上げ `theta_tilde in R` を使う。音程を `I(theta_tilde)=log2(f(theta_tilde)/f_0)` と書くと、第1要件と連続性から `I` は一次関数になり、第2要件が傾きを固定する。したがって
+
+```text
+I(theta_tilde) = theta_tilde/pi
+f(theta_tilde) = f_0 2^(theta_tilde/pi)
+```
+
+が一意に得られる。後で導かれる純色相環の最小交点刻み `pi/12 = 15deg` は `1/12` オクターブ、すなわち1半音になり、`pi` は1オクターブ、`2pi` は2オクターブになる。基準周波数 `f_0` と音色・リズムは依然として表現上の選択だが、色相差から音程差への写像の形とスケールは、この二要件で固定される。
+
+全タブを同じ対象のビューとして扱うため、levelごとの候補ファイバーを
+
+```text
+D_0 = {K}
+D_7 = {W}
+D_L = C_L = {c in H | lambda(c)=L}    for L=1,...,6
+D   = disjoint union of D_L
+```
+
+と置く。ファイバーサイズは
+
+```text
+(|D_0|,...,|D_7|) = (1,1,3,3,3,3,1,1)
+```
+
+で、候補点は合計16点（純色相環上の14点とK/W）になる。paletteは各levelから1候補を選ぶsection `s(L) in D_L` であり、全levelを使うsection数は `3^4=81`。補色と可換する条件
+
+```text
+s(7-L) = kappa(s(L))
+```
+
+を加えると、L2がL5を、L3がL4を決めるため、section数は `3^2=9` になる。この一つのファイバー族に対し、Theoryは導出、Hexは全候補点、Colorはsection選択、Galleryはsection列挙、Musicは補色可換sectionと代数層Aの音響化を担当する。
+
+| source | derived structures |
+| :--- | :--- |
+| `A=P(E)` | Venn、Boolean lattice、XOR、Q3、Fano、Hamming、parity、K8 distance partition |
+| rooted/oriented chromatic `C6` | hue order、toggle word `GRBGRB`、正準 hue parameter |
+| minimal valuation `L` | `4:2:1`、levels `0..7`、tone order、edge changes `±4,±2,±1` |
+| uniform affine completion of the six edges | pure-hue loop `H ~= R/2piZ ~= S1`、各辺の単調level、continuous phase `theta` |
+| complement `kappa(c)=1-c` | `L(kappa(c))=7-L(c)`、tone和1、rank reversal、standard-die construction |
+| `lambda=L|H` | Tone Zigzag、15°格子、14交点、fiber counts `1,3,3,3,3,1`、81 palettes |
+| complement-preserving section | `s(7-L)=kappa(s(L))`、81 palettesから9つの補色対称palettesへの縮約 |
+| equal hue intervals + complement maps to octave | `p=theta/pi mod 2`、`f(theta_tilde)=f_0 2^(theta_tilde/pi)`、`pi/12`=1 semitone |
+| standard Euclidean cube realization + stated construction algorithms | regular-hexagon projection、equitone triangles、rectangles、60°、circumcircle、quadratic norms |
+| optional sonification maps | `R/2piZ -> R/2Z` pitch class、phase、gain、timbre、rhythm |
+
+最後の3行では追加構造を明示する。直角・円・長さは標準ユークリッド計量に加えて、どの点を結び、どの中点・垂線・交点を作るかという作図アルゴリズムを固定した後の定理である。音高の指数写像は上記二要件から定まる一方、基準音、位相、音色、リズムは共通アトラスから音響空間への写像を選んだ後の結果である。Major、Octatonic、Whole-tone、FM、個別gainは比較・表現レイヤーであり、有限色彩代数そのものから必然的に出る規則ではない。
+
+## Minimal Choices and Derived Definitions
+
+有限な代数層で独立に選ぶのは、名前付き生成元 `{G,R,B}` と、有彩6-cycleの根・向き `R -> Y` である。以下はそれらから用いる派生定義である。
+
+1. 代数ラベルは `A=P({G,R,B})` の8元であり、特性ベクトルを根付き巡回から得た座標順 `[G,R,B]` で書く。
+2. 対称差をXOR、包含をBoolean order、対称差の濃度をHamming距離として読む。
+3. 最小部分和評価から `level = 4G + 2R + B` を得る。
+4. 補色は集合補集合であり、ビット表現では `c' = c xor 7` になる。
+5. トーン指標は、派生したlevelを正規化した GRB Binary Tone
 
    ```text
    T = (4G + 2R + B) / 7
    ```
 
-   を用いる。
+   とする。
+6. 連続表示層は `A` の標準立方体実現 `X=[0,1]^3` から純色相環 `H` を取り、`lambda=L|H` のファイバーを候補集合とする。
 
-このトーンは CIE の知覚明度でも、WCAG の相対輝度でもない。外部の輝度規格を導入せず、3 ビットの GRB 番号そのものを `0..1` に正規化した離散指標である。したがって本モデルの「トーン順」は、知覚的均等性やアクセシビリティ・コントラストを直接保証しない。
+外部の測光・映像係数はこの導出へ入力しない。経験的な色空間との比較は、内部定理をすべて得た後の独立な照合として本ノート末尾で扱う。
 
-### Algebraic Layer, Hue-Boundary Layer, and Level Projection
+### Algebraic Layer, Pure-Hue Loop, and Level Projection
 
 本ノートでは、同じ「色」という語で異なる構造を混同しないよう、次の二層を区別する。
 
@@ -43,24 +204,24 @@ A = GF(2)^3 = {0,1}^3
 H = { GRB(g,r,b) in [0,1]^3 | min(g,r,b)=0 and max(g,r,b)=1 }
 ```
 
-`A` は 8 個の二値 RGB ラベルからなる代数層である。XOR、Fano、Hamming、Boolean lattice、Color Cube、K8 の演算と関係は `A` 上で定義する。`H` は RGB cube の純色色相境界を一周する区分線形な六角形であり、連続的な色相座標を持つが、GF(2)^3 のベクトル空間ではない。
+`A` は 8 個の二値 RGB ラベルからなる代数層である。XOR、Fano、Hamming、Boolean lattice、Color Cube、K8 の演算と関係は `A` 上で定義する。`H` は RGB cube 上で `min=0, max=1` を満たす純色相環であり、区分線形な六角形として連続的な色相座標を持つが、GF(2)^3 のベクトル空間ではない。
 
 `H` 上の GRB level 座標を、射影
 
 ```text
-π : H -> [1,6]
-π(GRB(g,r,b)) = 4g + 2r + b
+λ : H -> [1,6]
+λ(GRB(g,r,b)) = 4g + 2r + b
 ```
 
 で定義する。整数 level `L in {1,...,6}` に対する候補集合はファイバー
 
 ```text
-C_L = { c in H | π(c) = L }
+C_L = { c in H | λ(c) = L }
 ```
 
 である。UI が各 level に表示する候補色は、選択写像 `s(L) in C_L` による代表元であり、`s(L)` 自体を `A` の元とみなして XOR しているわけではない。複数の候補が同じ `L` を持っても、代数ラベルは 1 個のままである。Black `L0` と White `L7` は `H` 上に存在せず、黒白軸の端点として別扱いする。
 
-この区別により、以下では「level `L`」は `A` のラベルまたはその数値座標を、「level `L` の候補」は `C_L` の表示代表元を意味する。`π` は level 座標を与える写像であって、色相境界へ GF(2)^3 の加法を移す準同型ではない。
+この区別により、以下では「level `L`」は `A` のラベルまたはその数値座標を、「level `L` の候補」は `C_L` の表示代表元を意味する。`λ` は level 座標を与える写像であって、純色相環へ GF(2)^3 の加法を移す準同型ではない。
 
 ## Color Labels
 
@@ -142,7 +303,7 @@ CHROMALUM のレベル順で書くと、
 
 であり、各ステップは 1 ビットだけを反転する。したがってこれは、立方体 Q3 の有彩色頂点上の 6-cycle であり、Gray code 的な巡回である。
 
-### Pure-Color Tone Intersections
+### Pure-Hue-Loop Tone Intersections
 
 上の色相六角形は、純色条件
 
@@ -150,7 +311,7 @@ CHROMALUM のレベル順で書くと、
 max(R,G,B) = 1, min(R,G,B) = 0
 ```
 
-を満たす RGB cube の境界閉路でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `1`、または `1` から `0` へ線形に変化し、他の 2 成分は `0` または `1` に固定される。
+を満たす RGB cube 上の純色相環 `H` でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `1`、または `1` から `0` へ線形に変化し、他の 2 成分は `0` または `1` に固定される。
 
 CHROMALUM の内部計算では、この閉路 `H` をデバイスRGBのバイト値ではなく、正規化座標 `GRB(g,r,b)`、またはそれを4倍した `0..4` 座標 `GRB(G4,R4,B4)` で表す。任意の色相では成分は実数だが、整数 level の候補交点は15度刻みで `G4,R4,B4` がすべて整数になる。GRB順は Binary Tone の重み `4:2:1` と座標成分を一致させる。この整数候補も `A` を拡張する代数元ではなく、`C_L` に属する代表元である。
 
@@ -170,7 +331,7 @@ L = (4G4 + 2R4 + B4) / 4
 T = L / 7
 ```
 
-である。8-bit sRGB、Canvas、PNGはこのモデルの公理ではない。出力アダプターは正準座標からデバイス値を作る。一方、画像入力は sRGB コード値から level ラベルを推定する別の分類器であり、`π` の逆写像でも正準座標の復元でもない。いずれの経路でも、デバイス量子化によって `A` や `H` の定義を変更しない。
+である。8-bit sRGB、Canvas、PNGはこのモデルの公理ではない。出力アダプターは正準座標からデバイス値を作る。一方、画像入力は sRGB コード値から level ラベルを推定する別の分類器であり、`λ` の逆写像でも正準座標の復元でもない。いずれの経路でも、デバイス量子化によって `A` や `H` の定義を変更しない。
 
 #### GRB Decomposition and Four Angle Variables
 
@@ -184,7 +345,7 @@ L(c) = 4g + 2r + b
 とする。正六角形の外接半径を `1`、Red を画面上方向、Green を右下、Blue を左下へ置く 2 次元写像を
 
 ```text
-H(c) = (x,y)
+V(c) = (x,y)
 x = (sqrt(3)/2)(g-b)
 y = (g+b)/2-r
 ```
@@ -192,11 +353,11 @@ y = (g+b)/2-r
 と定義すると、`R -> (0,-1)`, `G -> (sqrt(3)/2,1/2)`, `B -> (-sqrt(3)/2,1/2)` になる。この写像は中立方向を消去し、
 
 ```text
-H(c + t*GRB(1,1,1)) = H(c)
-H(GRB(1,1,1)-c) = -H(c)
+V(c + t*GRB(1,1,1)) = V(c)
+V(GRB(1,1,1)-c) = -V(c)
 ```
 
-を満たす。したがって 2 次元位置だけでは level は一意に決まらない。一方、`H(c)=(x,y)` と `L` を同時に指定すれば、
+を満たす。したがって 2 次元位置だけでは level は一意に決まらない。一方、`V(c)=(x,y)` と `L` を同時に指定すれば、
 
 ```text
 g = (L + 2y +  4x/sqrt(3)) / 7
@@ -207,7 +368,7 @@ b = (L + 2y - 10x/sqrt(3)) / 7
 として GRB を一意に復元できる。ゆえに
 
 ```text
-GRB 3D coordinate  <->  (2D hue vector H, GRB level L)
+GRB 3D coordinate  <->  (2D hue vector V, GRB level L)
 ```
 
 は完全な座標分解である。同じ 2 次元位置へ level `L1`, `L2` を割り当てた 2 つの lift は、正規化座標で
@@ -221,7 +382,7 @@ c_L2 - c_L1 = ((L2-L1)/7) GRB(1,1,1)
 2 次元半径には
 
 ```text
-|H(c)|^2
+|V(c)|^2
   = g^2+r^2+b^2-gr-rb-bg
   = ((g-r)^2 + (r-b)^2 + (b-g)^2) / 2
 ```
@@ -232,16 +393,17 @@ c_L2 - c_L1 = ((L2-L1)/7) GRB(1,1,1)
 
 | symbol | meaning |
 | --- | --- |
-| `h` | 色相六角形の辺を線形補間する正準 hue parameter |
-| `phi` | `H(c)` を原点から見た実際のユークリッド偏角 |
-| `beta = h + alpha` | Music 単位円へ写した実効位相角 |
+| `theta` | 純色相環の各辺を線形補間する正準 hue parameter（ラジアン） |
+| `h = 180 theta/pi` | UI で表示する同じ hue parameter（度） |
+| `phi` | `V(c)` を原点から見た実際のユークリッド偏角 |
+| `beta` | hue parameter と UI 位相 `alpha` を合成して Music 単位円へ写した実効位相角 |
 | `vartheta` | M/G と R/C の作図から生じる創発的な中心角 |
 
-R-Y 辺で `t = h/60deg = 3h/pi` とすると、
+R-Y 辺を `c(t)=GRB(t,1,0)` とし、`t = h/60deg = 3theta/pi` とすると、
 
 ```text
-H(t) = (sqrt(3)t/2, -1+t/2)
-rho(t)^2 = |H(t)|^2 = 1-t+t^2
+V(c(t)) = (sqrt(3)t/2, -1+t/2)
+rho(t)^2 = |V(c(t))|^2 = 1-t+t^2
 phi(t) = atan2(sqrt(3)t, 2-t)
 ```
 
@@ -253,7 +415,7 @@ phi(t) = atan2(sqrt(3)t, 2-t)
 | `30deg` | `30deg` | `3/4` |
 | `45deg` | `atan(3sqrt(3)/5) ~= 46.1021deg` | `13/16` |
 
-これは矛盾ではない。`h` は GRB の線形補間、整数 level 交点、`15deg` 格子を保存し、`phi` は正六角形埋め込み後の実方向を表す。Music 単位円は `H(c)/|H(c)|` ではなく、正準パラメータを位相として使う `U(beta)=(sin(beta),-cos(beta))` であるため、さらに別の写像である。
+これは矛盾ではない。`h` は GRB の線形補間、整数 level 交点、`15deg` 格子を保存し、`phi` は正六角形埋め込み後の実方向を表す。Music 単位円は `V(c)/|V(c)|` ではなく、正準パラメータを位相として使う `U(beta)=(sin(beta),-cos(beta))` であるため、さらに別の写像である。
 
 画面複素座標 `z=x+iy` と `zeta=exp(2pi i/3)` を使えば、同じ 2 次元写像は
 
@@ -269,7 +431,7 @@ GRB Binary Tone
 T = (4G + 2R + B) / 7
 ```
 
-は RGB 成分の線形関数なので、色相六角形の各辺上では tone も単調な一次関数として変化する。したがって、隣接する 2 頂点のレベル差が `d` のとき、その辺は端点を含めて `d + 1` 個の離散 tone レベルを横切る。
+は RGB 成分の線形関数なので、純色相環の各辺上では tone も単調な一次関数として変化する。したがって、隣接する 2 頂点のレベル差が `d` のとき、その辺は端点を含めて `d + 1` 個の離散 tone レベルを横切る。
 
 色相閉路
 
@@ -277,7 +439,7 @@ T = (4G + 2R + B) / 7
 2 -> 6 -> 4 -> 5 -> 1 -> 3 -> 2
 ```
 
-を各純色辺ごとの通過レベルとして展開すると、端点を含めて次のようになる。
+を純色相環の各辺における通過レベルとして展開すると、端点を含めて次のようになる。
 
 ```text
 R -> Y : 2 3 4 5 6
@@ -313,11 +475,11 @@ M -> R : 3 2
 300°   M  = 3  -> 5π/3
 ```
 
-このラジアン表記は角度単位の換算であり、Tone Zigzag を正弦波や余弦波として定義するものではない。ここでの tone は、色相六角形の各辺上で GRB Binary Tone が作る区分線形関数である。
+このラジアン表記は角度単位の換算であり、Tone Zigzag を正弦波や余弦波として定義するものではない。ここでの tone は、純色相環の各辺上で GRB Binary Tone が作る区分線形関数である。
 
-この区分線形関数を `L(h) = 7T(h)` と書くと、三角関数的な座標系に対して次の構造を持つ。ここで `h` は上で区別した正準 hue parameter であり、六角形点の実偏角 `phi` ではない。
+この区分線形関数をラジアン変数で `L(theta) = 7T(theta)` と書くと、三角関数的な座標系に対して次の構造を持つ。ここで `theta` は上で区別した正準 hue parameter であり、六角形点の実偏角 `phi` ではない。
 
-第一に、すべての交点角は `π/12` の格子上にある。各純色辺の角幅は `60° = π/3` であり、各辺の level 変化量は
+第一に、すべての交点角は `π/12` の格子上にある。純色相環の各辺の角幅は `60° = π/3` であり、各辺の level 変化量は
 
 ```text
 +4, -2, +1, -4, +2, -1
@@ -334,33 +496,33 @@ M -> R : 3 2
 第二に、補色半回転に対して
 
 ```text
-L(h + π) = 7 - L(h)
-T(h + π) = 1 - T(h)
+L(theta + π) = 7 - L(theta)
+T(theta + π) = 1 - T(theta)
 ```
 
 が成り立つ。中心化した波形
 
 ```text
-F(h) = L(h) - 7/2
+F(theta) = L(theta) - 7/2
 ```
 
 で見ると、
 
 ```text
-F(h + π) = -F(h)
+F(theta + π) = -F(theta)
 ```
 
 であり、周期関数としては half-wave antisymmetry を持つ。ただし、これは Tone Zigzag を正弦波にするという意味ではなく、補色反転が三角関数的な半周期反転と同じ形で書けるという意味である。
 
 #### Complement Half-Turn and Equitone Chord Symmetry
 
-純色色相六角形上の点を、正規化座標を4倍した正準スケール座標
+純色相環 `H` 上の点を、正規化座標を4倍した正準スケール座標
 
 ```text
 c(h) = GRB(G4,R4,B4),  0 <= G4,R4,B4 <= 4
 ```
 
-で表す。純色境界では `max(G4,R4,B4) = 4` かつ `min(G4,R4,B4) = 0` である。補色写像
+で表す。純色相環では `max(G4,R4,B4) = 4` かつ `min(G4,R4,B4) = 0` である。補色写像
 
 ```text
 kappa(c) = GRB(4-G4, 4-R4, 4-B4)
@@ -595,7 +757,7 @@ P210-P30
 GRB(2,2,2),  L = 3.5
 ```
 
-である。したがって、正六角形の中心、外接円の中心、長方形の対角線交点、3 本の補色対線分の共点、補色対の平均 `L=3.5` が同一点に一致する。なお、X と Z は 2 次元作図上の交点であって色相六角形上の色点ではないため、X と Z 自体には CHROMALUM level を割り当てない。
+である。したがって、正六角形の中心、外接円の中心、長方形の対角線交点、3 本の補色対線分の共点、補色対の平均 `L=3.5` が同一点に一致する。なお、X と Z は 2 次元作図上の交点であって純色相環上の色点ではないため、X と Z 自体には CHROMALUM level を割り当てない。
 
 ここでの `L=3.5` は CHROMALUM の GRB Binary Tone level であり、測色学的な輝度、知覚的明るさ、光や顔料を物理的に混合した結果が常に一定になるという主張ではない。この中心対称性は、あくまで CHROMALUM の離散・区分線形モデル内部で成り立つ定理である。
 
@@ -818,15 +980,15 @@ R + F = (13/7)X
 もう一方の相補平行線対 `R-P270`, `C-P90` へ同じ垂線作図を適用すると、別の足
 
 ```text
-H = (4sqrt(3)/7, -1/7)
-|H|^2 = 1
+J = (4sqrt(3)/7, -1/7)
+|J|^2 = 1
 ```
 
-が得られる。この長方形 `R-H-C-(-H)` には
+が得られる。この長方形 `R-J-C-(-J)` には
 
 ```text
-|R-H|^2 = 12/7
-|H-C|^2 = 16/7
+|R-J|^2 = 12/7
+|J-C|^2 = 16/7
 ```
 
 が成り立ち、M/G 長方形と合同である。したがって補助垂線を許す場合、R/C 垂線長方形は一意ではない。一方、R/C の 4 本の等トーン支持線を垂線なしでそのまま交差させると、長方形ではなく非円内接の平行四辺形になる。ここでは「R/C 等トーン線の四角形」と「R/C 相補平行線へ垂線を加えた長方形」を区別する。
@@ -839,7 +1001,7 @@ H = (4sqrt(3)/7, -1/7)
 3u^2 + y^2 = 1
 ```
 
-になる。`X`, `F`, `H` の単位円恒等式は、それぞれ
+になる。`X`, `F`, `J` の単位円恒等式は、それぞれ
 
 ```text
 13^2 + 3*3^2  = 14^2
@@ -930,22 +1092,22 @@ u_(n+1) = (13/7)u_n - u_(n-1)
 
 ##### Periodic, Fourier, and Harmonic Representations
 
-正準 hue parameter `h` を時間ではなく周期変数として使うと、単位円と六角形境界の違いを Fourier 成分で厳密に表せる。Music 単位円は
+正準 hue parameter `theta` を時間ではなくラジアン周期変数として使うと、単位円と六角形境界の違いを Fourier 成分で厳密に表せる。Music 単位円は
 
 ```text
-z_U(h) = -i exp(ih)
+z_U(theta) = -i exp(i theta)
 ```
 
-なので基本波 `n=1` だけを持つ。一方、正六角形の各辺を `h` に対して一定速度で進む複素座標 `z_H(h)` は
+なので基本波 `n=1` だけを持つ。一方、正六角形の各辺を `theta` に対して一定速度で進む複素座標 `z_H(theta)` は
 
 ```text
-z_H(h + pi/3) = exp(i*pi/3) z_H(h)
+z_H(theta + pi/3) = exp(i*pi/3) z_H(theta)
 ```
 
 を満たし、
 
 ```text
-z_H(h) = -(9i/pi^2) sum_(k in Z) exp(i(1+6k)h)/(1+6k)^2
+z_H(theta) = -(9i/pi^2) sum_(k in Z) exp(i(1+6k)theta)/(1+6k)^2
 ```
 
 と展開できる。許される Fourier 次数は
@@ -960,13 +1122,13 @@ n = 1 mod 6
 中心化した Tone Zigzag
 
 ```text
-F(h) = L(h) - 7/2
+F(theta) = L(theta) - 7/2
 ```
 
-には `F(h+pi)=-F(h)` があるため、平均値と全偶数高調波が消える。Fourier 級数を
+には `F(theta+pi)=-F(theta)` があるため、平均値と全偶数高調波が消える。Fourier 級数を
 
 ```text
-F(h) = sum_(n>=1) (a_n cos(nh) + b_n sin(nh))
+F(theta) = sum_(n>=1) (a_n cos(n theta) + b_n sin(n theta))
 ```
 
 と書くと、偶数 `n` では `a_n=b_n=0` であり、奇数 `n` では
@@ -1105,7 +1267,7 @@ L6: 1
 
 である。ゆえに、純色条件のもとでは、有彩レベル `L2,L3,L4,L5` はそれぞれ 3 つの同一 tone 候補を持ち、端の有彩レベル `L1,L6` はそれぞれ 1 つだけを持つ。4:2:1 正規化では、これらの候補角は 15 度刻みのきれいな値になる。
 
-`L0` Black と `L7` White は色相六角形上の点ではなく、RGB cube の黒白軸の端点であるため、候補数はそれぞれ 1 として扱う。したがって CHROMALUM の Hex/Color タブで用いる候補数は
+`L0` Black と `L7` White は純色相環上の点ではなく、RGB cube の黒白軸の端点であるため、候補数はそれぞれ 1 として扱う。したがって CHROMALUM の Hex/Color タブで用いる候補数は
 
 ```text
 1,1,3,3,3,3,1,1
@@ -1202,7 +1364,7 @@ T(c') = (4(1-G) + 2(1-R) + (1-B)) / 7
 
 したがって補色対のトーン和は、正準形では常に `1` である。
 
-この定理は 8 頂点のビット色だけでなく、純色色相六角形の `0..4` スケール座標全体へ区分線形に拡張される。そのとき level 和は常に `7`、補色対の中点は `GRB(2,2,2)`、中点 level は常に `3.5` となる。整数 level の候補交点は、この連続的な対称性の有限部分集合である。詳細は「Complement Half-Turn and Equitone Chord Symmetry」を参照。
+この定理は 8 頂点のビット色だけでなく、純色相環の `0..4` スケール座標全体へ区分線形に拡張される。そのとき level 和は常に `7`、補色対の中点は `GRB(2,2,2)`、中点 level は常に `3.5` となる。整数 level の候補交点は、この連続的な対称性の有限部分集合である。詳細は「Complement Half-Turn and Equitone Chord Symmetry」を参照。
 
 ### Contribution 3: Standard Die Rule from Complement Reversal
 
@@ -1226,7 +1388,7 @@ M(3) + G(4) = 7
 
 有彩色六角形 `R -> Y -> G -> C -> B -> M` は、各ステップが 1 ビット反転であるため、Gray code 的な巡回である。同じ経路は、GRB Binary Tone の 6 区間ジグザグを与える。
 
-さらに、このジグザグを純色境界上の同一 tone 交点として読むと、Hex/Color タブの候補数 `1,1,3,3,3,3,1,1` が得られる。これは一般的な連続色空間の自由な色選択ではなく、8 つの離散 tone レベルと純色境界の交点を有限個の候補として数える読みである。
+さらに、このジグザグを純色相環上の同一 tone 交点として読むと、Hex/Color タブの候補数 `1,1,3,3,3,3,1,1` が得られる。これは一般的な連続色空間の自由な色選択ではなく、8 つの離散 tone レベルと純色相環の交点を有限個の候補として数える読みである。
 
 この経路をサイコロの面隣接木として要求すると、6 面の隣接 5 本がすべて使われるため、面隣接木全体がこの Hamilton path に固定される。そこから得られる自由立方体展開図は 2-2-2 型の階段形になる。
 
@@ -1253,6 +1415,26 @@ E(K8) = E(Q3) disjoint union E(Stella) disjoint union M4
 この分解を色彩モデルとして視覚化することで、立方体、八面体、偶奇四面体、星形八面体を同じ GF(2)^3 構造の複数の影として読むことができる。
 
 ## Core Theorems and Proof Sketches
+
+### Theorem 0: Oriented-cycle order and minimal valuation
+
+The induced Hamming-distance-1 graph on the six chromatic elements of `A` is the cycle
+
+```text
+R -> Y -> G -> C -> B -> M -> R.
+```
+
+After rooting it at R and orienting it toward Y, its edge labels are
+
+```text
+G, R, B, G, R, B.
+```
+
+Reading the first three distinct toggles as the coordinate priority therefore selects `[G,R,B]`. Among positive integer valuations whose seven nonempty subset sums are distinct and fill `{1,...,7}`, the weights are uniquely `{1,2,4}`; assigning them in the selected priority gives `(G,R,B)=(4,2,1)`.
+
+Proof sketch:
+
+The six chromatic vertices each have degree 2 after K and W are removed from `Q3`, and the graph is connected, so it is `C6`. Direct XOR of consecutive characteristic vectors gives the stated edge-label word. For the weights, order them as `a <= b <= c`. The subset sums must contain 1, so `a=1`. The sums of `{1}` already fill `0,1`, so avoiding a gap or collision forces `b=2`; the sums of `{1,2}` fill `0,1,2,3`, forcing `c=4`. The rooted orientation then removes the remaining `S3` ambiguity in assigning these three weights to named channels.
 
 ### Theorem 1: GRB binary tone identity
 
@@ -1351,13 +1533,58 @@ The distance 1 edges form Q3, the distance 2 edges form two inscribed tetrahedra
 | GF(2)^3 | 8 vectors | 8 color levels |
 | Q3 cube | Hamming distance 1 graph | single-channel toggles |
 | Gray cycle | chromatic 6-cycle | hue order R -> Y -> G -> C -> B -> M |
-| Pure-color tone intersections | hexagon boundary crossings | candidate counts 1,1,3,3,3,3,1,1 |
+| Pure-hue-loop tone intersections | intersections with the pure-hue loop | candidate counts 1,1,3,3,3,3,1,1 |
 | Fano plane PG(2,2) | 7 nonzero vectors | non-black colors |
 | Hamming(7,4) | 7 coordinate positions | nonzero color labels as syndrome positions |
 | Octahedron | 6 chromatic vertices | complement axes R-C, G-M, B-Y |
 | Tetrahedra T0/T1 | even/odd parity split | two inscribed tetrahedra |
 | Stella octangula | distance 2 edges | two-channel flips |
 | K8 | all pairs of 8 colors | distance 1/2/3 decomposition |
+
+## Post-Derivation Empirical Resonance
+
+ここまでの内部構成を完了した後で、初めて外部のRGB重みと比較する。正規化された正の線形スコアを
+
+```text
+S(G,R,B) = w_G G + w_R R + w_B B
+```
+
+とする。8つの二値頂点をCHROMALUMと同じ順
+
+```text
+K < B < R < M < G < C < Y < W
+```
+
+へ並べるための必要十分条件は、
+
+```text
+w_G > w_R + w_B
+w_R > w_B > 0
+```
+
+である。実際、頂点スコアは順に
+
+```text
+0, w_B, w_R, w_R+w_B, w_G, w_G+w_B, w_G+w_R, w_G+w_R+w_B
+```
+
+なので、隣接項の比較から上の条件が得られる。
+
+| external normalized RGB weights | `w_R` | `w_G` | `w_B` | conditions |
+| :--- | ---: | ---: | ---: | :---: |
+| ITU-R BT.601 | 0.2990 | 0.5870 | 0.1140 | satisfied |
+| sRGB / ITU-R BT.709 | 0.2126 | 0.7152 | 0.0722 | satisfied |
+| ITU-R BT.2020 | 0.2627 | 0.6780 | 0.0593 | satisfied |
+
+これらの係数は互いに異なり、CHROMALUMの正規化重み `(w_R,w_G,w_B)=(2/7,4/7,1/7)` とも同一ではない。それでも全てが同じ不等式領域に入るため、RGB立方体の8頂点に限れば、CHROMALUMのlevel順と外部スコアの順位は完全に一致する。また各行で重み和が1なので、補色頂点 `c` と `1-c` について
+
+```text
+S(c) + S(1-c) = 1
+```
+
+も成り立ち、CHROMALUMの `T(c)+T(1-c)=1` と同じ正規化補色対称性を持つ。
+
+これは外部係数から `4:2:1` を導いたという説明ではない。内部導出を終えた後に、異なる標準群が同じ8頂点順位と補色和を与えることを確認したものである。一致するのは二値頂点上の順序と補色和であり、中間色の数値、知覚的な等間隔性、アクセシビリティ・コントラストではない。
 
 ## Limits and Non-Claims
 
@@ -1373,7 +1600,7 @@ This model does not claim the following:
 
 The accurate claim is narrower:
 
-> This is a two-layer color atlas: an algebraic core `A = GF(2)^3` on the 8 binary RGB labels, plus a pure-hue boundary `H` whose level projection `π` supplies display representatives. It combines known Fano, Hamming, Boolean-lattice, and cube structures on `A` with GRB Binary Tone order, complement-die duality, hue-boundary tone intersections, and polyhedral decomposition, without transferring XOR to the non-binary representatives in `H`.
+> This is a two-layer color atlas: an algebraic core `A = GF(2)^3` on the 8 binary RGB labels, plus the maximum-saturation hue loop `H` (the pure-hue loop), whose level projection `λ` supplies display representatives. It combines known Fano, Hamming, Boolean-lattice, and cube structures on `A` with GRB Binary Tone order, complement-die duality, pure-hue-loop tone intersections, and polyhedral decomposition, without transferring XOR to the non-binary representatives in `H`.
 
 ## Implementation Notes
 
@@ -1401,7 +1628,7 @@ Important invariants currently tested include:
 3. Complementation `lv xor 7` reverses the six chromatic tone ranks; assigning those ranks to the correspondingly numbered faces of a standard die puts complementary ranks on opposite faces and makes their sums 7.
 4. CMY line is treated as an even-parity tetrahedron rather than a literal Euclidean plane slice.
 5. Gray cycle uses only one-bit flips.
-6. Pure-color tone intersections use exact `0..4` CHROMALUM channels, land on the 15-degree grid, and produce candidate counts `1,1,3,3,3,3,1,1`; these candidates are representatives in fibers of `π`, not extra elements of `A`.
+6. Pure-hue-loop tone intersections use exact `0..4` CHROMALUM channels, land on the 15-degree grid, and produce candidate counts `1,1,3,3,3,3,1,1`; these candidates are representatives in fibers of `λ`, not extra elements of `A`.
 7. K8 edges partition by Hamming distance.
 8. T0 is closed under XOR.
 9. Subtractive CMY examples are Boolean AND identities, not XOR identities.
@@ -1426,3 +1653,11 @@ Important invariants currently tested include:
   https://mathworld.wolfram.com/Cube.html
 - Wolfram MathWorld, "Tetrahedron 2-Compound", stella octangula background.
   https://mathworld.wolfram.com/Tetrahedron2-Compound.html
+- ITU-R BT.601-7, studio digital television RGB/luma coefficients.
+  https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.601-7-201103-I%21%21PDF-E.pdf
+- ITU-R BT.709-6, HDTV RGB/luma coefficients.
+  https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.709-6-201506-I%21%21PDF-E.pdf
+- ITU-R BT.2087-0, BT.2020 RGB conversion coefficients.
+  https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2087-0-201510-I%21%21PDF-E.pdf
+- W3C, WCAG 2.2 relative luminance definition for sRGB.
+  https://www.w3.org/TR/WCAG22/#dfn-relative-luminance

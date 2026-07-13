@@ -54,8 +54,10 @@ of the same discrete color structure instead of separate feature islands.
 
 The algebraic layer and palette layer are related but distinct. XOR, Fano,
 Hamming, and K8 operate on the eight binary level labels. Chromatic variants are
-representatives from a pure-hue boundary that project to those labels by equal
-GRB tone; their continuous coordinates are not themselves `GF(2)^3` vectors.
+representatives from the RGB cube's maximum-saturation hue loop (the pure-hue
+loop, defined by maximum channel 1 and minimum channel 0) that project to those
+labels by equal GRB tone; their continuous coordinates are not themselves
+`GF(2)^3` vectors.
 
 The implementation favors browser-native primitives and explicit data
 structures over heavy runtime dependencies. Canvas buffers use typed arrays,

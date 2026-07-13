@@ -10,7 +10,7 @@ import {
 
 /* ═══════════════════════════════════════════
    COLOR ENGINE
-   8-level pure-color mapping using the GRB Binary Tone model.
+   8-level mapping with pure-hue-loop candidates using the GRB Binary Tone model.
 
    The canonical CHROMALUM tone is the normalized 4:2:1 GRB level:
      level = 4G + 2R + B
@@ -54,7 +54,7 @@ export function hue2rgb(h: number): [number, number, number] {
 
 export interface ColorCandidate {
   readonly hueAngleDeg: number;
-  /** Pure-hue-boundary representative for a level label, not a GF(2)^3 element. */
+  /** Pure-hue-loop representative for a level label, not a GF(2)^3 element. */
   readonly chromalumGrb: ChromalumGrb;
   /** 8-bit display/output projection; never the source of hue or tone. */
   readonly rgb: readonly [number, number, number];

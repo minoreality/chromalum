@@ -84,7 +84,7 @@ describe("LEVEL_CANDIDATES", () => {
     });
   });
 
-  it("has the expected pure-color candidate counts per tone level", () => {
+  it("has the expected pure-hue-loop candidate counts per tone level", () => {
     expect(LEVEL_CANDIDATES.map((alts) => alts.length)).toEqual([1, 1, 3, 3, 3, 3, 1, 1]);
   });
 
@@ -142,10 +142,10 @@ describe("LEVEL_CANDIDATES", () => {
     expect(chromalumGrbToRgb8([3, 4, 0])).toEqual([255, 191, 0]);
   });
 
-  it("intermediate levels have pure color candidates", () => {
+  it("intermediate levels have pure-hue-loop candidates", () => {
     for (let lv = 1; lv <= 6; lv++) {
       LEVEL_CANDIDATES[lv].forEach((c) => {
-        // Each candidate should have max=255 and min=0 (pure color)
+        // Each candidate lies on the pure-hue loop: max=255 and min=0.
         expect(Math.max(...c.rgb)).toBe(255);
         expect(Math.min(...c.rgb)).toBe(0);
         expect(c.rgb).toEqual(chromalumGrbToRgb8(c.chromalumGrb));

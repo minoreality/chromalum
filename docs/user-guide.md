@@ -52,9 +52,11 @@ Music sonification. They are not a perceptually uniform color space and do not
 guarantee accessibility contrast by themselves.
 
 XOR, Fano, Hamming, and K8 relations act on these eight binary level labels.
-Palette candidates come from a separate pure-hue boundary and are display
-representatives projected to the same level by equal GRB tone; selecting a
-candidate does not turn its continuous GRB coordinates into a `GF(2)^3` vector.
+Palette candidates come from a separate coordinate layer: the RGB cube's
+maximum-saturation hue loop (the pure-hue loop, defined by maximum channel 1 and
+minimum channel 0). They are display representatives projected to the same
+level by equal GRB tone; selecting a candidate does not turn its continuous GRB
+coordinates into a `GF(2)^3` vector.
 
 Glaze overrides change the displayed color candidate for selected pixels, but
 they do not change the source tone level. This is what lets the app compare

@@ -59,7 +59,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
       <line x1={ML} y1={yPos(3.5)} x2={W - MR} y2={yPos(3.5)} stroke={C.textDimmer} strokeWidth={0.5} strokeDasharray="3,2" opacity={0.4} />
       {isCrossingMode ? (
         <>
-          {/* Crossing sequence: pure-color tone intersections mapped to fixed 12-TET semitone steps. */}
+          {/* Crossing sequence: pure-hue-loop tone intersections mapped to fixed 12-TET semitone steps. */}
           {CROSSING_GRAPH_POINTS.slice(0, -1).map((point, i) => {
             const next = CROSSING_GRAPH_POINTS[i + 1];
             const x0 = xAngle(point.angleDeg),

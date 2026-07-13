@@ -20,7 +20,7 @@
 このレイヤーは、既存の色彩工学、ソニフィケーション、音楽理論、Web Audio 実装を組み合わせた可視化・音響化レイヤーである。したがって、次の要素それ自体は新規性として主張しない。
 
 1. GRB Binary Tone `level = 4G + 2R + B` による離散レベルの正規化。
-2. RGB/HSV/HSY 型の計算色相、純色六角形、色相角による色の整理。
+2. RGB/HSV/HSY 型の計算色相、最大彩度色相環（純色相環）、色相角による色の整理。
 3. 極座標上の点を `sin` / `cos` で画面 x/y へ射影すること。
 4. 色相、彩度、明度などをピッチ、音色、音量、定位へ写像する色ソニフィケーション。
 5. 位相差に応じて合成振幅が変化する三角関数的干渉式。
@@ -36,9 +36,9 @@ Music タブは、Theory タブの二層を次のように使い分ける。
 
 ```text
 A = GF(2)^3                         algebraic level labels L0..L7
-H = {GRB(g,r,b) | min=0, max=1}     pure-hue boundary
-π : H -> [1,6]                      π(g,r,b) = 4g + 2r + b
-C_L = π^-1(L)                       candidates representing level L
+H = {GRB(g,r,b) | min=0, max=1}     maximum-saturation hue loop (pure-hue loop)
+λ : H -> [1,6]                      λ(g,r,b) = 4g + 2r + b
+C_L = λ^-1(L)                       candidates representing level L
 ```
 
 XOR、Fano、Hamming、K8 などは `A` のラベル上で計算する。Music タブが各有彩 level に表示する色と角度は、候補集合 `C_L` から選んだ代表元 `s(L)` の属性である。候補を切り替えても `A` の元や XOR 結果は変わらず、逆に `A` の XOR を `H` 上の中間座標へ適用することもしない。
@@ -80,13 +80,13 @@ T = (4G + 2R + B) / 7
 | L5 | 45deg: `GRB(3,4,0)`, 90deg: `GRB(4,2,0)`, 180deg: `GRB(4,0,4)` |
 | L6 | 60deg: `GRB(4,4,0)` |
 
-投影グラフは、無彩色端点のマーカーにも横軸上の配置位置を必要とする。このため現行 UI は、L0 マーカーに現在の L1（Blue level）代表元の角度を、L7 マーカーに現在の L6（Yellow level）代表元の角度を表示上の proxy として借りる。この `proxy hue` はグラフ配置専用であり、L0/L7 に色相を付与せず、`π`、色相→音高写像、補色角の定義にも参加しない。
+投影グラフは、無彩色端点のマーカーにも横軸上の配置位置を必要とする。このため現行 UI は、L0 マーカーに現在の L1（Blue level）代表元の角度を、L7 マーカーに現在の L6（Yellow level）代表元の角度を表示上の proxy として借りる。この `proxy hue` はグラフ配置専用であり、L0/L7 に色相を付与せず、`λ`、色相→音高写像、補色角の定義にも参加しない。
 
 ここでは「角度」という語を次のように分離する。
 
 | symbol | role |
 | --- | --- |
-| `h` | CHROMALUM 色相六角形の辺を線形補間する正準 hue parameter。実装の `hueAngleDeg`、既存コード説明の `theta` に対応する。 |
+| `h` | 純色相環 `H` の各辺を線形補間する正準 hue parameter。実装の `hueAngleDeg`、既存コード説明の `theta` に対応する。 |
 | `phi` | 正準 GRB 点を正六角形へ置いた後、中心から見た実際のユークリッド偏角。 |
 | `alpha` | UI が加える色相位相・原点回転角。 |
 | `beta` | Music 単位円上の実効角 `normalize(h+alpha)`。 |
@@ -95,7 +95,7 @@ T = (4G + 2R + B) / 7
 `15deg`, `30deg`, `45deg` などの候補ラベルは `h` であり、`phi` とは一般に一致しない。たとえば R-Y 辺では `t=h/60deg` として
 
 ```text
-hex point H(t) = (sqrt(3)t/2, -1+t/2)
+planar point v(t) = (sqrt(3)t/2, -1+t/2)
 phi(t) = atan2(sqrt(3)t, 2-t)
 ```
 
@@ -151,11 +151,11 @@ level = (4 G4 + 2 R4 + B4) / 4
 tone  = level / 7
 ```
 
-これにより、色相六角形の 15deg 交点はすべて整数で表せる。たとえば `15deg = GRB(1,4,0)`、`30deg = GRB(2,4,0)`、`45deg = GRB(3,4,0)` であり、それぞれ厳密に L3、L4、L5 となる。補色も `GRB(G4,R4,B4) -> GRB(4-G4,4-R4,4-B4)` として厳密に定義できる。
+これにより、純色相環 `H` の 15deg 交点はすべて整数で表せる。たとえば `15deg = GRB(1,4,0)`、`30deg = GRB(2,4,0)`、`45deg = GRB(3,4,0)` であり、それぞれ厳密に L3、L4、L5 となる。補色も `GRB(G4,R4,B4) -> GRB(4-G4,4-R4,4-B4)` として厳密に定義できる。
 
 Canvas、PNG、CSSへ渡すRGBバイトは、この正確なモデル座標から作る外部出力アダプターである。そこで発生するデバイス量子化から、角度、tone、補色、音高、pan、位相ゲインを逆算しない。
 
-画像入力だけは別経路である。入力された sRGB コード値へモデル固有の 4:2:1 スコアを適用し、最寄りの `L0..L7` ラベルを推定する。この処理は非可逆な分類器であり、`π` の逆写像でも、`H` 上の候補座標や色相角の復元でもない。Map タブの **GRB Code Score / GRBコードスコア** もこの入力側スコアであり、GRB Binary Tone、知覚的明度、測光輝度のいずれとも同一視しない。
+画像入力だけは別経路である。入力された sRGB コード値へモデル固有の 4:2:1 スコアを適用し、最寄りの `L0..L7` ラベルを推定する。この処理は非可逆な分類器であり、`λ` の逆写像でも、`H` 上の候補座標や色相角の復元でもない。Map タブの **GRB Code Score / GRBコードスコア** もこの入力側スコアであり、GRB Binary Tone、知覚的明度、測光輝度のいずれとも同一視しない。
 
 候補テーブルと選択候補の内部計算では正準整数座標 `GRB(G4,R4,B4)` を使う。任意の連続 hue では同じ `0..4` スケール上の実数座標を使う。一方、Glazeなどの共有可視化凡例では、選択候補の各成分をチャンネル最大値4で割った正確な割合を表示する。たとえば内部の `GRB(3,4,0)` は画面では `GRB(3/4,1,0)` と表示される。この正規化もCHROMALUM内部の厳密な変換であり、sRGBバイトへの変換ではない。
 
@@ -222,14 +222,15 @@ liveAngle = h + activeAlpha
 
 ### CHROMALUM
 
-CHROMALUM は正準 hue parameter と 15deg 半音格子の関係を前面に出す固有 mapping で、`liveAngle` を 2 オクターブ分の 12-EDO 半音格子へ量子化する。
+CHROMALUM は正準 hue parameter と `15deg = pi/12` 半音格子の関係を前面に出す固有 mapping で、`liveAngle` を2オクターブ幅の連続音程へ写す。15度格子は量子化境界ではなく、整数level交点が正確な12-EDO音高へ着地するアンカーである。
 
 ```text
-semitone = round((liveAngle mod 360) / 15)
-freq = f_C4 * 2^(semitone / 12)
+theta = pi (liveAngle mod 360) / 180
+continuous semitone = theta / (pi/12) = (liveAngle mod 360) / 15
+freq = f_C4 * 2^(continuous semitone / 12)
 ```
 
-したがって 15deg が 100 cent、180deg の補色差が正確な 1 オクターブになる。`352.5deg <= liveAngle < 360deg` は上端の `C6` へ丸め、色相の seam である `360deg = 0deg` だけを `C4` へ戻す。
+したがって任意の等しい色相差が等しい対数音程差になり、15degが100 cent、180degの補色差が正確な1オクターブになる。円周上では `p=theta/pi mod 2` を2オクターブ音程類として読み、絶対周波数は持ち上げ `theta_tilde` 上の `f=f_C4 2^(theta_tilde/pi)` として読む。通常のlive mappingは `0deg <= liveAngle < 360deg` の根付き区間を使い、色相のseam `360deg=0deg` でC4へ戻る。
 
 ### Conventional pitch collections
 
@@ -245,7 +246,7 @@ freq = f_C4 * 2^(semitone / 12)
 
 単音バースト、持続音、FM 変調器、音程表示はいずれも `activeAlpha` を含む角度を使う。ステレオ定位を有効にした場合も、同じ実効角の画面 x 座標 `sin(liveAngle)` を pan 値に使う。これにより、色相位相を回転させた後の画面位置・単音・ドローン音高・FM・音程表示・定位が一致する。
 
-Music タブの Zigzag Tone カードの Crossings 再生だけは例外として、色相位相や現在の pitch mapping から独立した、C4 基準の固定 12-EDO を使う。これは、純色エッジ上で tone 水平線と交差する角度
+Music タブの Zigzag Tone カードの Crossings 再生だけは例外として、色相位相や現在の pitch mapping から独立した、C4 基準の固定 12-EDO を使う。これは、純色相環の各辺で tone 水平線と交差する角度
 
 ```text
 0, 15, 30, 45, 60, 90, 120, 180, 195, 210, 225, 240, 270, 300, 360 deg

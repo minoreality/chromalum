@@ -19,6 +19,7 @@ import { ToneZigzag } from "./theory/ToneZigzag";
 import { TetraDecomposition } from "./theory/TetraDecomposition";
 import { StellaOctangula } from "./theory/StellaOctangula";
 import { ConnectionsSummary, PolyhedraNetwork, ScopeSummary } from "./theory/ConnectionsSummary";
+import { ContinuousBridge, DerivationMap, EmpiricalResonance } from "./theory/DerivationMap";
 
 const S_SECTION: React.CSSProperties = {
   display: "flex",
@@ -118,7 +119,14 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
            ═══════════════════════════════════════ */}
           <div style={S_GROUP_LABEL}>{t("theory_group_foundations")}</div>
 
-          {/* §1 Venn Diagram — Rosetta stone: 8 colors = P({G,R,B}) */}
+          {/* §1 Minimal principle and dependency map */}
+          <Section title={t("theory_derivation_title")} desc={t("theory_derivation_desc")}>
+            <DerivationMap />
+          </Section>
+
+          <hr style={S_DIVIDER} />
+
+          {/* §2 Venn Diagram — Rosetta stone: 8 colors = P({G,R,B}) */}
           <Section title={t("theory_venn_title")} desc={t("theory_venn_desc")}>
             <VennDiagram hlLevel={hlLevel} onHover={onHover} />
           </Section>
@@ -158,7 +166,14 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           <hr style={S_DIVIDER} />
 
-          {/* §5 Tone Zigzag */}
+          {/* §5 Canonical continuous completion and Music bridge */}
+          <Section title={t("theory_continuous_title")} desc={t("theory_continuous_desc")}>
+            <ContinuousBridge />
+          </Section>
+
+          <hr style={S_DIVIDER} />
+
+          {/* §6 Tone Zigzag */}
           <Section title={t("theory_zigzag_title")} desc={t("theory_zigzag_desc")}>
             <ToneZigzag hlLevel={hlLevel} onHover={onHover} />
           </Section>
@@ -230,7 +245,14 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           <hr style={S_DIVIDER} />
 
-          {/* §14 Scope */}
+          {/* §14 External comparison, kept after the internal derivation */}
+          <Section title={t("theory_empirical_title")} desc={t("theory_empirical_desc")}>
+            <EmpiricalResonance />
+          </Section>
+
+          <hr style={S_DIVIDER} />
+
+          {/* §15 Scope */}
           <Section title={t("theory_conn_boundary_title")} desc={t("theory_conn_extended")}>
             <ScopeSummary />
           </Section>

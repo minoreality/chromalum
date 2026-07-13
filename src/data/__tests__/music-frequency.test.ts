@@ -6,6 +6,7 @@ import {
   PITCH_BASE_FREQ,
   WHOLE_TONE_SEMITONES,
   angleToFreq,
+  chromalumHueLiftToFreq,
   freqToNote,
   semitoneToFreq,
   type PitchMappingMode,
@@ -36,13 +37,26 @@ describe("music-frequency", () => {
       }
     });
 
-    it("rounds CHROMALUM at half-step boundaries and keeps the upper endpoint until the hue seam", () => {
-      expect(angleToFreq(7.5 - 1e-6, "chromalum")).toBeCloseTo(semitoneToFreq(0), 12);
-      expect(angleToFreq(7.5, "chromalum")).toBeCloseTo(semitoneToFreq(1), 12);
-      expect(angleToFreq(352.5 - 1e-6, "chromalum")).toBeCloseTo(semitoneToFreq(23), 12);
-      expect(angleToFreq(352.5, "chromalum")).toBeCloseTo(semitoneToFreq(24), 12);
-      expect(angleToFreq(359.999, "chromalum")).toBeCloseTo(semitoneToFreq(24), 12);
+    it("uses the continuous lift formula throughout the R-rooted half-open turn", () => {
+      for (const angle of [0, 7.5, 22.5, 123.4, 352.5, 359.999]) {
+        expect(angleToFreq(angle, "chromalum")).toBeCloseTo(semitoneToFreq(angle / 15), 12);
+      }
       expect(angleToFreq(360, "chromalum")).toBeCloseTo(semitoneToFreq(0), 12);
+    });
+
+    it("keeps the unwrapped endpoint distinct from the hue-circle seam", () => {
+      expect(chromalumHueLiftToFreq(0)).toBeCloseTo(PITCH_BASE_FREQ, 12);
+      expect(chromalumHueLiftToFreq(180)).toBeCloseTo(PITCH_BASE_FREQ * 2, 12);
+      expect(chromalumHueLiftToFreq(360)).toBeCloseTo(PITCH_BASE_FREQ * 4, 12);
+      expect(angleToFreq(360, "chromalum")).toBeCloseTo(PITCH_BASE_FREQ, 12);
+    });
+
+    it("turns equal hue differences into equal logarithmic pitch intervals before the seam", () => {
+      const delta = 17.25;
+      const expectedRatio = Math.pow(2, delta / 180);
+      for (const hue of [0, 30, 90, 160, 300]) {
+        expect(chromalumHueLiftToFreq(hue + delta) / chromalumHueLiftToFreq(hue)).toBeCloseTo(expectedRatio, 12);
+      }
     });
 
     it.each([

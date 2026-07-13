@@ -1,3 +1,5 @@
+import { CHROMALUM_MIN_HUE_STEP_DEG } from "../chromalum-color-model";
+
 export type PitchMappingMode = "chromalum" | "major" | "octatonic" | "wholeTone";
 
 /** Legacy base used by the bit-spectrum sonification. */
@@ -25,8 +27,7 @@ export function angleToFreq(angle: number, mode: PitchMappingMode): number {
   const norm = normalizeAngle(angle);
 
   if (mode === "chromalum") {
-    const semitone = Math.round(norm / 15);
-    return semitoneToFreq(semitone);
+    return chromalumHueLiftToFreq(norm);
   }
 
   if (mode === "octatonic") {
@@ -38,6 +39,11 @@ export function angleToFreq(angle: number, mode: PitchMappingMode): number {
   }
 
   return scaleAngleToFreq(norm, MAJOR_SEMITONES);
+}
+
+/** Continuous pitch on the R-rooted lift of the hue circle; 180° is one octave. */
+export function chromalumHueLiftToFreq(unwrappedHueAngleDeg: number): number {
+  return semitoneToFreq(unwrappedHueAngleDeg / CHROMALUM_MIN_HUE_STEP_DEG);
 }
 
 export function semitoneToFreq(semitone: number): number {
