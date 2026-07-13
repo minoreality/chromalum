@@ -32,6 +32,7 @@ interface UseMusicResetDefaultsHandlerOptions {
     | "setHueSpeed"
     | "setAlpha0"
     | "setAlpha7"
+    | "setOriginMode"
     | "setToneMode"
     | "setHoveredFanoLine"
   >;
@@ -61,6 +62,7 @@ export function useMusicResetDefaultsHandler({
     setHueSpeed,
     setAlpha0,
     setAlpha7,
+    setOriginMode,
     setToneMode,
     setHoveredFanoLine,
   } = transport;
@@ -84,6 +86,7 @@ export function useMusicResetDefaultsHandler({
     setHueSpeed(36);
     setAlpha0(0);
     setAlpha7(180);
+    setOriginMode(0);
     setToneMode("symmetric");
     setRhythmTempo(120);
     setFanoContextPoint(1);
@@ -112,6 +115,7 @@ export function useMusicResetDefaultsHandler({
     setHoveredFanoLine,
     setHueAngleDeg,
     setHueSpeed,
+    setOriginMode,
     setToneMode,
     setOctaA,
     setOctaB,

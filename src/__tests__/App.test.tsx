@@ -64,7 +64,8 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "About" }));
     expect(screen.getByRole("dialog", { name: "Overview" })).toBeTruthy();
-    expect(screen.getByText(/three primary colors of light/)).toBeTruthy();
+    expect(screen.getByText(/eight GRB tone labels/)).toBeTruthy();
+    expect(screen.getByText(/alternative hues act as visual representatives/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog", { name: "Overview" })).toBeNull();

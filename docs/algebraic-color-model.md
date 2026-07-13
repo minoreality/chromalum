@@ -8,18 +8,18 @@
 
 ## Abstract
 
-本ノートは、CHROMALUM の Theory タブで用いている 8 色モデルを、離散代数・有限幾何・符号理論・多面体幾何の観点から整理する。モデルの核は、RGB チャンネルのオン/オフを 3 ビットベクトルとして読み、8 つの色を GF(2)^3 の元に対応させることである。
+本ノートは、CHROMALUM の Theory タブで用いている 8 色の代数層と、その上に置く純色色相境界層を、離散代数・有限幾何・符号理論・多面体幾何の観点から整理する。代数層の核は、RGB チャンネルのオン/オフを 3 ビットベクトルとして読み、8 つのラベルを GF(2)^3 の元に対応させることである。純色色相境界上の中間候補は、その代数層の新しい元ではなく、同じ level を表示する代表元として別に扱う。
 
 この核そのものは既知である。RGB 色立方体、Z2 x Z2 x Z2 による色加算、Fano 平面 PG(2,2)、Hamming(7,4) 符号との関係は、既存の数学教材・レクリエーショナル数学・色空間解説に現れる。
 
-本モデルの独自性は、これら既知構造を、`level = 4G + 2R + B` による GRB Binary Tone 順序、補色トーン定理、標準サイコロの対面和 7、色相グレイ巡回、Fano/Hamming 対応、多面体双対、K8 の Hamming 距離分解として、単一の 8 色体系へ統合する点にある。
+本モデルの独自性は、これら既知構造を、`level = 4G + 2R + B` による GRB Binary Tone 順序、補色トーン定理、標準サイコロの対面和 7、色相グレイ巡回、Fano/Hamming 対応、多面体双対、K8 の Hamming 距離分解として、単一の 8 ラベルの代数アトラスへ統合し、さらに純色色相境界上の level 交点を表示代表元として接続する点にある。
 
 ## Model Assumptions
 
-本モデルは一般的な色彩科学全体を扱うものではない。以下の仮定に基づく、有限個の色を対象とする離散モデルである。
+本モデルは一般的な色彩科学全体を扱うものではない。以下はまず、有限な代数層についての仮定である。
 
-1. 色集合は RGB チャンネルのオン/オフだけからなる 8 色である。
-2. 各色はビット列 `[G,R,B]` で表す。
+1. 代数層のラベル集合は RGB チャンネルのオン/オフだけからなる 8 元である。
+2. 各ラベルはビット列 `[G,R,B]` で表す。
 3. レベル番号は `lv = 4G + 2R + B` で定義する。
 4. 加法的な構造は GF(2)^3 上の XOR で読む。
 5. 集合論的な構造は `{G,R,B}` の部分集合束 B3 として読む。
@@ -34,9 +34,37 @@
 
 このトーンは CIE の知覚明度でも、WCAG の相対輝度でもない。外部の輝度規格を導入せず、3 ビットの GRB 番号そのものを `0..1` に正規化した離散指標である。したがって本モデルの「トーン順」は、知覚的均等性やアクセシビリティ・コントラストを直接保証しない。
 
+### Algebraic Layer, Hue-Boundary Layer, and Level Projection
+
+本ノートでは、同じ「色」という語で異なる構造を混同しないよう、次の二層を区別する。
+
+```text
+A = GF(2)^3 = {0,1}^3
+H = { GRB(g,r,b) in [0,1]^3 | min(g,r,b)=0 and max(g,r,b)=1 }
+```
+
+`A` は 8 個の二値 RGB ラベルからなる代数層である。XOR、Fano、Hamming、Boolean lattice、Color Cube、K8 の演算と関係は `A` 上で定義する。`H` は RGB cube の純色色相境界を一周する区分線形な六角形であり、連続的な色相座標を持つが、GF(2)^3 のベクトル空間ではない。
+
+`H` 上の GRB level 座標を、射影
+
+```text
+π : H -> [1,6]
+π(GRB(g,r,b)) = 4g + 2r + b
+```
+
+で定義する。整数 level `L in {1,...,6}` に対する候補集合はファイバー
+
+```text
+C_L = { c in H | π(c) = L }
+```
+
+である。UI が各 level に表示する候補色は、選択写像 `s(L) in C_L` による代表元であり、`s(L)` 自体を `A` の元とみなして XOR しているわけではない。複数の候補が同じ `L` を持っても、代数ラベルは 1 個のままである。Black `L0` と White `L7` は `H` 上に存在せず、黒白軸の端点として別扱いする。
+
+この区別により、以下では「level `L`」は `A` のラベルまたはその数値座標を、「level `L` の候補」は `C_L` の表示代表元を意味する。`π` は level 座標を与える写像であって、色相境界へ GF(2)^3 の加法を移す準同型ではない。
+
 ## Color Labels
 
-本モデルでは、8 色を次のようにラベル付けする。
+代数層 `A` の 8 元を、次の色名でラベル付けする。
 
 | lv | bits `[G,R,B]` | set | color | short | tone |
 | ---: | :---: | :--- | :--- | :---: | ---: |
@@ -49,7 +77,14 @@
 | 6 | 110 | {G,R} | Yellow | Y | 6/7 |
 | 7 | 111 | {G,R,B} | White | W | 7/7 |
 
-ここで tone は `level / 7` である。Canvas/PNG/画像入力では、この正準 tone を表示・入出力用の RGB バイト値へ写像するが、モデル上のトーンは常に `0/7..7/7` として扱う。
+ここで tone は `level / 7` である。Canvas/PNG への出力では、正準候補座標を表示用 RGB バイトへ写す。画像入力は逆変換ではなく、正規化した gamma-encoded sRGB コード値 `(g_s,r_s,b_s)` に
+
+```text
+S_code = (4g_s + 2r_s + b_s) / 7
+estimated level = round(7 S_code)
+```
+
+を直接適用する、独立した非可逆分類器である。中間の8-bit scoreへ丸めてから再量子化はしない。Map タブでは実際の表示色（pixel candidate overrideを含む）の連続値を **GRB Code Score / GRBコードスコア** と表示し、推定 level と元の level との差を別項目にする。入力画像から `A` のビットや `H` の色相座標を復元したことにはならず、このスコアも GRB Binary Tone、知覚的明度、測光輝度のいずれでもない。
 
 ## Known Structures
 
@@ -117,7 +152,7 @@ max(R,G,B) = 1, min(R,G,B) = 0
 
 を満たす RGB cube の境界閉路でもある。各辺では、RGB 成分のうち 1 成分だけが `0` から `1`、または `1` から `0` へ線形に変化し、他の 2 成分は `0` または `1` に固定される。
 
-CHROMALUM の内部計算では、この閉路をデバイスRGBのバイト値ではなく、`0..4` の正確な整数座標 `GRB(G4,R4,B4)` で表す。GRB順は Binary Tone の重み `4:2:1` と座標成分を一致させ、15度刻みの交点を整数として保持する正準内部表現である。
+CHROMALUM の内部計算では、この閉路 `H` をデバイスRGBのバイト値ではなく、正規化座標 `GRB(g,r,b)`、またはそれを4倍した `0..4` 座標 `GRB(G4,R4,B4)` で表す。任意の色相では成分は実数だが、整数 level の候補交点は15度刻みで `G4,R4,B4` がすべて整数になる。GRB順は Binary Tone の重み `4:2:1` と座標成分を一致させる。この整数候補も `A` を拡張する代数元ではなく、`C_L` に属する代表元である。
 
 ```text
 R  = GRB(0,4,0)   Y = GRB(4,4,0)   G = GRB(4,0,0)
@@ -135,7 +170,7 @@ L = (4G4 + 2R4 + B4) / 4
 T = L / 7
 ```
 
-である。8-bit sRGB、Canvas、PNGはこのモデルの公理ではなく、最終的な表示・入出力アダプターとしてのみ扱う。デバイス値から色相角やレベルを逆算して正準座標を変更しない。
+である。8-bit sRGB、Canvas、PNGはこのモデルの公理ではない。出力アダプターは正準座標からデバイス値を作る。一方、画像入力は sRGB コード値から level ラベルを推定する別の分類器であり、`π` の逆写像でも正準座標の復元でもない。いずれの経路でも、デバイス量子化によって `A` や `H` の定義を変更しない。
 
 #### GRB Decomposition and Four Angle Variables
 
@@ -319,7 +354,7 @@ F(h + π) = -F(h)
 
 #### Complement Half-Turn and Equitone Chord Symmetry
 
-純色色相六角形上の点を、正準整数座標
+純色色相六角形上の点を、正規化座標を4倍した正準スケール座標
 
 ```text
 c(h) = GRB(G4,R4,B4),  0 <= G4,R4,B4 <= 4
@@ -343,7 +378,7 @@ m = GRB(2,2,2)
 kappa(c(h)) = c(h + 180deg)
 ```
 
-に対応する。整数座標上の level を
+に対応する。この座標上の level を
 
 ```text
 L(c) = (4G4 + 2R4 + B4) / 4
@@ -1167,7 +1202,7 @@ T(c') = (4(1-G) + 2(1-R) + (1-B)) / 7
 
 したがって補色対のトーン和は、正準形では常に `1` である。
 
-この定理は 8 頂点のビット色だけでなく、純色色相六角形の `0..4` 整数座標へ区分線形に拡張される。そのとき level 和は常に `7`、補色対の中点は `GRB(2,2,2)`、中点 level は常に `3.5` となる。詳細は「Complement Half-Turn and Equitone Chord Symmetry」を参照。
+この定理は 8 頂点のビット色だけでなく、純色色相六角形の `0..4` スケール座標全体へ区分線形に拡張される。そのとき level 和は常に `7`、補色対の中点は `GRB(2,2,2)`、中点 level は常に `3.5` となる。整数 level の候補交点は、この連続的な対称性の有限部分集合である。詳細は「Complement Half-Turn and Equitone Chord Symmetry」を参照。
 
 ### Contribution 3: Standard Die Rule from Complement Reversal
 
@@ -1185,7 +1220,7 @@ R(2) + C(5) = 7
 M(3) + G(4) = 7
 ```
 
-これは標準的な六面サイコロの対面和 7 と同じ規則である。したがって、6 つの有彩色をサイコロ面に配置する場合、補色ペアを対面に置く自然な理由が得られる。
+これは標準的な六面サイコロの面ラベルが満たす対面和 7 と同じ数値規則である。そこで、標準サイコロの面 `1..6` へ、同じ番号の tone 順位を持つ色を割り当てれば、補色ペアが対面になる。順位和 7 だけから任意の立方体配置における対面性が導かれるのではなく、この「標準面ラベルへ順位で割り当てる」という構成を通じて両者が対応する。
 
 ### Contribution 4: Hue Gray Cycle, Tone Zigzag, and Die Net
 
@@ -1330,15 +1365,15 @@ This model does not claim the following:
 
 1. It does not claim to be a complete theory of color perception.
 2. It does not model CIE XYZ, CIELAB, OKLab, cone response, chromatic adaptation, or color difference.
-3. It does not claim that XOR is physical additive light mixing.
-4. It does not claim that AND is real pigment or ink mixing.
-5. It does not claim that GRB Binary Tone is perceptual lightness.
+3. XOR and the Boolean operations apply to `A = GF(2)^3`; they are not physical light or pigment mixing laws.
+4. Points of `H`, including alternative candidates for one level, are display representatives and do not acquire the XOR operation of `A`.
+5. GRB Binary Tone is not perceptual lightness, and the sRGB code-value score used by the import classifier is not GRB Binary Tone itself.
 6. It does not claim that the Fano/Hamming correspondence is newly discovered.
 7. It does not claim that the RGB cube itself is newly discovered.
 
 The accurate claim is narrower:
 
-> This is a unified discrete algebraic color model for the 8 binary RGB vertices, combining known GF(2)^3, Fano, Hamming, and cube structures with a GRB Binary Tone order, complement-die duality, hue Gray cycle, pure-color tone intersections, and polyhedral decomposition.
+> This is a two-layer color atlas: an algebraic core `A = GF(2)^3` on the 8 binary RGB labels, plus a pure-hue boundary `H` whose level projection `π` supplies display representatives. It combines known Fano, Hamming, Boolean-lattice, and cube structures on `A` with GRB Binary Tone order, complement-die duality, hue-boundary tone intersections, and polyhedral decomposition, without transferring XOR to the non-binary representatives in `H`.
 
 ## Implementation Notes
 
@@ -1363,10 +1398,10 @@ Important invariants currently tested include:
 
 1. Fano lines form a Steiner triple system.
 2. GRB Binary Tone makes `level = 4G + 2R + B` identical to tone order.
-3. Complementation `lv xor 7` reverses the six chromatic tone ranks, so die-opposite rank sums are 7.
+3. Complementation `lv xor 7` reverses the six chromatic tone ranks; assigning those ranks to the correspondingly numbered faces of a standard die puts complementary ranks on opposite faces and makes their sums 7.
 4. CMY line is treated as an even-parity tetrahedron rather than a literal Euclidean plane slice.
 5. Gray cycle uses only one-bit flips.
-6. Pure-color tone intersections use exact `0..4` CHROMALUM channels, land on the 15-degree grid, and produce candidate counts `1,1,3,3,3,3,1,1`.
+6. Pure-color tone intersections use exact `0..4` CHROMALUM channels, land on the 15-degree grid, and produce candidate counts `1,1,3,3,3,3,1,1`; these candidates are representatives in fibers of `π`, not extra elements of `A`.
 7. K8 edges partition by Hamming distance.
 8. T0 is closed under XOR.
 9. Subtractive CMY examples are Boolean AND identities, not XOR identities.

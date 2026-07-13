@@ -13,7 +13,9 @@
 
 ## Executive Conclusion
 
-Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 集合に対する離散代数的色彩アトラス」として位置づけるのが最も強い。
+Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 集合に対する離散代数層と、純色色相境界上の表示代表層を分離した色彩アトラス」として位置づけるのが最も強い。
+
+ここで代数層を `A = GF(2)^3`、純色色相境界を `H`、level 座標を与える射影を `π:H->[1,6]` とする。XOR/Fano/Hamming/K8 は `A` 上の構造であり、`π^-1(L)` から選ぶ候補色は level `L` の表示代表元であって `A` の追加要素ではない。Black/White は `H` 上にない黒白軸端点として扱う。
 
 残すべき先行研究は、次の 5 系統に絞る。
 
@@ -30,6 +32,7 @@ Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 
 | Group | Components | Academic role |
 | --- | --- | --- |
 | 前提と記法 | Venn, Binary levels, XOR | `P({G,R,B})`, `B3`, `GF(2)^3` の導入 |
+| 層境界 | tone zigzag, candidate colors | `H`、`π:H->[1,6]`、候補を表示代表元として扱う規約 |
 | 立方体と巡回 | Color cube, Gray cycle, tone zigzag, dice | RGB cube、hue hexagon、tone rank、dice theorem |
 | 射影幾何と符号 | Fano plane, Hamming diagram | `PG(2,2)` と Hamming(7,4) の対応 |
 | 多面体 | Octahedron, tetrahedra, stella, network | `Q3`、dual、parity split、distance-2 graph |
@@ -46,6 +49,7 @@ Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 
 | `Z2^3` color addition | Taylor 2013 | 8 色の XOR 群、Fano plane coloring | RGB display primaries、GRB Binary Tone、Hamming labels、K8 分解へ接続する |
 | Fano/Hamming | Hamming 1950 / Lavrauw / Error Correction Zoo | Hamming code、Fano 平面と Hamming(7,4) の対応 | 色を符号語ではなく syndrome / coordinate labels として UI 化する |
 | Tone | CHROMALUM model definition | `level = 4G + 2R + B`, `tone = level / 7` | 外部の輝度規格を導入せず、8 頂点 RGB の正準 GRB 順を固定する |
+| Pure-hue representatives | Smith 1978 / CHROMALUM model definition | RGB cube の純色色相境界 | `π` の整数 level ファイバーを有限候補として示し、代数ラベルと表示代表元を分離する |
 | Cube nets / stella | MathWorld Cube / Tetrahedron 2-Compound | 11 cube nets、2 tetrahedra compound | complement-dice、hue path、K8 Hamming-distance color atlas に統合する |
 
 ## Claim Risk Assessment
@@ -55,6 +59,7 @@ Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 
 | `色彩理論` が一般色彩科学に見える | High | `離散代数的色彩理論` / `8色代数モデル` として範囲を限定する |
 | `人間の色覚の帰結` と読める表現 | High | `GRB Binary Tone の定義上の帰結` に寄せる |
 | `tone` と `brightness/lightness` の混同 | High | UI と docs で `tone` / `トーン` を使う |
+| `A` の8ラベルと `H` 上の中間候補の混同 | High | `π` のファイバーと表示代表元を明記し、XOR を `A` に限定する |
 | Boolean lattice の既知性 | High | JSSD を引用し、Hasse 図自体は新規主張しない |
 | XOR/AND を物理混色と誤読される | Medium | `XOR 演算`, `Boolean meet` として説明する |
 | dice net 一意性 | Medium | 11 nets の列挙テストに基づく内部補題として扱う |
@@ -70,6 +75,9 @@ Theory タブは、一般的な「色彩理論」ではなく、「8 頂点 RGB 
 2. Color detail の表示値は `トーン` / `Tone` にする。
 3. Binary-level copy は GRB Binary Tone の定義に基づく説明へ寄せる。
 4. `XOR 混色` ではなく `XOR 演算` と呼ぶ。
+5. `A = GF(2)^3` と純色色相境界 `H` を分離し、候補色を `π^-1(L)` の表示代表元と呼ぶ。
+6. Color Die は「標準面ラベルへ tone 順位で割り当てる」という構成を明示し、順位和だけから対面性が生じるとは書かない。
+7. Cube/Hasse はグラフ配置であり、現行 SVG を K-W 軸方向の正確な幾何投影とは呼ばない。
 
 ### P1: Known / CHROMALUM Adds Labels
 
@@ -130,7 +138,7 @@ x2 > x1 + x0 and x1 > x0.
 
 | Proposal | Status | Notes |
 | --- | --- | --- |
-| P0: Claim Hygiene | Done | UI uses `Discrete Algebraic Color Theory` / `離散代数的色彩理論`, `Tone` / `トーン`, GRB Binary Tone wording, and `XOR Operation` / `XOR 演算`. |
+| P0: Claim Hygiene | Done | UI separates `A = GF(2)^3` from `H` representatives, uses `Tone` / `トーン`, scopes XOR to algebraic labels, and states the Color Die construction premise. |
 | Final scope section | Done | The final Scope and Limits section lists the model's principal non-claims; the UI does not duplicate them in a near-top card. |
 | Dice-net rigor | Done | Cube-net enumeration and hue-path adjacency are machine-checked. |
 | P1: Known / CHROMALUM Adds Labels | Deferred | The docs already separate known prior art from CHROMALUM-specific synthesis; compact in-app labels remain optional. |
@@ -141,7 +149,7 @@ x2 > x1 + x0 and x1 > x0.
 
 ## Tests To Keep
 
-1. Venn copy defines the characteristic function by channel membership `x ∈ A`, not by treating `A` itself as an element of `{G,R,B}`.
+1. Venn copy reserves `A = GF(2)^3` for the full algebraic layer and uses `S subset {G,R,B}` with `chi_S(x)` for one channel subset.
 2. `GRB` Binary Tone makes numeric level order identical to tone order.
 3. Complementation `lv xor 7` reverses chromatic tone ranks and die-opposite rank sums are 7.
 4. Fano lines form a Steiner triple system.
@@ -150,14 +158,18 @@ x2 > x1 + x0 and x1 > x0.
 7. K8 edges partition by Hamming distance.
 8. Cube-face spanning trees enumerate the 11 free cube nets and verify the hue-order staircase.
 9. UI copy tests reject external luma/brightness derivations and Japanese `明るさ` / `輝度` for GRB Binary Tone.
+10. UI copy tests keep `A`, `H`, `π`, and candidate representatives distinct; reject claims that XOR defines every relationship or that Hasse self-duality is physical mixing.
+11. Overview and Map copy distinguish GRB level/tone from the sRGB code-value score used by the input and analysis adapters.
 
 ## Bottom Line
 
 Theory タブは、新しい色彩科学や新しい代数構造として主張しない。次の形に絞る。
 
 ```text
-known finite algebra + known RGB/CMY lattice geometry + GRB Binary Tone order
-+ complement/dice theorem + hue/tone/Fano/Hamming/polyhedra integration
+A = known finite algebra on 8 binary RGB labels
++ H = pure-hue boundary with level projection π and display representatives
++ GRB Binary Tone order + conditional complement/die construction
++ hue/tone/Fano/Hamming/polyhedra integration with explicit layer boundaries
 ```
 
 この整理なら、先行研究を必要十分に引用しつつ、CHROMALUM 固有の研究・開発価値を前面に出せる。

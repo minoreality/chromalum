@@ -16,7 +16,9 @@ import {
      level = 4G + 2R + B
      tone = level / 7
 
-   8-bit tone values are derived only for Canvas, PNG, and image I/O.
+   Device RGB is only an output projection. Lossy sRGB input classification is
+   kept in srgb-level-estimator.ts so it cannot be mistaken for an inverse of
+   the canonical coordinates.
    ═══════════════════════════════════════════ */
 export const GRB_TONE_R = CHROMALUM_GRB_WEIGHTS.R / CHROMALUM_TONE_DENOMINATOR,
   GRB_TONE_G = CHROMALUM_GRB_WEIGHTS.G / CHROMALUM_TONE_DENOMINATOR,
@@ -28,9 +30,6 @@ function clamp01(v: number): number {
 
 export const levelToneNorm = (level: number): number => clamp01(level / 7);
 export const levelTone8 = (level: number): number => Math.round(255 * levelToneNorm(level));
-export const rgbGrbToneNorm = (r: number, g: number, b: number): number =>
-  GRB_TONE_R * clamp01(r / 255) + GRB_TONE_G * clamp01(g / 255) + GRB_TONE_B * clamp01(b / 255);
-export const rgbGrbTone8 = (r: number, g: number, b: number): number => Math.round(255 * rgbGrbToneNorm(r, g, b));
 
 interface LevelInfo {
   readonly name: string;
@@ -55,6 +54,7 @@ export function hue2rgb(h: number): [number, number, number] {
 
 export interface ColorCandidate {
   readonly hueAngleDeg: number;
+  /** Pure-hue-boundary representative for a level label, not a GF(2)^3 element. */
   readonly chromalumGrb: ChromalumGrb;
   /** 8-bit display/output projection; never the source of hue or tone. */
   readonly rgb: readonly [number, number, number];
@@ -87,25 +87,6 @@ export const DEFAULT_CANDIDATE_INDEX_BY_LEVEL: readonly number[] = LEVEL_CANDIDA
   const canonicalIndex = alts.findIndex((candidate) => candidate.hueAngleDeg === CANONICAL_VERTEX_HUE_BY_LEVEL[i]);
   return canonicalIndex < 0 ? 0 : canonicalIndex;
 });
-
-function buildGrayLut(): Uint8Array {
-  const lut = new Uint8Array(256);
-  for (let g = 0; g < 256; g++) {
-    let best = 0,
-      bestDist = Infinity;
-    for (let i = 0; i < 8; i++) {
-      const d = Math.abs(g - LEVEL_INFO[i].gray8);
-      if (d < bestDist) {
-        bestDist = d;
-        best = i;
-      }
-    }
-    lut[g] = best;
-  }
-  return lut;
-}
-
-export const GRAY_LUT = buildGrayLut();
 
 export function buildColorLUT(candidateIndexByLevel: readonly number[]): [number, number, number][] {
   return LEVEL_CANDIDATES.map((alts, lv) => {

@@ -85,6 +85,7 @@ describe("LinkedVisualization split", () => {
         brushLevel={0}
         alpha0={30}
         alpha7={90}
+        originMode={0}
         onOriginModeChange={onOriginModeChange}
         onAlpha7Change={onAlpha7Change}
       />,
@@ -97,6 +98,46 @@ describe("LinkedVisualization split", () => {
     expect(onOriginModeChange).toHaveBeenCalledWith(7);
     expect(onAlpha7Change).toHaveBeenNthCalledWith(1, 30);
     expect(onAlpha7Change).toHaveBeenNthCalledWith(2, 210);
+  });
+
+  it("derives active geometry from the controlled origin mode", () => {
+    const onOriginModeChange = vi.fn();
+    const renderOverlay = vi.fn(({ activeAlpha }) => <text>{`active alpha ${activeAlpha}`}</text>);
+    const view = render(
+      <LinkedVisualization
+        hueAngleDeg={0}
+        brushLevel={0}
+        alpha0={30}
+        alpha7={210}
+        originMode={7}
+        onOriginModeChange={onOriginModeChange}
+        showLegend={false}
+        bottomRightOverlay={renderOverlay}
+      />,
+    );
+
+    expect(screen.getByText("active alpha 210")).toBeTruthy();
+    expect(screen.getByText("\u03b1\u2087: 210\u00b0")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "linkedviz_mode_l0" }));
+    expect(onOriginModeChange).toHaveBeenCalledWith(0);
+    expect(screen.getByText("active alpha 210")).toBeTruthy();
+
+    view.rerender(
+      <LinkedVisualization
+        hueAngleDeg={0}
+        brushLevel={0}
+        alpha0={0}
+        alpha7={180}
+        originMode={0}
+        onOriginModeChange={onOriginModeChange}
+        showLegend={false}
+        bottomRightOverlay={renderOverlay}
+      />,
+    );
+
+    expect(screen.getByText("active alpha 0")).toBeTruthy();
+    expect(screen.getByText("\u03b1\u2080: 0\u00b0")).toBeTruthy();
   });
 
   it("increases alpha when the wheel is dragged clockwise", () => {

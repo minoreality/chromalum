@@ -1,7 +1,7 @@
 import { FANO_LINES } from "../data/theory-data";
 import { TONE_NORM_VALUES, bitSpectrumComponents } from "../data/music-data";
 import { BASE_FREQ, angleToFreq, semitoneToFreq, type PitchMappingMode } from "../data/music-frequency";
-import { toneToFreq } from "./music-engine-core";
+import { GL32_IDENTITY_PERMUTATION, toneToFreq } from "./music-engine-core";
 import { complementPhaseFactor, hueStereoPan, liveHueAngleDeg } from "./music-phase";
 
 export interface SonificationLevel {
@@ -15,6 +15,10 @@ export interface AudioNodes {
   oscs: OscillatorNode[];
   gains: GainNode[];
   panners: StereoPannerNode[];
+  /** Silent under identity; represents source L7 when GL(3,2) maps it to L1-L6. */
+  gl32L7Osc: OscillatorNode;
+  gl32L7Gain: GainNode;
+  gl32L7Panner: StereoPannerNode;
   noiseSource: AudioBufferSourceNode;
   noiseGain: GainNode;
   master: GainNode;
@@ -27,7 +31,7 @@ export interface AudioNodes {
 
 const GAIN_SCALE = 0.15;
 const NOISE_GAIN = 0.005;
-export const RAMP_TC = 0.02;
+const RAMP_TC = 0.02;
 const DUCK_TC = 0.05;
 const HOVER_BOOST = 1.5;
 const HOVER_DUCK = 0.1;
@@ -37,6 +41,34 @@ const C2_PAIRS: [number, number][] = [
   [5, 2],
   [4, 3],
 ]; // carrier, modulator
+
+const CHROMATIC_LEVEL_COUNT = 6;
+
+function mappedLevel(permutation: readonly number[], sourceLevel: number): number {
+  const targetLevel = permutation[sourceLevel];
+  return targetLevel >= 1 && targetLevel <= 7 ? targetLevel : sourceLevel;
+}
+
+function levelToneNorm(levels: SonificationLevel[], levelIndex: number): number {
+  return levels.find((level) => level.levelIndex === levelIndex)?.toneNorm ?? TONE_NORM_VALUES[levelIndex] ?? levelIndex / 7;
+}
+
+function targetFrequency(
+  levels: SonificationLevel[],
+  targetLevel: number,
+  activeAlpha: number,
+  pitchMappingMode: PitchMappingMode,
+): number {
+  if (targetLevel === 7) return toneToFreq(1);
+  const targetData = levels.find((level) => level.levelIndex === targetLevel);
+  return angleToFreq(liveHueAngleDeg(targetData?.hueAngleDeg ?? 0, activeAlpha), pitchMappingMode);
+}
+
+function targetPan(levels: SonificationLevel[], targetLevel: number, activeAlpha: number, panEnabled: boolean): number {
+  if (!panEnabled || targetLevel === 7) return 0;
+  const targetData = levels.find((level) => level.levelIndex === targetLevel);
+  return hueStereoPan(targetData?.hueAngleDeg ?? 0, activeAlpha);
+}
 
 function createNoiseBuffer(ctx: AudioContext): AudioBuffer {
   const len = ctx.sampleRate * 2;
@@ -62,11 +94,11 @@ export function buildAudioGraph(ctx: AudioContext): AudioNodes {
 
   master.connect(analyser).connect(compressor).connect(ctx.destination);
 
-  // 6 oscillators for L1-L6
+  // Six ordinary chromatic drone oscillators for L1-L6.
   const oscs: OscillatorNode[] = [];
   const gains: GainNode[] = [];
   const panners: StereoPannerNode[] = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < CHROMATIC_LEVEL_COUNT; i++) {
     const osc = ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.value = BASE_FREQ;
@@ -90,11 +122,27 @@ export function buildAudioGraph(ctx: AudioContext): AudioNodes {
   noiseSource.connect(noiseGain).connect(master);
   noiseSource.start();
 
+  // A separate, normally-muted oscillator completes the seven GL(3,2) source
+  // slots without changing the six-oscillator contract used by ordinary audio
+  // and FM carriers. It becomes audible only when source L7 maps to L1-L6.
+  const gl32L7Osc = ctx.createOscillator();
+  gl32L7Osc.type = "sine";
+  gl32L7Osc.frequency.value = BASE_FREQ;
+  const gl32L7Gain = ctx.createGain();
+  gl32L7Gain.gain.value = 0;
+  const gl32L7Panner = ctx.createStereoPanner();
+  gl32L7Panner.pan.value = 0;
+  gl32L7Osc.connect(gl32L7Gain).connect(gl32L7Panner).connect(master);
+  gl32L7Osc.start();
+
   return {
     ctx,
     oscs,
     gains,
     panners,
+    gl32L7Osc,
+    gl32L7Gain,
+    gl32L7Panner,
     noiseSource,
     noiseGain,
     master,
@@ -132,6 +180,14 @@ export function teardown(nodes: AudioNodes) {
   for (const g of nodes.gains) g.disconnect();
   for (const p of nodes.panners) p.disconnect();
   try {
+    nodes.gl32L7Osc.stop();
+  } catch {
+    /* already stopped */
+  }
+  nodes.gl32L7Osc.disconnect();
+  nodes.gl32L7Gain.disconnect();
+  nodes.gl32L7Panner.disconnect();
+  try {
     nodes.noiseSource.stop();
   } catch {
     /* already stopped */
@@ -145,7 +201,13 @@ export function teardown(nodes: AudioNodes) {
 }
 
 /** Build or rebuild FM modulator nodes */
-export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], pitchMappingMode: PitchMappingMode, activeAlpha = 0) {
+export function buildFM(
+  nodes: AudioNodes,
+  levels: SonificationLevel[],
+  pitchMappingMode: PitchMappingMode,
+  activeAlpha = 0,
+  levelPermutation: readonly number[] = GL32_IDENTITY_PERMUTATION,
+) {
   teardownFM(nodes);
   const fmOscs: OscillatorNode[] = [];
   const fmGains: GainNode[] = [];
@@ -157,7 +219,7 @@ export function buildFM(nodes: AudioNodes, levels: SonificationLevel[], pitchMap
 
     const modOsc = nodes.ctx.createOscillator();
     modOsc.type = "sine";
-    modOsc.frequency.value = angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), pitchMappingMode);
+    modOsc.frequency.value = targetFrequency(levels, mappedLevel(levelPermutation, modulatorLevelIndex), activeAlpha, pitchMappingMode);
 
     const modGain = nodes.ctx.createGain();
     const modIndex = Math.abs(carrierLevel.toneNorm - modulatorLevel.toneNorm) * 400;
@@ -301,6 +363,7 @@ export function applyParams(
   toneMode: "symmetric" | "grbTone" = "symmetric",
   originMode: 0 | 7 = 0,
   droneMuted = false,
+  levelPermutation: readonly number[] = GL32_IDENTITY_PERMUTATION,
 ) {
   const now = nodes.ctx.currentTime;
 
@@ -319,31 +382,31 @@ export function applyParams(
     fanoBoostSet = new Set(FANO_LINES[hoveredFanoLine]);
   }
 
-  for (let i = 0; i < 6; i++) {
-    const levelIndex = i + 1;
-    const levelData = levels.find((level) => level.levelIndex === levelIndex);
-    if (!levelData) continue;
+  for (let i = 0; i < CHROMATIC_LEVEL_COUNT; i++) {
+    const sourceLevel = i + 1;
+    const targetLevel = mappedLevel(levelPermutation, sourceLevel);
+    const sourceToneNorm = levelToneNorm(levels, sourceLevel);
 
-    // Frequency: active alpha rotates pitch mapping around the hue wheel
-    const rotatedAngle = liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha);
-    nodes.oscs[i].frequency.setTargetAtTime(angleToFreq(rotatedAngle, pitchMappingMode), now, RAMP_TC);
+    // Frequency/pan follow the target point, while gain remains attached to the
+    // source drone being transformed. A target of L7 is rendered by noise below.
+    nodes.oscs[i].frequency.setTargetAtTime(targetFrequency(levels, targetLevel, activeAlpha, pitchMappingMode), now, RAMP_TC);
 
     // Gain: Even mode keeps chromatic drones level-matched. Tone mode follows the
     // active GRB 4:2:1 tone radius from the selected origin.
-    const toneRadius = originMode === 0 ? levelData.toneNorm : 1 - levelData.toneNorm;
+    const toneRadius = originMode === 0 ? sourceToneNorm : 1 - sourceToneNorm;
     const baseGain = toneMode === "grbTone" ? toneRadius * GAIN_SCALE : GAIN_SCALE;
     let targetGain: number;
 
     if (hoveredLevelIndex !== null) {
       // Individual level hover takes priority
-      if (hoveredLevelIndex === levelIndex) {
+      if (hoveredLevelIndex === sourceLevel) {
         targetGain = baseGain * HOVER_BOOST;
       } else {
         targetGain = baseGain * HOVER_DUCK * phaseFactor;
       }
     } else if (fanoBoostSet !== null) {
       // Fano line hover: boost members, duck others
-      if (fanoBoostSet.has(levelIndex)) {
+      if (fanoBoostSet.has(sourceLevel)) {
         targetGain = baseGain * HOVER_BOOST;
       } else {
         targetGain = baseGain * HOVER_DUCK * phaseFactor;
@@ -356,27 +419,52 @@ export function applyParams(
     // When drone is muted, only play hovered level or Fano line members
     let finalGain: number;
     if (droneMuted) {
-      const isHoveredLevel = hoveredLevelIndex !== null && hoveredLevelIndex === levelIndex;
-      const isFanoMember = fanoBoostSet !== null && fanoBoostSet.has(levelIndex);
+      const isHoveredLevel = hoveredLevelIndex !== null && hoveredLevelIndex === sourceLevel;
+      const isFanoMember = fanoBoostSet !== null && fanoBoostSet.has(sourceLevel);
       finalGain = isHoveredLevel || isFanoMember ? baseGain * HOVER_BOOST : 0;
     } else {
       finalGain = targetGain;
     }
-    nodes.gains[i].gain.setTargetAtTime(finalGain, now, tc);
+    nodes.gains[i].gain.setTargetAtTime(targetLevel === 7 ? 0 : finalGain, now, tc);
 
     // Stereo pan
-    const panValue = panEnabled ? hueStereoPan(levelData.hueAngleDeg, activeAlpha) : 0;
-    nodes.panners[i].pan.setTargetAtTime(panValue, now, RAMP_TC);
+    nodes.panners[i].pan.setTargetAtTime(targetPan(levels, targetLevel, activeAlpha, panEnabled), now, RAMP_TC);
   }
 
-  // L7 noise gain follows the normalized tone radius from the selected origin.
+  const l7TargetLevel = mappedLevel(levelPermutation, 7);
   const l7ToneRadius = originMode === 0 ? 1 : 0;
-  const noiseBase = NOISE_GAIN * l7ToneRadius;
+  const l7BaseGain = toneMode === "grbTone" ? l7ToneRadius * GAIN_SCALE : GAIN_SCALE;
+  let l7TargetGain: number;
+  if (hoveredLevelIndex !== null) {
+    l7TargetGain = hoveredLevelIndex === 7 ? l7BaseGain * HOVER_BOOST : l7BaseGain * HOVER_DUCK * phaseFactor;
+  } else if (fanoBoostSet !== null) {
+    l7TargetGain = fanoBoostSet.has(7) ? l7BaseGain * HOVER_BOOST : l7BaseGain * HOVER_DUCK * phaseFactor;
+  } else {
+    l7TargetGain = l7BaseGain * phaseFactor;
+  }
+  if (droneMuted) {
+    const l7IsActive = hoveredLevelIndex === 7 || fanoBoostSet?.has(7) === true;
+    l7TargetGain = l7IsActive ? l7BaseGain * HOVER_BOOST : 0;
+  }
+  nodes.gl32L7Osc.frequency.setTargetAtTime(targetFrequency(levels, l7TargetLevel, activeAlpha, pitchMappingMode), now, RAMP_TC);
+  nodes.gl32L7Gain.gain.setTargetAtTime(l7TargetLevel === 7 ? 0 : l7TargetGain, now, RAMP_TC);
+  nodes.gl32L7Panner.pan.setTargetAtTime(targetPan(levels, l7TargetLevel, activeAlpha, panEnabled), now, RAMP_TC);
+
+  // Exactly one source maps to L7. Render that source through the persistent
+  // noise node while its oscillator is muted. Identity behavior for source L7
+  // remains unchanged.
+  const noiseSourceLevel = GL32_IDENTITY_PERMUTATION.slice(1).find((sourceLevel) => mappedLevel(levelPermutation, sourceLevel) === 7) ?? 7;
+  const noiseSourceTone = levelToneNorm(levels, noiseSourceLevel);
+  const noiseToneRadius = originMode === 0 ? noiseSourceTone : 1 - noiseSourceTone;
+  const noiseBase = NOISE_GAIN * (noiseSourceLevel === 7 || toneMode === "grbTone" ? noiseToneRadius : 1);
   let noiseTarget = noiseBase * phaseFactor;
-  if (hoveredLevelIndex === 7) noiseTarget = noiseBase * HOVER_BOOST;
+  if (hoveredLevelIndex === noiseSourceLevel) noiseTarget = noiseBase * HOVER_BOOST;
   else if (hoveredLevelIndex !== null) noiseTarget = noiseBase * HOVER_DUCK;
-  else if (fanoBoostSet !== null) noiseTarget = noiseBase * HOVER_DUCK;
-  const finalNoise = droneMuted ? (hoveredLevelIndex === 7 ? noiseBase * HOVER_BOOST : 0) : noiseTarget;
+  else if (fanoBoostSet !== null) {
+    noiseTarget = noiseSourceLevel !== 7 && fanoBoostSet.has(noiseSourceLevel) ? noiseBase * HOVER_BOOST : noiseBase * HOVER_DUCK;
+  }
+  const noiseIsActive = hoveredLevelIndex === noiseSourceLevel || (noiseSourceLevel !== 7 && fanoBoostSet?.has(noiseSourceLevel) === true);
+  const finalNoise = droneMuted ? (noiseIsActive ? noiseBase * HOVER_BOOST : 0) : noiseTarget;
   nodes.noiseGain.gain.setTargetAtTime(finalNoise, now, DUCK_TC);
 
   // FM synthesis: update modulator parameters if enabled
@@ -391,7 +479,7 @@ export function applyParams(
         continue;
       }
       nodes.fmOscs[pairIdx].frequency.setTargetAtTime(
-        angleToFreq(liveHueAngleDeg(modulatorLevel.hueAngleDeg, activeAlpha), pitchMappingMode),
+        targetFrequency(levels, mappedLevel(levelPermutation, modulatorLevelIndex), activeAlpha, pitchMappingMode),
         now,
         RAMP_TC,
       );

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../color-engine";
+import { createDefaultMusicCandidateOverrides } from "../music/music-candidate-pairs";
 import type { DecoderPhase, MusicCandidateHover } from "../music/types";
 import type { PitchMappingMode } from "./useMusicEngine";
 
@@ -15,9 +15,7 @@ type MusicRotationDir = 1 | -1 | 0;
 type MusicOriginMode = 0 | 7;
 
 export function createDefaultMusicDirectCandidates() {
-  const candidates = new Map<number, number>();
-  for (let levelIndex = 1; levelIndex <= 6; levelIndex++) candidates.set(levelIndex, DEFAULT_CANDIDATE_INDEX_BY_LEVEL[levelIndex]);
-  return candidates;
+  return createDefaultMusicCandidateOverrides();
 }
 
 export function useMusicPaletteState() {

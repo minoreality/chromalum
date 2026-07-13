@@ -185,10 +185,12 @@ describe("MusicPanel controller integration", () => {
     musicEngineMock.engine.setDroneMuted.mockClear();
 
     expect(latestEngineParams()).toMatchObject({ originMode: 0, alpha7: 180 });
+    expect(screen.getByText("\u03b1\u2080: 0\u00b0")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "L7=origin" }));
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
     expect(latestEngineParams().originMode).toBe(7);
+    expect(screen.getByText("\u03b1\u2087: 180\u00b0")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Antiphase" }));
     expect(latestEngineParams().alpha7).toBe(0);
@@ -263,12 +265,14 @@ describe("MusicPanel controller integration", () => {
     fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "160" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Fano point" }), { target: { value: "6" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Fano line" }), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "L7=origin" }));
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
 
     expect(latestEngineParams()).toMatchObject({
       pitchMappingMode: "wholeTone",
       fmEnabled: true,
       toneMode: "grbTone",
+      originMode: 7,
       volume: 0,
     });
     expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("180");
@@ -283,8 +287,10 @@ describe("MusicPanel controller integration", () => {
       pitchMappingMode: "chromalum",
       fmEnabled: false,
       toneMode: "symmetric",
+      originMode: 0,
       volume: 0.7,
     });
+    expect(screen.getByText("\u03b1\u2080: 0\u00b0")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
     expect((screen.getByLabelText("Hue angle (0-359 degrees)") as HTMLInputElement).value).toBe("0");
     expect((screen.getByLabelText("Hue phase") as HTMLInputElement).value).toBe("0");

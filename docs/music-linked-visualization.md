@@ -32,6 +32,17 @@ CHROMALUM 側の固有性は、これらの標準要素を単独で使う点で�
 
 ## Coordinate Model
 
+Music タブは、Theory タブの二層を次のように使い分ける。
+
+```text
+A = GF(2)^3                         algebraic level labels L0..L7
+H = {GRB(g,r,b) | min=0, max=1}     pure-hue boundary
+π : H -> [1,6]                      π(g,r,b) = 4g + 2r + b
+C_L = π^-1(L)                       candidates representing level L
+```
+
+XOR、Fano、Hamming、K8 などは `A` のラベル上で計算する。Music タブが各有彩 level に表示する色と角度は、候補集合 `C_L` から選んだ代表元 `s(L)` の属性である。候補を切り替えても `A` の元や XOR 結果は変わらず、逆に `A` の XOR を `H` 上の中間座標へ適用することもしない。
+
 レベル `L` の tone 値を `T_L = L / 7`、表示最大半径を `R` とする。`LinkedVisualization` は L0 原点系と L7 原点系を次の半径で扱う。
 
 ```text
@@ -58,7 +69,7 @@ T = (4G + 2R + B) / 7
 | Blue | 240deg |
 | Magenta | 300deg |
 
-同じ GRB Binary Tone を持つ候補色を含めた、各有彩レベルの正準座標は次の通りである。L0 Black と L7 White は無彩色なので色相角を持たない。
+同じ GRB Binary Tone を持つ候補色を含めた、各有彩レベルの正準座標は次の通りである。これらは `C_L` の表示代表元であり、8 頂点代数 `A` の追加要素ではない。L0 Black と L7 White は無彩色なので色相角を持たない。
 
 | level | exact CHROMALUM integer coordinates: `GRB(G4,R4,B4)` |
 | --- | --- |
@@ -68,6 +79,8 @@ T = (4G + 2R + B) / 7
 | L4 | 30deg: `GRB(2,4,0)`, 120deg: `GRB(4,0,0)`, 195deg: `GRB(3,0,4)` |
 | L5 | 45deg: `GRB(3,4,0)`, 90deg: `GRB(4,2,0)`, 180deg: `GRB(4,0,4)` |
 | L6 | 60deg: `GRB(4,4,0)` |
+
+投影グラフは、無彩色端点のマーカーにも横軸上の配置位置を必要とする。このため現行 UI は、L0 マーカーに現在の L1（Blue level）代表元の角度を、L7 マーカーに現在の L6（Yellow level）代表元の角度を表示上の proxy として借りる。この `proxy hue` はグラフ配置専用であり、L0/L7 に色相を付与せず、`π`、色相→音高写像、補色角の定義にも参加しない。
 
 ここでは「角度」という語を次のように分離する。
 
@@ -140,9 +153,11 @@ tone  = level / 7
 
 これにより、色相六角形の 15deg 交点はすべて整数で表せる。たとえば `15deg = GRB(1,4,0)`、`30deg = GRB(2,4,0)`、`45deg = GRB(3,4,0)` であり、それぞれ厳密に L3、L4、L5 となる。補色も `GRB(G4,R4,B4) -> GRB(4-G4,4-R4,4-B4)` として厳密に定義できる。
 
-Canvas、PNG、CSSへ渡すRGBバイトは、この正確なモデル座標から作る外部出力アダプターである。そこで発生するデバイス量子化は表示・入出力だけに閉じ込め、角度、tone、補色、音高、pan、位相ゲインをRGBバイトから逆算しない。
+Canvas、PNG、CSSへ渡すRGBバイトは、この正確なモデル座標から作る外部出力アダプターである。そこで発生するデバイス量子化から、角度、tone、補色、音高、pan、位相ゲインを逆算しない。
 
-内部計算と理論表では正準整数座標 `GRB(G4,R4,B4)` を使う。一方、Glazeなどの共有可視化凡例では、各成分をチャンネル最大値4で割った正確な割合を表示する。たとえば内部の `GRB(3,4,0)` は画面では `GRB(3/4,1,0)` と表示される。この正規化もCHROMALUM内部の厳密な変換であり、sRGBバイトへの変換ではない。
+画像入力だけは別経路である。入力された sRGB コード値へモデル固有の 4:2:1 スコアを適用し、最寄りの `L0..L7` ラベルを推定する。この処理は非可逆な分類器であり、`π` の逆写像でも、`H` 上の候補座標や色相角の復元でもない。Map タブの **GRB Code Score / GRBコードスコア** もこの入力側スコアであり、GRB Binary Tone、知覚的明度、測光輝度のいずれとも同一視しない。
+
+候補テーブルと選択候補の内部計算では正準整数座標 `GRB(G4,R4,B4)` を使う。任意の連続 hue では同じ `0..4` スケール上の実数座標を使う。一方、Glazeなどの共有可視化凡例では、選択候補の各成分をチャンネル最大値4で割った正確な割合を表示する。たとえば内部の `GRB(3,4,0)` は画面では `GRB(3/4,1,0)` と表示される。この正規化もCHROMALUM内部の厳密な変換であり、sRGBバイトへの変換ではない。
 
 ## Complement Symmetry
 
@@ -160,9 +175,9 @@ r0(L) = r7(7 - L)
 
 となり、L0 原点系と L7 原点系は補色対に対して反転対称になる。
 
-デフォルトの有彩色候補では、補色ペアは tone 和が 1 で、色相角も 180 度離れる。
+Music タブの有彩候補は `(L1,L6)`, `(L2,L5)`, `(L3,L4)` の3組として解決する。自動選択では global hue に最も近い端点を持つ補色軸を選び、片側を手動変更した場合は反対側も正確な補色候補へ同期する。したがって、現在選択中の各組は常に正準 GRB 座標の成分和が4、tone 和が1、色相角差が180度になる。次は初期の正準組である。
 
-| pair | tone | default hue angles |
+| pair | tone | canonical initial hue angles |
 | --- | ---: | --- |
 | L1 Blue / L6 Yellow | 1/7 + 6/7 = 1 | 240deg / 60deg |
 | L2 Red / L5 Cyan | 2/7 + 5/7 = 1 | 0deg / 180deg |
@@ -256,7 +271,7 @@ Music タブの Zigzag Tone カードの Crossings 再生だけは例外とし�
 
 ## Algebraic Timbre / Bit Spectrum
 
-代数的デモで使う `Bit Spectrum` では、色相角そのものを音高へ写すのではなく、Theory タブと同じ `GF(2)^3` のビット構造を音色成分へ写す。
+代数的デモで使う `Bit Spectrum` では、色相角そのものを音高へ写すのではなく、Theory タブと同じ `A = GF(2)^3` のビットラベルを、選択される音色成分へ写す。
 
 レベル `lv` を
 
@@ -264,15 +279,26 @@ Music タブの Zigzag Tone カードの Crossings 再生だけは例外とし�
 lv = 4G + 2R + B
 ```
 
-として読むと、音色は次のようなビット基底の合成として定義する。
+として読み、`n = B + R + G` を立っているビット数、`f0` を基準周波数、`e(t)` をバースト包絡とする。現行実装の出力信号は、定数とパンを除けば次である。
 
 ```text
-T(lv) = B * tau_B + R * tau_R + G * tau_G
+s_lv(t) = e(t) * 0.42 * (lv/7) / sqrt(n)
+          * [0.72 B sin(2 pi (3 f0)t)
+             + 1.00 R sin(2 pi (1 f0)t)
+             + 0.86 G sin(2 pi (2 f0)t)]        (n > 0)
+
+s_0(t) = 0
 ```
 
-ここで `tau_B`, `tau_R`, `tau_G` は Web Audio 上の倍音成分である。したがって、Black `000` は成分なし、White `111` は全成分、有彩色の Gray cycle は音色成分が 1 つずつ切り替わる巡回として聴こえる。
+ビットは倍音成分の有無を選ぶが、実際の振幅は固定基底の単純な線形和だけではない。`lv/7` が level-dependent gain を与え、`1/sqrt(n)` が同時発音成分数を正規化し、成分ごとの係数 `0.72, 1.00, 0.86` も異なる。したがって Black `000` は成分なし、White `111` は全成分、有彩色の Gray cycle は選択成分が 1 つずつ切り替わる巡回として聴こえる、というのが正確な主張である。
 
 このモードは、音響ミックスそのものが XOR を実装する、という意味ではない。XOR はコード側で `a xor b` として計算し、その結果のレベルを `Bit Spectrum` として鳴らす。通常の音響加算は GF(2) 加法ではないため、同じ音を 2 回足しても Black には戻らない。
+
+## GL(3,2) Audio Scope
+
+GL(3,2) 操作は、非零7点の現在の順列をドローンの target pitch と pan へ写す。L1..L6 を通常の正弦波、target L7 を noise として鳴らし、source L7 が有彩 target へ移る場合だけ専用の補助正弦波を使う。gain と hover/Fano 強調は source level に付随するため、これは7点のラベル移動を聴かせるデモであり、GRB tone を保存する変換ではない。
+
+FM スイッチとの同時使用では、3本の chromatic carrier/modulator 結線自体は source level に固定した付加音色として残り、modulator pitch だけが現在の target label に追従する。carrier が L7 noise へ写る場合、その source oscillator は無音になるのでFM効果も聴こえず、source L7 用の補助 oscillator に新しいFM結線は作らない。したがって本実装は GL(3,2) がFMグラフ全体へ作用するとは主張せず、GLデモの保証範囲をドローンの7点 pitch/pan 順列に限定する。
 
 ## Routing of Structural Sonifications
 

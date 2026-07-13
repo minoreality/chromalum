@@ -193,7 +193,7 @@ export const en = {
   header_shortcuts: "Shortcuts",
   about_title: "Overview",
   about_body_1:
-    "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, plus white and black. It turns brightness into color relationships, supported by an algebraic structure behind the eight-color system.",
+    "CHROMALUM is an art tool that starts from eight GRB tone labels: six chromatic labels plus white and black. It explores relationships among those levels through a discrete algebraic structure, while alternative hues act as visual representatives of the same level.",
   about_body_2:
     "Start by drawing in the Source tab or loading an image. In the Hex and Color tabs, assign colors to the eight tone levels and shape the palette. The Gallery tab lets you browse all resulting pattern combinations. In the Glaze tab, you can overlay alternative candidate colors, while the Map tab analyzes information in the canvas.",
   about_body_3: "The Theory tab explains the underlying color system, and the Music tab explores the same color structure through sound.",
@@ -224,10 +224,10 @@ export const en = {
   label_theory: "ALGEBRAIC COLOR THEORY",
   theory_title: "Discrete Algebraic Color Theory",
   theory_intro:
-    "In CHROMALUM, the 8 vertices where each RGB channel is treated as 0 or 1 are encoded as the 3-bit vector `[G,R,B]`. Each bit represents Green, Red, and Blue on/off states, and these 8 vectors correspond to the 8 colors.\n\nThis 8-point set can be read as the 3-dimensional vector space GF(2)\u00b3 over GF(2). GF(2) is the smallest finite field, consisting only of 0 and 1; since 1+1=0, vector addition becomes bitwise XOR.\n\nThe full 8-point set can be read as the Color Cube, the 6 chromatic colors as a Gray-code cycle, the 7 nonzero points as the Fano plane, and the same 7 points as position labels for the Hamming code. The Theory tab integrates these as multiple readings of the same 8-color model into an algebraic color system.",
+    "In CHROMALUM, the 8 vertices where each RGB channel is treated as 0 or 1 are encoded as the 3-bit vector `[G,R,B]`. Each bit represents Green, Red, and Blue on/off states. These 8 labels form the algebraic layer A = GF(2)\u00b3.\n\nGF(2) is the smallest finite field, consisting only of 0 and 1; since 1+1=0, vector addition in A becomes bitwise XOR. The full 8-point set can be read as the Color Cube, the 6 chromatic vertices as a Gray-code cycle, the 7 nonzero points as the Fano plane, and the same 7 points as position labels for the Hamming code.\n\nA separate layer H is the pure-hue boundary of the RGB cube. Its level projection is \u03c0(G,R,B)=4G+2R+B. Alternative candidates with the same integer level are display representatives from the same fiber of \u03c0; they are not extra elements of A and do not acquire A\u2019s XOR operation.",
   theory_venn_title: "Venn Diagram",
   theory_venn_desc:
-    "The 3 channels {G,R,B} admit 2\u00b3 = 8 subsets. The 8 regions formed by 3 overlapping circles correspond exactly to the 8 colors: the outside is the empty set \u2205 (Black); the triple overlap is the full set {G,R,B} (White). Each color is in one-to-one correspondence with a subset A \u2286 {G,R,B}, readable as a characteristic function \u03c7_A (1 if the channel is in A, else 0). Every section below views this same 8-element set through a different lens.",
+    "The 3 channels {G,R,B} admit 2\u00b3 = 8 subsets. The 8 regions formed by 3 overlapping circles correspond exactly to the 8 algebraic labels: the outside is the empty set \u2205 (Black), and the triple overlap is {G,R,B} (White). Each label corresponds to a subset S \u2286 {G,R,B}, readable as the characteristic function \u03c7_S (1 if channel x is in S, else 0). Here S names one subset; A = GF(2)\u00b3 remains the full algebraic layer.",
   theory_binary_title: "Binary Levels",
   theory_binary_desc:
     "Here we restrict the model to the eight RGB vertices where each channel is 0 or 1, number each color as the 3-bit integer 4x₂ + 2x₁ + x₀, and define levels 0..7.\n\nIn the GRB Binary Tone model, bit2=Green, bit1=Red, bit0=Blue, so level = 4G + 2R + B and tone = level / 7. The 4:2:1 bit weights are an internal definition, so numeric level order and tone order coincide by definition.\n\nUnder this assignment, B=1, R=2, G=4, so the primary numbers are {1, 2, 4}. This set is the unique 3-element set whose elements, pairwise sums, and total sum (all under ordinary integer addition) fill {1, …, 7} without overlap, and is exactly the minimal binary basis for this 8-color model.",
@@ -236,18 +236,18 @@ export const en = {
   theory_binary_tone_complement: "Complement tone: T\u2096 + T\u2087\u208b\u2096 = 1",
   theory_zigzag_title: "Tone Zigzag",
   theory_zigzag_desc:
-    "How does tone change as you rotate through hues? Fully saturated colors (max channel = 1, min = 0) trace a zigzag of 6 segments as hue rotates. Each segment toggles one channel; under GRB Binary Tone, the slope magnitudes follow G:R:B = 4:2:1. On the hue circle, horizontal lines for chromatic levels L1-L6 intersect the zigzag at 1 or 3 points. L0/L7 are not on the hue hexagon; they are treated separately as endpoints of the black-white axis. For any hue angle h, T(h) + T(h+180°) = 1, so complementary tones always sum to 1.",
+    "The pure-hue boundary H (max channel = 1, min = 0) traces a zigzag of 6 segments under the level projection π(G,R,B)=4G+2R+B. Each segment varies one channel, so the slope magnitudes follow G:R:B = 4:2:1. For each chromatic integer level L1-L6, the intersections form a fiber of π with 1 or 3 display candidates; choosing one changes only the representative, not the algebraic label in A. L0/L7 are not on the hue hexagon and remain endpoints of the black-white axis. For any hue angle h on H, T(h) + T(h+180°) = 1.",
   theory_dice_title: "Color Die",
   theory_dice_desc:
-    "Rank the 6 colors (RGB primaries plus CMY secondaries) by GRB Binary Tone, low to high (1\u20136), and place them on a cube\u2019s faces. The complement map c \u21a6 c \u2295 7 reverses tone order, so complementary pairs land on opposite faces and every opposite pair sums to 7 \u2014 exactly the standard-die rule.",
+    "Rank the 6 chromatic algebraic labels by GRB Binary Tone (1\u20136). Now take a standard die whose opposite face labels sum to 7, and assign each color to the face bearing its rank. Because c \u21a6 c \u2295 7 reverses tone order, complementary ranks sum to 7 and therefore occupy opposite faces under this stated assignment.",
   theory_dice_desc2:
-    "Write the face placement as d: c \u2192 {1, ..., 6} and the complement as c\u0304 = c \u2295 7. In this 6-color chain, complementation is order-reversing, so it forces d(c) + d(c\u0304) = 7.",
+    "Let d(c) be the GRB tone rank and assign c to the standard-die face labeled d(c). With c\u0304 = c \u2295 7, order reversal gives d(c) + d(c\u0304) = 7. The numeric identity plus the standard face-label convention yields opposite placement; the identity alone does not determine an arbitrary cube layout.",
   theory_dice_net_title: "Hue unfolding",
   theory_dice_desc3:
     "The staircase net (2-2-2 type) unfolds in hue-wheel order. Each step simultaneously realizes cube 1-bit adjacency, 60° hue progression, and the GRB tone zigzag. Among the 11 free cube nets, only this staircase has a face-adjacency tree containing the hue-wheel path R\u2192Y\u2192G\u2192C\u2192B\u2192M (equivalently its reverse). Proof sketch: a cube net has 6 faces, so there are exactly 5 edges representing adjacency relations; requiring those 5 hue edges forces that Hamiltonian path as the whole tree. Unfolding the cube along that tree yields a unique net, namely the 2-2-2 staircase.",
   theory_dice_hint: "6 faces \u2192 8 vertices: add Black (0) and White (7) to get the Color Cube",
-  theory_dice_additive_col: "XOR view (additive reading)",
-  theory_dice_subtractive_col: "AND view (subtractive reading)",
+  theory_dice_additive_col: "XOR (GF(2)\u00b3 addition)",
+  theory_dice_subtractive_col: "AND (Boolean meet)",
   theory_dice_footer_ops: "\u2295 = XOR over GF(2)\u00b3 | \u2227 = AND in the Boolean lattice",
   theory_dice_footer_demorgan: "For disjoint colors (a \u2227 b = 0): (a \u2295 b)' = a' \u2227 b'  where x' = x \u2295 7",
   theory_dice_footer_subtractive: "For the displayed CMY pairs, a \u2228 b = 7, so a + b - 7 = a \u2227 b.",
@@ -255,26 +255,26 @@ export const en = {
   theory_fano_desc:
     "The 7 nonzero levels {1, …, 7} form PG(2,2) (the smallest projective plane: 7 points, 7 lines, 3 points per line, 3 lines per point) and the Steiner triple system S(2,3,7), unique up to isomorphism (every pair of points lies on exactly one line). Under projectivization, the zero vector is not a point, so Black (0) does not appear here.",
   theory_fano_desc2:
-    "In the triangle: vertices = RGB (primaries), midpoints = CMY (each is XOR of adjacent vertices), center = White (the intersection of lines RC, GM, BY). The 3 sides are additive mixing, the 3 medians are complementary pairs, and the inscribed circle is the line through the 3 secondary colors. For any line {a, b, c}, a \u2295 b \u2295 c = 0. In particular, the CMY line reads 011\u2295101\u2295110 = 000, i.e. M\u2295C\u2295Y = K. K is the zero vector, not a Fano point.",
+    "In the triangle: vertices = RGB basis labels, midpoints = CMY labels (each is the XOR of two adjacent basis labels), and center = White (the intersection of lines RC, GM, BY). The 3 sides encode basis-XOR relations, the 3 medians connect complement pairs, and the inscribed circle represents the line through the 3 secondary labels. These are incidence and algebraic relations, not physical color mixing. For any line {a, b, c}, a \u2295 b \u2295 c = 0. In particular, M\u2295C\u2295Y = K; K is the zero vector, not a Fano point.",
   theory_fano_xor: "{0} \u2295 {1} = {2}",
-  theory_fano_primary: "Primary mixing",
+  theory_fano_primary: "Basis XOR",
   theory_fano_complement: "Complementary",
   theory_fano_secondary: "Secondary line",
   theory_cube_title: "Color Cube",
   theory_cube_desc:
-    "8 levels sit at the vertices of a cube (RGB axes). Each edge toggles one channel. With Black(0) and White(7) as the two poles, the 6 chromatic vertices form a regular hexagon when viewed along the K-W axis \u2014 weight-1 primaries on one layer, weight-2 secondaries on the other. From Black(0) as the reference, primary combinations read as XOR (additive reading); from White(7), secondary combinations read as AND (subtractive reading). The complement map (XOR 7) swaps these two perspectives.",
+    "The 8 algebraic levels sit at the vertices of the RGB cube, and each edge toggles one channel. The 6 chromatic vertices form a six-cycle around the K-W body diagonal; an ideal orthogonal projection along that axis would give a regular hexagon. The displayed cube is a schematic layout, not that exact geometric projection. From Black(0), combinations are read with XOR in A; from White(7), intersections are read with AND in the Boolean lattice. These are algebraic views, not light or pigment mixing laws.",
   theory_cube_desc2:
-    "The Hasse toggle projects the same cube along its body diagonal (topologically the same Q\u2083 graph). K at the bottom, W at the top, with rank = |A| (A is the color\u2019s channel set, |A| its size) stratifying the 8 colors into 4 layers \u2014 Pascal\u2019s row 3 (n=3) 1, 3, 3, 1 is directly visible. Atoms (rank 1 = RGB primaries) and coatoms (rank 2 = CMY) correspond via the complement map c \u2295 7 \u2014 this is the algebraic origin of complementary pairs. The 12 edges decompose into 3 perfect matchings, one for each of the G, R, B channels. Reading upward is additive mixing; downward is subtractive \u2014 the Hasse self-duality guarantees this equivalence.",
+    "The Hasse toggle redraws the same Q\u2083 graph as a rank-layer diagram; it is not a body-diagonal geometric projection. K is at the bottom and W at the top, while rank = |S| for channel subset S stratifies the vertices into 1, 3, 3, 1. Atoms and coatoms correspond under c \u2295 7, and the 12 edges split into 3 perfect matchings for G, R, and B. Moving upward adds a set element and moving downward removes one; complement reverses this order. This is Boolean-lattice duality, not an equivalence between physical additive and subtractive mixing.",
   theory_gray_title: "Gray Code Cycle",
   theory_gray_desc:
-    "The 6 chromatic colors arranged in hue-wheel order toggle exactly one channel per step, cycling G, R, B twice, and forming a hexagonal cycle. Structurally, these 6 vertices form K\u2083,\u2083 (primaries \u2194 secondaries) minus 3 complement pairs that form a perfect matching of K\u2083,\u2083 \u2014 leaving exactly this hexagon with no other edges. Each edge lies on a Fano plane line through two primaries, using all 3 such lines twice. Complements are always antipodal (Hamming distance 3; half-way around the hexagon = 3 steps) \u2014 the geometric reason die-opposite faces sum to 7.",
+    "The 6 chromatic algebraic vertices arranged in hue-wheel order toggle exactly one channel per step, cycling G, R, B twice. They form K\u2083,\u2083 minus the 3 complement edges, leaving this six-cycle. Complements are antipodal in the cycle (Hamming distance 3 and three steps apart). Separately, GRB tone order makes complementary ranks sum to 7; assigning those ranks to a standard die\u2019s correspondingly labeled faces turns the algebraic antipodes into opposite faces.",
   theory_gray_toggle: "Toggle: {0}",
   theory_gray_cw: "\u21bb Clockwise",
   theory_gray_ccw: "\u21ba Counter-clockwise",
   theory_gray_pause: "\u23f8 Pause",
   theory_xor_title: "XOR Operation",
   theory_xor_desc:
-    "XOR defines every color relationship in this system. The three primaries {G,R,B} are the basis: every color is their unique XOR combination, and for each color c, the XOR of c with its complement c \u2295 7 always equals 7 (White). Arithmetically, XOR is carry-free binary addition (1\u22951 = 0). For numbers whose bits do not overlap, integer addition agrees with XOR directly (1+4 = 5 = 1\u22954). In general, a + b = (a \u2295 b) + 2(a \u2227 b): the overlap term a \u2227 b is what ordinary arithmetic counts twice. When two operands jointly cover all three channels (a \u2228 b = 7), this reduces to a + b - 7 = a \u2227 b \u2014 the Boolean-AND identities underlying subtractive mixing (CMY).",
+    "XOR defines vector addition on the algebraic layer A = GF(2)\u00b3; it does not define every relation in the full color atlas. The basis labels {G,R,B} uniquely generate every element of A, and c \u2295 (c \u2295 7) = 7. For integers a,b in 0..7, a + b = (a \u2295 b) + 2(a \u2227 b). When a \u2228 b = 7, this gives a + b - 7 = a \u2227 b, a Boolean-AND identity for the displayed CMY examples. Tone order, hue-boundary geometry, candidate choice, and physical color mixing are separate structures.",
   theory_hamming_title: "Hamming Code",
   theory_hamming_desc:
     "The positions 1..7 used here are the same nonzero 3-bit labels as the Fano plane\u2019s 7 points. In the standard Hamming(7,4) coordinate layout, the power-of-two coordinates B=1, R=2, and G=4 are parity-bit positions and also label the three parity-check rows for bits 0, 1, and 2.",
@@ -289,7 +289,7 @@ export const en = {
   theory_hamming_correct: "Correct \u2713",
   theory_connections_title: "Connections",
   theory_connections_desc:
-    "GF(2)\u00b3 is the common vector space that gathers the eight RGB 0/1 vertices. Multiple mathematical constructions emerge from it. Choosing the generators {B,R,G} = {1,2,4}, the Cayley graph of one-bit differences becomes the Color Cube Q\u2083. Projectivizing the seven points other than the zero point Black(0) gives the Fano plane PG(2,2), and the same seven nonzero vectors can also be read as the columns of the Hamming(7,4) parity-check matrix.\n\nLooking only at the six chromatic points, R→Y→G→C→B→M→R is a Gray-code cycle of one-bit flips. Viewing the eight points as subsets of {G,R,B}, XOR becomes symmetric difference and AND becomes intersection, giving the structure of a Boolean ring. Therefore, the diagrams in this tab are not a juxtaposition of separate theories; they are readings of the same 8-color model from the viewpoints of algebra, geometry, and coding theory.",
+    "A = GF(2)\u00b3 is the common algebraic source for the eight RGB 0/1 labels. Its Cayley graph is the Color Cube Q\u2083; its seven nonzero vectors give the Fano points and the Hamming(7,4) parity-check columns; its six chromatic vertices contain the hue-order Gray cycle. The Boolean-lattice reading also remains on this same set A.\n\nThe pure-hue boundary H is a separate coordinate layer. Its projection π supplies one or more visual representatives for each chromatic level, but those representatives do not become new Fano, Hamming, or XOR elements. The tab links the two layers through shared level labels without identifying their operations.",
   theory_conn_fano: "Fano",
   theory_conn_cube: "Cube",
   theory_conn_gray: "Gray",
@@ -331,11 +331,11 @@ export const en = {
   theory_conn_boundary:
     "GL(3,2) (order 168) preserves the incidence structure PG(2,2) on the seven nonzero points of GF(2)³, but in general it does not preserve RGB primary-channel meaning or GRB tone. S₃ is the subgroup that permutes the unlabeled basis set {B,R,G}; it is distinct from a symmetry of the full model with named G/R/B axes and fixed 4:2:1 tone.",
   theory_conn_limit_vertices:
-    "The model covers only the eight binary RGB vertices where each channel is 0 or 1. Continuous colors and intermediate values require another coordinate system.",
+    "The algebraic layer A covers only the eight binary RGB vertices. Intermediate pure-hue candidates live in the separate boundary layer H and represent A\u2019s level labels through π; they are not additional algebraic elements. Other continuous colors require another coordinate system.",
   theory_conn_limit_tone:
     "GRB Binary Tone is an internal coordinate defined by 4:2:1 weights, not perceptual lightness, photometric luminance, or relative luminance.",
   theory_conn_limit_operations:
-    "XOR is not physical additive mixing of light, and AND is not physical subtractive mixing of pigments. Complement is likewise defined as bitwise inversion.",
+    "XOR is not physical additive mixing of light, and AND is not physical subtractive mixing of pigments. They are vector addition on A and Boolean meet, respectively, and are not transferred to non-binary representatives in H. Algebraic complement is bitwise inversion.",
   theory_conn_limit_spaces: "CIE XYZ/Lab/LCh, OKLab/OKLCH, gamut, chromatic adaptation, and color difference ΔE are outside this model.",
   theory_conn_limit_novelty:
     "GF(2)³, Boolean lattices, the Fano plane, Hamming codes, Gray cycles, and the polyhedra are established structures; no novelty is claimed for them. This tab organizes their relationships under one eight-color encoding.",
@@ -436,7 +436,7 @@ export const en = {
   map_map_boundaryDistance: "Boundary Distance",
   map_map_gradient: "Gradient",
   map_map_levelTone: "Tone",
-  map_map_colorTone: "Color Tone",
+  map_map_colorTone: "GRB Code Score",
   map_map_region: "Connected",
   map_map_outline: "Outline",
   map_contrast_high: ">3:1 High",
@@ -655,11 +655,11 @@ export const en = {
   music_and_play: "\u25b6 AND",
   music_partition_line: "Line (3)",
   music_partition_complement: "Complement (4)",
-  music_octa_title: "XOR Mixer",
-  music_octa_first_select: "XOR mixer first color",
-  music_octa_second_select: "XOR mixer second color",
-  music_octa_play: "\u25b6 Octa",
-  music_octa_stop: "\u23f9 Octa",
+  music_octa_title: "XOR Relation",
+  music_octa_first_select: "First XOR operand",
+  music_octa_second_select: "Second XOR operand",
+  music_octa_play: "\u25b6 XOR Relation",
+  music_octa_stop: "\u23f9 XOR Relation",
   music_octa_hint_invalid: "Choose two different non-complementary colors",
   music_k8_title: "K8 Layers",
   music_k8_explorer_title: "K8 Explorer",

@@ -213,6 +213,8 @@ describe("music-audio-graph", () => {
     expect(nodes.noiseGain.gain.value).toBe(0);
     expect(nodes.noiseSource.loop).toBe(true);
     expect(fake.oscs.slice(0, 6).every((osc) => osc.startCount === 1)).toBe(true);
+    expect((nodes.gl32L7Osc as unknown as FakeOscillatorNode).startCount).toBe(1);
+    expect(nodes.gl32L7Gain.gain.value).toBe(0);
     expect(fake.sources[0].startCount).toBe(1);
   });
 
@@ -275,6 +277,27 @@ describe("music-audio-graph", () => {
     expect(last(redPanner.pan.targetValues)).toBeCloseTo(Math.sin(Math.PI / 3), 10);
   });
 
+  it("renders a GL(3,2) permutation across all seven source points", () => {
+    const nodes = buildAudioGraph(makeContext());
+    const genC = [0, 1, 3, 2, 4, 5, 7, 6];
+
+    applyParams(nodes, levels, null, 0, 180, 1, "chromalum", false, true, null, "symmetric", 0, false, genC);
+
+    const sourceL6Oscillator = nodes.oscs[5] as unknown as FakeOscillatorNode;
+    const sourceL6Gain = nodes.gains[5] as unknown as FakeGainNode;
+    const sourceL7Oscillator = nodes.gl32L7Osc as unknown as FakeOscillatorNode;
+    const sourceL7Gain = nodes.gl32L7Gain as unknown as FakeGainNode;
+    const sourceL7Panner = nodes.gl32L7Panner as unknown as FakeStereoPannerNode;
+    const noiseGain = nodes.noiseGain as unknown as FakeGainNode;
+
+    expect(last(sourceL6Gain.gain.targetValues)).toBe(0);
+    expect(last(sourceL6Oscillator.frequency.targetValues)).toBe(880);
+    expect(last(sourceL7Gain.gain.targetValues)).toBeGreaterThan(0);
+    expect(last(sourceL7Oscillator.frequency.targetValues)).toBeCloseTo(angleToFreq(60, "chromalum"), 10);
+    expect(last(sourceL7Panner.pan.targetValues)).toBeCloseTo(Math.sin(Math.PI / 3), 10);
+    expect(last(noiseGain.gain.targetValues)).toBeGreaterThan(0);
+  });
+
   it("cancels equal complement phases and restores full gain at a 180° difference", () => {
     const cancelledNodes = buildAudioGraph(makeContext());
     const alignedNodes = buildAudioGraph(makeContext());
@@ -312,6 +335,16 @@ describe("music-audio-graph", () => {
 
     const blueModulator = nodes.fmOscs[0] as unknown as FakeOscillatorNode;
     expect(blueModulator.frequency.value).toBeCloseTo(angleToFreq(300, "chromalum"), 10);
+  });
+
+  it("keeps FM modulator pitches aligned with the active GL(3,2) permutation", () => {
+    const nodes = buildAudioGraph(makeContext());
+    const genC = [0, 1, 3, 2, 4, 5, 7, 6];
+
+    buildFM(nodes, levels, "chromalum", 0, genC);
+
+    const redSourceModulator = nodes.fmOscs[1] as unknown as FakeOscillatorNode;
+    expect(redSourceModulator.frequency.value).toBeCloseTo(angleToFreq(300, "chromalum"), 10);
   });
 
   it("creates transient tone, bit-spectrum, and error-marker nodes", () => {
@@ -373,6 +406,9 @@ describe("music-audio-graph", () => {
     teardown(nodes);
 
     expect(fake.oscs.slice(0, 6).every((osc) => osc.stopCount === 1 && osc.disconnectCount === 1)).toBe(true);
+    const gl32L7Osc = nodes.gl32L7Osc as unknown as FakeOscillatorNode;
+    expect(gl32L7Osc.stopCount).toBe(1);
+    expect(gl32L7Osc.disconnectCount).toBe(1);
     expect(fake.sources[0].stopCount).toBe(1);
     expect(fake.closed).toBe(true);
   });

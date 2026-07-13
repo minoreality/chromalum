@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { ChangeEvent } from "react";
 
-import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
+import { LEVEL_CANDIDATES } from "../color-engine";
+import { resolveMusicCandidateIndices } from "../music/music-candidate-pairs";
 import { liveHueAngleDeg, normalizeHueAngleDeg } from "../music/music-phase";
 import { MUSIC_ACTIVE_LEVELS } from "../music/types";
 import type { MusicEngineReturn } from "./useMusicEngine";
@@ -126,8 +127,9 @@ export function useMusicHuePaletteHandlers({
     (angleDeg: number) => {
       engine.initAudio();
       resumeDrone();
+      const candidateIndices = resolveMusicCandidateIndices(new Map(), angleDeg);
       for (const levelIndex of MUSIC_ACTIVE_LEVELS) {
-        const candidateIndex = findClosestCandidate(levelIndex, angleDeg);
+        const candidateIndex = candidateIndices.get(levelIndex)!;
         const prev = prevCandidatesRef.current.get(levelIndex);
         if (prev !== undefined && prev !== candidateIndex) {
           const cand = LEVEL_CANDIDATES[levelIndex][candidateIndex];

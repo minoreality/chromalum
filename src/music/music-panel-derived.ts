@@ -1,12 +1,11 @@
 import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate, levelToneNorm } from "../color-engine";
 import { FANO_LINES } from "../data/theory-data";
 import type { SonificationLevel } from "./music-audio-graph";
+import { resolveMusicCandidateIndices } from "./music-candidate-pairs";
 import { MUSIC_ACTIVE_LEVELS, type ActiveMusicLevel, type MusicHueTick, type MusicLevelPreview } from "./types";
 
-function getCandidateIndex(candidateOverridesByLevel: ReadonlyMap<number, number>, levelIndex: number, hueAngleDeg: number): number {
-  return candidateOverridesByLevel.has(levelIndex)
-    ? candidateOverridesByLevel.get(levelIndex)!
-    : findClosestCandidate(levelIndex, hueAngleDeg);
+function getCandidateIndex(resolvedCandidateIndices: ReadonlyMap<number, number>, levelIndex: number, hueAngleDeg: number): number {
+  return resolvedCandidateIndices.get(levelIndex) ?? findClosestCandidate(levelIndex, hueAngleDeg);
 }
 
 export function findMusicFanoLine(a: number, b: number): number {
@@ -22,8 +21,9 @@ export function buildMusicSonificationLevels(
   candidateOverridesByLevel: ReadonlyMap<number, number>,
   hueAngleDeg: number,
 ): SonificationLevel[] {
+  const resolvedCandidateIndices = resolveMusicCandidateIndices(candidateOverridesByLevel, hueAngleDeg);
   return MUSIC_ACTIVE_LEVELS.map((levelIndex) => {
-    const candidateIndex = getCandidateIndex(candidateOverridesByLevel, levelIndex, hueAngleDeg);
+    const candidateIndex = getCandidateIndex(resolvedCandidateIndices, levelIndex, hueAngleDeg);
     const cand = LEVEL_CANDIDATES[levelIndex][candidateIndex];
     return cand
       ? { levelIndex, hueAngleDeg: cand.hueAngleDeg, toneNorm: levelToneNorm(levelIndex) }
@@ -32,9 +32,10 @@ export function buildMusicSonificationLevels(
 }
 
 export function buildMusicLevelPreview(candidateOverridesByLevel: ReadonlyMap<number, number>, hueAngleDeg: number): MusicLevelPreview[] {
+  const resolvedCandidateIndices = resolveMusicCandidateIndices(candidateOverridesByLevel, hueAngleDeg);
   return LEVEL_INFO.map((info, levelIndex) => {
     const candidates = LEVEL_CANDIDATES[levelIndex];
-    const candidateIndex = getCandidateIndex(candidateOverridesByLevel, levelIndex, hueAngleDeg);
+    const candidateIndex = getCandidateIndex(resolvedCandidateIndices, levelIndex, hueAngleDeg);
     const rgb = candidates[candidateIndex]?.rgb ?? [128, 128, 128];
     return { levelIndex, name: info.name, rgb, hex: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` };
   });

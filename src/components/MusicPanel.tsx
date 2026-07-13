@@ -41,6 +41,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
     setToneMode,
     alpha0,
     alpha7,
+    originMode,
     alphaDir,
     hueDir,
     gray3Playing,
@@ -166,6 +167,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
             onAlpha0Change={handleAlpha0Change}
             alpha7={alpha7}
             onAlpha7Change={handleAlpha7Change}
+            originMode={originMode}
             onOriginModeChange={handleOriginModeChange}
           />
         </div>
