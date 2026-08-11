@@ -116,8 +116,12 @@ Chunked Gallery thumbnail generation uses a monotonic generation id. Changing
 the canvas, palette inputs, locks, histogram, or active state invalidates the
 previous generation before another chunk can update React state or the shared
 thumbnail cache. Image imports use the same latest-request-wins rule across all
-decode fallbacks. When a new decoded image replaces an open crop request, the
-crop rectangle and drag state reset to the new image dimensions.
+decode fallbacks. After decoding, a dedicated lossy estimator applies 4:2:1
+weights to sRGB code values and quantizes the score to an L0..L7 label. This
+input heuristic is kept separate from the canonical-coordinate-to-sRGB output
+adapter; it is not an inverse color-model transform. When a new decoded image
+replaces an open crop request, the crop rectangle and drag state reset to the
+new image dimensions.
 
 ## Persistence
 

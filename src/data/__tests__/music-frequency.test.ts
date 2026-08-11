@@ -1,29 +1,95 @@
 import { describe, expect, it } from "vitest";
-import { BASE_FREQ, angleToFreq, freqToNote } from "../music-frequency";
+import {
+  BASE_FREQ,
+  MAJOR_SEMITONES,
+  OCTATONIC_SEMITONES,
+  PITCH_BASE_FREQ,
+  WHOLE_TONE_SEMITONES,
+  angleToFreq,
+  chromalumHueLiftToFreq,
+  freqToNote,
+  semitoneToFreq,
+  type PitchMappingMode,
+} from "../music-frequency";
 
 describe("music-frequency", () => {
+  it("keeps the legacy base while using exact C4 for pitch mappings", () => {
+    expect(BASE_FREQ).toBe(220);
+    expect(PITCH_BASE_FREQ).toBe(440 * Math.pow(2, -9 / 12));
+    expect(PITCH_BASE_FREQ).toBeCloseTo(261.6255653005986, 12);
+  });
+
+  describe("semitoneToFreq", () => {
+    it("maps semitone offsets from C4", () => {
+      expect(semitoneToFreq(0)).toBeCloseTo(PITCH_BASE_FREQ, 12);
+      expect(semitoneToFreq(9)).toBeCloseTo(440, 12);
+      expect(semitoneToFreq(12)).toBeCloseTo(PITCH_BASE_FREQ * 2, 12);
+      expect(semitoneToFreq(-12)).toBeCloseTo(PITCH_BASE_FREQ / 2, 12);
+    });
+  });
+
   describe("angleToFreq", () => {
-    it("maps 12-TET angles across two octaves and wraps angles", () => {
-      expect(angleToFreq(0, "12tet")).toBeCloseTo(BASE_FREQ, 10);
-      expect(angleToFreq(180, "12tet")).toBeCloseTo(BASE_FREQ * 2, 10);
-      expect(angleToFreq(360, "12tet")).toBeCloseTo(BASE_FREQ, 10);
-      expect(angleToFreq(-180, "12tet")).toBeCloseTo(BASE_FREQ * 2, 10);
-      expect(angleToFreq(720, "12tet")).toBeCloseTo(BASE_FREQ, 10);
+    const modes: PitchMappingMode[] = ["chromalum", "major", "octatonic", "wholeTone"];
+
+    it("maps CHROMALUM to the 24-step 15-degree grid", () => {
+      for (let semitone = 0; semitone < 24; semitone++) {
+        expect(angleToFreq(semitone * 15, "chromalum")).toBeCloseTo(semitoneToFreq(semitone), 12);
+      }
     });
 
-    it("snaps JI angles to the nearest palindromic ratio", () => {
-      expect(angleToFreq(0, "ji")).toBeCloseTo(BASE_FREQ, 10);
-      expect(angleToFreq(75, "ji")).toBeCloseTo(BASE_FREQ * (8 / 7), 10);
-      expect(angleToFreq(144, "ji")).toBeCloseTo(BASE_FREQ * (7 / 5), 10);
-      expect(angleToFreq(216, "ji")).toBeCloseTo(BASE_FREQ * (8 / 5), 10);
-      expect(angleToFreq(288, "ji")).toBeCloseTo(BASE_FREQ * 2, 10);
+    it("uses the continuous lift formula throughout the R-rooted half-open turn", () => {
+      for (const angle of [0, 7.5, 22.5, 123.4, 352.5, 359.999]) {
+        expect(angleToFreq(angle, "chromalum")).toBeCloseTo(semitoneToFreq(angle / 15), 12);
+      }
+      expect(angleToFreq(360, "chromalum")).toBeCloseTo(semitoneToFreq(0), 12);
     });
 
-    it("maps octatonic and diatonic modes to their snapped scale degrees", () => {
-      expect(angleToFreq(0, "octatonic")).toBeCloseTo(261.63, 10);
-      expect(angleToFreq(180, "octatonic")).toBeCloseTo(261.63 * Math.pow(2, 6 / 12), 10);
-      expect(angleToFreq(0, "diatonic7")).toBeCloseTo(261.63, 10);
-      expect(angleToFreq(180, "diatonic7")).toBeCloseTo(261.63 * Math.pow(2, 7 / 12), 10);
+    it("keeps the unwrapped endpoint distinct from the hue-circle seam", () => {
+      expect(chromalumHueLiftToFreq(0)).toBeCloseTo(PITCH_BASE_FREQ, 12);
+      expect(chromalumHueLiftToFreq(180)).toBeCloseTo(PITCH_BASE_FREQ * 2, 12);
+      expect(chromalumHueLiftToFreq(360)).toBeCloseTo(PITCH_BASE_FREQ * 4, 12);
+      expect(angleToFreq(360, "chromalum")).toBeCloseTo(PITCH_BASE_FREQ, 12);
+    });
+
+    it("turns equal hue differences into equal logarithmic pitch intervals before the seam", () => {
+      const delta = 17.25;
+      const expectedRatio = Math.pow(2, delta / 180);
+      for (const hue of [0, 30, 90, 160, 300]) {
+        expect(chromalumHueLiftToFreq(hue + delta) / chromalumHueLiftToFreq(hue)).toBeCloseTo(expectedRatio, 12);
+      }
+    });
+
+    it.each([
+      ["major", MAJOR_SEMITONES],
+      ["octatonic", OCTATONIC_SEMITONES],
+      ["wholeTone", WHOLE_TONE_SEMITONES],
+    ] as const)("maps every %s anchor to its exported scale degree", (mode, semitones) => {
+      semitones.forEach((semitone, index) => {
+        const angle = (index * 360) / semitones.length;
+        expect(angleToFreq(angle, mode)).toBeCloseTo(semitoneToFreq(semitone), 12);
+      });
+    });
+
+    it.each([
+      ["major", MAJOR_SEMITONES],
+      ["octatonic", OCTATONIC_SEMITONES],
+      ["wholeTone", WHOLE_TONE_SEMITONES],
+    ] as const)("keeps the upper tonic for %s until the hue seam", (mode, _semitones) => {
+      expect(angleToFreq(359.999, mode)).toBeCloseTo(semitoneToFreq(12), 12);
+      expect(angleToFreq(360, mode)).toBeCloseTo(semitoneToFreq(0), 12);
+    });
+
+    it("expresses each mode's intended red-cyan complement interval", () => {
+      expect(angleToFreq(180, "chromalum") / angleToFreq(0, "chromalum")).toBeCloseTo(2, 12);
+      expect(angleToFreq(180, "major") / angleToFreq(0, "major")).toBeCloseTo(Math.pow(2, 7 / 12), 12);
+      expect(angleToFreq(180, "octatonic") / angleToFreq(0, "octatonic")).toBeCloseTo(Math.pow(2, 6 / 12), 12);
+      expect(angleToFreq(180, "wholeTone") / angleToFreq(0, "wholeTone")).toBeCloseTo(Math.pow(2, 6 / 12), 12);
+    });
+
+    it.each(modes)("wraps %s at full positive and negative turns", (mode) => {
+      expect(angleToFreq(360, mode)).toBeCloseTo(angleToFreq(0, mode), 12);
+      expect(angleToFreq(-360, mode)).toBeCloseTo(angleToFreq(0, mode), 12);
+      expect(angleToFreq(720, mode)).toBeCloseTo(angleToFreq(0, mode), 12);
     });
   });
 

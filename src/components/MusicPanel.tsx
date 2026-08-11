@@ -25,8 +25,8 @@ export const MusicPanel = React.memo(function MusicPanel() {
     setCandidateOverridesByLevel,
     volume,
     muted,
-    scaleMode,
-    setScaleMode,
+    pitchMappingMode,
+    setPitchMappingMode,
     fmEnabled,
     setFmEnabled,
     alphaSpeed,
@@ -41,6 +41,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
     setToneMode,
     alpha0,
     alpha7,
+    originMode,
     alphaDir,
     hueDir,
     gray3Playing,
@@ -161,19 +162,20 @@ export const MusicPanel = React.memo(function MusicPanel() {
             hoveredCandidate={hoveredCandidate}
             onHoverCandidate={setHoveredCandidate}
             candidateOverridesByLevel={candidateOverridesByLevel}
-            scaleMode={scaleMode}
+            pitchMappingMode={pitchMappingMode}
             alpha0={alpha0}
             onAlpha0Change={handleAlpha0Change}
             alpha7={alpha7}
             onAlpha7Change={handleAlpha7Change}
+            originMode={originMode}
             onOriginModeChange={handleOriginModeChange}
           />
         </div>
 
         <div className="panel-sidebar">
           <MusicTransportControls
-            scaleMode={scaleMode}
-            onScaleModeChange={setScaleMode}
+            pitchMappingMode={pitchMappingMode}
+            onPitchMappingModeChange={setPitchMappingMode}
             onStopAll={handleStopAll}
             onResetDefaults={handleResetDefaults}
             toneMode={toneMode}

@@ -24,8 +24,9 @@ need to keep outside the browser.
    underlying source tone structure.
 4. Use Gallery to generate, compare, bookmark, and export color-pattern
    variants.
-5. Use Map to inspect tone, color tone, gradient, connected regions, boundary
-   distance, isolation, and local diversity.
+5. Use Map to inspect model tone, the displayed palette's GRB code-value score,
+   gradient, connected regions, boundary distance, isolation, and local
+   diversity.
 6. Use Theory and Music to explore the same eight-level structure as algebraic
    diagrams and sonification.
 
@@ -35,9 +36,12 @@ The Source workspace includes brush, eraser, fill, line, rectangle, and ellipse
 tools, plus undo and redo. Pan and zoom are shared across canvas workspaces so
 you can inspect the same structure from Source, Color, Hex, Glaze, and Map.
 
-Image import converts the source image into the eight tone levels used by the
-model. PNG export can save grayscale, color, or glaze renderings; keep exported
-files when you need a durable copy outside browser storage.
+Image import uses a lossy input classifier: it applies the model's 4:2:1 channel
+weights directly to gamma-encoded sRGB code values, then quantizes the result to
+the nearest one of the eight level labels. This is not an inverse of the
+canonical CHROMALUM coordinates and is not perceptual lightness or photometric
+luminance. PNG export can save grayscale, color, or glaze renderings; keep
+exported files when you need a durable copy outside browser storage.
 
 ## What The Model Means
 
@@ -46,6 +50,13 @@ CHROMALUM is built around eight RGB vertices and a GRB Binary Tone ordering:
 for discrete drawing, palette mapping, structural maps, Theory diagrams, and
 Music sonification. They are not a perceptually uniform color space and do not
 guarantee accessibility contrast by themselves.
+
+XOR, Fano, Hamming, and K8 relations act on these eight binary level labels.
+Palette candidates come from a separate coordinate layer: the RGB cube's
+maximum-saturation hue loop (the pure-hue loop, defined by maximum channel 1 and
+minimum channel 0). They are display representatives projected to the same
+level by equal GRB tone; selecting a candidate does not turn its continuous GRB
+coordinates into a `GF(2)^3` vector.
 
 Glaze overrides change the displayed color candidate for selected pixels, but
 they do not change the source tone level. This is what lets the app compare

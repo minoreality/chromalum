@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
-import { LEVEL_CANDIDATES, findClosestCandidate } from "../../color-engine";
+import { LEVEL_CANDIDATES } from "../../color-engine";
 import { useTranslation } from "../../i18n";
+import { resolveMusicCandidateIndices, withMusicComplementCandidate } from "../../music/music-candidate-pairs";
 import { C, R, SHADOW, SP } from "../../styles/tokens";
 import type { MusicCandidateHover, MusicLevelPreview } from "../../music/types";
 
@@ -42,18 +43,15 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
   const cands = LEVEL_CANDIDATES[level.levelIndex];
   const hasCands = cands.length > 1;
   const isDirect = candidateOverridesByLevel.has(level.levelIndex);
-  const overrideCandidateIndex = candidateOverridesByLevel.get(level.levelIndex);
-  const autoCandidateIndex = hasCands ? findClosestCandidate(level.levelIndex, hueAngleDeg) : 0;
-  const currentCandidateIndex = isDirect ? overrideCandidateIndex! : autoCandidateIndex;
+  const currentCandidateIndex = resolveMusicCandidateIndices(candidateOverridesByLevel, hueAngleDeg).get(level.levelIndex) ?? 0;
+  const autoCandidateIndex = currentCandidateIndex;
   const previousCandidateIndex = hasCands ? (currentCandidateIndex - 1 + cands.length) % cands.length : -1;
   const nextCandidateIndex = hasCands ? (currentCandidateIndex + 1) % cands.length : -1;
   const isTouchDevice = typeof window !== "undefined" && "ontouchstart" in window;
 
   const selectCandidate = (candidateIndex: number, clearSelected: boolean) => {
     onCandidateOverridesByLevelChange((prev) => {
-      const next = new Map(prev);
-      next.set(level.levelIndex, candidateIndex);
-      return next;
+      return withMusicComplementCandidate(prev, level.levelIndex, candidateIndex);
     });
     if (clearSelected) {
       onSelectedLevelsChange((prev) => {
@@ -109,9 +107,7 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
     const cur = candidateOverridesByLevel.has(level.levelIndex) ? candidateOverridesByLevel.get(level.levelIndex)! : autoCandidateIndex;
     const newIdx = (((cur + dir) % cands.length) + cands.length) % cands.length;
     onCandidateOverridesByLevelChange((prev) => {
-      const next = new Map(prev);
-      next.set(level.levelIndex, newIdx);
-      return next;
+      return withMusicComplementCandidate(prev, level.levelIndex, newIdx);
     });
     onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex: newIdx });
   };
@@ -197,7 +193,7 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
           width: 28,
           height: 28,
           borderRadius: R.md,
-          background: isDirect ? `rgb(${cands[overrideCandidateIndex!]?.rgb.join(",")})` : level.hex,
+          background: isDirect ? `rgb(${cands[currentCandidateIndex]?.rgb.join(",")})` : level.hex,
           border: `2px solid ${isBurst ? "#ffffff" : isMainHovered || isSelected ? C.accent : C.border}`,
           boxSizing: "border-box" as const,
           cursor: "pointer",

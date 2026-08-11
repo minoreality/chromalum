@@ -1,5 +1,5 @@
 import { COMPLEMENT_EDGES, CUBE_EDGES, FANO_LINES, STELLA_EDGES } from "../data/theory-data";
-import { fanoLinesThrough } from "../data/music-data";
+import { fanoLinesThrough, GRB_TONE_VALUES } from "../data/music-data";
 
 export const PARITY_GROUPS: readonly (readonly number[])[] = [
   [1, 3, 5, 7],
@@ -9,19 +9,12 @@ export const PARITY_GROUPS: readonly (readonly number[])[] = [
 export const ALL_POINTS = [1, 2, 3, 4, 5, 6, 7] as const;
 export const FULL_GRAY_CODE = [0, 1, 3, 2, 6, 7, 5, 4] as const;
 
-/** GRB Binary Tone values per chromatic level (L1-L6). */
-export const GRB_TONE_BY_LEVEL: Readonly<Record<number, number>> = {
-  1: 1 / 7, // B
-  2: 2 / 7, // R
-  3: 3 / 7, // M = B+R
-  4: 4 / 7, // G
-  5: 5 / 7, // C = G+B
-  6: 6 / 7, // Y = R+G
-};
+/** Shared GRB Binary Tone values per chromatic level (L1-L6). */
+export const GRB_TONE_BY_LEVEL: Readonly<Record<number, number>> = GRB_TONE_VALUES;
 export const MAX_GRB_TONE = Math.max(...Object.values(GRB_TONE_BY_LEVEL));
 
 /** GL(3,2) generators operating on {1..7} via bit manipulation */
-// Gen A: [G,R,B] -> [B,G,R] (bit rotation left)
+// Gen A: [G,R,B] -> [B,G,R] (cyclic coordinate rotation)
 export function gl32GenA(lv: number): number {
   const g = (lv >> 2) & 1,
     r = (lv >> 1) & 1,
@@ -45,9 +38,23 @@ export function gl32GenC(lv: number): number {
   return (g << 2) | (r << 1) | (r ^ b);
 }
 
+export type Gl32Generator = "A" | "B" | "C";
+
+/** Full UI/audio permutation indexed by the source level. Black stays fixed. */
+export const GL32_IDENTITY_PERMUTATION = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
+/** Compose a generator after the current seven-point permutation. */
+export function composeGl32Permutation(current: readonly number[], generator: Gl32Generator): number[] {
+  const generatorFn = generator === "A" ? gl32GenA : generator === "B" ? gl32GenB : gl32GenC;
+  return GL32_IDENTITY_PERMUTATION.map((sourceLevel) => {
+    if (sourceLevel === 0) return 0;
+    return generatorFn(current[sourceLevel] ?? sourceLevel);
+  });
+}
+
 /**
  * 3-voice frequencies for Gray code decomposition. bit0=B, bit1=R, bit2=G.
- * Ratio 330:440:550 = 3:4:5 = just-intonation minor triad (E4, A4, C#5).
+ * Ratio 330:440:550 = 3:4:5, an inversion of the just-intonation A-major 4:5:6 triad (E4, A4, C#5).
  */
 export const GRAY_VOICE_FREQS = [550, 440, 330] as const;
 

@@ -96,7 +96,7 @@ CHROMALUM 側で主張しやすいのは、これらの既知要素そのもの�
 
 - `hue -> pitch` を心理物理的な普遍対応として主張しない。
 - CHROMALUM では「色を音で正しく再現する」ではなく、「離散代数的な色彩構造を音でも操作・比較できる」と表現する。
-- 12TET、JI、diatonic などは、知覚的真理ではなく作曲的・構造的 mapping として扱う。
+- CHROMALUM、Major、Octatonic、Whole-tone は、知覚的真理や同格の「音律」分類ではなく、完成した作曲的・構造的 pitch mapping preset として扱う。
 
 ## Implementation Reference
 
