@@ -12,6 +12,7 @@ import { MusicAlgebraPanel } from "../MusicAlgebraPanel";
 import { MusicFanoControls } from "../MusicFanoControls";
 import { MusicHueAlphaControls } from "../MusicHueAlphaControls";
 import { MusicLevelCandidateGrid } from "../MusicLevelCandidateGrid";
+import { findMusicComplementCandidateIndex } from "../../../music/music-candidate-pairs";
 import { MusicTransportControls } from "../MusicTransportControls";
 import { ZigzagCard } from "../ZigzagCard";
 import { ZigzagGraph } from "../ZigzagGraph";
@@ -71,8 +72,8 @@ function makeMusicEngine(overrides: Partial<MusicEngineReturn> = {}): MusicEngin
 
 function makeTransportProps(overrides: Partial<TransportProps> = {}): TransportProps {
   return {
-    scaleMode: "diatonic7",
-    onScaleModeChange: mockFn<TransportProps["onScaleModeChange"]>(),
+    pitchMappingMode: "chromalum",
+    onPitchMappingModeChange: mockFn<TransportProps["onPitchMappingModeChange"]>(),
     onStopAll: vi.fn(),
     onResetDefaults: vi.fn(),
     toneMode: "symmetric",
@@ -299,6 +300,11 @@ describe("MusicPanel section components", () => {
     const candidates = screen.getAllByRole("button", { name: /Level 2 color candidate/ });
     fireEvent.click(candidates[0]);
     expect(props.onCandidateOverridesByLevelChange).toHaveBeenCalled();
+    const candidateUpdate = vi.mocked(props.onCandidateOverridesByLevelChange).mock.calls[0][0];
+    expect(candidateUpdate).toBeTypeOf("function");
+    const nextCandidates = (candidateUpdate as (previous: Map<number, number>) => Map<number, number>)(new Map());
+    const selectedCandidateIndex = nextCandidates.get(2)!;
+    expect(nextCandidates.get(5)).toBe(findMusicComplementCandidateIndex(2, selectedCandidateIndex));
     expect(props.onSelectedLevelsChange).toHaveBeenCalled();
     expect(props.onHoveredCandidateChange).toHaveBeenCalledWith(null);
     expect(props.onBlockClick).toHaveBeenCalledWith(2, expect.any(Number));
@@ -314,12 +320,14 @@ describe("MusicPanel section components", () => {
     expect(screen.getAllByRole("button", { pressed: true })[0]).toBeTruthy();
   });
 
-  it("routes transport scale, mode, rotation, mute, and volume callbacks", () => {
+  it("routes transport pitch mapping, mode, rotation, mute, and volume callbacks", () => {
     const props = makeTransportProps();
     renderWithLanguage(<MusicTransportControls {...props} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Just" }));
-    expect(props.onScaleModeChange).toHaveBeenCalledWith("ji");
+    expect(screen.getByRole("radiogroup", { name: "Pitch mapping" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Whole-tone" }));
+    expect(props.onPitchMappingModeChange).toHaveBeenCalledWith("wholeTone");
 
     fireEvent.click(screen.getByRole("button", { name: "Stop All" }));
     expect(props.onStopAll).toHaveBeenCalled();
@@ -561,7 +569,7 @@ describe("MusicPanel section components", () => {
     expect(engine.stopAlgebra).toHaveBeenCalled();
     expect(props.cayley.onColChange).toHaveBeenCalledWith(-1);
 
-    const invalidOcta = screen.getByRole("button", { name: "\u25b6 Octa" }) as HTMLButtonElement;
+    const invalidOcta = screen.getByRole("button", { name: "\u25b6 XOR Relation" }) as HTMLButtonElement;
     expect(invalidOcta.disabled).toBe(true);
 
     const validProps = {
@@ -575,7 +583,7 @@ describe("MusicPanel section components", () => {
       </LanguageProvider>,
     );
 
-    const validOcta = screen.getByRole("button", { name: "\u25b6 Octa" }) as HTMLButtonElement;
+    const validOcta = screen.getByRole("button", { name: "\u25b6 XOR Relation" }) as HTMLButtonElement;
     expect(validOcta.disabled).toBe(false);
     fireEvent.click(validOcta);
     expect(engine.playOctahedronMix).toHaveBeenCalledWith(1, 2, expect.any(Function));
@@ -585,7 +593,7 @@ describe("MusicPanel section components", () => {
         <MusicAlgebraPanel {...validProps} octahedron={{ ...validProps.octahedron, phase: "pair" }} />
       </LanguageProvider>,
     );
-    expect(screen.getByRole("button", { name: "\u23f9 Octa" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "\u23f9 XOR Relation" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Gen B" }));
     expect(engine.applyGL32Transform).toHaveBeenCalledWith("B", expect.any(Function));

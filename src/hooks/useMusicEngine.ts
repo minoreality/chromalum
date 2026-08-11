@@ -1,9 +1,14 @@
 import { useRef, useCallback, useMemo } from "react";
 import { FANO_RHYTHM_PATTERNS, TONE_NORM_VALUES } from "../data/music-data";
-import { angleToFreq, type ScaleMode } from "../data/music-frequency";
-import { RAMP_TC, triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
-import { FULL_GRAY_CODE, GRAY_VOICE_FREQS, PARITY_GROUPS, gl32GenA, gl32GenB, gl32GenC, toneToFreq } from "../music/music-engine-core";
-import { hueStereoPan, liveHueAngleDeg } from "../music/music-phase";
+import { type PitchMappingMode } from "../data/music-frequency";
+import { triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
+import {
+  composeGl32Permutation,
+  FULL_GRAY_CODE,
+  GL32_IDENTITY_PERMUTATION,
+  GRAY_VOICE_FREQS,
+  PARITY_GROUPS,
+} from "../music/music-engine-core";
 import {
   TONE_CROSSING_BASE_INTERVAL_MS,
   complementOfLine,
@@ -37,7 +42,7 @@ import {
 } from "../music/music-scheduler";
 import { useMusicAudioSession } from "./useMusicAudioSession";
 
-export type { ScaleMode } from "../data/music-frequency";
+export type { PitchMappingMode } from "../data/music-frequency";
 
 interface MusicEngineParams {
   enabled: boolean;
@@ -46,7 +51,7 @@ interface MusicEngineParams {
   alpha0: number;
   alpha7: number;
   volume: number; // 0-1
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null; // 0-6 or null
@@ -102,7 +107,7 @@ export function useMusicEngine({
   alpha0,
   alpha7,
   volume,
-  scaleMode,
+  pitchMappingMode,
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
@@ -117,8 +122,6 @@ export function useMusicEngine({
   const toneCrossingTimeoutRef = useRef<TimeoutHandle | null>(null);
   const cayleyIntervalRef = useRef<IntervalHandle | null>(null);
   const k8IntervalRef = useRef<IntervalHandle | null>(null);
-  const gl32PermRef = useRef<number[]>([1, 2, 3, 4, 5, 6, 7]); // identity permutation
-
   const clearPlayback = useCallback(() => {
     clearIntervalSlots(grayIntervalRef, fanoIntervalRef, zigzagIntervalRef, gray3IntervalRef, cayleyIntervalRef, k8IntervalRef);
     clearTimeoutSlot(toneCrossingTimeoutRef);
@@ -127,7 +130,7 @@ export function useMusicEngine({
 
   const {
     nodesRef,
-    paramsRef,
+    levelPermutationRef,
     analyserNode,
     initAudio,
     stopAudio,
@@ -138,6 +141,7 @@ export function useMusicEngine({
     triggerErrorMarker,
     setToneMode,
     setDroneMuted,
+    setLevelPermutation,
   } = useMusicAudioSession({
     enabled,
     levels,
@@ -145,7 +149,7 @@ export function useMusicEngine({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -392,63 +396,19 @@ export function useMusicEngine({
   /* ── 9. applyGL32Transform ── */
   const applyGL32Transform = useCallback(
     (gen: "A" | "B" | "C", onPerm?: (perm: number[]) => void) => {
-      if (!nodesRef.current) return;
-      const genFn = gen === "A" ? gl32GenA : gen === "B" ? gl32GenB : gl32GenC;
-      const perm = gl32PermRef.current;
-      gl32PermRef.current = perm.map((lv) => genFn(lv));
-
-      const nodes = nodesRef.current;
-      const p = paramsRef.current;
-      const now = nodes.ctx.currentTime;
-      const newPerm = gl32PermRef.current;
-      const activeAlpha = p.originMode === 0 ? p.alpha0 : p.alpha7;
-      const freqForLevel = (levelIndex: number): number => {
-        if (levelIndex === 0 || levelIndex === 7) return toneToFreq(TONE_NORM_VALUES[levelIndex]);
-        const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
-        return angleToFreq(liveHueAngleDeg(levelData?.hueAngleDeg ?? 0, activeAlpha), p.scaleMode);
-      };
-      const panForLevel = (levelIndex: number): number => {
-        if (!p.panEnabled || levelIndex === 0 || levelIndex === 7) return 0;
-        const levelData = p.levels.find((level) => level.levelIndex === levelIndex);
-        return hueStereoPan(levelData?.hueAngleDeg ?? 0, activeAlpha);
-      };
-
-      for (let i = 0; i < 6; i++) {
-        const targetLv = newPerm[i];
-        nodes.oscs[i].frequency.setTargetAtTime(freqForLevel(targetLv), now, RAMP_TC);
-        nodes.panners[i].pan.setTargetAtTime(panForLevel(targetLv), now, RAMP_TC);
-      }
-
-      onPerm?.([0, ...newPerm]);
+      const newPermutation = composeGl32Permutation(levelPermutationRef.current, gen);
+      setLevelPermutation(newPermutation);
+      onPerm?.([...newPermutation]);
     },
-    [nodesRef, paramsRef],
+    [levelPermutationRef, setLevelPermutation],
   );
 
   const resetGL32Transform = useCallback(
     (onPerm?: (perm: number[]) => void) => {
-      if (!nodesRef.current) {
-        gl32PermRef.current = [1, 2, 3, 4, 5, 6, 7];
-        onPerm?.([0, 1, 2, 3, 4, 5, 6, 7]);
-        return;
-      }
-      gl32PermRef.current = [1, 2, 3, 4, 5, 6, 7];
-      const nodes = nodesRef.current;
-      const p = paramsRef.current;
-      const now = nodes.ctx.currentTime;
-      const activeAlpha = p.originMode === 0 ? p.alpha0 : p.alpha7;
-      for (let i = 0; i < 6; i++) {
-        const levelData = p.levels.find((level) => level.levelIndex === i + 1);
-        if (!levelData) continue;
-        nodes.oscs[i].frequency.setTargetAtTime(
-          angleToFreq(liveHueAngleDeg(levelData.hueAngleDeg, activeAlpha), p.scaleMode),
-          now,
-          RAMP_TC,
-        );
-        nodes.panners[i].pan.setTargetAtTime(p.panEnabled ? hueStereoPan(levelData.hueAngleDeg, activeAlpha) : 0, now, RAMP_TC);
-      }
-      onPerm?.([0, 1, 2, 3, 4, 5, 6, 7]);
+      setLevelPermutation(GL32_IDENTITY_PERMUTATION);
+      onPerm?.([...GL32_IDENTITY_PERMUTATION]);
     },
-    [nodesRef, paramsRef],
+    [setLevelPermutation],
   );
 
   /* ── 12. playComplementCanon ── */

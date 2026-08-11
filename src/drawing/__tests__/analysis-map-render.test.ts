@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../../color-engine";
+import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL, LEVEL_CANDIDATES } from "../../color-engine";
 import type { CanvasData, MapMode } from "../../types";
 import type { AnalysisPixelMaps } from "../../types";
 import { buildRegionSizeMap, getAnalysisMapHoverInfo, type AnalysisColorLUT, rasterizeAnalysisMap } from "../analysis-map-render";
@@ -155,7 +155,11 @@ describe("analysis-map-render", () => {
     expect(regionSizeById.get(1)).toBe(2);
     const cases: Array<[MapMode, string, string]> = [
       ["levelTone", "(0,0) MapTone L0 Black T=0/7", "(0,0) Tone L0 T=0/7"],
-      ["colorTone", "(0,0) MapColorTone L0 c1/1 #000000 T=0/7 dT=0/7", "(0,0) ColorTone L0 c1/1 T=0/7 dT=0/7"],
+      [
+        "colorTone",
+        "(0,0) MapGRBCodeScore L0 c1/1 #000000 S_code=0.0000 est=L0 dLevel=0",
+        "(0,0) GRBCodeScore L0 c1/1 S=0.0000 est=L0 dL=0",
+      ],
       ["region", "(0,0) MapRegion L0 base c1/1 #000000 region#1 size=2px interior small", "(0,0) Region L0 r#1 2px int small"],
       ["gradient", "(0,0) MapToneGrad L0 g=(+2,+5) dir=180° mag=0% flat", "(0,0) ToneGrad L0 dir=180° mag=0%"],
       ["boundaryDistance", "(0,0) MapBoundaryDist L0 base c1/1 #000000 distance=0% near", "(0,0) BoundaryDist L0 d=0% near"],
@@ -179,6 +183,48 @@ describe("analysis-map-render", () => {
       expect(status?.full).not.toMatch(/[\u3040-\u30ff\u3400-\u9fff]/);
       expect(status?.compact).not.toMatch(/[\u3040-\u30ff\u3400-\u9fff]/);
     }
+  });
+
+  it("uses the effective per-pixel candidate for both color-score rasterization and hover details", () => {
+    const pixelMaps = makePixelMaps();
+    const baseCanvas = makeCanvasData();
+    const baseTarget = new Uint32Array(4);
+    rasterizeAnalysisMap({ mode: "colorTone", pixelMaps, colorLUT, canvasData: baseCanvas, target: baseTarget });
+
+    const overrideCanvas = makeCanvasData();
+    overrideCanvas.pixelCandidateOverrideMap[1] = 2; // L2 candidate index 1 (1-indexed map value)
+    const overrideTarget = new Uint32Array(4);
+    rasterizeAnalysisMap({ mode: "colorTone", pixelMaps, colorLUT, canvasData: overrideCanvas, target: overrideTarget });
+
+    const overrideCandidate = LEVEL_CANDIDATES[2][1];
+    const equivalentBaseLUT = colorLUT.map((rgb) => [...rgb] as [number, number, number]);
+    equivalentBaseLUT[2] = [...overrideCandidate.rgb];
+    const equivalentBaseTarget = new Uint32Array(4);
+    rasterizeAnalysisMap({
+      mode: "colorTone",
+      pixelMaps,
+      colorLUT: equivalentBaseLUT,
+      canvasData: baseCanvas,
+      target: equivalentBaseTarget,
+    });
+
+    expect(overrideTarget[1]).toBe(equivalentBaseTarget[1]);
+    expect(overrideTarget[1]).not.toBe(baseTarget[1]);
+
+    const hover = getAnalysisMapHoverInfo({
+      x: 1,
+      y: 0,
+      mode: "colorTone",
+      pixelMaps,
+      colorLUT,
+      candidateIndexByLevel: DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
+      canvasData: overrideCanvas,
+      regionSizeById: buildRegionSizeMap(pixelMaps),
+    });
+    expect(hover).toEqual({
+      full: "(1,0) MapGRBCodeScore L2 c2/3 #0040ff S_code=0.2863 est=L2 dLevel=0",
+      compact: "(1,0) GRBCodeScore L2 c2/3 S=0.2863 est=L2 dL=0",
+    });
   });
 
   it("keeps compact structural statuses focused on map values while preserving explicit overrides", () => {

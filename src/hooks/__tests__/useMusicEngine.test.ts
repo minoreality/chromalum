@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { angleToFreq, PITCH_BASE_FREQ } from "../../data/music-frequency";
 import { useMusicEngine } from "../useMusicEngine";
 
 class FakeAudioParam {
@@ -167,6 +168,10 @@ afterEach(() => {
   FakeAudioContext.instances = [];
 });
 
+function last(values: number[]): number {
+  return values[values.length - 1] ?? 0;
+}
+
 type MusicEngineParams = Parameters<typeof useMusicEngine>[0];
 
 const DEFAULT_LEVELS: MusicEngineParams["levels"] = [
@@ -187,7 +192,7 @@ function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {
       alpha0: 0,
       alpha7: 180,
       volume: 0.7,
-      scaleMode: "diatonic7",
+      pitchMappingMode: "chromalum",
       fmEnabled: false,
       panEnabled: true,
       hoveredFanoLine: null,
@@ -252,7 +257,7 @@ describe("useMusicEngine", () => {
           alpha0: 0,
           alpha7: 180,
           volume: 0.7,
-          scaleMode: "diatonic7",
+          pitchMappingMode: "chromalum",
           fmEnabled: false,
           panEnabled: true,
           hoveredFanoLine: null,
@@ -375,7 +380,7 @@ describe("useMusicEngine", () => {
   it("keeps GL(3,2) transformed pitch and pan on the same target hue", () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
 
-    const { result, unmount } = renderMusicEngine({ scaleMode: "12tet", panEnabled: true });
+    const { result, unmount } = renderMusicEngine({ pitchMappingMode: "chromalum", panEnabled: true });
     act(() => {
       result.current.initAudio();
     });
@@ -393,6 +398,65 @@ describe("useMusicEngine", () => {
       result.current.resetGL32Transform();
     });
     expect(l1VoicePan.targetValues[l1VoicePan.targetValues.length - 1]).toBeCloseTo(Math.sin((240 * Math.PI) / 180), 10);
+
+    unmount();
+  });
+
+  it("keeps the seven-point GL(3,2) audio permutation across parameter updates", () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const initialParams: MusicEngineParams = {
+      enabled: true,
+      levels: DEFAULT_LEVELS,
+      hoveredLevelIndex: null,
+      alpha0: 0,
+      alpha7: 180,
+      volume: 0.7,
+      pitchMappingMode: "chromalum",
+      fmEnabled: false,
+      panEnabled: true,
+      hoveredFanoLine: null,
+      toneMode: "symmetric",
+      originMode: 0,
+    };
+    const { result, rerender, unmount } = renderHook((params: MusicEngineParams) => useMusicEngine(params), {
+      initialProps: initialParams,
+    });
+
+    act(() => {
+      result.current.initAudio();
+      result.current.setDroneMuted(false);
+    });
+
+    const ctx = FakeAudioContext.instances[0];
+    const onPerm = vi.fn();
+    act(() => {
+      result.current.applyGL32Transform("C", onPerm);
+    });
+
+    expect(onPerm).toHaveBeenLastCalledWith([0, 1, 3, 2, 4, 5, 7, 6]);
+    expect(last(ctx.gains[6].gain.targetValues)).toBe(0);
+    expect(last(ctx.gains[7].gain.targetValues)).toBeGreaterThan(0);
+    expect(last(ctx.gains[8].gain.targetValues)).toBeGreaterThan(0);
+    expect(last(ctx.oscillators[6].frequency.targetValues)).toBeCloseTo(angleToFreq(60, "chromalum"), 10);
+
+    const updatedLevels = DEFAULT_LEVELS.map((level) => (level.levelIndex === 6 ? { ...level, hueAngleDeg: 90 } : level));
+    act(() => {
+      rerender({ ...initialParams, levels: updatedLevels, alpha0: 30, volume: 0.4 });
+    });
+
+    expect(last(ctx.oscillators[6].frequency.targetValues)).toBeCloseTo(angleToFreq(120, "chromalum"), 10);
+    expect(last(ctx.panners[6].pan.targetValues)).toBeCloseTo(Math.sin((120 * Math.PI) / 180), 10);
+    expect(last(ctx.gains[0].gain.targetValues)).toBeCloseTo(0.32, 10);
+    expect(last(ctx.gains[6].gain.targetValues)).toBe(0);
+
+    const onReset = vi.fn();
+    act(() => {
+      result.current.resetGL32Transform(onReset);
+    });
+    expect(onReset).toHaveBeenLastCalledWith([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(last(ctx.oscillators[5].frequency.targetValues)).toBeCloseTo(angleToFreq(120, "chromalum"), 10);
+    expect(last(ctx.gains[6].gain.targetValues)).toBeGreaterThan(0);
+    expect(last(ctx.gains[8].gain.targetValues)).toBe(0);
 
     unmount();
   });
@@ -441,7 +505,7 @@ describe("useMusicEngine", () => {
     vi.useFakeTimers();
     vi.stubGlobal("AudioContext", FakeAudioContext);
 
-    const { result, unmount } = renderMusicEngine({ alpha0: 90, scaleMode: "ji" });
+    const { result, unmount } = renderMusicEngine({ alpha0: 90, pitchMappingMode: "wholeTone" });
     act(() => {
       result.current.initAudio();
     });
@@ -454,14 +518,14 @@ describe("useMusicEngine", () => {
     });
 
     expect(onStep).toHaveBeenCalledWith(0);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(220);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ);
 
     act(() => {
       vi.advanceTimersByTime(200);
     });
 
     expect(onStep).toHaveBeenLastCalledWith(1);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(220 * Math.pow(2, 1 / 12));
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * Math.pow(2, 1 / 12));
 
     act(() => {
       vi.advanceTimersByTime(600);
@@ -502,7 +566,7 @@ describe("useMusicEngine", () => {
     });
 
     expect(onStep).toHaveBeenLastCalledWith(14);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(880);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * 4);
 
     onStep.mockClear();
     act(() => {

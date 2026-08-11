@@ -1,4 +1,9 @@
-import { CANONICAL_HUE_ANCHORS } from "../chromalum-color-model";
+import {
+  CANONICAL_CHROMATIC_LEVEL_CYCLE,
+  CANONICAL_HUE_EDGES,
+  CHROMALUM_LEVEL_HEX,
+  CHROMALUM_LEVEL_LABELS,
+} from "../chromalum-color-model";
 import { hue2rgb, LEVEL_CANDIDATES } from "../color-engine";
 import { NUM_VERTICES } from "../constants";
 
@@ -6,14 +11,7 @@ import { NUM_VERTICES } from "../constants";
    HEXAGON DIAGRAM DATA
    ═══════════════════════════════════════════ */
 
-export const HEX_ANGLES: readonly number[] = [
-  CANONICAL_HUE_ANCHORS.R,
-  CANONICAL_HUE_ANCHORS.Y,
-  CANONICAL_HUE_ANCHORS.G,
-  CANONICAL_HUE_ANCHORS.C,
-  CANONICAL_HUE_ANCHORS.B,
-  CANONICAL_HUE_ANCHORS.M,
-];
+export const HEX_ANGLES: readonly number[] = CANONICAL_HUE_EDGES.map((edge) => edge.fromHueAngleDeg);
 
 interface HexVertex {
   readonly label: string;
@@ -22,14 +20,12 @@ interface HexVertex {
   readonly angleDeg: number;
 }
 
-export const HEX_VERTICES = [
-  { label: "R", level: 2, rgb: "#ff0000", angleDeg: -90 },
-  { label: "Y", level: 6, rgb: "#ffff00", angleDeg: -30 },
-  { label: "G", level: 4, rgb: "#00ff00", angleDeg: 30 },
-  { label: "C", level: 5, rgb: "#00ffff", angleDeg: 90 },
-  { label: "B", level: 1, rgb: "#0000ff", angleDeg: 150 },
-  { label: "M", level: 3, rgb: "#ff00ff", angleDeg: 210 },
-] as const satisfies readonly HexVertex[];
+export const HEX_VERTICES: readonly HexVertex[] = CANONICAL_CHROMATIC_LEVEL_CYCLE.map((level, vertexIndex) => ({
+  label: CHROMALUM_LEVEL_LABELS[level],
+  level,
+  rgb: CHROMALUM_LEVEL_HEX[level],
+  angleDeg: vertexIndex * 60 - 90,
+}));
 
 interface HexEdge {
   readonly fromVertexIndex: number;
@@ -38,14 +34,12 @@ interface HexEdge {
 }
 
 /* t:6 is equivalent to t:0 (wraps via % NUM_VERTICES) — represents the edge from vertex 5 to vertex 0 */
-export const HEX_EDGES = [
-  { fromVertexIndex: 0, toVertexIndex: 1, levels: [3, 4, 5] },
-  { fromVertexIndex: 1, toVertexIndex: 2, levels: [5] },
-  { fromVertexIndex: 2, toVertexIndex: 3, levels: [] },
-  { fromVertexIndex: 3, toVertexIndex: 4, levels: [4, 3, 2] },
-  { fromVertexIndex: 4, toVertexIndex: 5, levels: [2] },
-  { fromVertexIndex: 5, toVertexIndex: 6, levels: [] },
-] as const satisfies readonly HexEdge[];
+export const HEX_EDGES: readonly HexEdge[] = CANONICAL_HUE_EDGES.map((edge) => ({
+  fromVertexIndex: edge.fromVertexIndex,
+  // Keep 6 rather than 0 on the closing edge so hue interpolation reaches 360°.
+  toVertexIndex: edge.fromVertexIndex + 1,
+  levels: edge.interiorLevels,
+}));
 
 interface EdgeColor {
   readonly hex: string;

@@ -1,6 +1,6 @@
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
 
-import { GRAY_LUT, rgbGrbTone8 } from "../color-engine";
+import { estimateLevelFromSrgbBytes } from "../srgb-level-estimator";
 import type { CanvasAction } from "../types";
 
 interface CropImage {
@@ -42,8 +42,7 @@ export function useImageImportCrop({ dispatch, setZoom, setPan }: UseImageImport
       const px = id.data;
       for (let i = 0; i < w * h; i++) {
         const off = i * 4;
-        const gray = rgbGrbTone8(px[off], px[off + 1], px[off + 2]);
-        nd[i] = GRAY_LUT[gray];
+        nd[i] = estimateLevelFromSrgbBytes(px[off], px[off + 1], px[off + 2]);
       }
 
       dispatch({ type: "load_image", width: w, height: h, levelData: nd });

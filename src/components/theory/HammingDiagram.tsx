@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from "react";
+import React, { useCallback, useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { S_BTN_SM, S_CURSOR_POINTER } from "../../styles/shared";
@@ -14,6 +14,30 @@ const PARITY_GROUPS: { parity: number; checks: number[]; label: string }[] = [
   { parity: 4, checks: [4, 5, 6, 7], label: "P4 (G)" },
 ];
 
+type Bit = 0 | 1;
+type HammingWord = readonly [Bit, Bit, Bit, Bit, Bit, Bit, Bit];
+
+/** Encode data positions D1, D2, D3, D4 into an even-parity Hamming(7,4) word. */
+function encodeHamming74([d1, d2, d3, d4]: readonly [Bit, Bit, Bit, Bit]): HammingWord {
+  const p1 = (d1 ^ d2 ^ d4) as Bit;
+  const p2 = (d1 ^ d3 ^ d4) as Bit;
+  const p4 = (d2 ^ d3 ^ d4) as Bit;
+  return [p1, p2, d1, p4, d2, d3, d4];
+}
+
+const CLEAN_CODEWORD = encodeHamming74([1, 0, 1, 1]);
+
+function flipBit(bit: Bit): Bit {
+  return bit === 0 ? 1 : 0;
+}
+
+function calculateSyndrome(word: HammingWord): number {
+  return PARITY_GROUPS.reduce((syndrome, group) => {
+    const failed = group.checks.reduce<Bit>((parity, position) => (parity ^ word[position - 1]) as Bit, 0) === 1;
+    return failed ? syndrome + group.parity : syndrome;
+  }, 0);
+}
+
 const DOT_R = 12;
 const ROW_Y = [50, 100, 150];
 const DATA_X = [80, 140, 200, 260]; // Positions for 4 data bits per row
@@ -26,36 +50,42 @@ interface Props {
 
 export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
-  const [errorPosition, setErrorPosition] = useState<number | null>(null);
-  const [corrected, setCorrected] = useState(false);
-  const correctedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [receivedWord, setReceivedWord] = useState<HammingWord>(CLEAN_CODEWORD);
+  const [correctedPosition, setCorrectedPosition] = useState<number | null>(null);
   const enter = useCallback((lv: number) => onHover(lv), [onHover]);
   const leave = useCallback(() => onHover(null), [onHover]);
 
-  // Reset corrected state when the injected error position changes
-  useEffect(() => {
-    setCorrected(false);
-    return () => clearTimeout(correctedTimerRef.current);
-  }, [errorPosition]);
-
-  const handleCorrect = useCallback(() => {
-    setCorrected(true);
-    correctedTimerRef.current = setTimeout(() => {
-      setErrorPosition(null);
-      setCorrected(false);
-    }, 1200);
-  }, []);
-
-  // The demo injects a single position error, so the syndrome is that position in binary.
-  const syndrome = corrected ? 0 : errorPosition !== null ? errorPosition : 0;
+  const syndrome = calculateSyndrome(receivedWord);
+  const errorPosition = syndrome !== 0 ? syndrome : null;
   const syndromeBits = THEORY_LEVELS[syndrome].bits;
   const parityResults = PARITY_GROUPS.map((pg) => ({
     ...pg,
-    failed: (syndrome & pg.parity) !== 0,
+    failed: pg.checks.reduce<Bit>((parity, position) => (parity ^ receivedWord[position - 1]) as Bit, 0) === 1,
   }));
 
+  const handleCorrect = useCallback(() => {
+    if (syndrome === 0) return;
+    setReceivedWord((current) => {
+      const corrected = [...current] as Bit[];
+      corrected[syndrome - 1] = flipBit(corrected[syndrome - 1]);
+      return corrected as unknown as HammingWord;
+    });
+    setCorrectedPosition(syndrome);
+  }, [syndrome]);
+
   const handleFlip = useCallback((lv: number) => {
-    setErrorPosition((prev) => (prev === lv ? null : lv));
+    setReceivedWord((current) => {
+      if (calculateSyndrome(current) === lv) return CLEAN_CODEWORD;
+      const received = [...CLEAN_CODEWORD] as Bit[];
+      received[lv - 1] = flipBit(received[lv - 1]);
+      return received as unknown as HammingWord;
+    });
+    setCorrectedPosition(null);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setReceivedWord(CLEAN_CODEWORD);
+    setCorrectedPosition(null);
   }, []);
 
   // Hamming role table data (positions 1-7)
@@ -64,7 +94,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
       {/* Role reference table */}
-      <svg viewBox="0 0 340 34" style={{ width: "100%", maxWidth: 340 }}>
+      <svg viewBox="0 0 340 64" style={{ width: "100%", maxWidth: 340 }}>
         {roles.map((lv, i) => {
           const x = 24 + i * 44;
           const isParity = lv.hamming.startsWith("P");
@@ -111,6 +141,47 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
             </g>
           );
         })}
+        <g data-testid="hamming-original-codeword">
+          <text x={5} y={44} fontSize={FS.xs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
+            c
+          </text>
+          {CLEAN_CODEWORD.map((bit, i) => (
+            <text
+              key={`c${i + 1}`}
+              x={24 + i * 44}
+              y={44}
+              textAnchor="middle"
+              fontSize={FS.xs}
+              fontFamily="var(--font-mono)"
+              fill={C.textDimmer}
+            >
+              {bit}
+            </text>
+          ))}
+        </g>
+        <g data-testid="hamming-received-word">
+          <text x={5} y={59} fontSize={FS.xs} fontFamily="var(--font-mono)" fill={C.textMuted}>
+            r
+          </text>
+          {receivedWord.map((bit, i) => {
+            const changed = bit !== CLEAN_CODEWORD[i];
+            return (
+              <text
+                key={`r${i + 1}`}
+                data-testid={`hamming-received-bit-${i + 1}`}
+                x={24 + i * 44}
+                y={59}
+                textAnchor="middle"
+                fontSize={FS.xs}
+                fontWeight={changed ? FW.bold : undefined}
+                fontFamily="var(--font-mono)"
+                fill={changed ? C.error : C.textMuted}
+              >
+                {bit}
+              </text>
+            );
+          })}
+        </g>
       </svg>
 
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W }} role="img" aria-label={t("theory_hamming_title")}>
@@ -184,7 +255,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
                   {pg.label}
                 </text>
                 {/* Parity check result indicator — badge */}
-                {errorPosition !== null && (
+                {syndrome !== 0 && (
                   <g>
                     <circle cx={8} cy={y} r={6} fill={pg.failed ? C.error : C.success} />
                     <text
@@ -251,7 +322,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         })}
 
         {/* Error detection result */}
-        {errorPosition !== null && (
+        {(errorPosition !== null || correctedPosition !== null) && (
           <g>
             <text
               x={W / 2}
@@ -260,10 +331,10 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
               fontSize={FS.md}
               fontFamily="var(--font-mono)"
               fontWeight={FW.bold}
-              fill={corrected ? C.success : C.error}
+              fill={correctedPosition !== null ? C.success : C.error}
             >
-              {corrected
-                ? t("theory_hamming_corrected", `${errorPosition} (${THEORY_LEVELS[errorPosition].name})`)
+              {correctedPosition !== null
+                ? t("theory_hamming_corrected", `${correctedPosition} (${THEORY_LEVELS[correctedPosition].name})`)
                 : t("theory_hamming_error", `${syndrome} (${THEORY_LEVELS[syndrome].name})`)}
             </text>
             <text
@@ -293,23 +364,19 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
                   </tspan>
                 );
               })}
-              {corrected ? " \u2192 corrected" : ""}
+              {correctedPosition !== null ? " \u2192 corrected" : ""}
             </text>
           </g>
         )}
       </svg>
 
       <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", justifyContent: "center", minHeight: 22 }}>
-        {errorPosition !== null ? (
+        {errorPosition !== null || correctedPosition !== null ? (
           <>
-            <button
-              className="theory-annotation theory-diagram-button"
-              style={{ ...S_BTN_SM, fontSize: FS.lg }}
-              onClick={() => setErrorPosition(null)}
-            >
+            <button className="theory-annotation theory-diagram-button" style={{ ...S_BTN_SM, fontSize: FS.lg }} onClick={handleReset}>
               {t("theory_hamming_reset")} {"\u21ba"}
             </button>
-            {!corrected && (
+            {errorPosition !== null && (
               <button
                 className="theory-annotation theory-diagram-button"
                 style={{ ...S_BTN_SM, fontSize: FS.lg, color: C.success, borderColor: "rgba(64,204,96,0.4)" }}

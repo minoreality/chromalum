@@ -54,7 +54,8 @@ export interface LinkedVisualizationProps {
   onAlpha0Change?: (angleDeg: number) => void;
   alpha7?: number;
   onAlpha7Change?: (angleDeg: number) => void;
-  /** Callback when L0/L7 origin mode changes */
+  /** Controlled L0/L7 origin state (for Music tab integration) */
+  originMode?: 0 | 7;
   onOriginModeChange?: (mode: 0 | 7) => void;
 }
 
@@ -100,16 +101,18 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   onAlpha0Change,
   alpha7: alpha7Prop,
   onAlpha7Change,
+  originMode: originModeProp,
   onOriginModeChange,
 }: LinkedVisualizationProps) {
   const { t } = useTranslation();
-  const [mode, setModeInternal] = useState<0 | 7>(0);
+  const [originModeInternal, setOriginModeInternal] = useState<0 | 7>(0);
+  const mode = originModeProp ?? originModeInternal;
   const setMode = useCallback(
     (m: 0 | 7) => {
-      setModeInternal(m);
+      if (originModeProp === undefined) setOriginModeInternal(m);
       onOriginModeChange?.(m);
     },
-    [onOriginModeChange],
+    [onOriginModeChange, originModeProp],
   );
   const [alpha0Internal, setAlpha0Internal] = useState(0);
   const [alpha7Internal, setAlpha7Internal] = useState(180);
