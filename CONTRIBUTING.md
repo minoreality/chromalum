@@ -48,22 +48,12 @@ npm run test:theory-copy
 The pre-push hook runs `npm run verify:prepush`, which currently delegates to
 the standard verification set above.
 
-For browser, PWA, or layout-sensitive changes, also run the relevant Playwright
-checks:
+For browser or PWA changes, also run the relevant Playwright checks:
 
 ```bash
 npm run test:e2e
 npm run test:pwa
-npm run test:visual
 ```
-
-Visual regression is a pull-request CI gate and a manual acceptance step. Update
-visual baselines with `npm run test:visual:update` only after intentionally
-accepting the rendered UI change. Pull-request CI runs visual regression on
-Ubuntu, so accepted baselines should be generated in the same Linux environment
-as CI. For intentional visual changes, run the manual "Visual Snapshot
-Artifacts" GitHub Actions workflow and download the `visual-snapshots`
-artifact.
 
 ## Documentation
 

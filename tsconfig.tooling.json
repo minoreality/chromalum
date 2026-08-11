@@ -4,5 +4,5 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "playwright.pwa.config.ts", "playwright.visual.config.ts", "e2e/**/*.ts"]
+  "include": ["vite.config.ts", "playwright.config.ts", "playwright.pwa.config.ts", "e2e/**/*.ts"]
 }
