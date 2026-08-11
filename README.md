@@ -21,9 +21,9 @@ structures.
 | --------------------------------------------------------- | ------------------------------------------------------------- |
 | ![CHROMALUM Glaze tab](./docs/assets/chromalum-glaze.png) | ![CHROMALUM Gallery tab](./docs/assets/chromalum-gallery.png) |
 
-| Theory tab                                                                       | Music tab                                                                      |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| ![CHROMALUM theory tab](./e2e/__screenshots__/visual.spec.ts/theory-desktop.png) | ![CHROMALUM music tab](./e2e/__screenshots__/visual.spec.ts/music-desktop.png) |
+| Theory tab                                                  | Music tab                                                 |
+| ----------------------------------------------------------- | --------------------------------------------------------- |
+| ![CHROMALUM Theory tab](./docs/assets/chromalum-theory.png) | ![CHROMALUM Music tab](./docs/assets/chromalum-music.png) |
 
 ## Features
 
