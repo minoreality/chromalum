@@ -1,16 +1,16 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
-import { TONE_CROSSING_SEQUENCE, ZIGZAG_CHANNELS, ZIGZAG_PATH } from "../../data/music-data";
+import { TONE_CROSSING_SEQUENCE, ZIGZAG_CHANNELS } from "../../data/music-data";
 
-// Zigzag path is a tone sequence (hue-invariant); colors stay canonical to match
-// the tone-based sonification (`triggerToneValueBurst`).
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const NAMES = ["", "B", "R", "M", "G", "C", "Y"];
 const CH_COLORS: Record<string, string> = { G: "#00cc00", R: "#cc0000", B: "#4466ff" };
-const CROSSING_GRAPH_POINTS = TONE_CROSSING_SEQUENCE.slice(0, -1);
+const CROSSING_GRAPH_POINTS = TONE_CROSSING_SEQUENCE;
 const CROSSING_TERMINAL_INDEX = TONE_CROSSING_SEQUENCE.length - 1;
 const CROSSING_TERMINAL_POINT = TONE_CROSSING_SEQUENCE[CROSSING_TERMINAL_INDEX];
-const CROSSING_FINAL_GRAPH_POINT = CROSSING_GRAPH_POINTS[CROSSING_GRAPH_POINTS.length - 1];
+const CROSSING_FINAL_GRAPH_POINT = CROSSING_GRAPH_POINTS[CROSSING_TERMINAL_INDEX - 1];
+// The discrete hexagon is the 60° subsequence of the same lifted traversal.
+const VERTEX_GRAPH_POINTS = TONE_CROSSING_SEQUENCE.filter(({ angleDeg }) => angleDeg % 60 === 0);
 
 const W = 180,
   H = 100;
@@ -21,7 +21,6 @@ const ML = 24,
 const PW = W - ML - MR,
   PH = H - MT - MB;
 
-const xPos = (i: number) => ML + (i / (ZIGZAG_PATH.length - 1)) * PW;
 const xAngle = (angleDeg: number) => ML + (angleDeg / 360) * PW;
 const yPos = (level: number) => MT + PH - (level / 7) * PH;
 
@@ -67,6 +66,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
             const x1 = xAngle(next.angleDeg),
               y1 = yPos(next.lv);
             const isActive = currentStep === i || currentStep === i + 1;
+            const isTerminalSegment = i === CROSSING_TERMINAL_INDEX - 1;
             return (
               <line
                 key={`${point.angleDeg}-${next.angleDeg}`}
@@ -74,39 +74,21 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                 y1={y0}
                 x2={x1}
                 y2={y1}
-                stroke={hueColor(point.angleDeg)}
+                stroke={isTerminalSegment ? "url(#zg-crossing-terminal-grad)" : hueColor(point.angleDeg)}
                 strokeWidth={isActive ? 2.3 : 1.3}
                 opacity={isActive ? 0.9 : 0.42}
               />
             );
           })}
-          {(() => {
-            const x0 = xAngle(CROSSING_FINAL_GRAPH_POINT.angleDeg),
-              y0 = yPos(CROSSING_FINAL_GRAPH_POINT.lv);
-            const x1 = xAngle(CROSSING_TERMINAL_POINT.angleDeg),
-              y1 = yPos(CROSSING_TERMINAL_POINT.lv);
-            const isActive = currentStep === CROSSING_GRAPH_POINTS.length - 1 || currentStep === CROSSING_TERMINAL_INDEX;
-            return (
-              <line
-                x1={x0}
-                y1={y0}
-                x2={x1}
-                y2={y1}
-                stroke="url(#zg-crossing-terminal-grad)"
-                strokeWidth={isActive ? 2.3 : 1.3}
-                opacity={isActive ? 0.9 : 0.42}
-              />
-            );
-          })()}
           {CROSSING_GRAPH_POINTS.map((point, i) => {
             const x = xAngle(point.angleDeg),
               y = yPos(point.lv);
-            const isTerminalResolve = i === 0 && currentStep === CROSSING_TERMINAL_INDEX;
-            const isActive = currentStep === i || isTerminalResolve;
-            const semitoneLabel = isTerminalResolve ? TONE_CROSSING_SEQUENCE[CROSSING_TERMINAL_INDEX].semitone : point.semitone;
+            const isActive = currentStep === i;
             return (
               <g key={`${point.angleDeg}-${point.semitone}`} filter={isActive ? "url(#zg-glow)" : undefined}>
                 <circle
+                  data-zigzag-point="crossings"
+                  data-angle-deg={point.angleDeg}
                   cx={x}
                   cy={y}
                   r={isActive ? 5.5 : 3.2}
@@ -125,7 +107,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                     fontWeight={FW.bold}
                     fill={hueColor(point.angleDeg)}
                   >
-                    {semitoneLabel}
+                    {point.semitone}
                   </text>
                 ) : null}
               </g>
@@ -135,14 +117,14 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
       ) : (
         <>
           {/* Segments with channel-colored lines */}
-          {ZIGZAG_PATH.slice(0, -1).map((lv, i) => {
-            const nextLv = ZIGZAG_PATH[i + 1];
-            const x0 = xPos(i),
-              y0 = yPos(lv);
-            const x1 = xPos(i + 1),
-              y1 = yPos(nextLv);
+          {VERTEX_GRAPH_POINTS.slice(0, -1).map((point, i) => {
+            const next = VERTEX_GRAPH_POINTS[i + 1];
+            const x0 = xAngle(point.angleDeg),
+              y0 = yPos(point.lv);
+            const x1 = xAngle(next.angleDeg),
+              y1 = yPos(next.lv);
             const ch = ZIGZAG_CHANNELS[i];
-            const delta = nextLv - lv;
+            const delta = next.lv - point.lv;
             const isActive = currentStep === i || currentStep === i + 1;
             return (
               <g key={i}>
@@ -172,17 +154,19 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
             );
           })}
           {/* Vertices */}
-          {ZIGZAG_PATH.map((lv, i) => {
-            const x = xPos(i),
-              y = yPos(lv);
+          {VERTEX_GRAPH_POINTS.map((point, i) => {
+            const x = xAngle(point.angleDeg),
+              y = yPos(point.lv);
             const isActive = currentStep === i;
             return (
-              <g key={lv} filter={isActive ? "url(#zg-glow)" : undefined}>
+              <g key={`${point.angleDeg}-${point.lv}`} filter={isActive ? "url(#zg-glow)" : undefined}>
                 <circle
+                  data-zigzag-point="vertices"
+                  data-angle-deg={point.angleDeg}
                   cx={x}
                   cy={y}
                   r={isActive ? 6 : 4}
-                  fill={LV_COLORS[lv]}
+                  fill={LV_COLORS[point.lv]}
                   fillOpacity={0.85}
                   stroke="#fff"
                   strokeWidth={isActive ? 2 : 1}
@@ -193,10 +177,10 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                   textAnchor="middle"
                   fontSize={FS.xxs}
                   fontFamily="var(--font-mono)"
-                  fill={LV_COLORS[lv]}
+                  fill={LV_COLORS[point.lv]}
                   opacity={0.8}
                 >
-                  {NAMES[lv]}
+                  {NAMES[point.lv]}
                 </text>
               </g>
             );

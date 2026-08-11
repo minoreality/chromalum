@@ -306,11 +306,19 @@ describe("theory-data invariants", () => {
     expect([...GRAY_PATH].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6]);
 
     const diffToToggle: Record<number, string> = { 1: "B", 2: "R", 4: "G" };
+    const signedLevelDeltas = GRAY_PATH.map((lv, i) => GRAY_PATH[(i + 1) % GRAY_PATH.length] - lv);
+    expect(signedLevelDeltas).toEqual([4, -2, 1, -4, 2, -1]);
+    expect(signedLevelDeltas.map(Math.sign)).toEqual([1, -1, 1, -1, 1, -1]);
+    expect(signedLevelDeltas.map(Math.abs)).toEqual([4, 2, 1, 4, 2, 1]);
+
     GRAY_PATH.forEach((lv, i) => {
       const next = GRAY_PATH[(i + 1) % GRAY_PATH.length];
       const diff = lv ^ next;
+      const delta = signedLevelDeltas[i];
       expect(hammingDist(lv, next)).toBe(1);
       expect(GRAY_TOGGLES[i]).toBe(diffToToggle[diff]);
+      expect(Math.abs(delta)).toBe(diff);
+      expect(delta > 0 ? (lv & next) === lv : (lv & next) === next).toBe(true);
     });
   });
 

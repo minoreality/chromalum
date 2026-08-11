@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LanguageProvider } from "../../i18n";
 import { TheoryPanel } from "../TheoryPanel";
 
@@ -14,60 +14,121 @@ function renderWithLanguage() {
 }
 
 describe("TheoryPanel", () => {
-  it("renders the main theory sections and controls", () => {
+  it("renders one eight-chapter argument from finite algebra to derived geometry", () => {
     const { container } = renderWithLanguage();
 
     expect(screen.getByText("Discrete Algebraic Color Theory")).toBeTruthy();
-    expect(screen.getByText("FOUNDATIONS & NOTATION")).toBeTruthy();
-    expect(screen.getByText("CUBE & CYCLES")).toBeTruthy();
-    expect(screen.getByText("PROJECTIVE GEOMETRY & CODING")).toBeTruthy();
-    expect(screen.getByText("POLYHEDRA")).toBeTruthy();
-    expect(screen.getByText("SYNTHESIS & LIMITS")).toBeTruthy();
-    expect(screen.getByText("Complements")).toBeTruthy();
-    expect(screen.getAllByText("K₈").length).toBeGreaterThan(0);
-
-    expect(Array.from(container.querySelectorAll(".theory-heading")).map((el) => el.textContent)).toEqual([
-      "Minimal Principle and Derivation",
-      "Venn Diagram",
-      "Binary Levels",
-      "XOR Operation",
-      "Color Cube",
-      "Gray Code Cycle",
-      "From Six Discrete Colors to Continuous Hue and Pitch",
-      "Tone Zigzag",
-      "Color Die",
-      "Fano Plane",
-      "Hamming Code",
-      "Color Diamond",
-      "Color Tetra",
-      "Color Star",
-      "Polyhedra network",
-      "Connections",
-      "Post-Derivation External Check",
-      "Scope and Limits",
+    expect(Array.from(container.querySelectorAll(".theory-heading")).map((heading) => heading.textContent)).toEqual([
+      "Three Primaries and the Eight-State Algebra",
+      "Color Order Meets Binary Rank",
+      "Valuation and Complement",
+      "Toggle Action, Cube, and Chromatic Six-Cycle",
+      "Seven Nonzero Toggles, Fano, and Hamming",
+      "K₈ Partitioned by Hamming Distance",
+      "Rank Geometry of the Chromatic Six-Cycle",
+      "Synthesis and Exact Scope",
     ]);
 
-    const continuousBridge = screen.getByRole("group", { name: "From Six Discrete Colors to Continuous Hue and Pitch" });
-    expect(continuousBridge.textContent).toContain("H≅ℝ/2πℤ≅S¹");
-    expect(continuousBridge.textContent).toContain("p=θ/π mod 2");
+    const text = container.textContent ?? "";
+    expect(text).toContain("A=𝒫(E), E={G,R,B}");
+    expect(text).toContain("(A,⊕)≅(𝔽₂³,+)");
+    expect(text).toContain("Γ(S)=∨");
+    expect(text).toContain("{1,2,4} (unnamed)");
+    expect(text).toContain("s(G)>s(M)=s(R)+s(B), s(R)>s(B)");
+    expect(text).toContain("L(g,r,b)=4g+2r+b");
+    expect(text).toContain("L(a∨b)+L(a∧b)=L(a)+L(b)");
+    expect(text).toContain("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
+    expect(text).toContain("L(κ(a))=7−L(a)");
+    expect(text).toContain("Hxᵀ=h_i⊕h_j⊕h_k");
+    expect(text).toContain("every Fano line is the support of a weight-three Hamming(7,4) codeword");
+    expect(text).toContain("8·C(3,d)/2");
+    expect(text).toContain("T0=ker π={K,M,C,Y}");
+    expect(text).toContain("T1=B⊕T0={B,R,G,W}");
+    expect(text).toContain("T(h+1/2)=1−T(h)");
+    expect(text).toContain("octahedral face-adjacency graph ≅ Q₃");
+    expect(text).toContain("L(κ(c))=7−L(c)");
 
-    const polyhedraDiagram = screen.getByRole("img", { name: "Polyhedra network" });
-    expect(polyhedraDiagram.querySelector("desc")?.textContent).toContain("common composition");
-    const polyhedraLabels = Array.from(polyhedraDiagram.querySelectorAll("text")).map((el) => el.textContent);
-    for (const label of ["Cube Q\u2083", "Octahedron", "T\u2080/T\u2081", "Stella Oct."]) {
-      expect(polyhedraLabels).toContain(label);
+    for (const retained of [
+      "Venn Diagram",
+      "Color Cube",
+      "Chromatic One-Bit Six-Cycle",
+      "Fano Plane",
+      "Hamming Code",
+      "Color Tetrahedra and Color Star",
+      "Tone Zigzag and Hue-Edge Differences",
+      "The 2–2–2 Hue-Order Net",
+      "Color Die",
+      "The Color Die and Its Dual Octahedron",
+    ]) {
+      expect(screen.getAllByText(retained).length).toBeGreaterThan(0);
     }
-    for (const label of ["F-V reversal", "parity split", "stellation", "compounding"]) {
-      expect(polyhedraLabels).toContain(label);
-    }
-    expect(polyhedraDiagram.querySelector('line[stroke-dasharray="4,3"]')).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Binary Levels" })).toBeTruthy();
 
-    const scopeSection = screen.getByText("Scope and Limits").closest("section");
-    expect(scopeSection?.textContent).toContain("only the eight binary RGB vertices");
-    expect(scopeSection?.textContent).toContain("not derived by feeding perceptual lightness");
-    expect(scopeSection?.textContent).toContain("they are not physical additive mixing of light");
-    expect(scopeSection?.textContent).toContain("OKLab/OKLCH");
-    expect(scopeSection?.textContent).toContain("no novelty is claimed");
+    for (const omitted of ["Polyhedra network"]) {
+      expect(screen.queryByText(omitted)).toBeNull();
+    }
+    expect(text).toContain("Cut the closing M–R edge of the chromatic six-cycle");
+    expect(text).toContain(
+      "The construction therefore runs from the chromatic six-cycle to the hue-order net and then to the folded Color Die",
+    );
+    for (const excluded of ["pitch", "absolute frequency", "OKLab", "[8,4,4]", "1981", "11 free cube nets"]) {
+      expect(text).not.toContain(excluded);
+    }
+  });
+
+  it("keeps essential explanations as visible prose without introducing subsection cards", () => {
+    const { container } = renderWithLanguage();
+    const rankSection = container.querySelector<HTMLElement>("#theory-rank");
+    const structuresSection = container.querySelector<HTMLElement>("#theory-fano-hamming");
+    const geometrySection = container.querySelector<HTMLElement>("#theory-geometry");
+
+    expect(rankSection).not.toBeNull();
+    expect(structuresSection).not.toBeNull();
+    expect(geometrySection).not.toBeNull();
+
+    const binaryHeading = within(rankSection!).getByRole("heading", { level: 4, name: "Binary Levels" });
+    const toggleHeading = within(structuresSection!).getByRole("heading", {
+      level: 4,
+      name: "Seven Nonzero Toggle Patterns",
+    });
+    const zigzagHeading = within(geometrySection!).getByRole("heading", {
+      level: 4,
+      name: "Tone Zigzag and Hue-Edge Differences",
+    });
+    const netHeading = within(geometrySection!).getByRole("heading", { level: 4, name: "The 2–2–2 Hue-Order Net" });
+    const dieHeading = within(geometrySection!).getByRole("heading", { level: 4, name: "Color Die" });
+    const octaHeading = within(geometrySection!).getByRole("heading", {
+      level: 4,
+      name: "The Color Die and Its Dual Octahedron",
+    });
+    expect(binaryHeading.parentElement).toBe(rankSection);
+    expect(toggleHeading.parentElement).toBe(structuresSection);
+    expect(zigzagHeading.parentElement).toBe(geometrySection);
+    expect(netHeading.parentElement).toBe(geometrySection);
+    expect(dieHeading.parentElement).toBe(geometrySection);
+    expect(octaHeading.parentElement).toBe(geometrySection);
+
+    const rankParagraphs = Array.from(rankSection!.children).filter((node) => node.matches("p.theory-desc"));
+    const structureParagraphs = Array.from(structuresSection!.children).filter((node) => node.matches("p.theory-desc"));
+    expect(rankParagraphs.some((node) => node.textContent?.includes("|S|"))).toBe(true);
+    expect(rankParagraphs.some((node) => node.textContent?.includes("H(7,4) column"))).toBe(true);
+    expect(structureParagraphs.some((node) => node.textContent?.includes("ev_K(τ_m)=τ_m(K)=m"))).toBe(true);
+    expect(structureParagraphs.some((node) => node.textContent?.includes("Hxᵀ=h_i⊕h_j⊕h_k"))).toBe(true);
+  });
+
+  it("keeps the complete toggle table folded and outside a card surface", () => {
+    renderWithLanguage();
+
+    const summary = screen.getByText("Complete Toggle-Action Table");
+    const details = summary.closest("details");
+    expect(details).toBeTruthy();
+    expect(details!.open).toBe(false);
+    expect(details!.style.border).toBe("");
+    expect(details!.style.background).toBe("");
+    expect(details!.querySelector('svg[aria-label="Complete table of color states acted on by GRB toggle masks"]')).toBeTruthy();
+
+    fireEvent.click(summary);
+    expect(details!.open).toBe(true);
   });
 
   it("uses the horizontal space inside the binary table SVG", () => {
@@ -82,7 +143,7 @@ describe("TheoryPanel", () => {
       .map((node) => node.getAttribute("x"));
     expect(channelHeaderXs).toEqual(["170", "192", "214"]);
     expect(textNodes.find((node) => node.textContent === "Wt")?.getAttribute("x")).toBe("242");
-    expect(textNodes.find((node) => node.textContent === "Hamming")?.getAttribute("x")).toBe("274");
+    expect(textNodes.find((node) => node.textContent === "H(7,4)")?.getAttribute("x")).toBe("274");
     expect(textNodes.find((node) => node.textContent === "Tone")?.getAttribute("x")).toBe("332");
     expect(textNodes.filter((node) => node.getAttribute("x") === "358").map((node) => node.textContent)).toEqual([
       "0/7",
@@ -94,114 +155,6 @@ describe("TheoryPanel", () => {
       "6/7",
       "7/7",
     ]);
-  });
-
-  it("uses normalized tone labels in the tone zigzag", () => {
-    renderWithLanguage();
-
-    const zigzag = screen.getByRole("img", { name: "Tone Zigzag" });
-    const textContent = Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent);
-
-    expect(textContent).toEqual(expect.arrayContaining(["0/7", "1/7", "2/7", "3/7", "4/7", "5/7", "6/7", "7/7", "1/2"]));
-    expect(textContent).toEqual(expect.arrayContaining(["+4", "-2", "+1", "-4", "+2", "-1"]));
-    const segmentLines = Array.from(zigzag.querySelectorAll('line[stroke-width="2"]'));
-    const segmentLabels = ["+4", "-2", "+1", "-4", "+2", "-1"].map((label) =>
-      Array.from(zigzag.querySelectorAll("text")).find((node) => node.textContent === label),
-    );
-    expect(segmentLines).toHaveLength(6);
-    for (const [i, label] of segmentLabels.entries()) {
-      expect(label?.getAttribute("dominant-baseline")).toBe("central");
-      const line = segmentLines[i];
-      const x0 = Number(label?.getAttribute("x"));
-      const y0 = Number(label?.getAttribute("y"));
-      const x1 = Number(line.getAttribute("x1"));
-      const y1 = Number(line.getAttribute("y1"));
-      const x2 = Number(line.getAttribute("x2"));
-      const y2 = Number(line.getAttribute("y2"));
-      const distance = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1) / Math.hypot(y2 - y1, x2 - x1);
-      expect(distance).toBeGreaterThan(10);
-    }
-    const toneCycleLabels = Array.from(zigzag.querySelectorAll('[data-tone-cycle-label="true"]'));
-    expect(toneCycleLabels.map((node) => node.textContent)).toEqual(["2", "3", "4", "5", "6", "5", "4", "5", "4", "3", "2", "1", "2", "3"]);
-    expect(toneCycleLabels.map((node) => node.getAttribute("fill"))).toEqual([
-      "rgb(255,0,0)",
-      "rgb(255,64,0)",
-      "rgb(255,128,0)",
-      "rgb(255,191,0)",
-      "rgb(255,255,0)",
-      "rgb(128,255,0)",
-      "rgb(0,255,0)",
-      "rgb(0,255,255)",
-      "rgb(0,191,255)",
-      "rgb(0,128,255)",
-      "rgb(0,64,255)",
-      "rgb(0,0,255)",
-      "rgb(128,0,255)",
-      "rgb(255,0,255)",
-    ]);
-    const hueAxisLabels = Array.from(zigzag.querySelectorAll('[data-hue-axis-label="true"]'));
-    expect(hueAxisLabels.map((node) => node.textContent)).toEqual([
-      "0turn",
-      "1/6turn",
-      "1/3turn",
-      "1/2turn",
-      "2/3turn",
-      "5/6turn",
-      "1turn",
-    ]);
-    expect(hueAxisLabels.map((node) => node.getAttribute("x"))).toEqual(["40", "110", "180", "250", "320", "390", "460"]);
-    expect(Number(toneCycleLabels[0].getAttribute("y"))).toBeLessThan(Number(hueAxisLabels[0].getAttribute("y")));
-    expect(zigzag.querySelector("#hueGrad")).toBeFalsy();
-    expect(zigzag.querySelector('rect[fill="url(#hueGrad)"]')).toBeFalsy();
-    expect(textContent.filter((text) => text === "N=4")).toHaveLength(2);
-    expect(textContent).not.toContain("N=4 zone");
-    expect(textContent).not.toContain("127.5");
-    expect(textContent).not.toContain("255");
-
-    const hoverTargets = zigzag.querySelectorAll("rect[fill='transparent']");
-    fireEvent.mouseEnter(hoverTargets[2]);
-    const levelTwoText = Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent);
-    expect(levelTwoText).toContain("=1");
-    const complementSumLabel = Array.from(zigzag.querySelectorAll("text")).find((node) => node.textContent === "=1");
-    const nRegionLabel = Array.from(zigzag.querySelectorAll("text")).find((node) => node.textContent === "N=4");
-    expect(complementSumLabel?.getAttribute("x")).toBe(nRegionLabel?.getAttribute("x"));
-    expect(Number(complementSumLabel?.getAttribute("x"))).toBeGreaterThan(
-      Number(hueAxisLabels[hueAxisLabels.length - 1].getAttribute("x")),
-    );
-    const rightSideVerticalLines = Array.from(zigzag.querySelectorAll("line")).filter(
-      (line) =>
-        line.getAttribute("x1") === line.getAttribute("x2") &&
-        Number(line.getAttribute("x1")) > Number(hueAxisLabels[hueAxisLabels.length - 1].getAttribute("x")),
-    );
-    expect(rightSideVerticalLines).toHaveLength(0);
-    expect(levelTwoText).toEqual(expect.arrayContaining(["0turn", "5/8turn", "3/4turn"]));
-    expect(levelTwoText).not.toContain("225°");
-
-    fireEvent.mouseLeave(hoverTargets[2]);
-    fireEvent.mouseEnter(zigzag.querySelector('[data-tone-level="2"]')!);
-    expect(Array.from(zigzag.querySelectorAll("text")).map((node) => node.textContent)).toContain("=1");
-  });
-
-  it("keeps Color Tetra SVG definition ids unique across T0 and T1", () => {
-    renderWithLanguage();
-
-    const tetraSection = screen.getByText("Color Tetra").closest("section");
-    expect(tetraSection).toBeTruthy();
-
-    const ids = Array.from(tetraSection!.querySelectorAll("[id]")).map((node) => node.id);
-    expect(ids.length).toBeGreaterThan(0);
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.some((id) => id.startsWith("t0-tfg-"))).toBe(true);
-    expect(ids.some((id) => id.startsWith("t1-tfg-"))).toBe(true);
-  });
-
-  it("keeps Color Tetra T0 and T1 diagrams side by side in narrow layouts", () => {
-    renderWithLanguage();
-
-    const tetraPair = screen.getByTestId("tetra-pair");
-    expect(tetraPair.style.display).toBe("grid");
-    expect(tetraPair.style.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
-    expect(tetraPair.querySelectorAll("svg")).toHaveLength(2);
   });
 
   it("clears pinned highlights when clicking the full-width background surface", async () => {
@@ -223,31 +176,34 @@ describe("TheoryPanel", () => {
     await waitFor(() => expect(venn.querySelector('rect[stroke="#fff"]')).toBeFalsy());
   });
 
-  it("shows Color Star surface ridges and returns from K8 to surface mode", () => {
+  it("keeps the K8 distance partition explorable through the retained stella", () => {
     renderWithLanguage();
 
-    const starSection = screen.getByText("Color Star").closest("section");
-    expect(starSection).toBeTruthy();
-
-    const buttons = Array.from(starSection!.querySelectorAll("button"));
-    const surfaceButton = buttons.find((button) => button.textContent === "Surface");
-    const k8Button = buttons.find((button) => button.textContent === "K\u2088");
+    const section = screen.getByText("Color Tetrahedra and Color Star").closest("section");
+    expect(section).toBeTruthy();
+    const t0Button = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "T0");
+    const t1Button = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "T1");
+    const surfaceButton = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "Surface");
+    const k8Button = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "K₈");
+    expect(t0Button).toBeTruthy();
+    expect(t1Button).toBeTruthy();
     expect(surfaceButton).toBeTruthy();
     expect(k8Button).toBeTruthy();
 
-    const compoundLineCount = starSection!.querySelectorAll("line").length;
-    fireEvent.click(surfaceButton!);
+    fireEvent.click(t0Button!);
+    expect(section!.textContent).toContain("T0=ker π={K,M,C,Y}≅V₄");
+    expect(t0Button!.getAttribute("aria-pressed")).toBe("true");
 
-    expect(starSection!.textContent).toContain("24 surface faces");
-    expect(surfaceButton!.getAttribute("aria-pressed")).toBe("true");
-    expect(starSection!.querySelectorAll("line").length).toBeGreaterThan(compoundLineCount);
+    fireEvent.click(t1Button!);
+    expect(section!.textContent).toContain("T1=B⊕T0={B,R,G,W}");
+    expect(t1Button!.getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(k8Button!);
-    expect(starSection!.textContent).toContain("Q\u2083(12)");
+    expect(section!.textContent).toContain("Q₃(12)");
     expect(k8Button!.getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(surfaceButton!);
-    expect(starSection!.textContent).toContain("24 surface faces");
+    expect(section!.textContent).toContain("24 surface faces");
     expect(surfaceButton!.getAttribute("aria-pressed")).toBe("true");
   });
 });

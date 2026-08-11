@@ -1,5 +1,5 @@
 import { useRef, useCallback, useMemo } from "react";
-import { FANO_RHYTHM_PATTERNS, TONE_NORM_VALUES } from "../data/music-data";
+import { FANO_RHYTHM_PATTERNS, TONE_CROSSING_SEQUENCE } from "../data/music-data";
 import { type PitchMappingMode } from "../data/music-frequency";
 import { triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
 import {
@@ -9,13 +9,7 @@ import {
   GRAY_VOICE_FREQS,
   PARITY_GROUPS,
 } from "../music/music-engine-core";
-import {
-  TONE_CROSSING_BASE_INTERVAL_MS,
-  complementOfLine,
-  k8LayerStep,
-  toneCrossingStep,
-  zigzagStep,
-} from "../music/music-playback-sequences";
+import { TONE_CROSSING_BASE_INTERVAL_MS, complementOfLine, k8LayerStep, toneCrossingStep } from "../music/music-playback-sequences";
 import {
   scheduleAndTriads,
   scheduleComplementCanon,
@@ -425,20 +419,23 @@ export function useMusicEngine({
     (onStep: (stepIndex: number | null) => void) => {
       const nodes = nodesRef.current;
       if (!nodes) return;
+      // Sample the same continuous pitch mapping as Tone Crossings at the six hexagon vertices and terminal R.
+      const vertexSequence = TONE_CROSSING_SEQUENCE.filter(({ angleDeg }) => angleDeg % 60 === 0);
       let step = 0;
       replaceInterval(
         zigzagIntervalRef,
         () => {
-          if (!nodesRef.current) return;
-          const { index, lv } = zigzagStep(step);
-          triggerToneValueBurst(TONE_NORM_VALUES[lv]);
+          const currentNodes = nodesRef.current;
+          if (!currentNodes) return;
+          const index = step % vertexSequence.length;
+          triggerSemitoneBurst(currentNodes, vertexSequence[index].semitone);
           onStep(index);
           step++;
         },
         400,
       );
     },
-    [nodesRef, triggerToneValueBurst],
+    [nodesRef],
   );
 
   const stopZigzagMelody = useCallback(() => {

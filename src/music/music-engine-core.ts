@@ -69,7 +69,10 @@ export const K8_LAYER_EDGES = {
   3: COMPLEMENT_EDGES,
 } as const;
 
-/** Normalized tone -> frequency (distinct from angleToFreq: sonifies complement tone symmetry). */
+/**
+ * Expressive linear-Hz mapping for normalized tone. It is distinct from the
+ * derived logarithmic hue mapping and is not an invariant of the color model.
+ */
 export function toneToFreq(toneNorm: number): number {
   return 220 + Math.max(0, Math.min(1, toneNorm)) * 660; // 220-880 Hz linear
 }

@@ -99,6 +99,7 @@ test("pre-caches the production app shell and works offline", async ({ page, con
     ]),
   );
   expect(swInfo.cachedPaths.some((path) => /\/assets\/MusicPanel-.+\.js$/.test(path))).toBe(true);
+  expect(swInfo.cachedPaths.some((path) => /\/assets\/TheoryPanel-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/flood-fill\.worker-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/pixel-analysis\.worker-.+\.js$/.test(path))).toBe(true);
 
@@ -113,6 +114,9 @@ test("pre-caches the production app shell and works offline", async ({ page, con
   const offlineReloadResponse = await page.reload({ waitUntil: "domcontentloaded", timeout: 10_000 });
   expect(offlineReloadResponse?.status()).toBe(200);
 
+  await page.getByRole("tab", { name: "Theory" }).click();
+  await expect(page.getByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeVisible();
+
   await page.getByRole("tab", { name: "Music" }).click();
-  await expect(page.getByText("CHROMATIC MUSIC")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "CHROMALUM MUSIC" })).toBeVisible();
 });

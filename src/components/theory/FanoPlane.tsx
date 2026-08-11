@@ -12,8 +12,6 @@ const DOT_R = 14;
 const CX = 150,
   CY = 160;
 
-const COLOR_NAMES: Record<number, string> = { 1: "B", 2: "R", 3: "M", 4: "G", 5: "C", 6: "Y", 7: "W" };
-
 type LineFilter = "all" | "primary" | "complement" | "secondary";
 
 function linesThrough(point: number): number[] {
@@ -22,6 +20,10 @@ function linesThrough(point: number): number[] {
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
+}
+
+function toggleMaskLabel(level: number): string {
+  return `τ${["G", "R", "B"].filter((_, index) => THEORY_LEVELS[level].bits[index] === 1).join("")}`;
 }
 
 // Collapsed line positions (all on one horizontal line — the CMY line)
@@ -195,7 +197,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           );
         })}
 
-        {/* XOR equations + mixing labels for highlighted lines */}
+        {/* Bit cancellation + toggle-composition closure for highlighted lines */}
         {!isCmyAnimating &&
           hlLines.filter(isLineVisible).map((li) => {
             const line = FANO_LINES[li];
@@ -221,13 +223,8 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
             const ox = anchor.x + (dx / dist) * push,
               oy = anchor.y + (dy / dist) * push;
             const labelColor = cat === "primary" ? "#80a0ff" : cat === "complement" ? "#ffa060" : "#60ffa0";
-            const isSecondary = cat === "secondary";
-            const algebraLabel = isSecondary
-              ? `${line.map((lv) => THEORY_LEVELS[lv].bits.join("")).join("\u2295")} = 000`
-              : t("theory_fano_xor", String(line[0]), String(line[1]), String(line[2]));
-            const mixLabel = isSecondary
-              ? `${COLOR_NAMES[line[0]]}\u2295${COLOR_NAMES[line[1]]}\u2295${COLOR_NAMES[line[2]]} = K`
-              : `${COLOR_NAMES[line[0]]} + ${COLOR_NAMES[line[1]]} = ${COLOR_NAMES[line[2]]}`;
+            const algebraLabel = `${line.map((lv) => THEORY_LEVELS[lv].bits.join("")).join("\u2295")}=000`;
+            const closureLabel = `${line.map(toggleMaskLabel).join("·")}=id`;
             return (
               <g key={"eq" + li}>
                 <text
@@ -252,7 +249,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
                   fill={labelColor}
                   opacity={0.8}
                 >
-                  {mixLabel}
+                  {closureLabel}
                 </text>
               </g>
             );

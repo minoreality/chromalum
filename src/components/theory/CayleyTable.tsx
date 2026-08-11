@@ -4,8 +4,8 @@ import { C, FS, FW, FONT } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
-const CELL = 40;
-const HDR = 36;
+const CELL = 42;
+const HDR = 48;
 const GAP = 1;
 const DOT_R = 12;
 const N = 8;
@@ -14,6 +14,14 @@ const SVG_H = HDR + N * (CELL + GAP);
 
 function bitLabel(lv: number): string {
   return THEORY_LEVELS[lv].bits.join("");
+}
+
+function toggleFactorLabel(lv: number): string {
+  if (lv === 0) return "id";
+  return ["G", "R", "B"]
+    .filter((_, index) => THEORY_LEVELS[lv].bits[index] === 1)
+    .map((channel) => `τ${channel}`)
+    .join("");
 }
 
 interface Props {
@@ -45,173 +53,219 @@ export const CayleyTable = React.memo(function CayleyTable({ hlLevel, onHover }:
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-      <svg
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        style={{ width: "100%", maxWidth: SVG_W, height: "auto", display: "block", minWidth: 0 }}
-        role="img"
-        aria-label={t("theory_xor_cayley_aria")}
-      >
-        {/* XOR symbol in corner */}
-        <text
-          x={HDR / 2}
-          y={HDR / 2}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={FS.lg}
-          fontFamily="var(--font-mono)"
-          fontWeight={FW.bold}
-          fill={C.textMuted}
-        >
-          {"\u2295"}
-        </text>
-
-        {/* Column headers */}
-        {THEORY_LEVELS.map((lv, ci) => {
-          const x = cellX(ci) + CELL / 2;
-          const isHlCol = hoverCell?.c === ci;
-          return (
-            <g key={"ch" + ci}>
-              <circle
-                cx={x}
-                cy={HDR / 2}
-                r={DOT_R}
-                fill={lv.lv === 0 ? C.bgRoot : lv.color}
-                fillOpacity={isHlCol ? 0.9 : 0.6}
-                stroke={isHlCol ? "#fff" : lv.color}
-                strokeWidth={isHlCol ? 2 : 1}
-              />
+      <div style={{ width: "100%", overflowX: "auto", paddingBottom: 2 }}>
+        <div style={{ width: SVG_W + 18, margin: "0 auto" }}>
+          <div style={{ marginLeft: HDR + 18, fontSize: FS.sm, fontFamily: FONT.mono, color: C.accentBright, textAlign: "center" }}>
+            {t("theory_toggle_table_mask_axis")}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: `18px ${SVG_W}px`, alignItems: "center" }}>
+            <div
+              style={{
+                writingMode: "vertical-rl",
+                transform: "rotate(180deg)",
+                fontSize: FS.sm,
+                fontFamily: FONT.mono,
+                color: C.accentBright,
+                textAlign: "center",
+              }}
+            >
+              {t("theory_toggle_table_state_axis")}
+            </div>
+            <svg
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+              style={{ width: SVG_W, height: SVG_H, display: "block" }}
+              role="img"
+              aria-label={t("theory_toggle_table_aria")}
+            >
+              {/* XOR symbol in corner */}
               <text
-                x={x}
+                x={HDR / 2}
                 y={HDR / 2}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={FS.sm}
-                fontWeight={FW.bold}
+                fontSize={FS.lg}
                 fontFamily="var(--font-mono)"
-                fill={lv.lv >= 4 ? "#000" : "#fff"}
-              >
-                {lv.lv}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Row headers */}
-        {THEORY_LEVELS.map((lv, ri) => {
-          const y = cellY(ri) + CELL / 2;
-          const isHlRow = hoverCell?.r === ri;
-          return (
-            <g key={"rh" + ri}>
-              <circle
-                cx={HDR / 2}
-                cy={y}
-                r={DOT_R}
-                fill={lv.lv === 0 ? C.bgRoot : lv.color}
-                fillOpacity={isHlRow ? 0.9 : 0.6}
-                stroke={isHlRow ? "#fff" : lv.color}
-                strokeWidth={isHlRow ? 2 : 1}
-              />
-              <text
-                x={HDR / 2}
-                y={y}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={FS.sm}
                 fontWeight={FW.bold}
-                fontFamily="var(--font-mono)"
-                fill={lv.lv >= 4 ? "#000" : "#fff"}
+                fill={C.textMuted}
               >
-                {lv.lv}
+                {"\u2295"}
               </text>
-            </g>
-          );
-        })}
 
-        {/* Cells */}
-        {THEORY_LEVELS.map((_, ri) =>
-          THEORY_LEVELS.map((__, ci) => {
-            const result = ri ^ ci;
-            const info = THEORY_LEVELS[result];
-            const x = cellX(ci);
-            const y = cellY(ri);
-            const cx = x + CELL / 2;
-            const cy = y + CELL / 2;
+              {/* Column headers are toggle masks, not color-state operands. */}
+              {THEORY_LEVELS.map((lv, ci) => {
+                const x = cellX(ci) + CELL / 2;
+                const isHlCol = hoverCell?.c === ci;
+                return (
+                  <g key={"ch" + ci} data-column-mask={ci}>
+                    <circle
+                      cx={x}
+                      cy={17}
+                      r={DOT_R + 2}
+                      fill={C.bgInput}
+                      fillOpacity={isHlCol ? 0.9 : 0.6}
+                      stroke={isHlCol ? "#fff" : lv.color}
+                      strokeWidth={isHlCol ? 2 : 1}
+                    />
+                    <text
+                      x={x}
+                      y={17}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fontSize={FS.xs}
+                      fontWeight={FW.bold}
+                      fontFamily="var(--font-mono)"
+                      fill={lv.lv === 0 ? C.textDimmer : lv.color}
+                    >
+                      {bitLabel(lv.lv)}
+                    </text>
+                    <text x={x} y={39} textAnchor="middle" fontSize={FS.xxs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
+                      {toggleFactorLabel(lv.lv)}
+                    </text>
+                  </g>
+                );
+              })}
 
-            const isHoverRow = hoverCell?.r === ri;
-            const isHoverCol = hoverCell?.c === ci;
-            const isHoverCell = isHoverRow && isHoverCol;
-            const isRowOrCol = isHoverRow || isHoverCol;
-            const isDiag = ri === ci; // a⊕a=0
-            const isHlMatch = hlResult !== null && result === hlResult;
+              {/* Row headers are the current color states. */}
+              {THEORY_LEVELS.map((lv, ri) => {
+                const y = cellY(ri) + CELL / 2;
+                const isHlRow = hoverCell?.r === ri;
+                return (
+                  <g key={"rh" + ri} data-row-state={ri}>
+                    <circle
+                      cx={17}
+                      cy={y}
+                      r={DOT_R + 2}
+                      fill={lv.lv === 0 ? C.bgRoot : lv.color}
+                      fillOpacity={isHlRow ? 0.9 : 0.6}
+                      stroke={isHlRow ? "#fff" : lv.color}
+                      strokeWidth={isHlRow ? 2 : 1}
+                    />
+                    <text
+                      x={17}
+                      y={y}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fontSize={FS.xs}
+                      fontWeight={FW.bold}
+                      fontFamily="var(--font-mono)"
+                      fill={lv.lv >= 4 ? "#000" : "#fff"}
+                    >
+                      {bitLabel(lv.lv)}
+                    </text>
+                    <text x={40} y={y + 2} textAnchor="middle" fontSize={FS.xxs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
+                      {lv.short}·L{lv.lv}
+                    </text>
+                  </g>
+                );
+              })}
 
-            // Dim cells not in the hovered row/col
-            const anyHover = hoverCell !== null;
-            const anyHl = hlResult !== null;
-            const dim = (anyHover && !isRowOrCol) || (anyHl && !anyHover && !isHlMatch);
+              {/* Cells */}
+              {THEORY_LEVELS.map((_, ri) =>
+                THEORY_LEVELS.map((__, ci) => {
+                  const result = ri ^ ci;
+                  const info = THEORY_LEVELS[result];
+                  const x = cellX(ci);
+                  const y = cellY(ri);
+                  const cx = x + CELL / 2;
+                  const cy = y + CELL / 2;
 
-            const bgOpacity = isHoverCell ? 0.25 : isRowOrCol ? 0.1 : isDiag ? 0.04 : 0.03;
+                  const isHoverRow = hoverCell?.r === ri;
+                  const isHoverCol = hoverCell?.c === ci;
+                  const isHoverCell = isHoverRow && isHoverCol;
+                  const isRowOrCol = isHoverRow || isHoverCol;
+                  const isDiag = ri === ci; // a⊕a=0
+                  const isHlMatch = hlResult !== null && result === hlResult;
 
-            const dotOpacity = dim ? 0.12 : isHoverCell ? 1 : isRowOrCol || isHlMatch ? 0.85 : 0.55;
-            const dotR = isHoverCell ? DOT_R + 2 : DOT_R - 2;
+                  // Dim cells not in the hovered row/col
+                  const anyHover = hoverCell !== null;
+                  const anyHl = hlResult !== null;
+                  const dim = (anyHover && !isRowOrCol) || (anyHl && !anyHover && !isHlMatch);
 
-            return (
-              <g key={`c${ri}_${ci}`} onMouseEnter={() => onCellEnter(ri, ci)} onMouseLeave={onCellLeave} style={S_CURSOR_POINTER}>
-                {/* Cell background */}
-                <rect
-                  x={x}
-                  y={y}
-                  width={CELL}
-                  height={CELL}
-                  rx={3}
-                  fill={isDiag ? "rgba(255,255,255,0.03)" : info.color}
-                  fillOpacity={bgOpacity}
-                  stroke={isHoverCell ? "rgba(255,255,255,0.5)" : isDiag ? "rgba(255,255,255,0.06)" : "transparent"}
-                  strokeWidth={isHoverCell ? 1.5 : 0.5}
-                />
-                {/* Result dot */}
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={dotR}
-                  fill={result === 0 ? C.bgRoot : info.color}
-                  fillOpacity={dotOpacity}
-                  stroke={result === 0 ? C.textDimmer : info.color}
-                  strokeWidth={result === 0 ? 0.8 : 0}
-                />
-                <text
-                  x={cx}
-                  y={cy}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={isHoverCell ? FS.md : FS.xs}
-                  fontWeight={FW.bold}
-                  fontFamily="var(--font-mono)"
-                  fill={result === 0 ? C.textDimmer : result >= 4 ? "#000" : "#fff"}
-                  opacity={dotOpacity}
-                >
-                  {result}
-                </text>
-              </g>
-            );
-          }),
-        )}
-      </svg>
+                  const bgOpacity = isHoverCell ? 0.25 : isRowOrCol ? 0.1 : isDiag ? 0.04 : 0.03;
+
+                  const dotOpacity = dim ? 0.12 : isHoverCell ? 1 : isRowOrCol || isHlMatch ? 0.85 : 0.55;
+                  const dotR = isHoverCell ? DOT_R + 2 : DOT_R - 2;
+
+                  return (
+                    <g
+                      key={`c${ri}_${ci}`}
+                      data-row={ri}
+                      data-mask={ci}
+                      data-result={result}
+                      aria-label={t(
+                        "theory_toggle_table_cell",
+                        THEORY_LEVELS[ri].name,
+                        bitLabel(ri),
+                        bitLabel(ci),
+                        toggleFactorLabel(ci),
+                        info.name,
+                        bitLabel(result),
+                      )}
+                      onMouseEnter={() => onCellEnter(ri, ci)}
+                      onMouseLeave={onCellLeave}
+                      style={S_CURSOR_POINTER}
+                    >
+                      {/* Cell background */}
+                      <rect
+                        x={x}
+                        y={y}
+                        width={CELL}
+                        height={CELL}
+                        rx={3}
+                        fill={isDiag ? "rgba(255,255,255,0.03)" : info.color}
+                        fillOpacity={bgOpacity}
+                        stroke={isHoverCell ? "rgba(255,255,255,0.5)" : isDiag ? "rgba(255,255,255,0.06)" : "transparent"}
+                        strokeWidth={isHoverCell ? 1.5 : 0.5}
+                      />
+                      {/* Result dot */}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={dotR}
+                        fill={result === 0 ? C.bgRoot : info.color}
+                        fillOpacity={dotOpacity}
+                        stroke={result === 0 ? C.textDimmer : info.color}
+                        strokeWidth={result === 0 ? 0.8 : 0}
+                      />
+                      <text
+                        x={cx}
+                        y={cy}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize={FS.xs}
+                        fontWeight={FW.bold}
+                        fontFamily="var(--font-mono)"
+                        fill={result === 0 ? C.textDimmer : result >= 4 ? "#000" : "#fff"}
+                        opacity={dotOpacity}
+                      >
+                        {bitLabel(result)}
+                      </text>
+                    </g>
+                  );
+                }),
+              )}
+            </svg>
+          </div>
+        </div>
+      </div>
       <div style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textMuted, textAlign: "center", minHeight: "1.2em", marginTop: 2 }}>
-        {hoverCell &&
-          (() => {
-            const row = THEORY_LEVELS[hoverCell.r];
-            const col = THEORY_LEVELS[hoverCell.c];
-            const resultLv = hoverCell.r ^ hoverCell.c;
-            const result = THEORY_LEVELS[resultLv];
-            const rowLabel = `${row.name} (${row.lv}/${bitLabel(row.lv)})`;
-            const colLabel = `${col.name} (${col.lv}/${bitLabel(col.lv)})`;
-            const resultLabel = `${result.name} (${result.lv}/${bitLabel(result.lv)})`;
-            return (
-              <>
-                {rowLabel} {"\u2295"} {colLabel} = {resultLabel}
-              </>
-            );
-          })()}
+        {hoverCell
+          ? (() => {
+              const row = THEORY_LEVELS[hoverCell.r];
+              const col = THEORY_LEVELS[hoverCell.c];
+              const resultLv = hoverCell.r ^ hoverCell.c;
+              const result = THEORY_LEVELS[resultLv];
+              return (
+                <>
+                  {row.name} {bitLabel(row.lv)}{" "}
+                  <span style={{ color: C.accentBright }}>
+                    ── {bitLabel(col.lv)} ({toggleFactorLabel(col.lv)}) ──▶
+                  </span>{" "}
+                  {result.name} {bitLabel(result.lv)}
+                </>
+              );
+            })()
+          : t("theory_toggle_table_hint")}
       </div>
     </div>
   );

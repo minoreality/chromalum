@@ -94,7 +94,7 @@ describe("MusicPanel controller integration", () => {
     expect(latestEngineParams()).toMatchObject({
       pitchMappingMode: "chromalum",
       fmEnabled: false,
-      toneMode: "symmetric",
+      toneMode: "grbTone",
       volume: 0.7,
     });
 
@@ -104,12 +104,12 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
     expect(latestEngineParams().fmEnabled).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Tone" }));
-    expect(latestEngineParams().toneMode).toBe("grbTone");
+    fireEvent.click(screen.getByRole("button", { name: "Even" }));
+    expect(latestEngineParams().toneMode).toBe("symmetric");
 
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
     expect(latestEngineParams().volume).toBe(0);
-    expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
     expect(latestEngineParams().volume).toBe(0.25);
@@ -124,11 +124,11 @@ describe("MusicPanel controller integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
     expect(latestEngineParams().volume).toBe(0);
-    expect(screen.getByRole("button", { name: "Unmute" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mute" }));
     expect(latestEngineParams().volume).toBe(0.25);
-    expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("false");
   });
 
   it("initializes audio and resumes the drone from hue and alpha rotation controls", () => {
@@ -178,6 +178,32 @@ describe("MusicPanel controller integration", () => {
 
     expect(musicEngineMock.engine.initAudio).toHaveBeenCalled();
     expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledWith(3, expect.any(Number));
+  });
+
+  it("does not trigger music shortcuts while typing in interactive controls", () => {
+    renderWithLanguage(<MusicPanel />);
+    musicEngineMock.engine.initAudio.mockClear();
+    musicEngineMock.engine.triggerToneBurst.mockClear();
+
+    const textarea = document.createElement("textarea");
+    const editable = document.createElement("div");
+    editable.setAttribute("contenteditable", "true");
+    document.body.append(textarea, editable);
+
+    for (const target of [
+      screen.getByLabelText("Volume"),
+      screen.getByRole("combobox", { name: "Fano point" }),
+      screen.getByRole("button", { name: "Reset" }),
+      textarea,
+      editable,
+    ]) {
+      fireEvent.keyDown(target, { key: "3" });
+    }
+
+    expect(musicEngineMock.engine.initAudio).not.toHaveBeenCalled();
+    expect(musicEngineMock.engine.triggerToneBurst).not.toHaveBeenCalled();
+    textarea.remove();
+    editable.remove();
   });
 
   it("routes linked visualization origin and phase controls through the controller", () => {
@@ -230,6 +256,21 @@ describe("MusicPanel controller integration", () => {
     expect(screen.getByRole("button", { name: "\u25b6 Rhythm" })).toBeTruthy();
   });
 
+  it("keeps the drone state synchronized after Stop All", () => {
+    renderWithLanguage(<MusicPanel />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Auto-rotate hue forward" }));
+    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+
+    musicEngineMock.engine.setDroneMuted.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Stop All" }));
+    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(true);
+
+    musicEngineMock.engine.setDroneMuted.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Auto-rotate hue forward" }));
+    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+  });
+
   it("stops active traversal playback from the Fano controls", () => {
     musicEngineMock.engine.playGrayMelody.mockImplementation((_tempo: number, onStep: (levelIndex: number | null) => void) => onStep(2));
     musicEngineMock.engine.startFanoRhythm.mockImplementation((_tempo: number, onBeat: (lines: number[], pos: number) => void) =>
@@ -258,7 +299,7 @@ describe("MusicPanel controller integration", () => {
 
     fireEvent.click(screen.getByRole("radio", { name: "Whole-tone" }));
     fireEvent.click(screen.getByRole("button", { name: "FM" }));
-    fireEvent.click(screen.getByRole("button", { name: "Tone" }));
+    fireEvent.click(screen.getByRole("button", { name: "Even" }));
     fireEvent.change(screen.getByLabelText("Hue angle (0-359 degrees)"), { target: { value: "180" } });
     fireEvent.change(screen.getByLabelText("Hue phase"), { target: { value: "90" } });
     fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
@@ -271,7 +312,7 @@ describe("MusicPanel controller integration", () => {
     expect(latestEngineParams()).toMatchObject({
       pitchMappingMode: "wholeTone",
       fmEnabled: true,
-      toneMode: "grbTone",
+      toneMode: "symmetric",
       originMode: 7,
       volume: 0,
     });
@@ -281,12 +322,13 @@ describe("MusicPanel controller integration", () => {
     expect((screen.getByRole("combobox", { name: "Fano point" }) as HTMLSelectElement).value).toBe("6");
     expect((screen.getByRole("combobox", { name: "Fano line" }) as HTMLSelectElement).value).toBe("2");
 
+    musicEngineMock.engine.setDroneMuted.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
     expect(latestEngineParams()).toMatchObject({
       pitchMappingMode: "chromalum",
       fmEnabled: false,
-      toneMode: "symmetric",
+      toneMode: "grbTone",
       originMode: 0,
       volume: 0.7,
     });
@@ -299,7 +341,7 @@ describe("MusicPanel controller integration", () => {
     expect((screen.getByRole("combobox", { name: "Fano line" }) as HTMLSelectElement).value).toBe("0");
     expect(musicEngineMock.engine.resetGL32Transform).toHaveBeenCalledWith(expect.any(Function));
     expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(true);
-    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+    expect(musicEngineMock.engine.setDroneMuted).not.toHaveBeenCalledWith(false);
   });
 
   it("restarts active traversal playback when the tempo changes", async () => {

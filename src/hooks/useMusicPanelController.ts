@@ -22,15 +22,6 @@ import { useMusicResetDefaultsHandler } from "./useMusicResetDefaultsHandler";
 import { useMusicStopAllHandler } from "./useMusicStopAllHandler";
 import { useMusicTransportHandlers } from "./useMusicTransportHandlers";
 
-function useInitialAudio(initAudio: () => void): void {
-  const initAudioRef = useRef(initAudio);
-  initAudioRef.current = initAudio;
-
-  useEffect(() => {
-    initAudioRef.current();
-  }, []);
-}
-
 interface MusicTransportAnimationOptions {
   alphaDir: number;
   hueDir: number;
@@ -296,8 +287,6 @@ export function useMusicPanelController() {
   });
 
   const activeAlpha = originMode === 0 ? alpha0 : alpha7;
-
-  useInitialAudio(engine.initAudio);
 
   const { resumeDrone, handleAlphaPlay, handleAlphaReverse, handleHuePlay, handleHueReverse, handleMuteToggle, handleVolumeChange } =
     useMusicTransportHandlers({

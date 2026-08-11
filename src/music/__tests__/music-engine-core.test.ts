@@ -29,6 +29,14 @@ describe("music-engine-core", () => {
     expect(MAX_GRB_TONE).toBe(GRB_TONE_BY_LEVEL[6]);
   });
 
+  it("keeps the expressive linear-Hz tone adapter separate from an octave-ratio map", () => {
+    for (const tone of [0, 1 / 7, 2 / 7, 0.5, 5 / 7, 6 / 7, 1]) {
+      expect(toneToFreq(tone) + toneToFreq(1 - tone)).toBeCloseTo(1100, 12);
+    }
+    expect(toneToFreq(1) / toneToFreq(0)).toBe(4);
+    expect(toneToFreq(6 / 7) / toneToFreq(1 / 7)).not.toBeCloseTo(toneToFreq(5 / 7) / toneToFreq(2 / 7), 12);
+  });
+
   it("applies GL(3,2) generators to all nonzero points", () => {
     expect(ALL_POINTS.map(gl32GenA)).toEqual([4, 1, 5, 2, 6, 3, 7]);
     expect(ALL_POINTS.map(gl32GenB)).toEqual([2, 1, 3, 4, 6, 5, 7]);

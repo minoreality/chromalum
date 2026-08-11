@@ -2,151 +2,142 @@ import React from "react";
 import { useTranslation } from "../../i18n";
 import { C, FONT, FS, FW, R, SP } from "../../styles/tokens";
 
-const S_CARD: React.CSSProperties = {
-  border: `1px solid ${C.border}`,
-  borderRadius: R.lg,
-  background: C.bgSurface,
-  padding: `${SP.md}px ${SP.lg}px`,
-  boxSizing: "border-box",
-  textAlign: "center",
-  minWidth: 0,
-};
-
 const S_FORMULA: React.CSSProperties = {
   display: "block",
-  marginTop: SP.xs,
   color: C.textPrimary,
   fontFamily: FONT.mono,
   fontSize: FS.sm,
-  lineHeight: 1.6,
+  lineHeight: 1.65,
   overflowWrap: "anywhere",
 };
 
-interface DerivationCardProps {
-  title: string;
-  formula: string;
-  body?: string;
-  accent?: boolean;
-}
+const S_NOTE: React.CSSProperties = {
+  margin: 0,
+  color: C.textDimmer,
+  fontSize: FS.sm,
+  lineHeight: 1.65,
+};
 
-function DerivationCard({ title, formula, body, accent = false }: DerivationCardProps) {
+const S_THEOREM: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 620,
+  border: `1px solid ${C.border}`,
+  borderRadius: R.xl,
+  background: C.bgSurface,
+  padding: SP.xl,
+  boxSizing: "border-box",
+};
+
+function DerivationStep({ number, title, formula, body }: { number: string; title: string; formula: string; body: string }) {
   return (
-    <div style={{ ...S_CARD, borderColor: accent ? C.accent : C.border }}>
-      <div style={{ color: accent ? C.accentBright : C.textMuted, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-        {title}
+    <li
+      style={{
+        display: "grid",
+        gridTemplateColumns: "28px minmax(0, 1fr)",
+        gap: SP.md,
+        alignItems: "start",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 24,
+          height: 24,
+          display: "grid",
+          placeItems: "center",
+          border: `1px solid ${C.accent}`,
+          borderRadius: "50%",
+          color: C.accentBright,
+          fontFamily: FONT.mono,
+          fontSize: FS.xs,
+          fontWeight: FW.bold,
+        }}
+      >
+        {number}
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>{title}</div>
+        <code style={{ ...S_FORMULA, marginTop: SP.xs }}>{formula}</code>
+        <p style={{ ...S_NOTE, marginTop: SP.xs }}>{body}</p>
       </div>
-      <code style={S_FORMULA}>{formula}</code>
-      {body && <div style={{ marginTop: SP.xs, color: C.textDimmer, fontSize: FS.xs, lineHeight: 1.55 }}>{body}</div>}
-    </div>
+    </li>
   );
 }
-
-const Arrow = () => (
-  <div aria-hidden="true" style={{ color: C.textSubtle, fontFamily: FONT.mono, fontSize: FS.lg, lineHeight: 1 }}>
-    ↓
-  </div>
-);
 
 export const DerivationMap = React.memo(function DerivationMap() {
   const { t } = useTranslation();
-  const outcomes = [
-    ["theory_derivation_outcome_algebra", "Boolean · XOR · Q₃ · Fano · Hamming · K₈"],
-    ["theory_derivation_outcome_palette", "16 candidates · 81 sections · 9 κ-sections"],
-    ["theory_derivation_outcome_geometry", "15° grid · equitone geometry · complement center"],
-    ["theory_derivation_outcome_music", "p=θ/π mod 2 · f(θ̃)=f₀·2^(θ̃/π) · π/12 ↔ semitone"],
-  ] as const;
 
   return (
-    <div
-      role="group"
+    <ol
       aria-label={t("theory_derivation_aria")}
-      style={{ width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}
+      style={{
+        width: "100%",
+        maxWidth: 640,
+        display: "flex",
+        flexDirection: "column",
+        gap: SP.xl,
+        margin: 0,
+        padding: 0,
+        listStyle: "none",
+      }}
     >
-      <div style={{ width: "100%", maxWidth: 480 }}>
-        <DerivationCard
-          title={t("theory_derivation_root")}
-          formula="A = 𝒫({G,R,B}) ≅ GF(2)³"
-          body={t("theory_derivation_root_note")}
-          accent
-        />
-      </div>
-      <Arrow />
-      <div style={{ width: "100%", maxWidth: 480 }}>
-        <DerivationCard
-          title={t("theory_derivation_cycle")}
-          formula="A ∖ {K,W} = C₆   ·   Δ = G,R,B,G,R,B"
-          body={t("theory_derivation_cycle_note")}
-        />
-      </div>
-      <Arrow />
-      <div style={{ width: "100%", maxWidth: 480 }}>
-        <DerivationCard
-          title={t("theory_derivation_valuation")}
-          formula="{1,2,4} ⇒ [G,R,B]=[4,2,1] ⇒ L=4G+2R+B"
-          body={t("theory_derivation_valuation_note")}
-          accent
-        />
-      </div>
-      <Arrow />
-      <div style={{ width: "100%", maxWidth: 480 }}>
-        <DerivationCard
-          title={t("theory_derivation_completion")}
-          formula="cᵢ(t)=(1−t)vᵢ+t·vᵢ₊₁   ·   ⋃[vᵢ,vᵢ₊₁]=H≅S¹"
-          body={t("theory_derivation_completion_note")}
-        />
-      </div>
-      <Arrow />
-      <div style={{ width: "100%", maxWidth: 480 }}>
-        <DerivationCard
-          title={t("theory_derivation_extension")}
-          formula="λ=L|H   ·   ΔL=(+4,−2,+1,−4,+2,−1)   ·   Σ|ΔL|=14"
-          body={t("theory_derivation_extension_note")}
-        />
-      </div>
-      <Arrow />
-      <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: SP.md }}>
-        {outcomes.map(([key, formula]) => (
-          <DerivationCard key={key} title={t(key)} formula={formula} />
-        ))}
-      </div>
-    </div>
-  );
-});
-
-export const ContinuousBridge = React.memo(function ContinuousBridge() {
-  const { t } = useTranslation();
-  const stages = [
-    ["theory_continuous_vertices", "Y=R∨G=R⊕G ↦ eR+eG   ·   C=eG+eB   ·   M=eB+eR", "theory_continuous_vertices_note"],
-    ["theory_continuous_edges", "R→Y: c(t)=(t,1,0), L=2+4t   ·   Y→G: c(t)=(1,1−t,0), L=6−2t", "theory_continuous_edges_note"],
-    ["theory_continuous_circle", "θ(cᵢ(t))=(π/3)(i+t)   ·   H≅ℝ/2πℤ≅S¹   ·   κ:θ↦θ+π", "theory_continuous_circle_note"],
-    ["theory_continuous_music", "p=θ/π mod 2   ·   f(θ̃)=f₀·2^(θ̃/π)   ·   π/12↔1 semitone", "theory_continuous_music_note"],
-  ] as const;
-
-  return (
-    <div
-      role="group"
-      aria-label={t("theory_continuous_title")}
-      style={{ width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", alignItems: "stretch", gap: SP.md }}
-    >
-      {stages.map(([titleKey, formula, noteKey], index) => (
-        <React.Fragment key={titleKey}>
-          {index > 0 && <Arrow />}
-          <DerivationCard title={t(titleKey)} formula={formula} body={t(noteKey)} accent={index === 2} />
-        </React.Fragment>
-      ))}
-    </div>
+      <DerivationStep
+        number="1"
+        title={t("theory_derivation_root")}
+        formula="A=𝒫(E), E={G,R,B}   ·   Γ(S)=∨_{c∈S}e_c   ·   (A,⊕)≅(𝔽₂³,+)"
+        body={t("theory_derivation_root_note")}
+      />
+      <DerivationStep
+        number="2"
+        title={t("theory_derivation_two_paths")}
+        formula="{1,2,4} (unnamed)   ∥   s(G)>s(M)=s(R)+s(B), s(R)>s(B)"
+        body={t("theory_derivation_two_paths_note")}
+      />
+      <DerivationStep
+        number="3"
+        title={t("theory_derivation_convergence")}
+        formula="L(g,r,b)=4g+2r+b   ·   T=L/7"
+        body={t("theory_derivation_convergence_note")}
+      />
+      <DerivationStep
+        number="4"
+        title={t("theory_derivation_consequences")}
+        formula="valuation · complement · Q₃/C₆ · Fano/Hamming · K₈"
+        body={t("theory_derivation_consequences_note")}
+      />
+    </ol>
   );
 });
 
 export const EmpiricalResonance = React.memo(function EmpiricalResonance() {
   const { t } = useTranslation();
+
   return (
-    <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", alignItems: "stretch", gap: SP.md }}>
-      <DerivationCard title={t("theory_empirical_condition")} formula="wG > wR + wB   ·   wR > wB > 0" />
-      <DerivationCard title={t("theory_empirical_order")} formula="K < B < R < M < G < C < Y < W" accent />
-      <p style={{ margin: 0, color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.sm, lineHeight: 1.65, textAlign: "center" }}>
-        {t("theory_empirical_note")}
-      </p>
+    <div style={S_THEOREM}>
+      <div style={{ color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
+        {t("theory_empirical_condition")}
+      </div>
+      <code style={{ ...S_FORMULA, marginTop: SP.md }}>w_B&gt;0 · w_R&gt;w_B · w_G&gt;w_R+w_B</code>
+      <code style={{ ...S_FORMULA, marginTop: SP.xs }}>K&lt;B&lt;R&lt;M&lt;G&lt;C&lt;Y&lt;W</code>
+      <code style={{ ...S_FORMULA, marginTop: SP.xs }}>rank(g,r,b)=4g+2r+b</code>
+      <p style={{ ...S_NOTE, marginTop: SP.md }}>{t("theory_empirical_note")}</p>
+    </div>
+  );
+});
+
+export const ValuationSummary = React.memo(function ValuationSummary() {
+  const { t } = useTranslation();
+
+  return (
+    <div role="group" aria-label={t("theory_valuation_title")} style={S_THEOREM}>
+      <code style={S_FORMULA}>L(a∨b)+L(a∧b)=L(a)+L(b)</code>
+      <p style={{ ...S_NOTE, marginTop: SP.sm }}>{t("theory_valuation_modular_note")}</p>
+
+      <code style={{ ...S_FORMULA, marginTop: SP.xl }}>L(a⊕b)=L(a)+L(b)−2L(a∧b)</code>
+      <p style={{ ...S_NOTE, marginTop: SP.sm }}>{t("theory_valuation_xor_note")}</p>
+
+      <code style={{ ...S_FORMULA, marginTop: SP.xl }}>κ(a)=¬a=a⊕W · L(κ(a))=7−L(a) · T(a)+T(κ(a))=1</code>
+      <p style={{ ...S_NOTE, marginTop: SP.sm }}>{t("theory_valuation_complement_note")}</p>
     </div>
   );
 });

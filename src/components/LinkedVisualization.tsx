@@ -383,10 +383,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
           minWidth: 0,
         }}
       >
-        <button type="button" style={mode === 0 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setMode(0)}>
+        <button type="button" aria-pressed={mode === 0} style={mode === 0 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setMode(0)}>
           {t("linkedviz_mode_l0")}
         </button>
-        <button type="button" style={mode === 7 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setMode(7)}>
+        <button type="button" aria-pressed={mode === 7} style={mode === 7 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setMode(7)}>
           {t("linkedviz_mode_l7")}
         </button>
         <span
@@ -403,11 +403,21 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         >
           {"\u0394\u03b1:\u00a0" + deltaAlpha + "\u00b0"}
         </span>
-        <button type="button" style={deltaAlpha === 0 ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setAlpha7(alpha0)}>
-          {t("linkedviz_complement_cancel")}
-        </button>
-        <button type="button" style={isAligned ? S_TOGGLE_ACTIVE : S_TOGGLE} onClick={() => setAlpha7((alpha0 + 180) % 360)}>
+        <button
+          type="button"
+          aria-pressed={isAligned}
+          style={isAligned ? S_TOGGLE_ACTIVE : S_TOGGLE}
+          onClick={() => setAlpha7((alpha0 + 180) % 360)}
+        >
           {t("linkedviz_complement_align")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={deltaAlpha === 0}
+          style={deltaAlpha === 0 ? S_TOGGLE_ACTIVE : S_TOGGLE}
+          onClick={() => setAlpha7(alpha0)}
+        >
+          {t("linkedviz_complement_cancel")}
         </button>
       </div>
 

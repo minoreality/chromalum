@@ -185,6 +185,10 @@ ready, and invalidates the cache when either `levelData` or
 
 The Theory tab is driven by structured data under `src/data`, localized copy
 under `src/i18n`, and diagram components under `src/components/theory`.
+`src/chromalum-color-model.ts` constructs the chromatic six-cycle from the
+binary RGB cube, its chosen R root and R-to-Y orientation, then derives the
+`G,R,B` toggle priority, `4:2:1` valuation, hue fibers, and section counts in
+that dependency order.
 
 The Music tab composes presentational sections in `src/components/music` through
 `src/components/MusicPanel.tsx`. `src/hooks/useMusicPanelController.ts`
@@ -197,7 +201,11 @@ management from `src/hooks/useMusicAudioSession.ts`, the command surface in
 
 The research notes in `docs/` define claim boundaries, prior-art positioning,
 implementation correspondence, and citation guidance for the algebraic color
-model and its Music-linked visualization layer.
+model and its Music-linked visualization layer. The independent calculations
+in `src/__tests__/research-note-invariants.test.ts` reconstruct the orientation
+sensitivity, automatic/manual section spaces, lifted octave relation, exact
+equitone geometry, and Tone Zigzag Fourier coefficients from the canonical
+data.
 
 ## Quality Gates
 

@@ -33,13 +33,13 @@ export const THEORY_LEVELS: readonly TheoryLevel[] = CHROMALUM_LEVEL_LABELS.map(
 
 /** 7 Fano plane lines — each [a, b, c] satisfies a XOR b XOR c = 0 */
 export const FANO_LINES: readonly (readonly [number, number, number])[] = [
-  [1, 2, 3], // B⊕R=M  (primary mixing)
-  [1, 4, 5], // B⊕G=C
-  [2, 4, 6], // R⊕G=Y
-  [1, 6, 7], // B⊕Y=W  (complementary)
-  [2, 5, 7], // R⊕C=W
-  [3, 4, 7], // M⊕G=W
-  [3, 5, 6], // M⊕C⊕Y=K  (CMY circle)
+  [1, 2, 3], // τB·τR·τRB = id  (one-bit pair closure)
+  [1, 4, 5], // τB·τG·τGB = id
+  [2, 4, 6], // τR·τG·τGR = id
+  [1, 6, 7], // τB·τGR·τGRB = id  (complement-mask closure)
+  [2, 5, 7], // τR·τGB·τGRB = id
+  [3, 4, 7], // τRB·τG·τGRB = id
+  [3, 5, 6], // τRB·τGB·τGR = id  (two-bit closure)
 ];
 
 /** Line category for display */
@@ -168,35 +168,7 @@ export function isBackEdge(a: number, b: number): boolean {
   return a === 0 || b === 0;
 }
 
-/* ── Octahedron (dual of cube) geometry ──── */
-
-const OCTA_CX = 150,
-  OCTA_CY = 150;
-const OCTA_SCALE = 100;
-
-// Normalized isometric axes (equal length) for regular octahedron
-// ISO_R has magnitude 1.2 (up axis), ISO_G and ISO_B have magnitude 1.0
-const OCTA_R = { dx: ISO_R.dx / 1.2, dy: ISO_R.dy / 1.2 }; // normalize to 1.0
-const OCTA_G = { dx: ISO_G.dx, dy: ISO_G.dy }; // already magnitude 1.0
-const OCTA_B = { dx: ISO_B.dx, dy: ISO_B.dy }; // already magnitude 1.0
-
-/**
- * 6 chromatic colors as cross-polytope vertices.
- * Axis assignment follows hue-wheel convention (Red = top, clockwise = R→Y→G→C→B→M):
- *   R(2)=up, C(5)=down  (vertical axis — OCTA_R)
- *   Y(6)=upper-right, B(1)=lower-left  (right diagonal — OCTA_B)
- *   G(4)=lower-right, M(3)=upper-left  (left diagonal — OCTA_G)
- * Complement pairs remain antipodal on each axis.
- * Uses normalized axes (equal length) so the octahedron is regular.
- */
-export const OCTA_POINTS: Readonly<Record<number, Point2D>> = {
-  2: { x: OCTA_CX + OCTA_SCALE * OCTA_R.dx, y: OCTA_CY + OCTA_SCALE * OCTA_R.dy }, // Red = top
-  5: { x: OCTA_CX - OCTA_SCALE * OCTA_R.dx, y: OCTA_CY - OCTA_SCALE * OCTA_R.dy }, // Cyan = bottom
-  4: { x: OCTA_CX + OCTA_SCALE * OCTA_G.dx, y: OCTA_CY + OCTA_SCALE * OCTA_G.dy }, // Green = lower-right
-  3: { x: OCTA_CX - OCTA_SCALE * OCTA_G.dx, y: OCTA_CY - OCTA_SCALE * OCTA_G.dy }, // Magenta = upper-left
-  1: { x: OCTA_CX + OCTA_SCALE * OCTA_B.dx, y: OCTA_CY + OCTA_SCALE * OCTA_B.dy }, // Blue = lower-left
-  6: { x: OCTA_CX - OCTA_SCALE * OCTA_B.dx, y: OCTA_CY - OCTA_SCALE * OCTA_B.dy }, // Yellow = upper-right
-};
+/* ── Octahedron relations used by the Music tab ──── */
 
 /** 3 complement axes: R↔C, G↔M, B↔Y */
 export const OCTA_COMPLEMENT_AXES: readonly (readonly [number, number])[] = [
@@ -253,7 +225,7 @@ export const TETRA_T0_EDGES: readonly (readonly [number, number])[] = [
   [5, 6],
 ];
 /** Edges of the T1 tetrahedron inscribed in the cube */
-export const TETRA_T1_EDGES: readonly (readonly [number, number])[] = [
+const TETRA_T1_EDGES: readonly (readonly [number, number])[] = [
   [1, 2],
   [1, 4],
   [1, 7],
@@ -329,41 +301,6 @@ export function vertexDepth(lv: number): number {
  *  With default scale 0.3: depth 0→0.7, 1→0.9, 2→1.1, 3→1.3 */
 export function vertexRadius(lv: number, baseR: number, scale = 0.3): number {
   return baseR * (1 + ((vertexDepth(lv) - 1.5) * scale) / 1.5);
-}
-
-/* ── Shared 3D lighting ── */
-
-const LIGHT_DIR: [number, number, number] = (() => {
-  const lx = -0.4,
-    ly = 0.7,
-    lz = 0.6;
-  const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
-  return [lx / len, ly / len, lz / len];
-})();
-
-const CUBE_CENTER: [number, number, number] = [0.5, 0.5, 0.5];
-
-/** Compute diffuse lighting for a triangular face given its 3 vertex indices.
- *  Returns 0..1 where higher = brighter (facing the light). */
-export function faceDiffuse(a: number, b: number, c: number): number {
-  const p0 = STELLA_3D[a],
-    p1 = STELLA_3D[b],
-    p2 = STELLA_3D[c];
-  const e1: [number, number, number] = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
-  const e2: [number, number, number] = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
-  const nx = e1[1] * e2[2] - e1[2] * e2[1];
-  const ny = e1[2] * e2[0] - e1[0] * e2[2];
-  const nz = e1[0] * e2[1] - e1[1] * e2[0];
-  const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-  const cx = (p0[0] + p1[0] + p2[0]) / 3 - CUBE_CENTER[0];
-  const cy = (p0[1] + p1[1] + p2[1]) / 3 - CUBE_CENTER[1];
-  const cz = (p0[2] + p1[2] + p2[2]) / 3 - CUBE_CENTER[2];
-  const outSign = nx * cx + ny * cy + nz * cz > 0 ? 1 : -1;
-  const nnx = (outSign * nx) / nLen;
-  const nny = (outSign * ny) / nLen;
-  const nnz = (outSign * nz) / nLen;
-  const dot = nnx * LIGHT_DIR[0] + nny * LIGHT_DIR[1] + nnz * LIGHT_DIR[2];
-  return 0.15 + 0.85 * Math.max(0, dot);
 }
 
 const CH_NAMES = ["B", "R", "G"] as const;

@@ -293,11 +293,13 @@ describe("MusicPanel section components", () => {
     expect(props.onAlphaChange).toHaveBeenCalled();
   });
 
-  it("routes candidate grid click and keyboard activation", () => {
+  it("uses native candidate buttons and routes activation", () => {
     const props = makeCandidateGridProps();
     renderWithLanguage(<MusicLevelCandidateGrid {...props} />);
 
     const candidates = screen.getAllByRole("button", { name: /Level 2 color candidate/ });
+    expect(candidates.every((candidate) => candidate.tagName === "BUTTON")).toBe(true);
+    expect(candidates.every((candidate) => candidate.getAttribute("type") === "button")).toBe(true);
     fireEvent.click(candidates[0]);
     expect(props.onCandidateOverridesByLevelChange).toHaveBeenCalled();
     const candidateUpdate = vi.mocked(props.onCandidateOverridesByLevelChange).mock.calls[0][0];
@@ -309,8 +311,23 @@ describe("MusicPanel section components", () => {
     expect(props.onHoveredCandidateChange).toHaveBeenCalledWith(null);
     expect(props.onBlockClick).toHaveBeenCalledWith(2, expect.any(Number));
 
-    fireEvent.keyDown(candidates[0], { key: "Enter" });
+    fireEvent.click(candidates[0]);
     expect(props.onBlockClick).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps candidate scrolling native and provides larger direct targets", () => {
+    const props = makeCandidateGridProps();
+    renderWithLanguage(<MusicLevelCandidateGrid {...props} />);
+
+    const candidates = screen.getAllByRole("button", { name: /Level 2 color candidate/ });
+    const column = candidates[0].parentElement!;
+    const mainCandidate = candidates.find((candidate) => candidate.getAttribute("aria-pressed") !== null)!;
+
+    expect(candidates[0].style.width).toBe("23px");
+    expect(mainCandidate.style.width).toBe("30px");
+    expect(column.style.touchAction).toBe("");
+    fireEvent.wheel(column, { deltaY: 100 });
+    expect(props.onCandidateOverridesByLevelChange).not.toHaveBeenCalled();
   });
 
   it("marks selected candidate grid levels as pressed", () => {
@@ -325,6 +342,15 @@ describe("MusicPanel section components", () => {
     renderWithLanguage(<MusicTransportControls {...props} />);
 
     expect(screen.getByRole("radiogroup", { name: "Pitch mapping" })).toBeTruthy();
+    expect(screen.queryByText("Derived mapping")).toBeNull();
+    expect(screen.queryByText("Comparative mappings")).toBeNull();
+    expect(screen.queryByText("Expressive sonification")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Hue Lift/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Even" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Tone" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "FM" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "Auto-rotate hue backward" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("false");
 
     fireEvent.click(screen.getByRole("radio", { name: "Whole-tone" }));
     expect(props.onPitchMappingModeChange).toHaveBeenCalledWith("wholeTone");
@@ -353,7 +379,7 @@ describe("MusicPanel section components", () => {
     fireEvent.change(screen.getByLabelText("Hue phase speed"), { target: { value: "54" } });
     expect(props.onAlphaSpeedChange).toHaveBeenCalledWith(54);
 
-    fireEvent.change(screen.getByLabelText("Phase drift"), { target: { value: "12" } });
+    fireEvent.change(screen.getByLabelText("Pair alignment drift"), { target: { value: "12" } });
     expect(props.onPhaseSpeedChange).toHaveBeenCalledWith(12);
 
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
@@ -361,6 +387,18 @@ describe("MusicPanel section components", () => {
 
     fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
     expect(props.onVolumeChange).toHaveBeenCalledWith(0.25);
+  });
+
+  it("exposes active transport toggles to assistive technology", () => {
+    const props = makeTransportProps({ toneMode: "grbTone", fmEnabled: true, hueDir: -1, alphaDir: 1, muted: true });
+    renderWithLanguage(<MusicTransportControls {...props} />);
+
+    expect(screen.getByRole("button", { name: "Even" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "Tone" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "FM" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Auto-rotate hue backward" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Auto-rotate hue phase forward" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("uses fixed-height buttons for rotation and volume controls", () => {
@@ -491,7 +529,14 @@ describe("MusicPanel section components", () => {
     const { container } = renderWithLanguage(<ZigzagGraph currentStep={null} />);
 
     const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
-    expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "+4", "-2", "+1", "-4", "+2"]));
+    const points = Array.from(container.querySelectorAll('circle[data-zigzag-point="vertices"]'));
+    expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "+4", "-2", "+1", "-4", "+2", "-1"]));
+    expect(points).toHaveLength(7);
+    expect(points.map((point) => point.getAttribute("data-angle-deg"))).toEqual(["0", "60", "120", "180", "240", "300", "360"]);
+    expect(points[0].getAttribute("fill")).toBe("#ff0000");
+    expect(points[6].getAttribute("fill")).toBe("#ff0000");
+    expect(points[0].getAttribute("cx")).toBe("24");
+    expect(points[6].getAttribute("cx")).toBe("172");
     for (const staleLabel of ["0", "255", "+146", "-73", "+36", "-146", "+73"]) {
       expect(labels).not.toContain(staleLabel);
     }
@@ -501,10 +546,13 @@ describe("MusicPanel section components", () => {
     const { container } = renderWithLanguage(<ZigzagGraph currentStep={14} mode="crossings" />);
 
     const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
-    const circles = Array.from(container.querySelectorAll("circle"));
+    const circles = Array.from(container.querySelectorAll('circle[data-zigzag-point="crossings"]'));
     const lines = Array.from(container.querySelectorAll("line"));
-    expect(circles).toHaveLength(14);
-    expect(circles.some((circle) => circle.getAttribute("cx") === "172")).toBe(false);
+    const terminalCircle = circles[circles.length - 1];
+    expect(circles).toHaveLength(15);
+    expect(terminalCircle.getAttribute("data-angle-deg")).toBe("360");
+    expect(terminalCircle.getAttribute("cx")).toBe("172");
+    expect(terminalCircle.getAttribute("r")).toBe("5.5");
     expect(
       lines.some((line) => line.getAttribute("stroke") === "url(#zg-crossing-terminal-grad)" && line.getAttribute("x2") === "172"),
     ).toBe(true);

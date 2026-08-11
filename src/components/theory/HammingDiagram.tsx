@@ -364,6 +364,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
                   </tspan>
                 );
               })}
+              {errorPosition !== null ? t("theory_hamming_syndrome_position", THEORY_LEVELS[syndrome].short, syndrome) : ""}
               {correctedPosition !== null ? " \u2192 corrected" : ""}
             </text>
           </g>

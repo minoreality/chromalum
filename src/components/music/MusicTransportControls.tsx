@@ -119,6 +119,7 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
         <span style={{ width: SP.sm }} />
         <button
           type="button"
+          aria-pressed={toneMode === "symmetric"}
           style={toneMode === "symmetric" ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
           onClick={() => onToneModeChange("symmetric")}
         >
@@ -126,13 +127,19 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
         </button>
         <button
           type="button"
+          aria-pressed={toneMode === "grbTone"}
           style={toneMode === "grbTone" ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
           onClick={() => onToneModeChange("grbTone")}
         >
           {t("music_tone_grb")}
         </button>
         <span style={{ width: SP.sm }} />
-        <button type="button" style={fmEnabled ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN} onClick={() => onFmEnabledChange(!fmEnabled)}>
+        <button
+          type="button"
+          aria-pressed={fmEnabled}
+          style={fmEnabled ? S_MUSIC_MODE_BTN_ACTIVE : S_MUSIC_MODE_BTN}
+          onClick={() => onFmEnabledChange(!fmEnabled)}
+        >
           {t("music_fm_on")}
         </button>
       </div>
@@ -140,6 +147,7 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
       <div style={{ display: "flex", gap: SP.sm, alignItems: "center" }}>
         <button
           type="button"
+          aria-pressed={hueDir === -1}
           style={hueDir === -1 ? S_TRANSPORT_BTN_ACTIVE : S_TRANSPORT_BTN}
           onClick={onHueReverse}
           aria-label={t("linkedviz_hue_reverse")}
@@ -149,6 +157,7 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
         </button>
         <button
           type="button"
+          aria-pressed={hueDir === 1}
           style={hueDir === 1 ? S_TRANSPORT_BTN_ACTIVE : S_TRANSPORT_BTN}
           onClick={onHuePlay}
           aria-label={t("linkedviz_hue_play")}
@@ -171,6 +180,7 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
       <div style={{ display: "flex", gap: SP.sm, alignItems: "center" }}>
         <button
           type="button"
+          aria-pressed={alphaDir === -1}
           style={alphaDir === -1 ? S_TRANSPORT_BTN_ACTIVE : S_TRANSPORT_BTN}
           onClick={onAlphaReverse}
           aria-label={t("linkedviz_alpha_reverse")}
@@ -180,6 +190,7 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
         </button>
         <button
           type="button"
+          aria-pressed={alphaDir === 1}
           style={alphaDir === 1 ? S_TRANSPORT_BTN_ACTIVE : S_TRANSPORT_BTN}
           onClick={onAlphaPlay}
           aria-label={t("linkedviz_alpha_play")}
@@ -216,9 +227,10 @@ export const MusicTransportControls = React.memo(function MusicTransportControls
       <div style={{ display: "flex", gap: SP.sm, alignItems: "center", justifyContent: "center" }}>
         <button
           type="button"
+          aria-pressed={muted}
           onClick={onMuteToggle}
           style={muted ? S_TRANSPORT_BTN_ACTIVE : S_TRANSPORT_BTN}
-          aria-label={muted ? t("music_unmute") : t("music_mute")}
+          aria-label={t("music_mute")}
           title={muted ? t("music_unmute") : t("music_mute")}
         >
           {muted ? "\uD83D\uDD07" : "\uD83D\uDD0A"}

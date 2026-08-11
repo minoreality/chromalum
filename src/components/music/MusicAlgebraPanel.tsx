@@ -228,6 +228,14 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
         {t("music_section_algebra")}
       </div>
       <div id="music-algebra-panel" role="region" aria-label={t("music_section_algebra")} className="music-algebra-scroll">
+        <div style={S_CARD_TONE}>
+          <ComplementPairsCard engine={engine} stopSignal={stopSignal} />
+        </div>
+
+        <div style={S_CARD_TONE}>
+          <ZigzagCard engine={engine} stopSignal={stopSignal} />
+        </div>
+
         <div style={S_CARD_ALGEBRA}>
           <div style={S_ROW}>
             <span style={S_LABEL}>{t("music_cayley_title")}</span>
@@ -499,14 +507,6 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
 
         <div style={S_CARD_CUBE}>
           <K8Explorer engine={engine} activeLevels={activeLevels} stopSignal={stopSignal} resetSignal={resetSignal} />
-        </div>
-
-        <div style={S_CARD_TONE}>
-          <ComplementPairsCard engine={engine} stopSignal={stopSignal} />
-        </div>
-
-        <div style={S_CARD_TONE}>
-          <ZigzagCard engine={engine} stopSignal={stopSignal} />
         </div>
 
         <div style={S_CARD_SYM}>

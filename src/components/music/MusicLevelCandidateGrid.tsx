@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { LEVEL_CANDIDATES } from "../../color-engine";
 import { useTranslation } from "../../i18n";
 import { resolveMusicCandidateIndices, withMusicComplementCandidate } from "../../music/music-candidate-pairs";
@@ -39,16 +39,12 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
   onBlockClick,
 }: MusicLevelCandidateColumnProps) {
   const { t } = useTranslation();
-  const swipeStartRef = useRef({ current: 0, startX: 0 });
   const cands = LEVEL_CANDIDATES[level.levelIndex];
   const hasCands = cands.length > 1;
   const isDirect = candidateOverridesByLevel.has(level.levelIndex);
   const currentCandidateIndex = resolveMusicCandidateIndices(candidateOverridesByLevel, hueAngleDeg).get(level.levelIndex) ?? 0;
-  const autoCandidateIndex = currentCandidateIndex;
   const previousCandidateIndex = hasCands ? (currentCandidateIndex - 1 + cands.length) % cands.length : -1;
   const nextCandidateIndex = hasCands ? (currentCandidateIndex + 1) % cands.length : -1;
-  const isTouchDevice = typeof window !== "undefined" && "ontouchstart" in window;
-
   const selectCandidate = (candidateIndex: number, clearSelected: boolean) => {
     onCandidateOverridesByLevelChange((prev) => {
       return withMusicComplementCandidate(prev, level.levelIndex, candidateIndex);
@@ -73,24 +69,25 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
       onBlockClick(level.levelIndex, cand.hueAngleDeg);
     };
     return (
-      <div
+      <button
         key={candidateIndex}
-        role="button"
-        tabIndex={0}
+        type="button"
         aria-label={t("aria_color_candidate", level.levelIndex, candHex, `${Math.round(cand.hueAngleDeg)}°`)}
         onClick={swatchClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            swatchClick();
-          }
+        onPointerEnter={(event) => {
+          if (event.pointerType !== "touch") onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex });
         }}
-        onPointerEnter={isTouchDevice ? undefined : () => onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex })}
-        onPointerLeave={isTouchDevice ? undefined : () => onHoveredCandidateChange(null)}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "touch") onHoveredCandidateChange(null);
+        }}
         title={`${candHex} ${Math.round(cand.hueAngleDeg)}\u00B0`}
         style={{
           width: size,
           height: size,
+          padding: 0,
+          appearance: "none",
+          display: "block",
+          flexShrink: 0,
           borderRadius: R.md,
           cursor: "pointer",
           background: `rgb(${cand.rgb.join(",")})`,
@@ -102,37 +99,6 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
       />
     );
   };
-
-  const cycleCand = (dir: number) => {
-    const cur = candidateOverridesByLevel.has(level.levelIndex) ? candidateOverridesByLevel.get(level.levelIndex)! : autoCandidateIndex;
-    const newIdx = (((cur + dir) % cands.length) + cands.length) % cands.length;
-    onCandidateOverridesByLevelChange((prev) => {
-      return withMusicComplementCandidate(prev, level.levelIndex, newIdx);
-    });
-    onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex: newIdx });
-  };
-
-  const handleWheel = hasCands
-    ? (e: React.WheelEvent) => {
-        e.preventDefault();
-        cycleCand(e.deltaY > 0 ? 1 : -1);
-      }
-    : undefined;
-
-  const handleTouchStart = hasCands
-    ? (e: React.TouchEvent) => {
-        swipeStartRef.current.current = e.touches[0].clientY;
-        swipeStartRef.current.startX = e.touches[0].clientX;
-      }
-    : undefined;
-
-  const handleTouchEnd = hasCands
-    ? (e: React.TouchEvent) => {
-        const dy = e.changedTouches[0].clientY - swipeStartRef.current.current;
-        const dx = e.changedTouches[0].clientX - swipeStartRef.current.startX;
-        if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) cycleCand(dy > 0 ? 1 : -1);
-      }
-    : undefined;
 
   const mainCandidateIndex = currentCandidateIndex;
   const mainCand = cands[mainCandidateIndex];
@@ -155,43 +121,35 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
 
   return (
     <div
-      onWheel={handleWheel}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
       style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         gap: 2,
-        cursor: hasCands ? "pointer" : "default",
-        touchAction: hasCands ? "none" : "auto",
       }}
     >
-      {hasCands ? makeSwatch(previousCandidateIndex, 20) : <div style={{ height: 20 }} />}
-      <div
-        role="button"
-        tabIndex={0}
+      {hasCands ? makeSwatch(previousCandidateIndex, 23) : <div style={{ height: 23 }} />}
+      <button
+        type="button"
         aria-label={mainCand ? t("aria_color_candidate", level.levelIndex, mainHex, `${Math.round(mainCand.hueAngleDeg)}°`) : undefined}
         aria-pressed={isSelected}
         onClick={mainClick}
-        onKeyDown={
-          isTouchDevice
-            ? undefined
-            : (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  mainClick();
-                }
-              }
-        }
-        onPointerEnter={
-          isTouchDevice ? undefined : () => onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex: mainCandidateIndex })
-        }
-        onPointerLeave={isTouchDevice ? undefined : () => onHoveredCandidateChange(null)}
+        onPointerEnter={(event) => {
+          if (event.pointerType !== "touch") {
+            onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex: mainCandidateIndex });
+          }
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "touch") onHoveredCandidateChange(null);
+        }}
         title={mainCand ? `${mainHex} ${Math.round(mainCand.hueAngleDeg)}\u00B0` : undefined}
         style={{
-          width: 28,
-          height: 28,
+          width: 30,
+          height: 30,
+          padding: 0,
+          appearance: "none",
+          display: "block",
+          flexShrink: 0,
           borderRadius: R.md,
           background: isDirect ? `rgb(${cands[currentCandidateIndex]?.rgb.join(",")})` : level.hex,
           border: `2px solid ${isBurst ? "#ffffff" : isMainHovered || isSelected ? C.accent : C.border}`,
@@ -201,7 +159,7 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
           transition: isBurst ? "none" : "background 0.4s, box-shadow 0.5s, border-color 0.5s",
         }}
       />
-      {hasCands ? makeSwatch(nextCandidateIndex, 20) : <div style={{ height: 20 }} />}
+      {hasCands ? makeSwatch(nextCandidateIndex, 23) : <div style={{ height: 23 }} />}
     </div>
   );
 });
@@ -213,7 +171,7 @@ export const MusicLevelCandidateGrid = React.memo(function MusicLevelCandidateGr
   return (
     <div
       className="music-candidate-grid"
-      style={{ display: "flex", gap: SP.sm, justifyContent: "center", alignItems: "center", marginTop: SP.lg }}
+      style={{ display: "flex", gap: 2, justifyContent: "center", alignItems: "center", marginTop: SP.lg }}
     >
       {levelPreview.map((level) => (
         <MusicLevelCandidateColumn key={level.levelIndex} {...columnProps} level={level} />

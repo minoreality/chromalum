@@ -13,6 +13,30 @@ type MusicTransportState = ReturnType<typeof useMusicTransportState>;
 type MusicBurstHighlightState = ReturnType<typeof useMusicBurstHighlightState>;
 type MusicSonificationLevel = { levelIndex: number; hueAngleDeg: number };
 
+const MUSIC_SHORTCUT_CONTROL_SELECTOR = [
+  "input",
+  "select",
+  "textarea",
+  "button",
+  "a[href]",
+  "summary",
+  '[role="button"]',
+  '[role="checkbox"]',
+  '[role="combobox"]',
+  '[role="radio"]',
+  '[role="slider"]',
+  '[role="spinbutton"]',
+  '[role="switch"]',
+  '[role="textbox"]',
+].join(",");
+
+function isMusicShortcutControl(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest(MUSIC_SHORTCUT_CONTROL_SELECTOR)) return true;
+  const editable = target.closest("[contenteditable]");
+  return editable !== null && editable.getAttribute("contenteditable")?.toLowerCase() !== "false";
+}
+
 function useMusicKeyboardShortcuts(
   sonificationLevels: MusicSonificationLevel[],
   onLevelTrigger: (levelIndex: number, hueAngleDeg: number) => void,
@@ -24,7 +48,7 @@ function useMusicKeyboardShortcuts(
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || isMusicShortcutControl(e.target)) return;
       const k = e.key;
       if (k >= "1" && k <= "6") {
         const levelIndex = +k;
