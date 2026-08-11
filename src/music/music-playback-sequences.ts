@@ -1,5 +1,6 @@
 import { FANO_LINES } from "../data/theory-data";
 import { COMPLEMENT_PAIRS, TONE_CROSSING_SEQUENCE, ZIGZAG_PATH } from "../data/music-data";
+import { CHROMALUM_MIN_HUE_STEP_DEG } from "../chromalum-color-model";
 import { ALL_POINTS, AND_TRIADS, K8_LAYER_EDGES, extendedHammingCodewords, linesThrough } from "./music-engine-core";
 
 interface Codeword {
@@ -144,7 +145,7 @@ function toneCrossingDelayMs(index: number): number {
   const current = TONE_CROSSING_SEQUENCE[index];
   const next = TONE_CROSSING_SEQUENCE[index + 1];
   if (!current || !next) return TONE_CROSSING_BASE_INTERVAL_MS;
-  return ((next.angleDeg - current.angleDeg) / 15) * TONE_CROSSING_BASE_INTERVAL_MS;
+  return ((next.angleDeg - current.angleDeg) / CHROMALUM_MIN_HUE_STEP_DEG) * TONE_CROSSING_BASE_INTERVAL_MS;
 }
 
 export function toneCrossingStep(step: number): {

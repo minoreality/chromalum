@@ -23,7 +23,7 @@ structures.
 
 | Theory tab                                                  | Music tab                                                 |
 | ----------------------------------------------------------- | --------------------------------------------------------- |
-| ![CHROMALUM theory tab](./docs/assets/chromalum-theory.png) | ![CHROMALUM music tab](./docs/assets/chromalum-music.png) |
+| ![CHROMALUM Theory tab](./docs/assets/chromalum-theory.png) | ![CHROMALUM Music tab](./docs/assets/chromalum-music.png) |
 
 ## Features
 
@@ -34,8 +34,9 @@ structures.
   source tone structure.
 - Gallery generation for color-pattern variants, bookmarks, previews, and
   PNG exports.
-- Map analysis views for composition, tone, color tone, connected regions,
-  gradients, boundary distance, isolation, and local diversity.
+- Map analysis views for composition, model tone, displayed GRB code-value
+  score, connected regions, gradients, boundary distance, isolation, and local
+  diversity.
 - Theory tab explaining the color system through binary levels, XOR, cube
   geometry, the Fano plane, Hamming codes, tetrahedra, octahedra, and compound
   polyhedra.
@@ -51,6 +52,13 @@ chromatic variants for those levels. This lets the app treat drawing, gallery
 generation, analysis, mathematical diagrams, and sonification as different views
 of the same discrete color structure instead of separate feature islands.
 
+The algebraic layer and palette layer are related but distinct. XOR, Fano,
+Hamming, and K8 operate on the eight binary level labels. Chromatic variants are
+representatives from the RGB cube's maximum-saturation hue loop (the pure-hue
+loop, defined by maximum channel 1 and minimum channel 0) that project to those
+labels by equal GRB tone; their continuous coordinates are not themselves
+`GF(2)^3` vectors.
+
 The implementation favors browser-native primitives and explicit data
 structures over heavy runtime dependencies. Canvas buffers use typed arrays,
 large pixel operations can run in Web Workers with synchronous fallbacks,
@@ -59,6 +67,8 @@ undo/redo stores compact diffs, and autosave uses IndexedDB.
 ## Technical Highlights
 
 - **Canvas rendering:** direct pixel-buffer rendering with dirty-rect updates.
+- **Image input:** a documented lossy sRGB code-value estimator, kept separate
+  from the canonical-coordinate output adapter.
 - **Performance:** typed arrays, reusable buffers, scanline flood fill, and
   worker-backed flood fill and pixel analysis.
 - **Undo/redo:** compressed diffs with optional glaze override deltas.
@@ -70,6 +80,9 @@ undo/redo stores compact diffs, and autosave uses IndexedDB.
   and local visual-regression checks covering canvas pixels, save flows, gallery
   previews, glaze clearing, Theory rendering, offline behavior, mobile touch
   input, and stable layouts.
+- **Documentation snapshots:** the README Theory and Music images reuse the
+  tracked Playwright baselines so published formulas and controls cannot drift
+  from the visual-regression source of truth.
 - **Quality gates:** TypeScript strict mode, ESLint, Prettier, Knip dead-code
   detection, coverage thresholds, CodeQL, Dependabot, pinned GitHub Actions, and
   GitHub Pages deployment.

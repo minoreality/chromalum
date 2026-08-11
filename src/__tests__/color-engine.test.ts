@@ -5,10 +5,7 @@ import {
   GRB_TONE_R,
   levelTone8,
   levelToneNorm,
-  rgbGrbTone8,
-  rgbGrbToneNorm,
   hue2rgb,
-  GRAY_LUT,
   LEVEL_INFO,
   LEVEL_CANDIDATES,
   buildColorLUT,
@@ -16,6 +13,7 @@ import {
   DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
   findClosestCandidate,
 } from "../color-engine";
+import { srgbCodeGrbScore8 } from "../srgb-level-estimator";
 
 describe("GRB Binary Tone helpers", () => {
   it("uses 4:2:1 normalized GRB weights", () => {
@@ -27,14 +25,6 @@ describe("GRB Binary Tone helpers", () => {
   it("maps levels to normalized tone and derived 8-bit tone", () => {
     expect(Array.from({ length: 8 }, (_, level) => levelToneNorm(level))).toEqual([0, 1 / 7, 2 / 7, 3 / 7, 4 / 7, 5 / 7, 6 / 7, 1]);
     expect(Array.from({ length: 8 }, (_, level) => levelTone8(level))).toEqual([0, 36, 73, 109, 146, 182, 219, 255]);
-  });
-
-  it("maps RGB byte channels to GRB tone", () => {
-    expect(rgbGrbToneNorm(0, 0, 0)).toBe(0);
-    expect(rgbGrbToneNorm(255, 255, 255)).toBe(1);
-    expect(rgbGrbTone8(255, 0, 0)).toBe(73);
-    expect(rgbGrbTone8(0, 255, 0)).toBe(146);
-    expect(rgbGrbTone8(0, 0, 255)).toBe(36);
   });
 });
 
@@ -60,33 +50,6 @@ describe("device RGB output adapter", () => {
     const c = hue2rgb(420);
     const d = hue2rgb(60);
     expect(c).toEqual(d);
-  });
-});
-
-describe("GRAY_LUT", () => {
-  it("has 256 entries", () => {
-    expect(GRAY_LUT.length).toBe(256);
-  });
-
-  it("maps 0 to level 0", () => {
-    expect(GRAY_LUT[0]).toBe(0);
-  });
-
-  it("maps 255 to level 7", () => {
-    expect(GRAY_LUT[255]).toBe(7);
-  });
-
-  it("all values are 0-7", () => {
-    for (let i = 0; i < 256; i++) {
-      expect(GRAY_LUT[i]).toBeGreaterThanOrEqual(0);
-      expect(GRAY_LUT[i]).toBeLessThanOrEqual(7);
-    }
-  });
-
-  it("is monotonically non-decreasing", () => {
-    for (let i = 1; i < 256; i++) {
-      expect(GRAY_LUT[i]).toBeGreaterThanOrEqual(GRAY_LUT[i - 1]);
-    }
   });
 });
 
@@ -121,7 +84,7 @@ describe("LEVEL_CANDIDATES", () => {
     });
   });
 
-  it("has the expected pure-color candidate counts per tone level", () => {
+  it("has the expected pure-hue-loop candidate counts per tone level", () => {
     expect(LEVEL_CANDIDATES.map((alts) => alts.length)).toEqual([1, 1, 3, 3, 3, 3, 1, 1]);
   });
 
@@ -179,16 +142,16 @@ describe("LEVEL_CANDIDATES", () => {
     expect(chromalumGrbToRgb8([3, 4, 0])).toEqual([255, 191, 0]);
   });
 
-  it("intermediate levels have pure color candidates", () => {
+  it("intermediate levels have pure-hue-loop candidates", () => {
     for (let lv = 1; lv <= 6; lv++) {
       LEVEL_CANDIDATES[lv].forEach((c) => {
-        // Each candidate should have max=255 and min=0 (pure color)
+        // Each candidate lies on the pure-hue loop: max=255 and min=0.
         expect(Math.max(...c.rgb)).toBe(255);
         expect(Math.min(...c.rgb)).toBe(0);
         expect(c.rgb).toEqual(chromalumGrbToRgb8(c.chromalumGrb));
         // Device RGB is only an output projection; its re-measured byte tone
         // may land one code point away and must not redefine the model level.
-        expect(Math.abs(rgbGrbTone8(...c.rgb) - levelTone8(lv))).toBeLessThanOrEqual(1);
+        expect(Math.abs(srgbCodeGrbScore8(...c.rgb) - levelTone8(lv))).toBeLessThanOrEqual(1);
       });
     }
   });

@@ -1,4 +1,14 @@
-import { angleToFreq, freqToNote, type ScaleMode } from "../../data/music-frequency";
+import {
+  MAJOR_SEMITONES,
+  OCTATONIC_SEMITONES,
+  WHOLE_TONE_SEMITONES,
+  angleToFreq,
+  freqToNote,
+  semitoneToFreq,
+  type PitchMappingMode,
+} from "../../data/music-frequency";
+import { useTranslation } from "../../i18n";
+import type { TranslationFn } from "../../i18n/types";
 import { liveHueAngleDeg } from "../../music/music-phase";
 import { C } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
@@ -21,7 +31,7 @@ interface RatioEntry {
 }
 
 interface IntervalRatiosProps extends LinkedVisualizationOverlayContext {
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
 }
 
 const TITLE_FONT_SIZE = 15;
@@ -33,10 +43,6 @@ const SCALE_MEMBER_SQ = 12;
 const MEMBER_GAP = 2;
 const SCALE_MEMBER_GAP = 1.5;
 const SCALE_MEMBER_LABEL_OPACITY = 0.85;
-const JI_RATIOS = [1, 8 / 7, 7 / 5, 8 / 5, 2] as const;
-const JI_RATIO_LABELS = ["1:1", "8:7", "7:5", "8:5", "2:1"] as const;
-const JI_ANGLES = [0, 72, 144, 216, 288] as const;
-
 function memberTextColor(levelIndex: number): string {
   return levelIndex >= 4 ? "#000" : "#fff";
 }
@@ -44,41 +50,13 @@ function memberTextColor(levelIndex: number): string {
 function buildRatioRows(
   activeDots: LinkedVisualizationDot[],
   activeAlpha: number,
-  scaleMode: ScaleMode,
+  pitchMappingMode: PitchMappingMode,
+  t: TranslationFn,
 ): { title: string; rows: RatioEntry[] } {
   const rows: RatioEntry[] = [];
-  const levelFreq = (d: LinkedVisualizationDot) => angleToFreq(liveHueAngleDeg(d.angleDeg, activeAlpha), scaleMode);
+  const levelFreq = (d: LinkedVisualizationDot) => angleToFreq(liveHueAngleDeg(d.angleDeg, activeAlpha), pitchMappingMode);
 
-  if (scaleMode === "ji") {
-    const chromatic = activeDots.filter((d) => d.levelIndex !== 0 && d.levelIndex !== 7).sort((a, b) => a.levelIndex - b.levelIndex);
-    for (const d of chromatic) {
-      const live = liveHueAngleDeg(d.angleDeg, activeAlpha);
-      let snapIdx = 0;
-      let minDist = 360;
-      for (let j = 0; j < JI_ANGLES.length; j++) {
-        const di = Math.min(Math.abs(live - JI_ANGLES[j]), 360 - Math.abs(live - JI_ANGLES[j]));
-        if (di < minDist) {
-          minDist = di;
-          snapIdx = j;
-        }
-      }
-      const hz = 220 * JI_RATIOS[snapIdx];
-      rows.push({
-        label: `L${d.levelIndex}`,
-        value: `\u00b7 ${JI_RATIO_LABELS[snapIdx]} ${Math.round(hz)}Hz`,
-        color: `rgb(${d.rgb.join(",")})`,
-        levelIndex: d.levelIndex,
-        candidateIndex: d.candidateIndex,
-      });
-    }
-    rows.push({ label: "", value: "" });
-    rows.push({ label: "\u2190", value: "palindrome \u2192", dim: true });
-    rows.push({ label: "", value: "8:7 \u00b7 7:5 \u00b7 8:5 \u00b7 2:1", dim: true });
-    rows.push({ label: "", value: "2:1 \u00b7 8:5 \u00b7 7:5 \u00b7 8:7", dim: true });
-    return { title: "Palindromic JI", rows };
-  }
-
-  if (scaleMode === "12tet") {
+  if (pitchMappingMode === "chromalum") {
     const sorted = [...activeDots].sort((a, b) => a.levelIndex - b.levelIndex);
     for (const d of sorted) {
       const f = levelFreq(d);
@@ -91,31 +69,39 @@ function buildRatioRows(
         candidateIndex: d.candidateIndex,
       });
     }
-    return { title: "12-TET Hue", rows };
+    return { title: t("music_pitch_legend_chromalum"), rows };
   }
 
-  const isOcta = scaleMode === "octatonic";
-  const steps = isOcta ? [0, 1, 3, 4, 6, 7, 9, 10] : [0, 2, 4, 5, 7, 9, 11];
+  const steps =
+    pitchMappingMode === "octatonic" ? OCTATONIC_SEMITONES : pitchMappingMode === "wholeTone" ? WHOLE_TONE_SEMITONES : MAJOR_SEMITONES;
   const n = steps.length;
-  const perDegree: RatioMember[][] = steps.map(() => []);
+  // Keep the upper tonic separate from the lower tonic: the pitch mapping
+  // deliberately holds C5 immediately before the 360° hue seam.
+  const perDegree: RatioMember[][] = Array.from({ length: n + 1 }, () => []);
   for (const d of activeDots) {
     if (d.levelIndex === 0 || d.levelIndex === 7) continue;
     const norm = liveHueAngleDeg(d.angleDeg, activeAlpha);
-    const idx = Math.round((norm / 360) * n) % n;
+    const idx = Math.round((norm / 360) * n);
     perDegree[idx].push({ levelIndex: d.levelIndex, rgb: d.rgb, candidateIndex: d.candidateIndex });
   }
-  for (let i = 0; i < n; i++) {
-    const hz = 261.63 * Math.pow(2, steps[i] / 12);
+  for (let i = 0; i <= n; i++) {
+    const semitone = i === n ? 12 : steps[i];
+    const hz = semitoneToFreq(semitone);
     const note = freqToNote(hz);
-    const next = steps[(i + 1) % n];
-    const diff = (next - steps[i] + 12) % 12;
+    const next = i < n ? (i === n - 1 ? 12 : steps[i + 1]) : null;
     rows.push({
       label: note,
-      value: `${Math.round(hz)}Hz +${diff}st`,
+      value: next == null ? `${Math.round(hz)}Hz` : `${Math.round(hz)}Hz ${t("music_pitch_step", next - semitone)}`,
       members: perDegree[i].length > 0 ? perDegree[i] : undefined,
     });
   }
-  return { title: isOcta ? "Octatonic C" : "Diatonic C", rows };
+  const titleKey =
+    pitchMappingMode === "octatonic"
+      ? "music_pitch_legend_octatonic"
+      : pitchMappingMode === "wholeTone"
+        ? "music_pitch_legend_whole_tone"
+        : "music_pitch_legend_major";
+  return { title: t(titleKey), rows };
 }
 
 export function IntervalRatios({
@@ -127,13 +113,15 @@ export function IntervalRatios({
   y,
   rowHeight,
   width,
-  scaleMode,
+  pitchMappingMode,
 }: IntervalRatiosProps) {
-  const { title, rows } = buildRatioRows(activeDots, activeAlpha, scaleMode);
+  const { t } = useTranslation();
+  const { title, rows } = buildRatioRows(activeDots, activeAlpha, pitchMappingMode, t);
   const swatchSize = ROW_FONT_SIZE - 2;
-  const isScaleLegend = scaleMode === "diatonic7" || scaleMode === "octatonic";
+  const isScaleLegend = pitchMappingMode === "major" || pitchMappingMode === "octatonic" || pitchMappingMode === "wholeTone";
   const memberSq = isScaleLegend ? SCALE_MEMBER_SQ : MEMBER_SQ;
   const memberGap = isScaleLegend ? SCALE_MEMBER_GAP : MEMBER_GAP;
+  const legendRowHeight = isScaleLegend ? 18 : rowHeight;
 
   return (
     <g>
@@ -146,7 +134,7 @@ export function IntervalRatios({
         const textFill = r.dim ? C.textDimmer : isHovered ? "#fff" : C.textDim;
         const textX = r.color ? x + swatchSize + 4 : x;
         const labelW = isScaleLegend && !r.color ? SCALE_LABEL_W : LABEL_W;
-        const rowY = y + (i + 1) * rowHeight;
+        const rowY = y + (i + 1) * legendRowHeight;
         return (
           <g
             key={i}
@@ -159,7 +147,9 @@ export function IntervalRatios({
             }
             onPointerLeave={r.levelIndex != null ? () => setHoveredDot(null) : undefined}
           >
-            {r.levelIndex != null && <rect x={x - 2} y={rowY - ROW_FONT_SIZE} width={width - x} height={rowHeight} fill="transparent" />}
+            {r.levelIndex != null && (
+              <rect x={x - 2} y={rowY - ROW_FONT_SIZE} width={width - x} height={legendRowHeight} fill="transparent" />
+            )}
             {r.color && <rect x={x} y={rowY - swatchSize} width={swatchSize} height={swatchSize} rx={2} fill={r.color} />}
             <text
               x={textX}

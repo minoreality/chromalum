@@ -2,6 +2,15 @@
    THEORY TAB — SHARED DATA & GEOMETRY
    ═══════════════════════════════════════════ */
 
+import {
+  CANONICAL_CHROMATIC_LEVEL_CYCLE,
+  CHROMALUM_HUE_TOGGLE_CYCLE,
+  CHROMALUM_LEVEL_BITS,
+  CHROMALUM_LEVEL_HEX,
+  CHROMALUM_LEVEL_LABELS,
+  CHROMALUM_LEVEL_NAMES,
+} from "../chromalum-color-model";
+
 interface TheoryLevel {
   readonly lv: number;
   readonly name: string;
@@ -11,16 +20,16 @@ interface TheoryLevel {
   readonly hamming: string; // P1/P2/P4 for parity, D1-D4 for data, "—" for 0/7
 }
 
-export const THEORY_LEVELS = [
-  { lv: 0, name: "Black", short: "K", bits: [0, 0, 0], color: "#000000", hamming: "—" },
-  { lv: 1, name: "Blue", short: "B", bits: [0, 0, 1], color: "#0000ff", hamming: "P1" },
-  { lv: 2, name: "Red", short: "R", bits: [0, 1, 0], color: "#ff0000", hamming: "P2" },
-  { lv: 3, name: "Magenta", short: "M", bits: [0, 1, 1], color: "#ff00ff", hamming: "D1" },
-  { lv: 4, name: "Green", short: "G", bits: [1, 0, 0], color: "#00ff00", hamming: "P4" },
-  { lv: 5, name: "Cyan", short: "C", bits: [1, 0, 1], color: "#00ffff", hamming: "D2" },
-  { lv: 6, name: "Yellow", short: "Y", bits: [1, 1, 0], color: "#ffff00", hamming: "D3" },
-  { lv: 7, name: "White", short: "W", bits: [1, 1, 1], color: "#ffffff", hamming: "D4" },
-] as const satisfies readonly TheoryLevel[];
+const HAMMING_POSITION_LABELS = ["—", "P1", "P2", "D1", "P4", "D2", "D3", "D4"] as const;
+
+export const THEORY_LEVELS: readonly TheoryLevel[] = CHROMALUM_LEVEL_LABELS.map((short, lv) => ({
+  lv,
+  name: CHROMALUM_LEVEL_NAMES[lv],
+  short,
+  bits: CHROMALUM_LEVEL_BITS[lv],
+  color: CHROMALUM_LEVEL_HEX[lv],
+  hamming: HAMMING_POSITION_LABELS[lv],
+}));
 
 /** 7 Fano plane lines — each [a, b, c] satisfies a XOR b XOR c = 0 */
 export const FANO_LINES: readonly (readonly [number, number, number])[] = [
@@ -44,19 +53,16 @@ export const FANO_LINE_CATEGORIES = [
   "secondary",
 ] as const satisfies readonly ("primary" | "complement" | "secondary")[];
 
-/** Gray code hexagon path (level indices) — each step toggles 1 channel */
-export const GRAY_PATH = [2, 6, 4, 5, 1, 3] as const;
-export const GRAY_TOGGLES = ["G", "R", "B", "G", "R", "B"] as const;
+/** Gray code hexagon path and toggles derived from the shared rooted hue frame. */
+export const GRAY_PATH = CANONICAL_CHROMATIC_LEVEL_CYCLE;
+export const GRAY_TOGGLES = CHROMALUM_HUE_TOGGLE_CYCLE;
 
 /** 2-2-2 staircase die net following the chromatic Gray path R→Y→G→C→B→M */
-export const DICE_NET_FACES = [
-  { lv: 2, col: 0, row: 0 },
-  { lv: 6, col: 1, row: 0 },
-  { lv: 4, col: 1, row: 1 },
-  { lv: 5, col: 2, row: 1 },
-  { lv: 1, col: 2, row: 2 },
-  { lv: 3, col: 3, row: 2 },
-] as const;
+export const DICE_NET_FACES = GRAY_PATH.map((lv, index) => ({
+  lv,
+  col: Math.floor((index + 1) / 2),
+  row: Math.floor(index / 2),
+}));
 
 /** 12 edges of the 3-cube (pairs of vertices differing by 1 bit) */
 export const CUBE_EDGES: readonly (readonly [number, number])[] = [

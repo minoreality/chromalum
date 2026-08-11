@@ -53,10 +53,44 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
 
 export const ScopeSummary = React.memo(function ScopeSummary() {
   const { t } = useTranslation();
+  const limits = [
+    "theory_conn_limit_vertices",
+    "theory_conn_limit_tone",
+    "theory_conn_limit_operations",
+    "theory_conn_limit_spaces",
+    "theory_conn_limit_novelty",
+  ] as const;
 
   return (
-    <div style={{ width: "100%", maxWidth: 480, borderTop: `1px solid ${C.border}`, paddingTop: SP.lg, boxSizing: "border-box" }}>
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 480,
+        borderTop: `1px solid ${C.border}`,
+        paddingTop: SP.lg,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: SP.lg,
+      }}
+    >
       <p style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, lineHeight: 1.6 }}>{t("theory_conn_boundary")}</p>
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: SP["2xl"],
+          display: "flex",
+          flexDirection: "column",
+          gap: SP.md,
+          boxSizing: "border-box",
+        }}
+      >
+        {limits.map((key) => (
+          <li key={key} style={{ ...S_ITEM, color: C.textDimmer }}>
+            {t(key)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 });

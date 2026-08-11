@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type ScaleMode } from "../data/music-frequency";
+import { type PitchMappingMode } from "../data/music-frequency";
 import { liveHueAngleDeg } from "../music/music-phase";
+import { GL32_IDENTITY_PERMUTATION } from "../music/music-engine-core";
 import {
   applyParams,
   buildAudioGraph,
@@ -25,7 +26,7 @@ interface MusicAudioSessionParams {
   alpha0: number;
   alpha7: number;
   volume: number;
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null;
@@ -40,7 +41,7 @@ interface MusicAudioSessionSnapshot {
   alpha0: number;
   alpha7: number;
   volume: number;
-  scaleMode: ScaleMode;
+  pitchMappingMode: PitchMappingMode;
   fmEnabled: boolean;
   panEnabled: boolean;
   hoveredFanoLine: number | null;
@@ -51,6 +52,7 @@ interface MusicAudioSessionSnapshot {
 interface MusicAudioSessionReturn {
   nodesRef: React.MutableRefObject<AudioNodes | null>;
   paramsRef: React.MutableRefObject<MusicAudioSessionSnapshot>;
+  levelPermutationRef: React.MutableRefObject<number[]>;
   analyserNode: AnalyserNode | null;
   initAudio: () => void;
   stopAudio: () => void;
@@ -61,6 +63,7 @@ interface MusicAudioSessionReturn {
   triggerErrorMarker: () => void;
   setToneMode: (mode: MusicToneMode) => void;
   setDroneMuted: (muted: boolean) => void;
+  setLevelPermutation: (permutation: readonly number[]) => void;
 }
 
 export function useMusicAudioSession({
@@ -70,7 +73,7 @@ export function useMusicAudioSession({
   alpha0,
   alpha7,
   volume,
-  scaleMode,
+  pitchMappingMode,
   fmEnabled,
   panEnabled,
   hoveredFanoLine,
@@ -80,6 +83,7 @@ export function useMusicAudioSession({
 }: MusicAudioSessionParams): MusicAudioSessionReturn {
   const nodesRef = useRef<AudioNodes | null>(null);
   const droneMutedRef = useRef(true);
+  const levelPermutationRef = useRef<number[]>([...GL32_IDENTITY_PERMUTATION]);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
 
   const paramsRef = useRef<MusicAudioSessionSnapshot>({
@@ -88,7 +92,7 @@ export function useMusicAudioSession({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -101,7 +105,7 @@ export function useMusicAudioSession({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -118,13 +122,14 @@ export function useMusicAudioSession({
       p.alpha0,
       p.alpha7,
       p.volume,
-      p.scaleMode,
+      p.pitchMappingMode,
       p.fmEnabled,
       p.panEnabled,
       p.hoveredFanoLine,
       toneModeOverride ?? p.toneMode,
       p.originMode,
       droneMutedOverride ?? droneMutedRef.current,
+      levelPermutationRef.current,
     );
   }, []);
 
@@ -143,7 +148,7 @@ export function useMusicAudioSession({
 
     const p = paramsRef.current;
     if (p.fmEnabled) {
-      buildFM(nodes, p.levels, p.scaleMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
+      buildFM(nodes, p.levels, p.pitchMappingMode, p.originMode === 0 ? p.alpha0 : p.alpha7, levelPermutationRef.current);
     }
 
     applyCurrentParams(nodes);
@@ -170,11 +175,11 @@ export function useMusicAudioSession({
     if (!enabled || !nodesRef.current) return;
     if (fmEnabled) {
       const p = paramsRef.current;
-      buildFM(nodesRef.current, levels, scaleMode, p.originMode === 0 ? p.alpha0 : p.alpha7);
+      buildFM(nodesRef.current, levels, pitchMappingMode, p.originMode === 0 ? p.alpha0 : p.alpha7, levelPermutationRef.current);
     } else {
       teardownFM(nodesRef.current);
     }
-  }, [enabled, fmEnabled, scaleMode, levels]);
+  }, [enabled, fmEnabled, pitchMappingMode, levels]);
 
   useEffect(() => {
     if (!enabled || !nodesRef.current) return;
@@ -186,7 +191,7 @@ export function useMusicAudioSession({
     alpha0,
     alpha7,
     volume,
-    scaleMode,
+    pitchMappingMode,
     fmEnabled,
     panEnabled,
     hoveredFanoLine,
@@ -206,7 +211,7 @@ export function useMusicAudioSession({
     const nodes = nodesRef.current;
     if (!nodes) return;
     const p = paramsRef.current;
-    triggerPitchOrToneBurst(nodes, levelIndex, hueAngleDeg, p.scaleMode, p.panEnabled);
+    triggerPitchOrToneBurst(nodes, levelIndex, hueAngleDeg, p.pitchMappingMode, p.panEnabled);
   }, []);
 
   const playPitchLevel = useCallback(
@@ -215,10 +220,10 @@ export function useMusicAudioSession({
       if (!nodes) return;
       const p = paramsRef.current;
       if (levelIndex === 0 || levelIndex === 7) {
-        triggerPitchOrToneBurst(nodes, levelIndex, -1, p.scaleMode, false);
+        triggerPitchOrToneBurst(nodes, levelIndex, -1, p.pitchMappingMode, false);
         return;
       }
-      triggerPitchOrToneBurst(nodes, levelIndex, hueAngleForLevel(levelIndex), p.scaleMode, p.panEnabled);
+      triggerPitchOrToneBurst(nodes, levelIndex, hueAngleForLevel(levelIndex), p.pitchMappingMode, p.panEnabled);
     },
     [hueAngleForLevel],
   );
@@ -261,9 +266,18 @@ export function useMusicAudioSession({
     [applyCurrentParams],
   );
 
+  const setLevelPermutation = useCallback(
+    (permutation: readonly number[]) => {
+      levelPermutationRef.current = [...permutation];
+      if (nodesRef.current) applyCurrentParams(nodesRef.current);
+    },
+    [applyCurrentParams],
+  );
+
   return {
     nodesRef,
     paramsRef,
+    levelPermutationRef,
     analyserNode,
     initAudio,
     stopAudio,
@@ -274,5 +288,6 @@ export function useMusicAudioSession({
     triggerErrorMarker: triggerErrorMarkerForSession,
     setToneMode,
     setDroneMuted,
+    setLevelPermutation,
   };
 }

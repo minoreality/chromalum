@@ -25,10 +25,10 @@ describe("ColorDice", () => {
     expect(text).toContain("a ∨ b = 7");
   });
 
-  it("keeps the additive and subtractive column headers on one line", () => {
+  it("keeps the algebraic operation column headers on one line", () => {
     renderWithLanguage();
 
-    expect(screen.getByText("XOR view (additive reading)").style.whiteSpace).toBe("nowrap");
-    expect(screen.getByText("AND view (subtractive reading)").style.whiteSpace).toBe("nowrap");
+    expect(screen.getByText("XOR (GF(2)³ addition)").style.whiteSpace).toBe("nowrap");
+    expect(screen.getByText("AND (Boolean meet)").style.whiteSpace).toBe("nowrap");
   });
 });

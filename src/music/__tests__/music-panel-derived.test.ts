@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEVEL_CANDIDATES, LEVEL_INFO, findClosestCandidate } from "../../color-engine";
+import { LEVEL_CANDIDATES, LEVEL_INFO } from "../../color-engine";
 import {
   buildActiveMusicLevels,
   buildMusicHueTicks,
@@ -7,6 +7,16 @@ import {
   buildMusicSonificationLevels,
   findMusicFanoLine,
 } from "../music-panel-derived";
+import { MUSIC_COMPLEMENT_LEVEL_PAIRS, resolveMusicCandidateIndices } from "../music-candidate-pairs";
+
+function expectComplementaryHues(levels: readonly { levelIndex: number; hueAngleDeg: number }[]) {
+  for (const [lowerLevelIndex, upperLevelIndex] of MUSIC_COMPLEMENT_LEVEL_PAIRS) {
+    const lowerHue = levels.find((level) => level.levelIndex === lowerLevelIndex)!.hueAngleDeg;
+    const upperHue = levels.find((level) => level.levelIndex === upperLevelIndex)!.hueAngleDeg;
+    const difference = Math.abs(lowerHue - upperHue) % 360;
+    expect(Math.min(difference, 360 - difference)).toBe(180);
+  }
+}
 
 describe("music panel derived data", () => {
   it("finds Fano line indices from XOR operands independent of order", () => {
@@ -28,12 +38,13 @@ describe("music panel derived data", () => {
       toneNorm: 2 / 7,
     });
 
-    const fallbackCandidate = findClosestCandidate(3, 123);
+    const fallbackCandidate = resolveMusicCandidateIndices(candidateOverridesByLevel, 123).get(3)!;
     expect(levels[2]).toEqual({
       levelIndex: 3,
       hueAngleDeg: LEVEL_CANDIDATES[3][fallbackCandidate].hueAngleDeg,
       toneNorm: 3 / 7,
     });
+    expectComplementaryHues(levels);
   });
 
   it("builds level previews for all eight levels", () => {
