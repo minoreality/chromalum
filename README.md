@@ -202,24 +202,6 @@ Run end-to-end tests:
 npm run test:e2e
 ```
 
-Run local visual regression checks:
-
-```bash
-npm run test:visual
-```
-
-Update visual baselines after an intentional UI change:
-
-```bash
-npm run test:visual:update
-```
-
-Visual regression is also part of the pull-request CI gate on Ubuntu. Local
-updates are useful for inspection, but accepted baselines should be generated in
-the same Linux environment as CI. Use the manual "Visual Snapshot Artifacts"
-GitHub Actions workflow to generate Ubuntu baselines and download the
-`visual-snapshots` artifact.
-
 Run linting and formatting checks:
 
 ```bash
