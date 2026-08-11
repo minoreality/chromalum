@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 
-import { createDefaultMusicCandidateOverrides } from "../music/music-candidate-pairs";
 import type { DecoderPhase, MusicCandidateHover } from "../music/types";
 import type { PitchMappingMode } from "./useMusicEngine";
 
@@ -14,8 +13,10 @@ type MusicPartitionPhase = "line" | "complement" | null;
 type MusicRotationDir = 1 | -1 | 0;
 type MusicOriginMode = 0 | 7;
 
-export function createDefaultMusicDirectCandidates() {
-  return createDefaultMusicCandidateOverrides();
+function createDefaultMusicDirectCandidates() {
+  // No direct representative is pinned: the global hue always resolves the
+  // same complement-equivariant section, independent of interaction history.
+  return new Map<number, number>();
 }
 
 export function useMusicPaletteState() {
@@ -48,7 +49,7 @@ export function useMusicTransportState(hueAngleDeg: number) {
   const [phaseSpeed, setPhaseSpeed] = useState(0);
   const [hueSpeed, setHueSpeed] = useState(36);
   const [hoveredFanoLine, setHoveredFanoLine] = useState<number | null>(null);
-  const [toneMode, setToneMode] = useState<MusicToneMode>("symmetric");
+  const [toneMode, setToneMode] = useState<MusicToneMode>("grbTone");
 
   const [alpha0, setAlpha0] = useState(0);
   const [alpha7, setAlpha7] = useState(180);

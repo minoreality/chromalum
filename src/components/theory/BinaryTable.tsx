@@ -115,7 +115,7 @@ export const BinaryTable = React.memo(function BinaryTable({ hlLevel, onHover }:
           fontFamily="var(--font-mono)"
           fontWeight={FW.bold}
         >
-          Hamming
+          H(7,4)
         </text>
         <text
           x={COL.tone}

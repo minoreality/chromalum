@@ -100,6 +100,18 @@ describe("LinkedVisualization split", () => {
     expect(onAlpha7Change).toHaveBeenNthCalledWith(2, 210);
   });
 
+  it("exposes linked-visualization toggle states to assistive technology", () => {
+    render(<LinkedVisualization hueAngleDeg={0} brushLevel={0} alpha0={30} alpha7={210} originMode={7} />);
+
+    expect(screen.getByRole("button", { name: "linkedviz_mode_l0" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "linkedviz_mode_l7" }).getAttribute("aria-pressed")).toBe("true");
+    const alignButton = screen.getByRole("button", { name: "linkedviz_complement_align" });
+    const cancelButton = screen.getByRole("button", { name: "linkedviz_complement_cancel" });
+    expect(alignButton.getAttribute("aria-pressed")).toBe("true");
+    expect(cancelButton.getAttribute("aria-pressed")).toBe("false");
+    expect(alignButton.nextElementSibling).toBe(cancelButton);
+  });
+
   it("derives active geometry from the controlled origin mode", () => {
     const onOriginModeChange = vi.fn();
     const renderOverlay = vi.fn(({ activeAlpha }) => <text>{`active alpha ${activeAlpha}`}</text>);

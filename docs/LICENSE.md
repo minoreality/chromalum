@@ -119,7 +119,17 @@ title and identify it as part of the CHROMALUM Theory Tab.
 
 ## How to Cite
 
-Attribution under CC BY 4.0 must include four elements (TASL):
+CC BY 4.0 §3(a) requires, to the extent the information was supplied and as
+reasonably practicable for the medium, appropriate creator attribution,
+retention of the specified copyright/license notices and source link, a link
+or URI to CC BY 4.0, and an indication of modifications. It also prohibits
+implying endorsement. See the
+[legal code, §3(a)](https://creativecommons.org/licenses/by/4.0/legalcode#s3a)
+for the controlling wording.
+
+Creative Commons recommends **TASL** as a practical attribution mnemonic. It
+is a best-practice format, not a separate four-element legal test and not an
+additional restriction imposed by this repository:
 
 - **T**itle of the work (use the specific document title from the lists
   above; _Tractatus Chromaticus_ for the core corpus; _CHROMALUM Music
@@ -134,15 +144,34 @@ If you adapt, translate, abridge, or otherwise modify the material,
 you must also indicate that changes were made.
 
 The templates below cover the most common cases. Use whichever fits
-your medium; equivalents in other styles are fine as long as the four
-TASL elements are present.
+your medium. Equivalent attribution is acceptable when it satisfies CC BY
+4.0 §3(a); following TASL is recommended because it makes compliance and
+source tracing clear.
+
+### Versioned citations for living research notes
+
+The research notes can change after publication. For reproducible scholarly
+citation, cite the exact revision you consulted:
+
+1. use a release tag or commit SHA rather than only the moving default branch;
+2. link to the specific file at that revision, for example
+   `https://github.com/minoreality/chromalum/blob/<commit-sha>/docs/algebraic-color-model.md`;
+3. record the revision identifier and access date; and
+4. identify the relevant section, figure, table, or line anchor when practical.
+
+When discussing the corpus as an evolving project, the repository root may be
+cited in addition to—not instead of—the versioned file. This versioning policy
+is a scholarly reproducibility recommendation, not an extra condition of CC BY
+4.0.
 
 ### Academic paper / journal (reference list)
 
 ```text
 Doctor Chromaticus, "Algebraic Color Model,"
 in Tractatus Chromaticus, 2026.
-https://github.com/minoreality/chromalum, licensed under
+Revision <commit-sha>, accessed <YYYY-MM-DD>.
+https://github.com/minoreality/chromalum/blob/<commit-sha>/docs/algebraic-color-model.md,
+licensed under
 CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 ```
 
@@ -155,8 +184,9 @@ the mononym into "first name / last name"):
   title     = {Algebraic Color Model},
   booktitle = {Tractatus Chromaticus},
   year      = {2026},
-  url       = {https://github.com/minoreality/chromalum},
-  note      = {Licensed under CC BY 4.0,
+  url       = {https://github.com/minoreality/chromalum/blob/<commit-sha>/docs/algebraic-color-model.md},
+  urldate   = {<YYYY-MM-DD>},
+  note      = {Revision <commit-sha>. Licensed under CC BY 4.0,
                \url{https://creativecommons.org/licenses/by/4.0/}}
 }
 ```
@@ -221,8 +251,9 @@ github.com/minoreality/chromalum
 ```text
 出典: 「離散代数的色彩モデル」
 （Tractatus Chromaticus, Doctor Chromaticus 作）
+版: <commit-sha>（参照日: <YYYY-MM-DD>）
 ライセンス: CC BY 4.0
-https://github.com/minoreality/chromalum
+https://github.com/minoreality/chromalum/blob/<commit-sha>/docs/algebraic-color-model.md
 ```
 
 改変（翻訳・要約・抜粋）を行った場合は、上記に加えて改変内容を
@@ -238,10 +269,13 @@ The license does not allow:
 
 - Suggesting that Doctor Chromaticus or CHROMALUM endorses you, your
   work, or your use of the material.
-- Removing or altering existing copyright, attribution, or license
-  notices in the material you reuse.
-- Reusing material without crediting the source — this terminates the
-  license automatically (with a 30-day cure window per CC BY 4.0 §6(b)).
+- Failing to retain the attribution, copyright, license, disclaimer, and
+  source information supplied with the material to the extent required by
+  CC BY 4.0 §3(a). The license still permits attribution in any reasonable
+  manner suited to the medium.
+- Reusing material without the attribution required by §3(a). A failure can
+  terminate the license, subject to the reinstatement provisions and 30-day
+  cure mechanism in CC BY 4.0 §6(b).
 - Applying additional legal or technological restrictions (e.g. DRM)
   that prevent downstream users from exercising the same CC BY 4.0
   rights.

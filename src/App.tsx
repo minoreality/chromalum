@@ -31,13 +31,21 @@ import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { AnalyzePanel } from "./components/AnalyzePanel";
 import { GalleryPanel } from "./components/GalleryPanel";
 import { HexPanel } from "./components/HexPanel";
-import { TheoryPanel } from "./components/TheoryPanel";
 import { useTranslation } from "./i18n";
+
+const TheoryPanel = lazy(async () => {
+  const mod = await import("./components/TheoryPanel");
+  return { default: mod.TheoryPanel };
+});
 
 const MusicPanel = lazy(async () => {
   const mod = await import("./components/MusicPanel");
   return { default: mod.MusicPanel };
 });
+
+// Avoid mounting the large Theory page behind another tab during local development.
+// Public builds and tests keep the existing hidden-panel state retention.
+const THEORY_DEV_ACTIVE_ONLY = import.meta.env.DEV && import.meta.env.MODE !== "test";
 
 /* ═══════════════════════════════════════════
    LAYOUT STYLE CONSTANTS
@@ -572,14 +580,18 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
             onScrollDone={() => setScrollToGallery(false)}
           />
         </div>
-        <div
-          id={getTabPanelId("theory")}
-          role="tabpanel"
-          aria-labelledby={getTabButtonId("theory")}
-          style={{ width: "100%", display: activeTabId === "theory" ? undefined : "none" }}
-        >
-          <TheoryPanel />
-        </div>
+        {(!THEORY_DEV_ACTIVE_ONLY || activeTabId === "theory") && (
+          <div
+            id={getTabPanelId("theory")}
+            role="tabpanel"
+            aria-labelledby={getTabButtonId("theory")}
+            style={{ width: "100%", display: activeTabId === "theory" ? undefined : "none" }}
+          >
+            <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
+              <TheoryPanel />
+            </Suspense>
+          </div>
+        )}
         {activeTabId === "music" && (
           <div id={getTabPanelId("music")} role="tabpanel" aria-labelledby={getTabButtonId("music")} style={{ width: "100%" }}>
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>

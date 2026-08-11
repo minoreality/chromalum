@@ -21,7 +21,7 @@ describe("GrayCodeHex", () => {
   it("aligns the active edge with the counter-clockwise transition", () => {
     renderWithLanguage();
 
-    const svg = screen.getByRole("img", { name: "Gray Code Cycle" });
+    const svg = screen.getByRole("img", { name: "Chromatic One-Bit Six-Cycle" });
 
     expect(activeEdges(svg)).toHaveLength(1);
     expect(activeEdges(svg)[0].getAttribute("stroke")).toBe("#00ff00");
@@ -37,7 +37,7 @@ describe("GrayCodeHex", () => {
   it("follows clockwise adjacent node clicks without starting playback", () => {
     renderWithLanguage();
 
-    const svg = screen.getByRole("img", { name: "Gray Code Cycle" });
+    const svg = screen.getByRole("img", { name: "Chromatic One-Bit Six-Cycle" });
 
     fireEvent.click(screen.getByText("110"));
 
@@ -51,7 +51,7 @@ describe("GrayCodeHex", () => {
   it("follows counter-clockwise adjacent node clicks without starting playback", () => {
     renderWithLanguage();
 
-    const svg = screen.getByRole("img", { name: "Gray Code Cycle" });
+    const svg = screen.getByRole("img", { name: "Chromatic One-Bit Six-Cycle" });
 
     fireEvent.click(screen.getByText("011"));
 

@@ -76,13 +76,12 @@ undo/redo stores compact diffs, and autosave uses IndexedDB.
 - **Offline support:** production builds include a service worker that
   pre-caches the app shell, icons, workers, and lazy-loaded Music tab chunk for
   offline reopening.
-- **Testing:** Vitest unit tests plus Playwright end-to-end, accessibility, PWA,
-  and local visual-regression checks covering canvas pixels, save flows, gallery
-  previews, glaze clearing, Theory rendering, offline behavior, mobile touch
-  input, and stable layouts.
-- **Documentation snapshots:** the README Theory and Music images reuse the
-  tracked Playwright baselines so published formulas and controls cannot drift
-  from the visual-regression source of truth.
+- **Testing:** Vitest unit tests plus Playwright end-to-end, accessibility, and
+  PWA checks covering canvas pixels, save flows, gallery previews, glaze
+  clearing, Theory rendering, offline behavior, mobile touch input, and stable
+  layouts.
+- **Documentation screenshots:** the README keeps representative Theory and
+  Music images in `docs/assets/` for visitors browsing the repository.
 - **Quality gates:** TypeScript strict mode, ESLint, Prettier, Knip dead-code
   detection, coverage thresholds, CodeQL, Dependabot, pinned GitHub Actions, and
   GitHub Pages deployment.
@@ -159,6 +158,15 @@ Start the development server on the fixed local address used for manual checks:
 npm run dev:local
 ```
 
+For Theory research and editing, start the dedicated development entry:
+
+```bash
+npm run dev:theory
+```
+
+This displays all Theory sections without initializing the editor, drawing,
+Gallery, or PWA modules.
+
 Create a production build:
 
 ```bash
@@ -222,7 +230,13 @@ npm run lint
 npm run format:check
 ```
 
-Run the standard local verification set:
+Run the focused type and test checks for Theory work:
+
+```bash
+npm run verify:theory
+```
+
+Run the standard local verification set before pushing:
 
 ```bash
 npm run verify

@@ -501,6 +501,42 @@ describe("useMusicEngine", () => {
     unmount();
   });
 
+  it("plays zigzag vertices on the same continuous pitch mapping as tone crossings, including terminal R", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderMusicEngine({ alpha0: 90, pitchMappingMode: "wholeTone" });
+    act(() => {
+      result.current.initAudio();
+    });
+    const ctx = FakeAudioContext.instances[0];
+
+    const onStep = vi.fn();
+    act(() => {
+      result.current.playZigzagMelody(onStep);
+      vi.advanceTimersByTime(400);
+    });
+
+    expect(onStep).toHaveBeenLastCalledWith(0);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ);
+
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+
+    expect(onStep).toHaveBeenLastCalledWith(1);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * Math.pow(2, 4 / 12));
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(onStep.mock.calls.map(([stepIndex]) => stepIndex)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * 4);
+
+    unmount();
+  });
+
   it("plays tone crossing melody as fixed 12-TET semitone steps", () => {
     vi.useFakeTimers();
     vi.stubGlobal("AudioContext", FakeAudioContext);

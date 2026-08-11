@@ -30,12 +30,19 @@ describe("App", () => {
     expect(screen.getByRole("tab", { name: "Gallery" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Music" })).toBeTruthy();
     expect(screen.getByRole("application", { name: "Drawing canvas (grayscale)" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeNull();
 
     fireEvent.click(screen.getByRole("tab", { name: "Theory" }));
 
-    expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" }, { timeout: 15000 })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Color Order Meets Binary Rank" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Binary Levels" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Seven Nonzero Toggle Patterns" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Binary Levels" })).toBeTruthy();
     expect(window.location.hash).toBe("#theory");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Source" }));
+    expect(screen.queryByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeNull();
   });
 
   it("opens Theory directly from the URL hash", async () => {
@@ -43,7 +50,7 @@ describe("App", () => {
 
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" }, { timeout: 15000 })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Theory" }).getAttribute("aria-selected")).toBe("true");
   });
 

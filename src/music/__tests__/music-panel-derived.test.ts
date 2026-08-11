@@ -69,12 +69,9 @@ describe("music panel derived data", () => {
     expect(active[0].rgb).toEqual(preview[1].rgb);
   });
 
-  it("builds stable hue tick positions for chromatic levels", () => {
+  it("derives hue ticks from the complement-section resolver axes", () => {
     const ticks = buildMusicHueTicks();
-    const expectedCount = [2, 3, 4, 5].reduce((sum, levelIndex) => sum + LEVEL_CANDIDATES[levelIndex].length, 0);
-
-    expect(ticks).toHaveLength(expectedCount);
+    expect(ticks.map(({ hueAngleDeg }) => hueAngleDeg)).toEqual([22.5, 67.5, 75, 135, 157.5, 202.5, 247.5, 255, 315, 337.5]);
     expect(ticks.every((tick) => tick.hueAngleDeg >= 0 && tick.hueAngleDeg < 360)).toBe(true);
-    expect(ticks[0].color).toBe(`rgb(${LEVEL_CANDIDATES[2][0].rgb.join(",")})`);
   });
 });

@@ -24,6 +24,9 @@ function scaleAngleToFreq(angle: number, semitones: readonly number[]): number {
 }
 
 export function angleToFreq(angle: number, mode: PitchMappingMode): number {
+  // UI/audio mappings choose one half-open representative of the hue circle.
+  // Absolute frequency therefore wraps at the 360° seam; callers that retain
+  // a winding number must use chromalumHueLiftToFreq directly.
   const norm = normalizeAngle(angle);
 
   if (mode === "chromalum") {

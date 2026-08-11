@@ -131,7 +131,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
 
   return (
     <div onClick={handleBgTap} style={{ display: "flex", flexDirection: "column", gap: SP.md, padding: `0 ${SP.md}px ${SP.md}px` }}>
-      <div style={S_PANEL_SUBTITLE}>{t("music_title")}</div>
+      <h2 style={{ ...S_PANEL_SUBTITLE, margin: 0, fontWeight: 400 }}>{t("music_title")}</h2>
       <div className="panel-layout music-layout">
         <div className="panel-canvas" style={{ "--display-max": "420px" } as React.CSSProperties}>
           <MusicHueAlphaControls

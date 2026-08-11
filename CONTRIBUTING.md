@@ -23,9 +23,19 @@ npm run dev
 Use `npm run dev:local` when you need a fixed `127.0.0.1:5173` development
 server for manual browser checks.
 
+For Theory-only work, use `npm run dev:theory`. It opens the complete Theory
+page through a development-only entry that does not initialize the editor,
+canvas, Gallery, or PWA code.
+
 ## Local Checks
 
-For most changes, run the standard local verification set:
+During Theory development, use the stable Theory-focused set:
+
+```bash
+npm run verify:theory
+```
+
+Before pushing, run the standard local verification set:
 
 ```bash
 npm run verify

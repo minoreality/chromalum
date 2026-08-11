@@ -2,7 +2,6 @@ import { useCallback } from "react";
 
 import type { MusicEngineReturn } from "./useMusicEngine";
 import {
-  createDefaultMusicDirectCandidates,
   type useMusicAlgebraState,
   type useMusicFanoState,
   type useMusicPaletteState,
@@ -72,10 +71,10 @@ export function useMusicResetDefaultsHandler({
 
   return useCallback(() => {
     stopAll();
-    engine.setDroneMuted(false);
-    setDroneMuted(false);
+    engine.setDroneMuted(true);
+    setDroneMuted(true);
     setHueAngleDeg(0);
-    setCandidateOverridesByLevel(createDefaultMusicDirectCandidates());
+    setCandidateOverridesByLevel(new Map());
     setSelectedLevels(new Set());
     setMuted(false);
     setVolume(0.7);
@@ -87,7 +86,7 @@ export function useMusicResetDefaultsHandler({
     setAlpha0(0);
     setAlpha7(180);
     setOriginMode(0);
-    setToneMode("symmetric");
+    setToneMode("grbTone");
     setRhythmTempo(120);
     setFanoContextPoint(1);
     setPartitionLineIndex(0);

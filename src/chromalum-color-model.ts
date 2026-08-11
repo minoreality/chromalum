@@ -1,24 +1,89 @@
 /**
- * Exact, device-independent CHROMALUM hue/tone model.
+ * Exact CHROMALUM hue/tone coordinate model.
  *
- * The generating data are three ordered binary channel atoms. Binary place
- * values, the 0..7 level coordinate, the chromatic Gray cycle, the pure-hue
- * fibers, and their palette counts are derived below from that one frame.
- * Model coordinates never use byte RGB or empirical luminance coefficients.
+ * The discrete rank joins two independent structures: the unique gapless
+ * three-atom subset-sum weights {1,2,4}, and the named order G,R,B selected by
+ * the brightness rank of the binary RGB vertices. Independently, the
+ * chromatic vertices form an unrooted, unoriented six-cycle whose edges flip
+ * one channel at a time, with cyclic labels in the dihedral class of
+ * (G,R,B)^2. That class contains all six channel permutations, so it does not
+ * select bit priority. A root and direction are chosen only to parameterize
+ * canonical hue angles and Music. Model coordinates never use byte RGB values.
  */
 
-/** The sole color-specific frame choice: first toggle is read as the highest bit. */
-export const CHROMALUM_ORDERED_FRAME = ["G", "R", "B"] as const;
-export type ChromalumChannel = (typeof CHROMALUM_ORDERED_FRAME)[number];
+const CHROMALUM_CHANNELS = ["G", "R", "B"] as const;
+export type ChromalumChannel = (typeof CHROMALUM_CHANNELS)[number];
+type BinaryChannel = 0 | 1;
+type BinaryGrb = readonly [g: BinaryChannel, r: BinaryChannel, b: BinaryChannel];
 
-function deriveBinaryPlaceWeights(frame: readonly ChromalumChannel[]): Readonly<Record<ChromalumChannel, number>> {
+function enumerateBinaryGrb(): readonly BinaryGrb[] {
+  const vertices: BinaryGrb[] = [];
+  for (const g of [0, 1] as const) {
+    for (const r of [0, 1] as const) {
+      for (const b of [0, 1] as const) vertices.push([g, r, b]);
+    }
+  }
+  return vertices;
+}
+
+const BINARY_GRB_VERTICES = enumerateBinaryGrb();
+const CHROMATIC_BINARY_GRB_VERTICES = BINARY_GRB_VERTICES.filter(([g, r, b]) => !(g === r && r === b));
+const CHROMALUM_HUE_ROOT: BinaryGrb = [0, 1, 0];
+const CHROMALUM_HUE_ORIENTED_NEIGHBOR: BinaryGrb = [1, 1, 0];
+
+function equalBinaryGrb(a: BinaryGrb, b: BinaryGrb): boolean {
+  return a.every((channel, index) => channel === b[index]);
+}
+
+function hammingDistance(a: BinaryGrb, b: BinaryGrb): number {
+  return a.reduce<number>((distance, channel, index) => distance + Number(channel !== b[index]), 0);
+}
+
+function buildRootedChromaticBinaryCycle(): readonly BinaryGrb[] {
+  const cycle: BinaryGrb[] = [];
+  let previous: BinaryGrb | undefined;
+  let current = CHROMALUM_HUE_ROOT;
+
+  for (let index = 0; index < CHROMATIC_BINARY_GRB_VERTICES.length; index++) {
+    cycle.push(current);
+    const neighbors = CHROMATIC_BINARY_GRB_VERTICES.filter((candidate) => hammingDistance(current, candidate) === 1);
+    const next =
+      index === 0
+        ? neighbors.find((candidate) => equalBinaryGrb(candidate, CHROMALUM_HUE_ORIENTED_NEIGHBOR))
+        : neighbors.find((candidate) => !equalBinaryGrb(candidate, previous!));
+    if (!next) throw new Error("Invalid rooted orientation for the chromatic six-cycle");
+    previous = current;
+    current = next;
+  }
+
+  if (!equalBinaryGrb(current, CHROMALUM_HUE_ROOT)) throw new Error("Chromatic traversal did not close");
+  return cycle;
+}
+
+function changedChannel(from: BinaryGrb, to: BinaryGrb): ChromalumChannel {
+  const changedIndex = from.findIndex((channel, index) => channel !== to[index]);
+  if (changedIndex < 0) throw new Error("Chromatic edge must toggle exactly one channel");
+  return CHROMALUM_CHANNELS[changedIndex];
+}
+
+const CHROMATIC_BINARY_GRB_CYCLE = buildRootedChromaticBinaryCycle();
+
+/** One R-rooted, Y-oriented representative of the six-cycle's edge labels. */
+export const CHROMALUM_HUE_TOGGLE_CYCLE: readonly ChromalumChannel[] = CHROMATIC_BINARY_GRB_CYCLE.map((vertex, index) =>
+  changedChannel(vertex, CHROMATIC_BINARY_GRB_CYCLE[(index + 1) % CHROMATIC_BINARY_GRB_CYCLE.length]),
+);
+
+/** Named bit significance recorded by the binary-vertex brightness rank. */
+export const CHROMALUM_ORDERED_FRAME: readonly ChromalumChannel[] = CHROMALUM_CHANNELS;
+
+function deriveGaplessRankWeights(frame: readonly ChromalumChannel[]): Readonly<Record<ChromalumChannel, number>> {
   return Object.freeze(
     Object.fromEntries(frame.map((channel, index) => [channel, 2 ** (frame.length - index - 1)])) as Record<ChromalumChannel, number>,
   );
 }
 
 /** Minimal positive additive weights whose eight subset sums fill 0..7 exactly once. */
-export const CHROMALUM_GRB_WEIGHTS = deriveBinaryPlaceWeights(CHROMALUM_ORDERED_FRAME);
+export const CHROMALUM_GRB_WEIGHTS = deriveGaplessRankWeights(CHROMALUM_ORDERED_FRAME);
 export const CHROMALUM_TONE_DENOMINATOR = Object.values(CHROMALUM_GRB_WEIGHTS).reduce((sum, weight) => sum + weight, 0);
 
 /**
@@ -33,27 +98,18 @@ export type ChromalumGrb = readonly [g: number, r: number, b: number];
 export const CHROMALUM_LEVEL_LABELS = ["K", "B", "R", "M", "G", "C", "Y", "W"] as const;
 export const CHROMALUM_LEVEL_NAMES = ["Black", "Blue", "Red", "Magenta", "Green", "Cyan", "Yellow", "White"] as const;
 export const CHROMALUM_LEVEL_HEX = ["#000000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#ffffff"] as const;
-export const CHROMALUM_LEVEL_BITS: readonly ChromalumGrb[] = Array.from({ length: 8 }, (_, level) => [
-  (level >> 2) & 1,
-  (level >> 1) & 1,
-  level & 1,
-]);
-
-/** Root the chromatic six-cycle at R and orient it toward Y. */
-const CHROMALUM_HUE_ROOT_CHANNEL = "R" as const;
-export const CHROMALUM_HUE_TOGGLE_CYCLE: readonly ChromalumChannel[] = [...CHROMALUM_ORDERED_FRAME, ...CHROMALUM_ORDERED_FRAME];
-
-function buildChromaticLevelCycle(): readonly number[] {
-  let level = CHROMALUM_GRB_WEIGHTS[CHROMALUM_HUE_ROOT_CHANNEL];
-  return CHROMALUM_HUE_TOGGLE_CYCLE.map((toggle) => {
-    const current = level;
-    level ^= CHROMALUM_GRB_WEIGHTS[toggle];
-    return current;
-  });
-}
+export const CHROMALUM_LEVEL_BITS: readonly ChromalumGrb[] = Array.from({ length: 8 }, (_, level) => {
+  const bits = BINARY_GRB_VERTICES.find(
+    ([g, r, b]) => CHROMALUM_GRB_WEIGHTS.G * g + CHROMALUM_GRB_WEIGHTS.R * r + CHROMALUM_GRB_WEIGHTS.B * b === level,
+  );
+  if (!bits) throw new Error(`Missing binary GRB vertex for level ${level}`);
+  return bits;
+});
 
 /** R→Y→G→C→B→M, obtained by successively applying G,R,B,G,R,B toggles. */
-export const CANONICAL_CHROMATIC_LEVEL_CYCLE = buildChromaticLevelCycle();
+export const CANONICAL_CHROMATIC_LEVEL_CYCLE: readonly number[] = CHROMATIC_BINARY_GRB_CYCLE.map(
+  ([g, r, b]) => CHROMALUM_GRB_WEIGHTS.G * g + CHROMALUM_GRB_WEIGHTS.R * r + CHROMALUM_GRB_WEIGHTS.B * b,
+);
 
 type ChromaticLabel = "R" | "Y" | "G" | "C" | "B" | "M";
 

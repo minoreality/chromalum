@@ -13,6 +13,8 @@ import {
   CHROMALUM_HUE_LEVEL_TOTAL_VARIATION,
   CHROMALUM_HUE_EDGE_LEVEL_DELTAS,
   CHROMALUM_HUE_TOGGLE_CYCLE,
+  CHROMALUM_LEVEL_BITS,
+  CHROMALUM_LEVEL_LABELS,
   CHROMALUM_MIN_HUE_STEP_DEG,
   CHROMALUM_ORDERED_FRAME,
   CHROMALUM_PALETTE_SECTION_COUNT,
@@ -24,7 +26,7 @@ import {
 } from "../chromalum-color-model";
 
 describe("exact CHROMALUM color model", () => {
-  it("derives 4:2:1 as the unique complete three-atom subset-sum valuation", () => {
+  it("derives the unique unnamed complete subset-sum weights", () => {
     const admissibleWeights: number[][] = [];
     for (let a = 1; a <= 7; a++) {
       for (let b = a + 1; b <= 7; b++) {
@@ -36,23 +38,100 @@ describe("exact CHROMALUM color model", () => {
     }
 
     expect(admissibleWeights).toEqual([[1, 2, 4]]);
+  });
+
+  it("uses color brightness rank to name the binary weights B=1, R=2, and G=4", () => {
     expect(CHROMALUM_ORDERED_FRAME).toEqual(["G", "R", "B"]);
     expect(CHROMALUM_GRB_WEIGHTS).toEqual({ G: 4, R: 2, B: 1 });
     expect(CHROMALUM_TONE_DENOMINATOR).toBe(7);
+    expect(CHROMALUM_LEVEL_LABELS).toEqual(["K", "B", "R", "M", "G", "C", "Y", "W"]);
+    expect(CHROMALUM_LEVEL_BITS).toEqual([
+      [0, 0, 0],
+      [0, 0, 1],
+      [0, 1, 0],
+      [0, 1, 1],
+      [1, 0, 0],
+      [1, 0, 1],
+      [1, 1, 0],
+      [1, 1, 1],
+    ]);
   });
 
-  it("derives the chromatic Gray cycle from the rooted frame", () => {
+  it("recomputes the binary brightness rank from standard additive RGB orderings", () => {
+    const binaryColors = [
+      { label: "K", bits: [0, 0, 0] },
+      { label: "B", bits: [0, 0, 1] },
+      { label: "R", bits: [0, 1, 0] },
+      { label: "M", bits: [0, 1, 1] },
+      { label: "G", bits: [1, 0, 0] },
+      { label: "C", bits: [1, 0, 1] },
+      { label: "Y", bits: [1, 1, 0] },
+      { label: "W", bits: [1, 1, 1] },
+    ] as const;
+    const standardWeights = [
+      { G: 0.587, R: 0.299, B: 0.114 },
+      { G: 0.7152, R: 0.2126, B: 0.0722 },
+      { G: 0.678, R: 0.2627, B: 0.0593 },
+    ] as const;
+
+    for (const weights of standardWeights) {
+      const ranked = [...binaryColors].sort((left, right) => {
+        const score = ({ bits: [g, r, b] }: (typeof binaryColors)[number]) => weights.G * g + weights.R * r + weights.B * b;
+        return score(left) - score(right);
+      });
+
+      expect(ranked.map(({ label }) => label)).toEqual(CHROMALUM_LEVEL_LABELS);
+      ranked.forEach(({ bits: [g, r, b] }, rank) => {
+        expect(rank).toBe(CHROMALUM_GRB_WEIGHTS.G * g + CHROMALUM_GRB_WEIGHTS.R * r + CHROMALUM_GRB_WEIGHTS.B * b);
+      });
+    }
+  });
+
+  it("checks the two brightness inequalities against the complete vertex order", () => {
+    for (let wG = 1; wG <= 8; wG++) {
+      for (let wR = 1; wR <= 8; wR++) {
+        for (let wB = 1; wB <= 8; wB++) {
+          const satisfiesTwoInequalities = wG > wR + wB && wR > wB;
+          const scoresInExpectedOrder = [0, wB, wR, wR + wB, wG, wG + wB, wG + wR, wG + wR + wB];
+          const hasCompleteOrder = scoresInExpectedOrder.every((score, index) => index === 0 || scoresInExpectedOrder[index - 1] < score);
+          expect(hasCompleteOrder).toBe(satisfiesTwoInequalities);
+        }
+      }
+    }
+  });
+
+  it("generates the six-color hue loop by repeating one-bit channel flips", () => {
     expect(CHROMALUM_HUE_TOGGLE_CYCLE).toEqual(["G", "R", "B", "G", "R", "B"]);
     expect(CANONICAL_CHROMATIC_LEVEL_CYCLE).toEqual([2, 6, 4, 5, 1, 3]);
+    expect(new Set(CANONICAL_CHROMATIC_LEVEL_CYCLE)).toEqual(new Set([1, 2, 3, 4, 5, 6]));
     CANONICAL_CHROMATIC_LEVEL_CYCLE.forEach((level, index) => {
       const next = CANONICAL_CHROMATIC_LEVEL_CYCLE[(index + 1) % CANONICAL_CHROMATIC_LEVEL_CYCLE.length];
       expect(level ^ next).toBe(CHROMALUM_GRB_WEIGHTS[CHROMALUM_HUE_TOGGLE_CYCLE[index]]);
     });
   });
 
-  it("carries the same number chain into hue fibers and palette sections", () => {
+  it("makes the flipped channel weight exactly the hue-edge brightness-rank difference", () => {
+    const channelIndex = { G: 0, R: 1, B: 2 } as const;
+
+    CANONICAL_CHROMATIC_LEVEL_CYCLE.forEach((fromLevel, index) => {
+      const toLevel = CANONICAL_CHROMATIC_LEVEL_CYCLE[(index + 1) % CANONICAL_CHROMATIC_LEVEL_CYCLE.length];
+      const channel = CHROMALUM_HUE_TOGGLE_CYCLE[index];
+      const fromBit = CHROMALUM_LEVEL_BITS[fromLevel][channelIndex[channel]];
+      const toBit = CHROMALUM_LEVEL_BITS[toLevel][channelIndex[channel]];
+      const delta = toLevel - fromLevel;
+
+      expect(toBit).toBe(1 - fromBit);
+      expect(delta).toBe((1 - 2 * fromBit) * CHROMALUM_GRB_WEIGHTS[channel]);
+      expect(Math.abs(delta)).toBe(CHROMALUM_GRB_WEIGHTS[channel]);
+    });
+
     expect(CHROMALUM_HUE_EDGE_LEVEL_DELTAS).toEqual([4, -2, 1, -4, 2, -1]);
-    expect(CHROMALUM_HUE_LEVEL_TOTAL_VARIATION).toBe(2 * CHROMALUM_TONE_DENOMINATOR);
+    expect(CHROMALUM_HUE_TOGGLE_CYCLE.reduce((mask, channel) => mask ^ CHROMALUM_GRB_WEIGHTS[channel], 0)).toBe(0);
+    expect(CHROMALUM_HUE_EDGE_LEVEL_DELTAS.reduce((sum, delta) => sum + delta, 0)).toBe(0);
+    expect(CHROMALUM_HUE_LEVEL_TOTAL_VARIATION).toBe(2 * (4 + 2 + 1));
+  });
+
+  it("carries the same number chain into hue fibers and palette sections", () => {
     expect(CANONICAL_HUE_CYCLE).toHaveLength(14);
     expect(CHROMALUM_MIN_HUE_STEP_DEG).toBe(15);
     expect(CHROMALUM_CANDIDATE_COUNT_BY_LEVEL).toEqual([1, 1, 3, 3, 3, 3, 1, 1]);

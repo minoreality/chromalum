@@ -39,7 +39,9 @@ describe("HammingDiagram", () => {
 
     expect(screen.getByTestId("hamming-received-word").textContent).toBe(`r${received}`);
     expect(screen.getByText(new RegExp(`Error at position ${position} \\(`))).toBeTruthy();
-    expect(screen.getByTestId("hamming-syndrome").textContent?.replace(/\s+/g, " ")).toMatch(new RegExp(`syndrome = ${syndrome}`));
+    expect(screen.getByTestId("hamming-syndrome").textContent?.replace(/\s+/g, " ")).toMatch(
+      new RegExp(`syndrome = ${syndrome} = [BRMCGYW] = position ${position}`),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Correct/ }));
 

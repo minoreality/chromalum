@@ -48,18 +48,23 @@ export function buildActiveMusicLevels(levelPreview: readonly MusicLevelPreview[
 }
 
 export function buildMusicHueTicks(): MusicHueTick[] {
-  const ticks: MusicHueTick[] = [];
-  for (let levelIndex = 2; levelIndex <= 5; levelIndex++) {
-    const cands = LEVEL_CANDIDATES[levelIndex];
-    if (cands.length <= 1 || cands[0].hueAngleDeg < 0) continue;
-    const angles = cands.map((c) => c.hueAngleDeg).sort((a, b) => a - b);
-    for (let i = 0; i < angles.length; i++) {
-      const a1 = angles[i];
-      const a2 = angles[(i + 1) % angles.length];
-      const diff = (a2 - a1 + 360) % 360;
-      const mid = (a1 + diff / 2) % 360;
-      ticks.push({ hueAngleDeg: mid, color: `rgb(${cands[0].rgb.join(",")})` });
+  const boundaries = new Set<number>();
+  // Complement endpoints represent the same undirected axis, so the actual
+  // automatic-section Voronoi diagram lives modulo 180°, not independently
+  // inside each level fiber.
+  for (let lowerLevelIndex = 1; lowerLevelIndex <= 3; lowerLevelIndex++) {
+    const axes = [...new Set(LEVEL_CANDIDATES[lowerLevelIndex].map(({ hueAngleDeg }) => ((hueAngleDeg % 180) + 180) % 180))].sort(
+      (a, b) => a - b,
+    );
+    if (axes.length <= 1) continue;
+    for (let index = 0; index < axes.length; index++) {
+      const from = axes[index];
+      const to = axes[(index + 1) % axes.length];
+      const arc = (to - from + 180) % 180;
+      const boundary = (from + arc / 2) % 180;
+      boundaries.add(boundary);
+      boundaries.add(boundary + 180);
     }
   }
-  return ticks;
+  return [...boundaries].sort((a, b) => a - b).map((hueAngleDeg) => ({ hueAngleDeg, color: "rgb(128,128,160)" }));
 }

@@ -102,7 +102,8 @@ export function withMusicComplementCandidate(
   return next;
 }
 
-export function createDefaultMusicCandidateOverrides(): Map<number, number> {
+/** The section containing only the six binary chromatic vertices. */
+export function createBinaryVertexMusicCandidateOverrides(): Map<number, number> {
   const lowerLevelDefaults = new Map<number, number>();
   for (const [lowerLevelIndex] of MUSIC_COMPLEMENT_LEVEL_PAIRS) {
     lowerLevelDefaults.set(lowerLevelIndex, DEFAULT_CANDIDATE_INDEX_BY_LEVEL[lowerLevelIndex]);

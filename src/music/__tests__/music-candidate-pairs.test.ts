@@ -3,7 +3,7 @@ import { CHROMALUM_CHANNEL_MAX } from "../../chromalum-color-model";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL, LEVEL_CANDIDATES } from "../../color-engine";
 import {
   MUSIC_COMPLEMENT_LEVEL_PAIRS,
-  createDefaultMusicCandidateOverrides,
+  createBinaryVertexMusicCandidateOverrides,
   findClosestMusicComplementPairCandidateIndex,
   findMusicComplementCandidateIndex,
   resolveMusicCandidateIndices,
@@ -39,8 +39,8 @@ function hueDistanceDeg(a: number, b: number): number {
 }
 
 describe("music complementary candidate pairs", () => {
-  it("keeps the canonical initial candidates while enforcing exact complements", () => {
-    const defaults = createDefaultMusicCandidateOverrides();
+  it("builds the binary-vertex section while enforcing exact complements", () => {
+    const defaults = createBinaryVertexMusicCandidateOverrides();
 
     expect([...defaults.entries()].sort(([a], [b]) => a - b)).toEqual(
       DEFAULT_CANDIDATE_INDEX_BY_LEVEL.slice(1, 7).map((candidateIndex, index) => [index + 1, candidateIndex]),
