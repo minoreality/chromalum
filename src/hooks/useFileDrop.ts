@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MAX_IMAGE_SIZE, MAX_FILE_BYTES, MAX_IMAGE_PIXELS, isAllowedCanvasSize } from "../constants";
-import { GRAY_LUT, rgbGrbTone8 } from "../color-engine";
+import { estimateLevelFromSrgbBytes } from "../srgb-level-estimator";
 import { useSyncRef } from "./useSyncRef";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"]);
@@ -167,8 +167,7 @@ export function useFileDrop(
               const px = id.data;
               for (let i = 0; i < w * h; i++) {
                 const off = i * 4;
-                const gray = rgbGrbTone8(px[off], px[off + 1], px[off + 2]);
-                nd[i] = GRAY_LUT[gray];
+                nd[i] = estimateLevelFromSrgbBytes(px[off], px[off + 1], px[off + 2]);
               }
               dispatch({ type: "load_image", width: w, height: h, levelData: nd });
               setZoom(1);

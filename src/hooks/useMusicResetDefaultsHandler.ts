@@ -25,13 +25,14 @@ interface UseMusicResetDefaultsHandlerOptions {
     | "setDroneMuted"
     | "setMuted"
     | "setVolume"
-    | "setScaleMode"
+    | "setPitchMappingMode"
     | "setFmEnabled"
     | "setAlphaSpeed"
     | "setPhaseSpeed"
     | "setHueSpeed"
     | "setAlpha0"
     | "setAlpha7"
+    | "setOriginMode"
     | "setToneMode"
     | "setHoveredFanoLine"
   >;
@@ -54,13 +55,14 @@ export function useMusicResetDefaultsHandler({
     setDroneMuted,
     setMuted,
     setVolume,
-    setScaleMode,
+    setPitchMappingMode,
     setFmEnabled,
     setAlphaSpeed,
     setPhaseSpeed,
     setHueSpeed,
     setAlpha0,
     setAlpha7,
+    setOriginMode,
     setToneMode,
     setHoveredFanoLine,
   } = transport;
@@ -77,13 +79,14 @@ export function useMusicResetDefaultsHandler({
     setSelectedLevels(new Set());
     setMuted(false);
     setVolume(0.7);
-    setScaleMode("diatonic7");
+    setPitchMappingMode("chromalum");
     setFmEnabled(false);
     setAlphaSpeed(36);
     setPhaseSpeed(0);
     setHueSpeed(36);
     setAlpha0(0);
     setAlpha7(180);
+    setOriginMode(0);
     setToneMode("symmetric");
     setRhythmTempo(120);
     setFanoContextPoint(1);
@@ -112,6 +115,7 @@ export function useMusicResetDefaultsHandler({
     setHoveredFanoLine,
     setHueAngleDeg,
     setHueSpeed,
+    setOriginMode,
     setToneMode,
     setOctaA,
     setOctaB,
@@ -119,7 +123,7 @@ export function useMusicResetDefaultsHandler({
     setPhaseSpeed,
     setResetSignal,
     setRhythmTempo,
-    setScaleMode,
+    setPitchMappingMode,
     setMuted,
     setSelectedLevels,
     setVolume,

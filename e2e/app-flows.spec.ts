@@ -178,7 +178,7 @@ test("opens music controls without a global tone-mode toggle", async ({ page }) 
 
   await expect(page.getByRole("button", { name: "Pitch" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bit Spectrum" })).toHaveCount(0);
-  await expect(page.locator('button[aria-pressed="true"]').filter({ hasText: "Diatonic" })).toHaveCount(1);
+  await expect(page.getByRole("radio", { name: "CHROMALUM" })).toHaveAttribute("aria-checked", "true");
 });
 
 test("caps Structural Sonification cards at four columns on wide desktop", async ({ page }) => {

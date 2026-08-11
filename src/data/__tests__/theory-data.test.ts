@@ -259,7 +259,7 @@ describe("theory-data invariants", () => {
     for (const count of pairCounts.values()) expect(count).toBe(1);
   });
 
-  it("makes GRB the unique binary-tone monotone bit assignment", () => {
+  it("keeps numeric level order aligned with the already selected GRB frame", () => {
     expect(GRB_TONE_WEIGHTS.G).toBeGreaterThan(GRB_TONE_WEIGHTS.R + GRB_TONE_WEIGHTS.B);
     expect(GRB_TONE_WEIGHTS.R).toBeGreaterThan(GRB_TONE_WEIGHTS.B);
     expect(THEORY_LEVELS.map(({ bits }) => 4 * bits[0] + 2 * bits[1] + bits[2])).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
@@ -272,6 +272,7 @@ describe("theory-data invariants", () => {
       ["B", "G", "R"],
       ["B", "R", "G"],
     ];
+    // This is a regression check after the frame choice, not a derivation of that choice.
     const monotoneAssignments = assignments.filter((assignment) =>
       isStrictlyIncreasing(Array.from({ length: 8 }, (_, lv) => toneWeightForAssignment(assignment, lv))),
     );
