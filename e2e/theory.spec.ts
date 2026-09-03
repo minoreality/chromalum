@@ -8,7 +8,7 @@ test("opens the Theory tab and renders the main sections", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /Discrete Algebraic Color Theory|離散代数的色彩理論/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Binary Levels|バイナリレベル/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Color Cube|カラーキューブ/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Hamming Code|ハミング符号/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Hamming \[7,4,3\] (?:Code|符号)/ })).toBeVisible();
 });
 
 test("opens the Theory tab directly from the URL hash", async ({ page }) => {
