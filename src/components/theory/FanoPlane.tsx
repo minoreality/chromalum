@@ -13,6 +13,7 @@ const CX = 150,
   CY = 160;
 
 type LineFilter = "all" | "primary" | "complement" | "secondary";
+type CompletionPair = [] | [number] | [number, number];
 
 function linesThrough(point: number): number[] {
   return FANO_LINES.map((line, i) => (line.includes(point) ? i : -1)).filter((i) => i >= 0);
@@ -41,12 +42,19 @@ interface Props {
 export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
   const [pinned, setPinned] = useState<number | null>(null);
-  usePinReset(setPinned);
   const [lineFilter, setLineFilter] = useState<LineFilter>("all");
   const [cmyMode, setCmyMode] = useState(false);
+  const [completionMode, setCompletionMode] = useState(false);
+  const [completionPair, setCompletionPair] = useState<CompletionPair>([]);
   const [animT, setAnimT] = useState(0); // 0=normal Fano, 1=CMY collapsed to line
   const animTRef = useRef(0);
   const reducedMotion = useRef(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  const resetSelection = useCallback((_value: null) => {
+    setPinned(null);
+    setCompletionPair([]);
+  }, []);
+  usePinReset(resetSelection);
 
   useEffect(() => {
     if (reducedMotion.current) {
@@ -70,11 +78,22 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
     return () => cancelAnimationFrame(raf);
   }, [cmyMode]);
 
-  // External highlight takes priority, then pinned, then null
-  const hl = hlLevel !== null && hlLevel >= 1 && hlLevel <= 7 ? hlLevel : pinned;
-  const hlLines = hl !== null ? linesThrough(hl) : [];
+  const completionA = completionPair[0] ?? null;
+  const completionB = completionPair[1] ?? null;
+  const completionC = completionA !== null && completionB !== null ? completionA ^ completionB : null;
+  const completedLine =
+    completionA !== null && completionB !== null && completionC !== null
+      ? FANO_LINES.findIndex((line) => line.includes(completionA) && line.includes(completionB) && line.includes(completionC))
+      : -1;
+
+  // A persistent two-point construction takes priority over the shared one-point highlight.
+  const externalHl = hlLevel !== null && hlLevel >= 1 && hlLevel <= 7 ? hlLevel : null;
+  const hl = completionMode ? (completionA ?? externalHl) : (externalHl ?? pinned);
+  const hlLines = completedLine >= 0 ? [completedLine] : hl !== null ? linesThrough(hl) : [];
   const hlPoints = new Set<number>();
-  if (hl !== null) {
+  if (completedLine >= 0) {
+    for (const point of FANO_LINES[completedLine]) hlPoints.add(point);
+  } else if (hl !== null) {
     hlPoints.add(hl);
     for (const li of hlLines) for (const p of FANO_LINES[li]) hlPoints.add(p);
   }
@@ -91,6 +110,36 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
     },
     [onHover],
   );
+
+  const onCompletionTap = useCallback((lv: number) => {
+    setCompletionPair((current) => {
+      if (current.length === 0) return [lv];
+      if (current.length === 1) return current[0] === lv ? [] : [current[0], lv];
+      if (current[0] === lv) return [];
+      if (current[1] === lv) return [current[0]];
+      return [current[0], lv];
+    });
+  }, []);
+
+  const onPointTap = useCallback(
+    (lv: number) => {
+      if (completionMode) {
+        onCompletionTap(lv);
+        return;
+      }
+      onTap(lv);
+    },
+    [completionMode, onCompletionTap, onTap],
+  );
+
+  const toggleCompletionMode = useCallback(() => {
+    const next = !completionMode;
+    setCompletionMode(next);
+    setCompletionPair([]);
+    setPinned(null);
+    onHover(null);
+    if (next) setCmyMode(false);
+  }, [completionMode, onHover]);
 
   const isLineVisible = (li: number) => {
     if (lineFilter === "all") return true;
@@ -112,15 +161,23 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
   const lineOpacityMul = isCmyAnimating ? 1 - animT * 0.7 : 1;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
-      <svg viewBox={`0 ${VB_Y} ${W} ${H}`} style={{ width: "100%", maxWidth: W }} role="img" aria-label={t("theory_fano_title")}>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && completionPair.length > 0) {
+          resetSelection(null);
+          onHover(null);
+        }
+      }}
+    >
+      <svg viewBox={`0 ${VB_Y} ${W} ${H}`} style={{ width: "100%", maxWidth: W }} role="group" aria-label={t("theory_fano_title")}>
         {/* Lines (fade during CMY animation) */}
         {FANO_LINES.map((_, li) => {
-          if (!isLineVisible(li)) return null;
+          if (!isLineVisible(li) && completedLine !== li) return null;
           const active = hlLines.includes(li);
           const dim = hl !== null && !active;
           const cat = FANO_LINE_CATEGORIES[li];
-          const baseOpacity = dim ? 0.12 : active ? 0.9 : 0.3;
+          const baseOpacity = dim ? 0.12 : active ? (completedLine === li ? 1 : 0.72) : 0.3;
           const strokeColor = cat === "primary" ? "#80a0ff" : cat === "complement" ? "#ffa060" : "#60ffa0";
           const strokeDash = "none";
           const isCmyLine = li === 6; // The CMY circle/line
@@ -168,12 +225,14 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
             return (
               <circle
                 key={"fl" + li}
+                data-fano-line={FANO_LINES[li].join("-")}
+                data-fano-line-active={active}
                 cx={FANO_CIRCLE.cx}
                 cy={FANO_CIRCLE.cy}
                 r={FANO_CIRCLE.r}
                 fill="none"
                 stroke={strokeColor}
-                strokeWidth={active ? 2 : 1.2}
+                strokeWidth={completedLine === li ? 3 : active ? 2 : 1.2}
                 strokeDasharray={strokeDash}
                 opacity={baseOpacity}
               />
@@ -185,12 +244,14 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           return (
             <line
               key={"fl" + li}
+              data-fano-line={FANO_LINES[li].join("-")}
+              data-fano-line-active={active}
               x1={p0.x}
               y1={p0.y}
               x2={p1.x}
               y2={p1.y}
               stroke={strokeColor}
-              strokeWidth={active ? 2 : 1.2}
+              strokeWidth={completedLine === li ? 3 : active ? 2 : 1.2}
               strokeDasharray={strokeDash}
               opacity={finalOpacity}
             />
@@ -199,61 +260,64 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
 
         {/* Bit cancellation + toggle-composition closure for highlighted lines */}
         {!isCmyAnimating &&
-          hlLines.filter(isLineVisible).map((li) => {
-            const line = FANO_LINES[li];
-            const mid = {
-              x: (FANO_POINTS[line[0]].x + FANO_POINTS[line[1]].x + FANO_POINTS[line[2]].x) / 3,
-              y: (FANO_POINTS[line[0]].y + FANO_POINTS[line[1]].y + FANO_POINTS[line[2]].y) / 3,
-            };
-            // For complement lines (through center 7), use midpoint of the two non-7 endpoints
-            const cat = FANO_LINE_CATEGORIES[li];
-            const isComplement = cat === "complement";
-            const nonCenter = line.filter((p) => p !== 7);
-            const anchor =
-              isComplement && nonCenter.length === 2
-                ? {
-                    x: (FANO_POINTS[nonCenter[0]].x + FANO_POINTS[nonCenter[1]].x) / 2,
-                    y: (FANO_POINTS[nonCenter[0]].y + FANO_POINTS[nonCenter[1]].y) / 2,
-                  }
-                : mid;
-            const dx = anchor.x - FANO_CIRCLE.cx,
-              dy = anchor.y - FANO_CIRCLE.cy;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const push = 32;
-            const ox = anchor.x + (dx / dist) * push,
-              oy = anchor.y + (dy / dist) * push;
-            const labelColor = cat === "primary" ? "#80a0ff" : cat === "complement" ? "#ffa060" : "#60ffa0";
-            const algebraLabel = `${line.map((lv) => THEORY_LEVELS[lv].bits.join("")).join("\u2295")}=000`;
-            const closureLabel = `${line.map(toggleMaskLabel).join("·")}=id`;
-            return (
-              <g key={"eq" + li}>
-                <text
-                  x={ox}
-                  y={oy - 6}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={FS.sm}
-                  fontFamily="var(--font-mono)"
-                  fill={labelColor}
-                  fontWeight={FW.bold}
-                >
-                  {algebraLabel}
-                </text>
-                <text
-                  x={ox}
-                  y={oy + 6}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={FS.xs}
-                  fontFamily="var(--font-mono)"
-                  fill={labelColor}
-                  opacity={0.8}
-                >
-                  {closureLabel}
-                </text>
-              </g>
-            );
-          })}
+          !completionMode &&
+          hlLines
+            .filter((li) => isLineVisible(li) || completedLine === li)
+            .map((li) => {
+              const line = FANO_LINES[li];
+              const mid = {
+                x: (FANO_POINTS[line[0]].x + FANO_POINTS[line[1]].x + FANO_POINTS[line[2]].x) / 3,
+                y: (FANO_POINTS[line[0]].y + FANO_POINTS[line[1]].y + FANO_POINTS[line[2]].y) / 3,
+              };
+              // For complement lines (through center 7), use midpoint of the two non-7 endpoints
+              const cat = FANO_LINE_CATEGORIES[li];
+              const isComplement = cat === "complement";
+              const nonCenter = line.filter((p) => p !== 7);
+              const anchor =
+                isComplement && nonCenter.length === 2
+                  ? {
+                      x: (FANO_POINTS[nonCenter[0]].x + FANO_POINTS[nonCenter[1]].x) / 2,
+                      y: (FANO_POINTS[nonCenter[0]].y + FANO_POINTS[nonCenter[1]].y) / 2,
+                    }
+                  : mid;
+              const dx = anchor.x - FANO_CIRCLE.cx,
+                dy = anchor.y - FANO_CIRCLE.cy;
+              const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+              const push = 32;
+              const ox = anchor.x + (dx / dist) * push,
+                oy = anchor.y + (dy / dist) * push;
+              const labelColor = cat === "primary" ? "#80a0ff" : cat === "complement" ? "#ffa060" : "#60ffa0";
+              const algebraLabel = `${line.map((lv) => THEORY_LEVELS[lv].bits.join("")).join("\u2295")}=000`;
+              const closureLabel = `${line.map(toggleMaskLabel).join("·")}=id`;
+              return (
+                <g key={"eq" + li}>
+                  <text
+                    x={ox}
+                    y={oy - 6}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={FS.sm}
+                    fontFamily="var(--font-mono)"
+                    fill={labelColor}
+                    fontWeight={FW.bold}
+                  >
+                    {algebraLabel}
+                  </text>
+                  <text
+                    x={ox}
+                    y={oy + 6}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={FS.xs}
+                    fontFamily="var(--font-mono)"
+                    fill={labelColor}
+                    opacity={0.8}
+                  >
+                    {closureLabel}
+                  </text>
+                </g>
+              );
+            })}
 
         {/* CMY collapse equation label */}
         {isCmyAnimating && animT > 0.6 && (
@@ -289,17 +353,52 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
           const cmyLineActive = hlLines.includes(6) && isLineVisible(6);
           const pointOpacity = isCmyAnimating && isRgbOrW ? rgbOpacity : lv === 7 && cmyLineActive ? 0.25 : 1;
           const pointR = DOT_R;
+          const completionRole = completionA === lv ? "a" : completionB === lv ? "b" : completionC === lv ? "c" : null;
+          const isCompletionInput = completionRole === "a" || completionRole === "b";
+          const pointAriaLabel =
+            completionRole === "a"
+              ? t("theory_fano_completion_input_a_aria", info.short, lv, info.bits.join(""))
+              : completionRole === "b"
+                ? t("theory_fano_completion_input_b_aria", info.short, lv, info.bits.join(""))
+                : completionRole === "c"
+                  ? t("theory_fano_completion_result_aria", info.short, lv, info.bits.join(""))
+                  : t("theory_fano_point_aria", info.short, lv, info.bits.join(""));
           return (
             <g
               key={"fp" + lv}
+              data-fano-point={lv}
+              data-fano-selection-role={completionRole ?? undefined}
+              role="button"
+              tabIndex={0}
+              aria-label={pointAriaLabel}
+              aria-pressed={completionMode ? isCompletionInput : pinned === lv}
               onMouseEnter={() => onEnter(lv)}
               onMouseLeave={onLeave}
-              onClick={() => onTap(lv)}
+              onFocus={() => onEnter(lv)}
+              onBlur={onLeave}
+              onClick={() => onPointTap(lv)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onPointTap(lv);
+                }
+              }}
               style={S_CURSOR_POINTER}
               opacity={pointOpacity}
             >
               <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="transparent" />
               {active && <circle cx={p.x} cy={p.y} r={DOT_R + 4} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1.5} />}
+              {completionRole && (
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={DOT_R + (completionRole === "b" ? 7 : 5)}
+                  fill="none"
+                  stroke={completionRole === "c" ? C.accentBright : "#fff"}
+                  strokeWidth={completionRole === "c" ? 2 : 1.5}
+                  strokeDasharray={completionRole === "c" ? "3 2" : "none"}
+                />
+              )}
               {/* Red border for CMY during animation */}
               {isCmyAnimating && isCmy && animT > 0.4 && (
                 <circle
@@ -335,6 +434,19 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
               >
                 {lv}
               </text>
+              {completionRole && (
+                <text
+                  x={p.x + DOT_R + 4}
+                  y={p.y - DOT_R - 4}
+                  textAnchor="middle"
+                  fontSize={FS.xs}
+                  fontFamily="var(--font-mono)"
+                  fontWeight={FW.bold}
+                  fill={completionRole === "c" ? C.accentBright : "#fff"}
+                >
+                  {completionRole}
+                </text>
+              )}
             </g>
           );
         })}
@@ -361,6 +473,34 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
             );
           })}
       </svg>
+
+      {completionMode && (
+        <div
+          data-testid="fano-completion-status"
+          role="status"
+          aria-live="polite"
+          style={{ minHeight: 42, textAlign: "center", fontFamily: FONT.mono, fontSize: FS.sm, color: C.textMuted }}
+        >
+          {completionA === null ? (
+            t("theory_fano_completion_select_first")
+          ) : completionB === null || completionC === null ? (
+            t("theory_fano_completion_select_second", THEORY_LEVELS[completionA].short)
+          ) : (
+            <>
+              <div style={{ color: C.textPrimary }}>
+                {THEORY_LEVELS[completionA].short}
+                <sub>{completionA}</sub> ⊕ {THEORY_LEVELS[completionB].short}
+                <sub>{completionB}</sub> = {THEORY_LEVELS[completionC].short}
+                <sub>{completionC}</sub>
+              </div>
+              <div style={{ marginTop: SP.xs }}>
+                {THEORY_LEVELS[completionA].bits.join("")} ⊕ {THEORY_LEVELS[completionB].bits.join("")} ⊕{" "}
+                {THEORY_LEVELS[completionC].bits.join("")} = 000
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Legend */}
       <div
@@ -431,8 +571,22 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
             marginLeft: SP.xl,
           }}
           onClick={() => setCmyMode((v) => !v)}
+          disabled={completionMode}
+          aria-disabled={completionMode}
         >
           {t("theory_fano_cmy_collapse")} <span aria-hidden="true">{cmyMode ? "\u25c0" : "\u25b6"}</span>
+        </button>
+        <button
+          type="button"
+          className="theory-annotation theory-diagram-button"
+          style={{
+            ...(completionMode ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN),
+            marginLeft: SP.xl,
+          }}
+          aria-pressed={completionMode}
+          onClick={toggleCompletionMode}
+        >
+          {t("theory_fano_completion_mode")}
         </button>
       </div>
     </div>

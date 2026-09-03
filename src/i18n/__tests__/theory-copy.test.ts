@@ -80,13 +80,23 @@ describe("Theory copy", () => {
   it("states the exact Fano-Hamming incidence correspondence", () => {
     expect(en.theory_structures_desc).toContain("not merely a shared count of seven");
     expect(en.theory_hamming_bridge).toContain("Hxᵀ=h_i⊕h_j⊕h_k");
-    expect(en.theory_hamming_bridge).toContain("every Fano line is the support of a weight-three Hamming(7,4) codeword");
+    expect(en.theory_hamming_bridge).toContain("rank H=3");
+    expect(en.theory_hamming_bridge).toContain("dim ker H=7−3=4");
+    expect(en.theory_hamming_bridge).toContain("minimum distance d_min=3");
+    expect(en.theory_hamming_title).toBe("Hamming [7,4,3] Code");
+    expect(en.theory_hamming_desc).toContain("adds three parity bits to four data bits, producing a seven-bit codeword");
+    expect(en.theory_hamming_desc).toContain("length 7, dimension 4, and minimum Hamming distance 3");
     expect(en.theory_hamming_desc).toContain("syndrome 000");
     expect(en.theory_hamming_desc).toContain("single-error positions");
 
     expect(ja.theory_structures_desc).toContain("七という個数の一致ではなく");
     expect(ja.theory_hamming_bridge).toContain("Hxᵀ=h_i⊕h_j⊕h_k");
-    expect(ja.theory_hamming_bridge).toContain("各Fano線は重み3のHamming(7,4)符号語の台");
+    expect(ja.theory_hamming_bridge).toContain("rank H=3");
+    expect(ja.theory_hamming_bridge).toContain("dim ker H=7−3=4");
+    expect(ja.theory_hamming_bridge).toContain("最小距離d_min=3");
+    expect(ja.theory_hamming_title).toBe("Hamming [7,4,3] 符号");
+    expect(ja.theory_hamming_desc).toContain("4ビットのデータに3つのパリティビットを加え、7ビットの符号語へ変換");
+    expect(ja.theory_hamming_desc).toContain("符号長、4は次元、3は符号語間の最小Hamming距離");
     expect(ja.theory_hamming_desc).toContain("syndromeは000");
     expect(ja.theory_hamming_desc).toContain("単一誤り位置");
   });

@@ -37,7 +37,7 @@ A = P({G,R,B})
 2. JSSD CMY color cube II: Boolean lattice / Hasse / RGB-CMY duality。
 3. Taylor 2013: `Z2^3` color addition / Fano plane coloring。
 4. NEC 1981 / Vickers 1982: `0=K, 1=B, 2=R, 3=M, 4=G, 5=C, 6=Y, 7=W` という正確な GRB 4:2:1 色番号。
-5. Hamming 1950 / Fano/Hamming 標準資料: Hamming code の原典と `PG(2,2)` / Hamming(7,4) の既知対応。
+5. Hamming 1950 / Fano/Hamming 標準資料: Hamming code の原典と `PG(2,2)` / Hamming `[7,4,3]` の既知対応。
 6. MathWorld Cube / Tetrahedron 2-Compound: cube nets、tetrahedra、stella octangula。
 
 正確な `4G+2R+B` 色番号も既知なので、番号列そのものは独自性に含めない。この記録は研究上の来歴を管理するためのものであり、Theory タブの説明へは持ち込まない。
@@ -50,7 +50,7 @@ A = P({G,R,B})
 | 二経路の収束 | 無名の `{1,2,4}`、色の順序、8色表 | `L(g,r,b)=4g+2r+b` を二つの独立な特徴づけから得る |
 | valuation と補色 | modular identity、XOR補正式、`L(¬a)=7-L(a)` | `L` が単なる番号表ではないことを示す |
 | 反転作用 | `τ_m(x)=x⊕m`, `Q3`, 有彩 `C6`、符号付き順位差 | 生成と状態遷移を分け、差分の符号から包含方向、絶対値から切替チャネルを読む |
-| 有限幾何と符号 | 七つの非零マスク、Fano、Hamming demo | 同じ七点構造の二つの読み方を示す |
+| 有限幾何と符号 | 七つの非零マスク、Fano、Hamming `[7,4,3]` demo | 七つの色ベクトルを `H` の列として読み、`ker H` と syndrome に同じ七点構造が現れることを示す |
 | `K8` 距離分解 | 距離1・2・3による全28組の分割、T0/T1、Color Star | `T0=ker pi ~= V4` と奇剰余類 `T1` を二四面体として個別表示し、複合と全距離分解へ進む |
 | 幾何 | Tone Zigzag、色相辺差分表、符号保存格子実現、2-2-2展開図、Color Die、双対八面体 | `C6` と `L` から、辺別アフィン延長、平面格子実現、折り畳み、面頂双対という別々の表示操作を順に導く |
 | 総括と範囲 | 三つの境界、完全作用表は折り畳み | 本線を反復せず対象を限定する |
@@ -64,7 +64,7 @@ Theory はこの順序で有限代数を `K8` まで完結させ、その後に�
 | RGB cube / hue hexagon | Smith 1978 | RGB cube、black-white axis、hue hexagon | hue path を Gray cycle、tone zigzag、dice adjacency と重ねる |
 | Boolean lattice | JSSD CMY color cube II | `B3`、Hasse、補元、join/meet、RGB-CMY 双対 | `B3` を GRB Binary Tone 順、Fano/Hamming、dice に接続する |
 | `Z2^3` color addition | Taylor 2013 | 8 色の XOR 群、Fano plane coloring | RGB display primaries、GRB Binary Tone、Hamming labels、K8 分解へ接続する |
-| Fano/Hamming | Hamming 1950 / Lavrauw / Error Correction Zoo | Hamming code、Fano 平面と Hamming(7,4) の対応 | 色を符号語ではなく syndrome / coordinate labels として UI 化する |
+| Fano/Hamming | Hamming 1950 / Lavrauw / Error Correction Zoo | Hamming code、Fano 平面と Hamming `[7,4,3]` の対応 | 七つの色ベクトルを `H` の列とし、Fano triples、`ker H`、syndrome / coordinate labels を一つの UI で結ぶ |
 | GRB 4:2:1 color code | NEC 1981 / Vickers 1982 | `0=K,1=B,2=R,3=M,4=G,5=C,6=Y,7=W` と Green-Red-Blue bit order | 無名の `{1,2,4}` と色の明るさ順位が同じ名前付き重みへ収束することを示す |
 | Tone | historical color code / CHROMALUM model definition | `level = 4G + 2R + B` | 明るさ順位を表す level を `tone = level / 7` として正規化する |
 | Pure-hue representatives | Smith 1978 / CHROMALUM model definition | RGB cube の最大彩度 6 辺、HSV 型では `S=V=1` の hue loop | `λ` の整数 level ファイバーを有限候補として示し、代数ラベルと表示代表元を分離する |
@@ -168,8 +168,8 @@ Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`
 1. Venn copy defines `A = P({G,R,B})`; the UI states separately that `(A,⊕) ~= (F2^3,+)` and the Boolean ring is `F2 x F2 x F2`, not `GF(8)`.
 2. `GRB` Binary Tone makes numeric level order identical to tone order.
 3. Complementation `lv xor 7` reverses chromatic tone ranks and die-opposite rank sums are 7.
-4. Fano lines satisfy `a⊕b⊕c=0` and are supports of weight-three Hamming codewords.
-5. Hamming labels are coordinate positions and parity-check labels, not color codewords; the complete interactive demo remains and restores every single-bit error position `1..7`.
+4. Fano lines satisfy `a⊕b⊕c=0` and are supports of weight-three codewords in `ker H`; with `rank H=3` and seven distinct nonzero columns this yields Hamming `[7,4,3]`.
+5. Hamming labels are coordinate positions and parity-check labels, not color codewords; `r=c⊕e` gives `Hrᵀ=Heᵀ`, and the complete interactive demo remains and restores every single-bit error position `1..7`.
 6. Gray cycle uses only one-bit flips.
 7. K8 edges partition by Hamming distance.
 8. The main UI displays `(+4,-2,+1,-4,+2,-1)`, the alternating containment chain, channel labels `G,R,B,G,R,B`, and the sign-preserving lattice rule before the folded Color Die. Cutting `M->R` must yield research coordinates `(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)`. The visible diagram rigidly rotates that same net by about 45 degrees, sending positive and negative directions upper-right and lower-right so the path reads left-to-right. Copy must state that planar directions come from the added rule and that the rotated view is not a different net; exhaustive net classification remains research-note and machine-verification material.

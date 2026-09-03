@@ -40,7 +40,9 @@ describe("TheoryPanel", () => {
     expect(text).toContain("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
     expect(text).toContain("L(κ(a))=7−L(a)");
     expect(text).toContain("Hxᵀ=h_i⊕h_j⊕h_k");
-    expect(text).toContain("every Fano line is the support of a weight-three Hamming(7,4) codeword");
+    expect(text).toContain("rank H=3");
+    expect(text).toContain("dim ker H=7−3=4");
+    expect(text).toContain("Hamming [7,4,3]");
     expect(text).toContain("8·C(3,d)/2");
     expect(text).toContain("T0=ker π={K,M,C,Y}");
     expect(text).toContain("T1=B⊕T0={B,R,G,W}");
@@ -53,7 +55,7 @@ describe("TheoryPanel", () => {
       "Color Cube",
       "Chromatic One-Bit Six-Cycle",
       "Fano Plane",
-      "Hamming Code",
+      "Hamming [7,4,3] Code",
       "Color Tetrahedra and Color Star",
       "Tone Zigzag and Hue-Edge Differences",
       "The 2–2–2 Hue-Order Net",
@@ -111,7 +113,7 @@ describe("TheoryPanel", () => {
     const rankParagraphs = Array.from(rankSection!.children).filter((node) => node.matches("p.theory-desc"));
     const structureParagraphs = Array.from(structuresSection!.children).filter((node) => node.matches("p.theory-desc"));
     expect(rankParagraphs.some((node) => node.textContent?.includes("|S|"))).toBe(true);
-    expect(rankParagraphs.some((node) => node.textContent?.includes("H(7,4) column"))).toBe(true);
+    expect(rankParagraphs.some((node) => node.textContent?.includes("Hamming [7,4,3] column"))).toBe(true);
     expect(structureParagraphs.some((node) => node.textContent?.includes("ev_K(τ_m)=τ_m(K)=m"))).toBe(true);
     expect(structureParagraphs.some((node) => node.textContent?.includes("Hxᵀ=h_i⊕h_j⊕h_k"))).toBe(true);
   });

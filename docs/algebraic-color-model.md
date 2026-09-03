@@ -15,7 +15,7 @@
 
 本ノートは、CHROMALUM の Theory タブで用いている 8 色の代数層と、それとは別に RGB 立方体上で定義する最大彩度色相環 `H`（以下、純色相環）を、離散代数・有限幾何・符号理論・多面体幾何の観点から整理する。代数層の核は、三つの原色生成元 `G,R,B` の部分集合を Boolean join で色状態へ写す生成写像と、同じ3ビットをチャンネル反転マスクとして合成する作用とを区別することである。前者は8色の `1+3+3+1` 生成層を与え、後者の合成と自己相殺から `GF(2)^3`、Fano、Hamming が導かれる。純色相環上の中間候補は、その代数層の新しい元ではなく、同じ level を表示する代表元として別に扱う。
 
-この代数核と番号配列は既知である。RGB 色立方体、`Z2 x Z2 x Z2`、Fano 平面、Hamming(7,4) の関係は既存文献に現れ、`0=Black, 1=Blue, 2=Red, 3=Magenta, 4=Green, 5=Cyan, 6=Yellow, 7=White`、すなわち `4G+2R+B` と同じ配列も NEC（1981）と Sinclair Research（1982）の一次資料に記録されている。本ノートはこれら個別構造や番号配列の新規性を主張しない。
+この代数核と番号配列は既知である。RGB 色立方体、`Z2 x Z2 x Z2`、Fano 平面、Hamming `[7,4,3]` の関係は既存文献に現れ、`0=Black, 1=Blue, 2=Red, 3=Magenta, 4=Green, 5=Cyan, 6=Yellow, 7=White`、すなわち `4G+2R+B` と同じ配列も NEC（1981）と Sinclair Research（1982）の一次資料に記録されている。本ノートはこれら個別構造や番号配列の新規性を主張しない。
 
 CHROMALUM のプロジェクト固有の統合候補は、純粋数学が与える無名の最小部分和重み `{1,2,4}` と、二値 RGB 頂点に独立に現れる明るさ順が、同じ名前付き GRB 二進順位へ収束することを明示する点にある。さらに、その順位を補色トーン、純色相環の level ファイバー、Fano/Hamming、多面体、K8 の Hamming 距離分解と結び、単一の 8 ラベルの代数アトラスとして整理する。音響への写像はこの基礎理論には含めず、別ノートで扱う。
 
@@ -463,9 +463,19 @@ tau_M∘tau_C∘tau_Y
 
 と読める。各原始反転がちょうど二度現れて相殺することが、Fano 線の閉包を三原色の反転から説明する。Black(0) / `K` は零マスク、すなわち恒等変換であり、射影平面の点にはならない。
 
-### Hamming(7,4)
+### Hamming [7,4,3]
 
-上の七つの非零反転マスクは、Hamming(7,4) 符号のパリティ検査行列の7本の非零列として読むことができる。色そのものを符号語とは呼ばず、`1..7` を符号語の座標位置ラベルとして扱う。
+上の七つの非零反転マスクは、Hamming 符号のパリティ検査行列 `H` の7本の非零列として読むことができる。色そのものを符号語とは呼ばず、`1..7` を符号語の座標位置ラベルとして扱う。行を固定した `[G,R,B]` 順、列を `L=1..7` 順に取ると、
+
+```text
+        B   R   M   G   C   Y   W
+        1   2   3   4   5   6   7
+H = [   0   0   0   1   1   1   1   ]  s_G
+    [   0   1   1   0   0   1   1   ]  s_R
+    [   1   0   1   0   1   0   1   ]  s_B
+```
+
+となる。列は `001,010,011,100,101,110,111` の七つすべてであり、標準基底を含むので `rank H=3`、したがって階数・退化次数定理から `dim ker H=7-3=4` である。零列がないため重み1の非零符号語はなく、相異なる二列の XOR は零にならないため重み2もない。一方、各 Fano 線の三列は XOR すると零になり、重み3の符号語を与える。よって `ker H` の最小距離は `d_min=3` であり、これは Hamming `[7,4,3]` 符号である。ここで `7` は符号長、`4` は次元、`3` は最小 Hamming 距離を表す。
 
 ```text
 P1 = Blue  = position bit 001
@@ -473,7 +483,13 @@ P2 = Red   = position bit 010
 P4 = Green = position bit 100
 ```
 
-単一位置の誤りに対し、失敗したパリティ検査の集合を syndrome
+正しい符号語を `c in ker H`、通信誤りを `e`、受信語を `r=c xor e` とする。`Hc^T=000` なので、受信語の syndrome は
+
+```text
+s = Hr^T = H(c xor e)^T = Hc^T xor He^T = He^T
+```
+
+となり、正しい符号語成分は検査で零になって誤り成分だけが残る。単一位置 `j` の誤りでは `e` が第 `j` 座標だけに1を持つので `s=h_j`、すなわち syndrome は `H` の第 `j` 列そのものである。失敗したパリティ検査の集合を
 
 ```text
 s = (s_G,s_R,s_B) in {0,1}^3
@@ -486,6 +502,8 @@ j = 4s_G + 2s_R + s_B
 ```
 
 である。例えば `s=110` なら `j=6`、すなわち Yellow と同じビットラベルを持つ第6位置を指す。Fano 線 `{a,b,c}` の条件 `a+b+c=0` は、その三位置を支持とする重み3の Hamming 符号語の条件でもある。したがって Fano の入射関係と Hamming の最小符号語は、同じ三ビット依存関係の二つの表示である。
+
+誤り訂正を成立させるのは `F2^3` 上の線形写像 `H` であり、明るさ順位 `L` ではない。`L(s)=4s_G+2s_R+s_B` は、同じ三ビット syndrome に `B..W` の色名と位置番号 `1..7` を与える読み方として用いる。この役割を区別し、一般の符号率比較、拡張 Hamming 符号、Tanner graph、量子検査回路は本モデルの有限色代数の本線へ含めない。
 
 ### K8 Distance Partition
 
@@ -1817,7 +1835,7 @@ L(c) + L(c') = 7.
 | Gray-type chromatic `C6` | six chromatic vertices with one-bit edges | hue order R -> Y -> G -> C -> B -> M; not a full 8-word Gray code |
 | Pure-hue-loop tone intersections | intersections with the pure-hue loop | fiber counts 0,1,3,3,3,3,1,0; adjoining the separate endpoints K/W gives 1,1,3,3,3,3,1,1 |
 | Fano plane PG(2,2) | 7 nonzero masks | nonidentity toggles; line triples compose to identity |
-| Hamming(7,4) | 7 coordinate positions | nonzero syndrome `s` labels position `j=4s_G+2s_R+s_B` |
+| Hamming [7,4,3] | `ker H` for the 7 nonzero columns of `F2^3` | Fano triples give `d_min=3`; a nonzero syndrome `s` labels position `j=4s_G+2s_R+s_B` |
 | Octahedron | regular cross-polytope realization of 6 chromatic labels | three complement axes R-C, G-M, B-Y; the six RGB-cube vertices also form an affine but nonregular octahedron |
 | Tetrahedra T0/T1 | even/odd parity split | two inscribed tetrahedra |
 | Stella octangula | distance 2 edges | two-channel flips |
@@ -1872,7 +1890,7 @@ Important invariants currently tested include:
 10. `T0=ker(pi)={K,M,C,Y}` is closed under XOR and isomorphic to `V4`; `T1=B xor T0={B,R,G,W}` is its odd coset. Their separate 4-vertex, 6-edge, 4-face displays compound to the 12-edge distance-2 layer.
 11. The Color Die and octahedron data realize combinatorial duality: six die faces correspond to six octahedral vertices, twelve die edges to twelve octahedral edges, eight die vertices to eight triangular faces, complement pairs to antipodal axes, and octahedral face adjacency to `Q3`.
 12. In fixed `[G,R,B]` order, `M=011` and `Y=110` give `M AND Y = R = 010` and also `XNOR(M,Y)=R`; over all 64 ordered pairs, `OR=XOR iff AND=K` and `AND=XNOR iff OR=W`, while enumeration of all 16 channelwise binary Boolean functions leaves exactly XOR/OR for the distinct RGB-primary pairs and AND/XNOR for the distinct CMY-primary pairs.
-13. Hamming labels are coordinate positions, not color codewords; syndrome `s=(s_G,s_R,s_B)` selects position `j=4s_G+2s_R+s_B`.
+13. The seven colored nonzero vectors are the columns of a rank-three parity-check matrix `H`; `dim ker H=4`, Fano triples give minimum distance three, and therefore `ker H` is Hamming `[7,4,3]`. Hamming labels are coordinate positions, not color codewords; for `r=c xor e`, syndrome `s=Hr^T=He^T=(s_G,s_R,s_B)` selects position `j=4s_G+2s_R+s_B` for a single error.
 14. The sign-preserving lattice rule maps positive and negative level differences to fixed orthogonal unit-grid directions. Cutting `M->R` then places the six faces at `(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)`, producing the displayed 2-2-2 staircase. In screen coordinates, the Theory figure rigidly rotates the same net so the two directions become upper-right and lower-right and the path reads left-to-right; this is not a different cube net. The staircase is the natural minimal representative under fixed-direction, nondegeneracy, and simple unit-square-connectivity conditions, up to rotation, reflection, and axis exchange; the sign sequence alone does not force a planar direction. Cube-face spanning trees separately enumerate the 11 free cube nets.
 
 `src/__tests__/research-note-invariants.test.ts` は、81 個の full section と 9 個の補色 section、等 tone 三角形の計量、M/G 長方形の座標・直交性・共通単位円、Tone Zigzag の統計量と Fourier 係数を数値許容差つきで回帰検査する。これは導出を実装から独立に再計算する保護層だが、形式証明ではない。検証課題に下げた M/G の大域的一意性は、依然として機械検証済みの主張ではない。将来は symbolic / exact-arithmetic 検査を併設すれば、長い幾何恒等式に対する浮動小数点許容差への依存をさらに減らせる。

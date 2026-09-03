@@ -77,11 +77,21 @@ describe("ToneZigzag", () => {
     });
   });
 
-  it("presents transition, toggle, delta, and inclusion in a full-width table", () => {
-    renderToneZigzag();
+  it("presents transition, toggle, delta, and inclusion in a fitted full-width table", () => {
+    const { container } = renderToneZigzag();
 
     const table = screen.getByRole("table");
-    expect(table.style.minWidth).toBe("680px");
+    const wrapper = container.querySelector<HTMLElement>(".theory-zigzag-table-wrap")!;
+    expect(table.style.width).toBe("100%");
+    expect(table.style.tableLayout).toBe("fixed");
+    expect(table.style.minWidth).toBe("");
+    expect(wrapper.style.overflowX).toBe("");
+    expect([...table.querySelectorAll("col")].map((column) => column.getAttribute("style"))).toEqual([
+      "width: 28%;",
+      "width: 38%;",
+      "width: 14%;",
+      "width: 20%;",
+    ]);
 
     const rows = table.querySelectorAll("tbody tr");
     expect(rows[0].textContent).toContain("R₂ → Y₆");
@@ -94,14 +104,23 @@ describe("ToneZigzag", () => {
   it("keeps hover, focus, pinning, and keyboard activation on eight external level buttons", async () => {
     const onHover = vi.fn();
     const { container } = renderToneZigzag(null, onHover);
+    const scrollContainer = container.querySelector<HTMLElement>(".theory-zigzag-level-scroll")!;
+    const controlGroup = container.querySelector<HTMLElement>("[data-tone-level-controls='true']")!;
     const controls = container.querySelectorAll<HTMLButtonElement>("[data-tone-level-control]");
     const levelFour = container.querySelector<HTMLButtonElement>("[data-tone-level-control='4']")!;
 
     expect(controls).toHaveLength(8);
+    expect(scrollContainer.style.overflowX).toBe("auto");
+    expect(controlGroup.style.flexWrap).toBe("nowrap");
+    expect(controlGroup.style.width).toBe("max-content");
+    expect(controlGroup.style.minWidth).toBe("100%");
     expect(levelFour.tagName).toBe("BUTTON");
     expect(levelFour.type).toBe("button");
     expect(levelFour.tabIndex).toBe(0);
-    expect(levelFour.style.minHeight).toBe("44px");
+    expect(levelFour.style.minWidth).toBe("0px");
+    expect(levelFour.style.minHeight).toBe("36px");
+    expect(levelFour.style.flex).toBe("0 0 auto");
+    expect(levelFour.style.whiteSpace).toBe("nowrap");
 
     fireEvent.mouseEnter(levelFour);
     fireEvent.mouseLeave(levelFour);

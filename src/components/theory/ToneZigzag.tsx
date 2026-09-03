@@ -9,7 +9,6 @@ import {
   CHROMALUM_HUE_TOGGLE_CYCLE,
   CHROMALUM_TONE_DENOMINATOR,
 } from "../../chromalum-color-model";
-import { MIN_TAP_SIZE } from "../../constants";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { S_BTN, S_BTN_ACTIVE, S_CURSOR_POINTER } from "../../styles/shared";
@@ -389,57 +388,74 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
       </svg>
 
       <div
-        role="group"
-        aria-label={t("theory_zigzag_level_controls_aria")}
-        data-tone-level-controls="true"
-        style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: SP.md, width: "100%" }}
+        className="theory-zigzag-level-scroll"
+        style={{ width: "100%", overflowX: "auto", overscrollBehaviorInline: "contain", scrollbarWidth: "thin" }}
       >
-        {LEVELS.map((level) => {
-          const active = activeLevel === level;
-          const isPinned = pinned === level;
-          const candidateCount = CANONICAL_HUE_ANGLES_BY_LEVEL[level].length;
-          return (
-            <button
-              key={`level-control-${level}`}
-              type="button"
-              data-tone-level-control={level}
-              aria-pressed={isPinned}
-              aria-label={`${levelLabel(level)} · T=${level}/7 · N=${candidateCount}`}
-              onMouseEnter={() => enterLevel(level)}
-              onMouseLeave={leaveLevel}
-              onFocus={() => enterLevel(level)}
-              onBlur={leaveLevel}
-              onClick={() => pinLevel(level)}
-              onKeyDown={(event) => activateLevelByKeyboard(event, level)}
-              style={{
-                ...(active ? S_BTN_ACTIVE : S_BTN),
-                minWidth: 68,
-                minHeight: MIN_TAP_SIZE,
-                gap: SP.md,
-                borderColor: active ? THEORY_LEVELS[level].color : C.border,
-                color: active ? THEORY_LEVELS[level].color : C.textMuted,
-                fontFamily: FONT.mono,
-                fontSize: FS.sm,
-              }}
-            >
-              <span
-                aria-hidden="true"
+        <div
+          role="group"
+          aria-label={t("theory_zigzag_level_controls_aria")}
+          data-tone-level-controls="true"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            flexWrap: "nowrap",
+            gap: SP.sm,
+            width: "max-content",
+            minWidth: "100%",
+            padding: `${SP.xs}px 0`,
+            boxSizing: "border-box",
+          }}
+        >
+          {LEVELS.map((level) => {
+            const active = activeLevel === level;
+            const isPinned = pinned === level;
+            const candidateCount = CANONICAL_HUE_ANGLES_BY_LEVEL[level].length;
+            return (
+              <button
+                key={`level-control-${level}`}
+                type="button"
+                data-tone-level-control={level}
+                aria-pressed={isPinned}
+                aria-label={`${levelLabel(level)} · T=${level}/7 · N=${candidateCount}`}
+                onMouseEnter={() => enterLevel(level)}
+                onMouseLeave={leaveLevel}
+                onFocus={() => enterLevel(level)}
+                onBlur={leaveLevel}
+                onClick={() => pinLevel(level)}
+                onKeyDown={(event) => activateLevelByKeyboard(event, level)}
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: THEORY_LEVELS[level].color,
-                  border: level === 0 ? `1px solid ${C.textDimmer}` : "none",
-                  boxSizing: "border-box",
+                  ...(active ? S_BTN_ACTIVE : S_BTN),
+                  minWidth: 0,
+                  minHeight: 36,
                   flex: "0 0 auto",
+                  gap: SP.xs,
+                  padding: `${SP.xs}px ${SP.md}px`,
+                  whiteSpace: "nowrap",
+                  borderColor: active ? THEORY_LEVELS[level].color : C.border,
+                  color: active ? THEORY_LEVELS[level].color : C.textMuted,
+                  fontFamily: FONT.mono,
+                  fontSize: FS.xs,
                 }}
-              />
-              <span>
-                {levelLabel(level)} · N={candidateCount}
-              </span>
-            </button>
-          );
-        })}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: THEORY_LEVELS[level].color,
+                    border: level === 0 ? `1px solid ${C.textDimmer}` : "none",
+                    boxSizing: "border-box",
+                    flex: "0 0 auto",
+                  }}
+                />
+                <span>
+                  {levelLabel(level)} · N={candidateCount}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div
@@ -469,18 +485,24 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
         )}
       </div>
 
-      <div className="theory-zigzag-table-wrap" style={{ width: "100%", overflowX: "auto", paddingBottom: SP.sm }}>
+      <div className="theory-zigzag-table-wrap" style={{ width: "100%", paddingBottom: SP.sm }}>
         <table
           aria-label={t("theory_zigzag_table_aria")}
           style={{
             width: "100%",
-            minWidth: 680,
+            tableLayout: "fixed",
             borderCollapse: "collapse",
             color: C.textPrimary,
             fontFamily: FONT.mono,
             fontSize: FS.md,
           }}
         >
+          <colgroup>
+            <col style={{ width: "28%" }} />
+            <col style={{ width: "38%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "20%" }} />
+          </colgroup>
           <thead>
             <tr>
               {[
@@ -493,7 +515,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
                   key={heading}
                   scope="col"
                   style={{
-                    padding: `${SP.xl}px ${SP["2xl"]}px`,
+                    padding: `${SP.xl}px ${SP.lg}px`,
                     borderBottom: `1px solid ${C.borderAccent}`,
                     color: C.accentBright,
                     fontWeight: FW.bold,
@@ -534,7 +556,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
 });
 
 const TABLE_CELL_STYLE: React.CSSProperties = {
-  padding: `${SP.xl}px ${SP["2xl"]}px`,
+  padding: `${SP.xl}px ${SP.lg}px`,
   borderBottom: `1px solid ${C.border}`,
   textAlign: "left",
   whiteSpace: "nowrap",

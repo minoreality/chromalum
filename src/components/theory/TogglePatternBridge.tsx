@@ -74,7 +74,15 @@ export const TogglePatternBridge = React.memo(function TogglePatternBridge({ hlL
             <div style={{ color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.xs, textAlign: "center" }}>
               {t(`theory_toggle_patterns_layer_${count}`)}
             </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: SP.lg, flexWrap: "wrap" }}>
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+                gap: SP.md,
+                flexWrap: "nowrap",
+              }}
+            >
               {levels.map((level) => (
                 <PatternChip key={level} level={level} highlighted={hlLevel === level} onHover={onHover} />
               ))}
@@ -122,11 +130,13 @@ function PatternChip({ level, highlighted, onHover }: { level: number; highlight
       onMouseEnter={() => onHover(level)}
       onMouseLeave={() => onHover(null)}
       style={{
-        minWidth: 56,
+        minWidth: 0,
+        flex: "1 1 0",
+        maxWidth: 64,
         border: highlighted ? "2px solid #fff" : `1px solid ${info.color}`,
         borderRadius: R.lg,
         background: C.bgInput,
-        padding: `${SP.md}px ${SP.lg}px`,
+        padding: `${SP.md}px ${SP.md}px`,
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
@@ -135,10 +145,10 @@ function PatternChip({ level, highlighted, onHover }: { level: number; highlight
         fontFamily: FONT.mono,
       }}
     >
-      <span style={{ color: info.color, fontWeight: FW.bold, fontSize: FS.sm }}>
+      <span style={{ color: info.color, fontWeight: FW.bold, fontSize: FS.sm, whiteSpace: "nowrap" }}>
         {info.short} · {info.bits.join("")}
       </span>
-      <span style={{ color: C.textDimmer, fontSize: FS.xs }}>{factorText}</span>
+      <span style={{ color: C.textDimmer, fontSize: FS.xs, whiteSpace: "nowrap" }}>{factorText}</span>
     </div>
   );
 }

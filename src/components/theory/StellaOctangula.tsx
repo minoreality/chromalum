@@ -7,6 +7,7 @@ import {
   COMPLEMENT_EDGES,
   TETRA_T0,
   TETRA_T1,
+  hammingDist,
   stellaEdgeChannels,
   vertexRadius,
   vertexDepth,
@@ -29,6 +30,7 @@ const K8_STELLA_COLOR = "#ffaa60";
 const K8_M4_COLOR = "#ff6080";
 
 type ViewMode = "compound" | "t0" | "t1" | "k8";
+type ComparisonPair = [] | [number] | [number, number];
 
 interface Props {
   hlLevel: number | null;
@@ -38,12 +40,27 @@ interface Props {
 export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
   const [pinned, setPinned] = useState<number | null>(null);
-  usePinReset(setPinned);
   const [viewMode, setViewMode] = useState<ViewMode>("compound");
   const [showSurface, setShowSurface] = useState(false);
   const [hlFace, setHlFace] = useState<number | null>(null);
+  const [comparisonPair, setComparisonPair] = useState<ComparisonPair>([]);
 
-  const hl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : pinned;
+  const resetSelection = useCallback((_value: null) => {
+    setPinned(null);
+    setHlFace(null);
+    setComparisonPair([]);
+  }, []);
+  usePinReset(resetSelection);
+
+  const comparisonA = comparisonPair[0] ?? null;
+  const comparisonB = comparisonPair[1] ?? null;
+  const comparisonMask = comparisonA !== null && comparisonB !== null ? comparisonA ^ comparisonB : null;
+  const comparisonDistance = comparisonA !== null && comparisonB !== null ? hammingDist(comparisonA, comparisonB) : null;
+  const comparisonActive = viewMode === "k8" && comparisonA !== null;
+  const comparisonComplete = comparisonActive && comparisonB !== null && comparisonMask !== null && comparisonDistance !== null;
+
+  const externalHl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : null;
+  const hl = comparisonActive ? comparisonA : (externalHl ?? pinned);
 
   const hlStellaEdgeSet = new Set<number>();
   const hlFaceSet = new Set<number>();
@@ -63,18 +80,32 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
   const onLeave = useCallback(() => onHover(null), [onHover]);
   const onTap = useCallback(
     (lv: number) => {
+      if (viewMode === "k8") {
+        setPinned(null);
+        setHlFace(null);
+        setComparisonPair((current) => {
+          if (current.length === 0) return [lv];
+          if (current.length === 1) return current[0] === lv ? [] : [current[0], lv];
+          if (current[0] === lv) return [];
+          if (current[1] === lv) return [current[0]];
+          return [current[0], lv];
+        });
+        queueMicrotask(() => onHover(null));
+        return;
+      }
       setPinned((prev) => {
         const next = prev === lv ? null : lv;
         queueMicrotask(() => onHover(next));
         return next;
       });
     },
-    [onHover],
+    [onHover, viewMode],
   );
 
   const clearSelection = useCallback(() => {
     setPinned(null);
     setHlFace(null);
+    setComparisonPair([]);
     onHover(null);
   }, [onHover]);
 
@@ -131,14 +162,21 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       const p = v.pts[lv];
       const info = THEORY_LEVELS[lv];
       const faceRelated = hlFaceVertexSet.has(lv);
-      const active = hl === lv || complementLv === lv || faceRelated;
-      const dim = anyHl && !active;
-      const isComplement = complementLv === lv;
+      const comparisonRole = comparisonActive && comparisonA === lv ? "a" : comparisonComplete && comparisonB === lv ? "b" : null;
+      const active = comparisonActive ? comparisonRole !== null : hl === lv || complementLv === lv || faceRelated;
+      const dim = comparisonActive ? !active : anyHl && !active;
+      const isComplement = !comparisonActive && complementLv === lv;
       const isFaceOpposite = hlFaceOppositeLv === lv;
       const t0 = TETRA_T0 as readonly number[];
       const t1 = TETRA_T1 as readonly number[];
-      const sameTetra = hl !== null && ((t0.includes(hl) && t0.includes(lv)) || (t1.includes(hl) && t1.includes(lv)));
+      const sameTetra = !comparisonActive && hl !== null && ((t0.includes(hl) && t0.includes(lv)) || (t1.includes(hl) && t1.includes(lv)));
       const neighbour = sameTetra && lv !== hl;
+      const vertexAriaLabel =
+        comparisonRole === "a"
+          ? t("theory_stella_compare_input_a_aria", info.short, lv, info.bits.join(""))
+          : comparisonRole === "b"
+            ? t("theory_stella_compare_input_b_aria", info.short, lv, info.bits.join(""))
+            : `${info.short} · ${lv} · ${info.bits.join("")}`;
 
       const r = isolatedTetrahedron ? VR + 1 : vertexRadius(lv, VR);
       const hitR = isolatedTetrahedron ? HIT_R : vertexRadius(lv, HIT_R);
@@ -150,10 +188,11 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           key={`${viewId}-v-${lv}`}
           data-stella-vertex={lv}
           data-stella-dimmed={dim}
+          data-stella-comparison-role={comparisonRole ?? undefined}
           role="button"
           tabIndex={0}
-          aria-label={`${info.short} · ${lv} · ${info.bits.join("")}`}
-          aria-pressed={pinned === lv}
+          aria-label={vertexAriaLabel}
+          aria-pressed={comparisonActive ? comparisonRole !== null : pinned === lv}
           onMouseEnter={() => onEnter(lv)}
           onMouseLeave={onLeave}
           onFocus={() => onEnter(lv)}
@@ -170,6 +209,17 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           <title>{`${info.short} · L${lv} · ${info.bits.join("")}`}</title>
           <circle cx={p.x} cy={p.y} r={hitR} fill="transparent" />
           {neighbour && <circle cx={p.x} cy={p.y} r={r + 4} fill="none" stroke="#fff" strokeWidth={0.8} strokeOpacity={0.3} />}
+          {comparisonRole && (
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={r + (comparisonRole === "b" ? 6 : 4)}
+              fill="none"
+              stroke="#fff"
+              strokeWidth={comparisonRole === "b" ? 1.8 : 1.2}
+              strokeDasharray={comparisonRole === "b" ? "3 2" : "none"}
+            />
+          )}
           <circle
             cx={p.x}
             cy={p.y}
@@ -194,6 +244,19 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           >
             {lv}
           </text>
+          {comparisonRole && (
+            <text
+              x={p.x + r + 4}
+              y={p.y - r - 3}
+              textAnchor="middle"
+              fontSize={FS.xxs}
+              fontFamily="var(--font-mono)"
+              fontWeight={FW.bold}
+              fill="#fff"
+            >
+              {comparisonRole}
+            </text>
+          )}
         </g>
       );
     });
@@ -478,53 +541,71 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     );
   };
 
+  const isComparedEdge = (a: number, b: number) =>
+    comparisonComplete &&
+    comparisonA !== null &&
+    comparisonB !== null &&
+    ((a === comparisonA && b === comparisonB) || (a === comparisonB && b === comparisonA));
+
   const renderK8 = (v: ViewData, viewId: string) => (
     <>
       {CUBE_EDGES.map(([a, b], i) => {
-        const active = hlQ3.has(i);
-        const dim = hl !== null && !active;
+        const compared = isComparedEdge(a, b);
+        const active = comparisonComplete ? compared : hlQ3.has(i);
+        const dim = comparisonComplete ? !compared : hl !== null && !active;
         return (
           <line
             key={`${viewId}-q3-${i}`}
+            data-k8-edge={`${a}-${b}`}
+            data-k8-distance="1"
+            data-k8-edge-active={active}
             x1={v.pts[a].x}
             y1={v.pts[a].y}
             x2={v.pts[b].x}
             y2={v.pts[b].y}
-            stroke={K8_Q3_COLOR}
-            strokeWidth={active ? 2 : 1}
+            stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_Q3_COLOR}
+            strokeWidth={compared ? 3.5 : active ? 2 : 1}
             opacity={dim ? 0.1 : active ? 0.9 : 0.4}
           />
         );
       })}
       {STELLA_EDGES.map(([a, b], i) => {
-        const active = hlStella.has(i);
-        const dim = hl !== null && !active;
+        const compared = isComparedEdge(a, b);
+        const active = comparisonComplete ? compared : hlStella.has(i);
+        const dim = comparisonComplete ? !compared : hl !== null && !active;
         return (
           <line
             key={`${viewId}-st-${i}`}
+            data-k8-edge={`${a}-${b}`}
+            data-k8-distance="2"
+            data-k8-edge-active={active}
             x1={v.pts[a].x}
             y1={v.pts[a].y}
             x2={v.pts[b].x}
             y2={v.pts[b].y}
-            stroke={K8_STELLA_COLOR}
-            strokeWidth={active ? 2.2 : 1.2}
+            stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_STELLA_COLOR}
+            strokeWidth={compared ? 3.5 : active ? 2.2 : 1.2}
             strokeDasharray="5,3"
             opacity={dim ? 0.1 : active ? 0.9 : 0.35}
           />
         );
       })}
       {COMPLEMENT_EDGES.map(([a, b], i) => {
-        const active = hlM4.has(i);
-        const dim = hl !== null && !active;
+        const compared = isComparedEdge(a, b);
+        const active = comparisonComplete ? compared : hlM4.has(i);
+        const dim = comparisonComplete ? !compared : hl !== null && !active;
         return (
           <line
             key={`${viewId}-m4-${i}`}
+            data-k8-edge={`${a}-${b}`}
+            data-k8-distance="3"
+            data-k8-edge-active={active}
             x1={v.pts[a].x}
             y1={v.pts[a].y}
             x2={v.pts[b].x}
             y2={v.pts[b].y}
-            stroke={K8_M4_COLOR}
-            strokeWidth={active ? 2.5 : 1.5}
+            stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_M4_COLOR}
+            strokeWidth={compared ? 3.5 : active ? 2.5 : 1.5}
             strokeDasharray="2,4"
             opacity={dim ? 0.1 : active ? 0.9 : 0.3}
           />
@@ -541,8 +622,24 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     return renderCompound(v, viewId);
   };
 
+  const comparisonParityA = comparisonA !== null ? hammingDist(0, comparisonA) % 2 : null;
+  const comparisonParityB = comparisonB !== null ? hammingDist(0, comparisonB) % 2 : null;
+  const comparisonLayerLabel =
+    comparisonDistance === 1
+      ? t("theory_stella_compare_distance_1")
+      : comparisonDistance === 2
+        ? t("theory_stella_compare_distance_2")
+        : comparisonDistance === 3
+          ? t("theory_stella_compare_distance_3")
+          : null;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && comparisonPair.length > 0) clearSelection();
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "center" }}>
         <svg
           id="theory-stella-view"
@@ -580,6 +677,38 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           </p>
         )}
       </div>
+
+      {viewMode === "k8" && (
+        <div
+          data-testid="stella-comparison-status"
+          role="status"
+          aria-live="polite"
+          style={{ minHeight: 62, textAlign: "center", fontFamily: FONT.mono, fontSize: FS.sm, color: C.textMuted }}
+        >
+          {comparisonA === null ? (
+            t("theory_stella_compare_select_first")
+          ) : !comparisonComplete || comparisonB === null || comparisonMask === null || comparisonDistance === null ? (
+            t("theory_stella_compare_select_second", THEORY_LEVELS[comparisonA].short)
+          ) : (
+            <>
+              <div style={{ color: C.textPrimary }}>
+                {THEORY_LEVELS[comparisonA].short}
+                <sub>{comparisonA}</sub> · {THEORY_LEVELS[comparisonA].bits.join("")} ⊕ {THEORY_LEVELS[comparisonB].short}
+                <sub>{comparisonB}</sub> · {THEORY_LEVELS[comparisonB].bits.join("")} = {THEORY_LEVELS[comparisonMask].short}
+                <sub>{comparisonMask}</sub> · {THEORY_LEVELS[comparisonMask].bits.join("")}
+              </div>
+              <div style={{ marginTop: SP.xs }}>
+                d<sub>H</sub> = wt({THEORY_LEVELS[comparisonMask].bits.join("")}) = {comparisonDistance} · {comparisonLayerLabel}
+              </div>
+              <div style={{ marginTop: SP.xs, fontSize: FS.xs }}>
+                π({THEORY_LEVELS[comparisonA].short})={comparisonParityA} ({comparisonParityA === 0 ? "T0" : "T1"}) · π(
+                {THEORY_LEVELS[comparisonB].short})={comparisonParityB} ({comparisonParityB === 0 ? "T0" : "T1"})
+              </div>
+              <div style={{ marginTop: SP.xs, fontSize: FS.xxs, color: C.textDimmer }}>{t("theory_stella_compare_parity_note")}</div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Toggle buttons */}
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: SP.md }}>

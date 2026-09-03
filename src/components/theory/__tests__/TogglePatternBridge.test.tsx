@@ -23,6 +23,11 @@ describe("TogglePatternBridge", () => {
     expect(screen.getByTestId("toggle-pattern-layer-2").querySelectorAll("[data-testid^='toggle-pattern-']")).toHaveLength(3);
     expect(screen.getByTestId("toggle-pattern-layer-3").querySelectorAll("[data-testid^='toggle-pattern-']")).toHaveLength(1);
 
+    for (const count of [1, 2]) {
+      const chipRow = screen.getByTestId(`toggle-pattern-layer-${count}`).querySelector<HTMLElement>("div:nth-child(2)");
+      expect(chipRow?.style.flexWrap).toBe("nowrap");
+    }
+
     expect(screen.getByTestId("toggle-pattern-4").textContent).toContain("G · 100");
     expect(screen.getByTestId("toggle-pattern-6").textContent).toContain("Y · 110");
     expect(screen.getByTestId("toggle-pattern-6").textContent).toContain("τGτR");

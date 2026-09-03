@@ -326,6 +326,71 @@ button.theory-diagram-button {
   height: 22px;
   min-height: 22px;
 }
+@keyframes theory-hamming-stage-trace {
+  0%,
+  100% {
+    border-color: var(--c-border, #2a2a40);
+    background: var(--c-bg-panel, #0f0f1a);
+    box-shadow: none;
+  }
+  38% {
+    border-color: var(--c-accent-bright, #80a0ff);
+    background: var(--c-bg-surface-alt, #1a1a3a);
+    box-shadow:
+      0 0 0 1px rgba(128, 160, 255, 0.22),
+      0 0 14px rgba(96, 128, 255, 0.2);
+  }
+}
+.theory-hamming-stage-tracing {
+  animation: theory-hamming-stage-trace 440ms ease-out both;
+}
+@keyframes theory-hamming-operation-trace {
+  0%,
+  100% {
+    color: var(--c-text-muted, #9090b8);
+    opacity: 1;
+  }
+  42% {
+    color: var(--c-accent-bright, #80a0ff);
+    opacity: 1;
+  }
+}
+@keyframes theory-hamming-arrow-trace {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateY(-2px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(3px);
+  }
+}
+.theory-hamming-operation-tracing {
+  animation: theory-hamming-operation-trace 360ms ease-out both;
+}
+.theory-hamming-operation-tracing .theory-hamming-operation-arrow {
+  animation: theory-hamming-arrow-trace 360ms ease-out both;
+}
+@keyframes theory-hamming-parity-check-trace {
+  0%,
+  100% {
+    box-shadow: none;
+    filter: brightness(1);
+  }
+  45% {
+    box-shadow:
+      0 0 0 1px rgba(128, 160, 255, 0.3),
+      0 0 12px rgba(96, 128, 255, 0.22);
+    filter: brightness(1.28);
+  }
+}
+.theory-hamming-parity-check-tracing {
+  animation: theory-hamming-parity-check-trace 380ms ease-out both;
+}
+.theory-hamming-syndrome-identity-tracing {
+  animation: theory-hamming-parity-check-trace 380ms ease-out both;
+}
 .theory-binary-svg {
   width: 100%;
   max-width: 480px;
@@ -759,6 +824,15 @@ button.theory-diagram-button {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .theory-hamming-stage-tracing {
+    animation: none !important;
+  }
+  .theory-hamming-operation-tracing,
+  .theory-hamming-operation-tracing .theory-hamming-operation-arrow,
+  .theory-hamming-parity-check-tracing,
+  .theory-hamming-syndrome-identity-tracing {
+    animation: none !important;
   }
 }
 

@@ -131,4 +131,39 @@ describe("StellaOctangula", () => {
     fireEvent.click(screen.getByRole("button", { name: /T0/i }));
     expect(screen.getByRole("button", { name: "K · 0 · 000" }).getAttribute("aria-pressed")).toBe("false");
   });
+
+  it.each([
+    { a: "K · 0 · 000", b: "B · 1 · 001", edge: "0-1", maskBits: "001", distance: "1", label: "distance 1" },
+    { a: "B · 1 · 001", b: "R · 2 · 010", edge: "1-2", maskBits: "011", distance: "2", label: "distance 2" },
+    { a: "R · 2 · 010", b: "C · 5 · 101", edge: "2-5", maskBits: "111", distance: "3", label: "distance 3" },
+  ])("compares a directly selected K8 pair at $label", ({ a, b, edge, maskBits, distance, label }) => {
+    const { container } = renderStella();
+    fireEvent.click(screen.getByRole("button", { name: "K₈" }));
+
+    fireEvent.click(screen.getByRole("button", { name: a }));
+    fireEvent.click(screen.getByRole("button", { name: b }));
+
+    const status = screen.getByTestId("stella-comparison-status");
+    expect(status.textContent).toContain(`wt(${maskBits})`);
+    expect(status.textContent).toContain(`= ${distance}`);
+    expect(status.textContent).toContain(label);
+    expect(container.querySelector(`[data-k8-edge="${edge}"]`)?.getAttribute("data-k8-edge-active")).toBe("true");
+    expect(container.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(1);
+  });
+
+  it("keeps the K8 anchor while replacing the target and clears the comparison on Escape", () => {
+    const { container } = renderStella();
+    fireEvent.click(screen.getByRole("button", { name: "K₈" }));
+    fireEvent.click(screen.getByRole("button", { name: "R · 2 · 010" }));
+    fireEvent.click(screen.getByRole("button", { name: "C · 5 · 101" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "G · 4 · 100" }));
+    expect(container.querySelector('[data-stella-comparison-role="a"]')?.getAttribute("data-stella-vertex")).toBe("2");
+    expect(container.querySelector('[data-stella-comparison-role="b"]')?.getAttribute("data-stella-vertex")).toBe("4");
+    expect(screen.getByTestId("stella-comparison-status").textContent).toContain("distance 2");
+
+    fireEvent.keyDown(container.querySelector('[data-stella-vertex="4"]')!, { key: "Escape" });
+    expect(container.querySelector("[data-stella-comparison-role]")).toBeNull();
+    expect(screen.getByTestId("stella-comparison-status").textContent).toBe("Select an anchor vertex in K₈");
+  });
 });
