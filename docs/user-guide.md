@@ -24,9 +24,8 @@ need to keep outside the browser.
    underlying source tone structure.
 4. Use Gallery to generate, compare, bookmark, and export color-pattern
    variants.
-5. Use Map to inspect model tone, the displayed palette's GRB code-value score,
-   gradient, connected regions, boundary distance, isolation, and local
-   diversity.
+5. Use Map to inspect model tone, gradient, connected regions, boundary
+   distance, isolation, and local diversity.
 6. Use Theory and Music to explore the same eight-level structure as algebraic
    diagrams and sonification.
 

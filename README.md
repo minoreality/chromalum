@@ -34,9 +34,8 @@ structures.
   source tone structure.
 - Gallery generation for color-pattern variants, bookmarks, previews, and
   PNG exports.
-- Map analysis views for composition, model tone, displayed GRB code-value
-  score, connected regions, gradients, boundary distance, isolation, and local
-  diversity.
+- Map analysis views for composition, model tone, connected regions, gradients,
+  boundary distance, isolation, and local diversity.
 - Theory tab explaining the color system through binary levels, XOR, cube
   geometry, the Fano plane, Hamming codes, tetrahedra, octahedra, and compound
   polyhedra.

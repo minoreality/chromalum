@@ -78,8 +78,8 @@ describe("AnalyzePanel", () => {
   it("shows map mode buttons", () => {
     render(<AnalyzePanel {...makeProps()} />);
     const buttons = screen.getAllByRole("button");
-    // 7 map mode buttons
-    expect(buttons.length).toBeGreaterThanOrEqual(7);
+    // 6 map mode buttons
+    expect(buttons.length).toBeGreaterThanOrEqual(6);
   });
 
   it("orders map mode buttons from value maps to structural maps", () => {
@@ -87,7 +87,6 @@ describe("AnalyzePanel", () => {
 
     expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
       "map_map_levelTone",
-      "map_map_colorTone",
       "map_map_gradient",
       "map_map_region",
       "map_map_boundaryDistance",
@@ -106,11 +105,11 @@ describe("AnalyzePanel", () => {
     const setMapMode = vi.fn<(mode: MapMode) => void>();
     render(<AnalyzePanel {...makeProps({ setMapMode })} />);
 
-    for (const mode of ["levelTone", "colorTone", "gradient", "region", "boundaryDistance", "isolation", "diversity"] satisfies MapMode[]) {
+    for (const mode of ["levelTone", "gradient", "region", "boundaryDistance", "isolation", "diversity"] satisfies MapMode[]) {
       fireEvent.click(screen.getByRole("button", { name: `map_map_${mode}` }));
       expect(setMapMode).toHaveBeenLastCalledWith(mode);
     }
-    expect(setMapMode).toHaveBeenCalledTimes(7);
+    expect(setMapMode).toHaveBeenCalledTimes(6);
   });
 
   it("keeps map canvas and mode buttons outside donut clear behavior", () => {
@@ -133,7 +132,6 @@ describe("AnalyzePanel", () => {
       expect.objectContaining({
         mode: "isolation",
         pixelMaps: analyzeMocks.pixelMaps,
-        colorLUT: props.colorLUT,
         candidateIndexByLevel: props.candidateIndexByLevel,
         canvasData: props.canvasData,
         displayWidth: props.displayWidth,

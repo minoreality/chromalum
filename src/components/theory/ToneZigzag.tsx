@@ -12,7 +12,7 @@ import {
 import { MIN_TAP_SIZE } from "../../constants";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
-import { S_BTN, S_BTN_ACTIVE } from "../../styles/shared";
+import { S_BTN, S_BTN_ACTIVE, S_CURSOR_POINTER } from "../../styles/shared";
 import { C, FONT, FS, FW, SP } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
 
@@ -137,7 +137,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
   const intersectionSequence = CANONICAL_HUE_CYCLE.map(({ levelIndex }) => levelIndex).join(" ");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: SP["2xl"], width: "100%", minWidth: 0 }}>
+    <div className="theory-zigzag-block" style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: SP["2xl"] }}>
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         className="theory-zigzag-svg"
@@ -365,6 +365,27 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
         <text x={ML + PW / 2} y={VB_H - 4} textAnchor="middle" fontFamily={FONT.mono} fontSize={FS.sm} fill={C.textMuted}>
           h ∈ ℝ/ℤ
         </text>
+
+        {/* Keep hover targets above every plotted mark so interaction does not break at crossings. */}
+        <g aria-hidden="true" data-tone-hover-layer="true" onMouseLeave={leaveLevel} style={S_CURSOR_POINTER}>
+          {LEVELS.map((level) => {
+            const upperLevel = Math.min(CHROMALUM_TONE_DENOMINATOR, level + 0.5);
+            const lowerLevel = Math.max(0, level - 0.5);
+            const y = yLevel(upperLevel);
+            return (
+              <rect
+                key={`level-hover-${level}`}
+                x={ML}
+                y={y}
+                width={PW}
+                height={yLevel(lowerLevel) - y}
+                fill="transparent"
+                data-tone-level-hover={level}
+                onMouseEnter={() => enterLevel(level)}
+              />
+            );
+          })}
+        </g>
       </svg>
 
       <div
@@ -448,7 +469,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({ hlLevel, onHover }: P
         )}
       </div>
 
-      <div style={{ width: "100%", overflowX: "auto", paddingBottom: SP.sm }}>
+      <div className="theory-zigzag-table-wrap" style={{ width: "100%", overflowX: "auto", paddingBottom: SP.sm }}>
         <table
           aria-label={t("theory_zigzag_table_aria")}
           style={{

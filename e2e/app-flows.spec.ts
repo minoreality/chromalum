@@ -178,7 +178,15 @@ test("opens music controls without a global tone-mode toggle", async ({ page }) 
 
   await expect(page.getByRole("button", { name: "Pitch" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bit Spectrum" })).toHaveCount(0);
-  await expect(page.getByRole("radio", { name: "CHROMALUM" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radio", { name: "Chromatic" })).toHaveAttribute("aria-checked", "true");
+});
+
+test("keeps the Magma tone map and omits the GRB code-score mode", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Map" }).click();
+
+  await expect(page.getByRole("button", { name: "Tone", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "GRB Code Score", exact: true })).toHaveCount(0);
 });
 
 test("caps Structural Sonification cards at four columns on wide desktop", async ({ page }) => {

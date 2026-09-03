@@ -628,7 +628,6 @@ describe("MapCanvas rendering and inspection", () => {
       <MapCanvas
         mode="levelTone"
         pixelMaps={pixelMaps}
-        colorLUT={colorLUT}
         candidateIndexByLevel={DEFAULT_CANDIDATE_INDEX_BY_LEVEL}
         canvasData={canvasData}
         displayWidth={20}
@@ -636,12 +635,11 @@ describe("MapCanvas rendering and inspection", () => {
       />,
     );
 
-    for (const mode of ["diversity", "isolation", "boundaryDistance", "levelTone", "colorTone", "gradient", "region"] satisfies MapMode[]) {
+    for (const mode of ["diversity", "isolation", "boundaryDistance", "levelTone", "gradient", "region"] satisfies MapMode[]) {
       rerender(
         <MapCanvas
           mode={mode}
           pixelMaps={pixelMaps}
-          colorLUT={colorLUT}
           candidateIndexByLevel={DEFAULT_CANDIDATE_INDEX_BY_LEVEL}
           canvasData={canvasData}
           displayWidth={20}
@@ -649,7 +647,7 @@ describe("MapCanvas rendering and inspection", () => {
         />,
       );
     }
-    expect(putImageData).toHaveBeenCalledTimes(8);
+    expect(putImageData).toHaveBeenCalledTimes(7);
     expect(screen.getByText("\u2014")).toBeTruthy();
 
     const canvas = container.querySelector("canvas")!;
@@ -685,7 +683,6 @@ describe("MapCanvas rendering and inspection", () => {
       <MapCanvas
         mode="isolation"
         pixelMaps={makePixelMaps(1, 1)}
-        colorLUT={colorLUT}
         candidateIndexByLevel={DEFAULT_CANDIDATE_INDEX_BY_LEVEL}
         canvasData={makeCanvasData(2, 2)}
         displayWidth={20}
@@ -712,7 +709,6 @@ describe("MapCanvas rendering and inspection", () => {
       <MapCanvas
         mode="isolation"
         pixelMaps={pixelMaps}
-        colorLUT={colorLUT}
         candidateIndexByLevel={DEFAULT_CANDIDATE_INDEX_BY_LEVEL}
         canvasData={makeCanvasData(2, 2)}
         displayWidth={20}

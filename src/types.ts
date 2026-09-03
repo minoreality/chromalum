@@ -5,7 +5,7 @@
 import type React from "react";
 import type { RingBuffer } from "./utils/ring-buffer";
 
-export type MapMode = "diversity" | "isolation" | "boundaryDistance" | "gradient" | "region" | "levelTone" | "colorTone";
+export type MapMode = "diversity" | "isolation" | "boundaryDistance" | "gradient" | "region" | "levelTone";
 
 export interface AnalysisPixelMaps {
   neighborIsolation: Float32Array;

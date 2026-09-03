@@ -29,4 +29,16 @@ describe("i18n key completeness", () => {
       expect(jaPlaceholders, `Placeholder mismatch for key "${key}"`).toEqual(enPlaceholders);
     }
   });
+
+  it("keeps the Music heading branded as CHROMATIC MUSIC", () => {
+    expect(en.music_title).toBe("CHROMATIC MUSIC");
+    expect(ja.music_title).toBe("CHROMATIC MUSIC");
+  });
+
+  it("labels the CHROMALUM pitch mapping as Chromatic", () => {
+    expect(en.music_pitch_chromalum).toBe("Chromatic");
+    expect(ja.music_pitch_chromalum).toBe("Chromatic");
+    expect(en.music_pitch_legend_chromalum).toBe("Chromatic 15° Grid");
+    expect(ja.music_pitch_legend_chromalum).toBe("Chromatic 15° Grid");
+  });
 });

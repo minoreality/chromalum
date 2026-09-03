@@ -145,7 +145,7 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 
-/* Map mode buttons: mobile uses 3+4 rows; desktop keeps a single row */
+/* Map mode buttons: mobile uses 2+4 rows; desktop keeps a single row */
 .map-mode-buttons {
   flex-wrap: wrap;
 }
@@ -333,6 +333,11 @@ button.theory-diagram-button {
 .theory-zigzag-svg {
   width: 100%;
   max-width: 470px;
+}
+.theory-zigzag-block {
+  width: 100%;
+  max-width: 700px;
+  min-width: 0;
 }
 .theory-conn-footer {
   text-align: center;
@@ -651,9 +656,9 @@ button.theory-diagram-button {
   .hex-diag-wrap {
     max-width: 462px;
   }
-  /* Theory tab: enlarge diagrams on desktop horizontal layout */
+  /* Theory tab: use the available desktop width for prose and diagrams */
   .theory-container {
-    max-width: 700px;
+    max-width: 900px;
   }
   .theory-binary-svg {
     max-width: 510px;
@@ -662,7 +667,7 @@ button.theory-diagram-button {
     max-width: 500px;
   }
   .theory-desc {
-    max-width: 620px;
+    max-width: 760px;
     font-size: 15px;
     line-height: 1.8;
   }

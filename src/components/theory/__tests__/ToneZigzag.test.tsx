@@ -91,7 +91,7 @@ describe("ToneZigzag", () => {
     expect(rows[1].textContent).toContain("Y₆ ⊃ G₄");
   });
 
-  it("moves hover, focus, pinning, and keyboard activation to external level buttons", async () => {
+  it("keeps hover, focus, pinning, and keyboard activation on eight external level buttons", async () => {
     const onHover = vi.fn();
     const { container } = renderToneZigzag(null, onHover);
     const controls = container.querySelectorAll<HTMLButtonElement>("[data-tone-level-control]");
@@ -127,5 +127,23 @@ describe("ToneZigzag", () => {
     fireEvent.click(levelFive);
     await waitFor(() => expect(levelFive.getAttribute("aria-pressed")).toBe("true"));
     expect(container.querySelector("[data-active-fiber='5']")?.textContent).toContain("N5 = 3");
+  });
+
+  it("restores direct graph hover without making the SVG keyboard-interactive", () => {
+    const onHover = vi.fn();
+    const { container } = renderToneZigzag(null, onHover);
+    const hoverLayer = container.querySelector<SVGGElement>("[data-tone-hover-layer='true']")!;
+    const levelFour = container.querySelector<SVGRectElement>("[data-tone-level-hover='4']")!;
+    const svg = container.querySelector("svg")!;
+
+    expect(container.querySelectorAll("[data-tone-level-hover]")).toHaveLength(8);
+    expect(hoverLayer.getAttribute("aria-hidden")).toBe("true");
+    expect(svg.querySelectorAll("[role='button'], [tabindex]")).toHaveLength(0);
+
+    fireEvent.mouseEnter(levelFour);
+    expect(onHover).toHaveBeenLastCalledWith(4);
+
+    fireEvent.mouseLeave(hoverLayer);
+    expect(onHover).toHaveBeenLastCalledWith(null);
   });
 });

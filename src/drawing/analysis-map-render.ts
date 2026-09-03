@@ -1,17 +1,14 @@
 import { LEVEL_CANDIDATES, LEVEL_INFO } from "../color-engine";
-import { estimateLevelFromSrgbBytes, srgbCodeGrbScoreNorm } from "../srgb-level-estimator";
 import { LEVEL_MASK } from "../constants";
 import type { AnalysisPixelMaps, CanvasData, MapMode } from "../types";
 import { hexStr } from "../utils";
 import type { StatusText } from "../utils/status-display";
 
-export type AnalysisColorLUT = [number, number, number][];
 export type AnalysisMapRenderStatus = "rendered" | "pending" | "stale";
 
 const REGION_SMALL_THRESHOLD = 10;
 const MAP_STATUS_LABEL: Record<MapMode, string> = {
   levelTone: "MapTone",
-  colorTone: "MapGRBCodeScore",
   region: "MapRegion",
   gradient: "MapToneGrad",
   boundaryDistance: "MapBoundaryDist",
@@ -76,7 +73,7 @@ function getMapRenderStatus(
 ): Exclude<AnalysisMapRenderStatus, "rendered"> | null {
   const n = canvasData.width * canvasData.height;
 
-  if (mode === "levelTone" || mode === "colorTone") return null;
+  if (mode === "levelTone") return null;
   if (pixelMaps.width !== canvasData.width || pixelMaps.height !== canvasData.height) return "stale";
 
   if (mode === "diversity") return hasPixels(pixelMaps.localDiversity, n) ? null : "pending";
@@ -137,32 +134,6 @@ function compactOverrideLabel(canvasData: CanvasData, idx: number, lv: number): 
 
 function compactParts(...parts: string[]): string {
   return parts.filter(Boolean).join(" ");
-}
-
-function grbCodeScoreNorm(rgb: readonly [number, number, number]): number {
-  return srgbCodeGrbScoreNorm(rgb[0], rgb[1], rgb[2]);
-}
-
-function codeScoreLabel(score: number): string {
-  return clamp01(score).toFixed(4);
-}
-
-function resolveEffectiveDisplayCandidate(
-  canvasData: CanvasData,
-  colorLUT: AnalysisColorLUT,
-  idx: number,
-  lv: number,
-  baseCandidateIndex: number,
-): { ci: number; count: number; rgb: readonly [number, number, number] } {
-  const alternatives = LEVEL_CANDIDATES[lv] ?? LEVEL_CANDIDATES[0];
-  const overrideIndex = (canvasData.pixelCandidateOverrideMap[idx] ?? 0) - 1;
-  if (overrideIndex >= 0 && overrideIndex < alternatives.length) {
-    const override = alternatives[overrideIndex];
-    return { ci: overrideIndex, count: alternatives.length, rgb: override.rgb };
-  }
-
-  const base = resolveCandidate(lv, baseCandidateIndex);
-  return { ...base, rgb: colorLUT[lv] ?? base.rgb };
 }
 
 function gradientVector(canvasData: CanvasData, x: number, y: number): { gx: number; gy: number } {
@@ -306,14 +277,12 @@ const TURBO = buildLUT([
 export function rasterizeAnalysisMap({
   mode,
   pixelMaps,
-  colorLUT,
   canvasData,
   target,
   regionSizeById,
 }: {
   mode: MapMode;
   pixelMaps: AnalysisPixelMaps;
-  colorLUT: AnalysisColorLUT;
   canvasData: CanvasData;
   target: Uint32Array;
   regionSizeById?: Map<number, number>;
@@ -342,12 +311,6 @@ export function rasterizeAnalysisMap({
   } else if (mode === "levelTone") {
     for (let i = 0; i < n; i++) {
       target[i] = applyLUTPacked(MAGMA, (canvasData.levelData[i] & LEVEL_MASK) / 7);
-    }
-  } else if (mode === "colorTone") {
-    for (let i = 0; i < n; i++) {
-      const lv = canvasData.levelData[i] & LEVEL_MASK;
-      const candidate = resolveEffectiveDisplayCandidate(canvasData, colorLUT, i, lv, 0);
-      target[i] = applyLUTPacked(INFERNO, grbCodeScoreNorm(candidate.rgb));
     }
   } else if (mode === "gradient" && pixelMaps.gradientMagnitude.length >= n && pixelMaps.levelTone.length >= n) {
     for (let i = 0; i < n; i++) {
@@ -402,7 +365,6 @@ export function getAnalysisMapHoverInfo({
   y,
   mode,
   pixelMaps,
-  colorLUT,
   candidateIndexByLevel,
   canvasData,
   regionSizeById,
@@ -411,7 +373,6 @@ export function getAnalysisMapHoverInfo({
   y: number;
   mode: MapMode;
   pixelMaps: AnalysisPixelMaps;
-  colorLUT: AnalysisColorLUT;
   candidateIndexByLevel: readonly number[];
   canvasData: CanvasData;
   regionSizeById: Map<number, number>;
@@ -461,15 +422,6 @@ export function getAnalysisMapHoverInfo({
     return {
       full: `${prefix} ${LEVEL_INFO[lv].name} T=${toneStepLabel(lv)}`,
       compact: `${compactPrefix} T=${toneStepLabel(lv)}`,
-    };
-  } else if (mode === "colorTone") {
-    const candidate = resolveEffectiveDisplayCandidate(canvasData, colorLUT, idx, lv, candidateIndexByLevel[lv] ?? 0);
-    const score = grbCodeScoreNorm(candidate.rgb);
-    const estimatedLevel = estimateLevelFromSrgbBytes(candidate.rgb[0], candidate.rgb[1], candidate.rgb[2]);
-    const levelDelta = estimatedLevel - lv;
-    return {
-      full: `${prefix} ${candidateLabel(candidate)} ${hexStr(candidate.rgb)} S_code=${codeScoreLabel(score)} est=L${estimatedLevel} dLevel=${signedInt(levelDelta)}`,
-      compact: `${compactPrefix} ${candidateLabel(candidate)} S=${codeScoreLabel(score)} est=L${estimatedLevel} dL=${signedInt(levelDelta)}`,
     };
   } else if (mode === "region") {
     const id = valueAt(pixelMaps.regionId, idx);

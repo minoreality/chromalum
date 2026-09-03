@@ -16,7 +16,6 @@ const EMPTY_REGION_SIZE_BY_ID = new Map<number, number>();
 export function MapCanvas({
   mode,
   pixelMaps,
-  colorLUT,
   candidateIndexByLevel,
   canvasData,
   displayWidth,
@@ -25,7 +24,6 @@ export function MapCanvas({
 }: {
   mode: MapMode;
   pixelMaps: AnalysisPixelMaps;
-  colorLUT: [number, number, number][];
   candidateIndexByLevel: readonly number[];
   canvasData: CanvasData;
   displayWidth: number;
@@ -58,7 +56,7 @@ export function MapCanvas({
     const img = ctx.createImageData(cw, ch);
     const d32 = new Uint32Array(img.data.buffer);
     const n = cw * ch;
-    const status = rasterizeAnalysisMap({ mode, pixelMaps, colorLUT, canvasData, target: d32, regionSizeById: regionSizeCache });
+    const status = rasterizeAnalysisMap({ mode, pixelMaps, canvasData, target: d32, regionSizeById: regionSizeCache });
     ctx.putImageData(img, 0, 0);
     recordDebugPerf(`MapCanvas:${mode}`, perfStart, {
       status,
@@ -66,7 +64,7 @@ export function MapCanvas({
       h: ch,
       pixels: n,
     });
-  }, [mode, pixelMaps, colorLUT, canvasData, cw, ch, regionSizeCache]);
+  }, [mode, pixelMaps, canvasData, cw, ch, regionSizeCache]);
 
   // Hover info
   const [hoverInfo, setHoverInfo] = useState<StatusText | null>(null);
@@ -85,14 +83,13 @@ export function MapCanvas({
         y: py,
         mode,
         pixelMaps,
-        colorLUT,
         candidateIndexByLevel,
         canvasData,
         regionSizeById: regionSizeCache,
       });
       setHoverInfo(info);
     },
-    [mode, pixelMaps, colorLUT, candidateIndexByLevel, canvasData, cw, ch, regionSizeCache],
+    [mode, pixelMaps, candidateIndexByLevel, canvasData, cw, ch, regionSizeCache],
   );
 
   const onMouseLeave = useCallback(() => setHoverInfo(null), []);

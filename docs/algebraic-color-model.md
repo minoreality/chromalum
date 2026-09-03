@@ -165,7 +165,7 @@ S_code = (4g_s + 2r_s + b_s) / 7
 estimated level = round(7 S_code)
 ```
 
-を直接適用する、独立した非可逆分類器である。中間の8-bit scoreへ丸めてから再量子化はしない。Map タブでは実際の表示色（pixel candidate overrideを含む）の連続値を **GRB Code Score / GRBコードスコア** と表示し、推定 level と元の level との差を別項目にする。入力画像から `A` のビットや `H` の色相座標を復元したことにはならず、このスコアも GRB Binary Tone、知覚的明度、測光輝度のいずれでもない。
+を直接適用する、独立した非可逆な内部分類器である。中間の8-bit scoreへ丸めてから再量子化はしない。入力画像から `A` のビットや `H` の色相座標を復元したことにはならず、このスコアも GRB Binary Tone、知覚的明度、測光輝度のいずれでもない。
 
 ## Core Theorems
 

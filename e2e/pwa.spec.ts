@@ -118,5 +118,5 @@ test("pre-caches the production app shell and works offline", async ({ page, con
   await expect(page.getByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeVisible();
 
   await page.getByRole("tab", { name: "Music" }).click();
-  await expect(page.getByRole("heading", { name: "CHROMALUM MUSIC" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
 });

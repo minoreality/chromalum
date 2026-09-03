@@ -75,9 +75,6 @@ self.onmessage = (e: MessageEvent<PixelAnalysisWorkerRequest>) => {
     case "levelTone":
       for (let i = 0; i < n; i++) result.levelTone[i] = (levelData[i] & LEVEL_MASK) / 7;
       break;
-    case "colorTone":
-      // No pre-computation needed for colorTone
-      break;
   }
 
   // Transfer typed arrays for zero-copy (only non-empty buffers)

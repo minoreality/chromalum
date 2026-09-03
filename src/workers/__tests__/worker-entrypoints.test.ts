@@ -74,7 +74,7 @@ describe("worker entrypoints", () => {
 
   it("pixel-analysis worker allocates only the maps required by each mode", async () => {
     const fakeSelf = await loadWorker("../pixel-analysis.worker");
-    const modes: MapMode[] = ["isolation", "diversity", "boundaryDistance", "gradient", "region", "levelTone", "colorTone"];
+    const modes: MapMode[] = ["isolation", "diversity", "boundaryDistance", "gradient", "region", "levelTone"];
 
     modes.forEach((mode, index) => {
       const req: PixelAnalysisWorkerRequest = {
@@ -89,7 +89,7 @@ describe("worker entrypoints", () => {
     });
 
     const responses = fakeSelf.postMessage.mock.calls.map((call) => call[0] as PixelAnalysisWorkerResponse);
-    expect(responses.map((resp) => resp.id)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(responses.map((resp) => resp.id)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(responses[0].neighborIsolation).toHaveLength(4);
     expect(responses[0].levelTone).toHaveLength(4);
     expect(responses[1].localDiversity).toHaveLength(4);
@@ -99,8 +99,6 @@ describe("worker entrypoints", () => {
     expect(responses[3].gradientMagnitude).toHaveLength(4);
     expect(responses[4].regionId).toHaveLength(4);
     expect(responses[5].levelTone[3]).toBe(1);
-    expect(responses[6].neighborIsolation).toHaveLength(0);
-    expect(responses[6].levelTone).toHaveLength(0);
   });
 
   it("pixel-analysis worker returns empty result objects for zero-sized canvases", async () => {
