@@ -1,7 +1,7 @@
 import { expect, test, type Locator } from "@playwright/test";
 
-test("links cube selection and hue-edge views while keeping the consolidated panels responsive", async ({ page }) => {
-  for (const language of ["ja", "en"]) {
+for (const language of ["ja", "en"]) {
+  test(`links cube selection and hue-edge views while keeping the consolidated panels responsive (${language})`, async ({ page }) => {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setViewportSize({ width: 1039, height: 900 });
@@ -332,8 +332,8 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
         }
       }
     }
-  }
-});
+  });
+}
 
 test("links all six cube faces and vertex incidence without losing the selected face", async ({ page }) => {
   for (const language of ["ja", "en"]) {
@@ -1707,8 +1707,11 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
   }
 });
 
-test("connects primary selection and the eight-state list with readable responsive controls", async ({ page }) => {
-  for (const language of ["ja", "en"]) {
+for (const language of ["ja", "en"]) {
+  test(`connects primary selection and the eight-state list with readable responsive controls (${language})`, async ({ page }) => {
+    // This scenario checks 26 layouts and 68 linked click/hover transitions.
+    // Keep individual assertion deadlines while allowing the full sequence.
+    test.setTimeout(60_000);
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");
     const generation = page.getByTestId("primary-generation");
@@ -1795,6 +1798,7 @@ test("connects primary selection and the eight-state list with readable responsi
 
     for (const width of [1186, 728, 564, 320]) {
       await page.setViewportSize({ width, height: 698 });
+      await venn.scrollIntoViewIfNeeded();
       for (const [region, level] of [
         [0, 0],
         [2, 2],
@@ -1814,7 +1818,6 @@ test("connects primary selection and the eight-state list with readable responsi
         [6, 1],
         [0, 0],
       ]) {
-        await venn.scrollIntoViewIfNeeded();
         const label = (await generation.getByTestId(`venn-region-${region}`).boundingBox())!;
         await page.mouse.click(label.x + label.width / 2, label.y + label.height / 2);
         await expect(venn).toHaveAttribute("data-selected-level", String(level));
@@ -1855,8 +1858,8 @@ test("connects primary selection and the eight-state list with readable responsi
       await expect(generation.locator('.theory-generation-inputs button[aria-pressed="true"]')).toHaveCount(0);
       await expect(generation.getByRole("status")).toContainText("∅ → K");
     }
-  }
-});
+  });
+}
 
 test("keeps mixing in its dedicated diagrams and groups the hue net with complementary die ranks", async ({ page }) => {
   for (const language of ["ja", "en"]) {
@@ -2410,7 +2413,21 @@ test("shares a fluid reading measure across Theory prose and major figures witho
           });
           const overflow = [...element.querySelectorAll<HTMLElement>("div, p, table, button, ol, ul")]
             // Exclude clipped 1 px live regions used only by screen readers.
-            .filter((item) => item.clientWidth > 1 && item.scrollWidth > item.clientWidth + 1)
+            .filter((item) => {
+              if (item.clientWidth <= 1) return false;
+              // The enlarged mobile Venn crops blank SVG margins. Its circles
+              // and labels must still fit completely inside the visible area.
+              if (item.matches(".theory-venn") && ["hidden", "clip"].includes(getComputedStyle(item).overflowX)) {
+                const frame = item.getBoundingClientRect();
+                return [...item.querySelectorAll('[data-venn-primary], [data-testid^="venn-region-"]')].some((node) => {
+                  const box = node.getBoundingClientRect();
+                  return (
+                    box.left < frame.left - 1 || box.right > frame.right + 1 || box.top < frame.top - 1 || box.bottom > frame.bottom + 1
+                  );
+                });
+              }
+              return item.scrollWidth > item.clientWidth + 1;
+            })
             .map((item) => `${item.tagName}.${item.className}`);
           const dieFigure = element.querySelector(".theory-die-figure")!.getBoundingClientRect();
           return {
