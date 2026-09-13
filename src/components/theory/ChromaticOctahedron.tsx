@@ -11,15 +11,77 @@ const bitsOf = (lv: number) => THEORY_LEVELS[lv].bits.join("");
 const sameEdge = (a: EdgeSelection | null, b: EdgeSelection) => a?.a === b.a && a.b === b.b;
 const points = Object.fromEntries(Object.entries(DUAL_OCTA_VERTICES).map(([lv, point]) => [lv, projectDualPoint(point)]));
 
+function OctahedronResults({ edge, sizing = false }: { edge: (typeof DUAL_OCTA_EDGES)[number] | undefined; sizing?: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <strong data-octa-sizing={sizing || undefined} aria-hidden={sizing || undefined}>
+        {t("theory_octa_edge_selected", edge ? THEORY_LEVELS[edge.a].short : "a", edge ? THEORY_LEVELS[edge.b].short : "b")}
+      </strong>
+      <div className="theory-octahedron-edge-results" data-octa-sizing={sizing || undefined} aria-hidden={sizing || undefined}>
+        {(
+          [
+            { kind: "xor", result: edge?.xor, face: edge?.xorFace, symbol: "c", accent: XOR_ACCENT, parity: "000" },
+            {
+              kind: "complement",
+              result: edge?.complement,
+              face: edge?.complementFace,
+              symbol: "¬c",
+              accent: COMPLEMENT_ACCENT,
+              parity: "111",
+            },
+          ] as const
+        ).map(({ kind, result, face, symbol, accent, parity }) => (
+          <div
+            key={kind}
+            data-edge-result={sizing ? undefined : kind}
+            className="theory-octahedron-edge-result"
+            style={{ borderColor: accent }}
+          >
+            <div className="theory-octahedron-result-heading">
+              <strong style={{ color: accent }}>{t(kind === "xor" ? "theory_octa_edge_xor" : "theory_octa_edge_complement")}</strong>
+              <span className="theory-octahedron-result-color">
+                {result === undefined ? (
+                  <code>{symbol}</code>
+                ) : (
+                  <>
+                    <span className="theory-octahedron-swatch" aria-hidden="true" style={{ background: THEORY_LEVELS[result].color }} />
+                    {THEORY_LEVELS[result].short} <code>{bitsOf(result)}</code>
+                  </>
+                )}
+              </span>
+            </div>
+            <p>
+              <code className="theory-octahedron-equation">
+                <span>
+                  {kind === "xor" ? "" : "¬("}
+                  {edge ? bitsOf(edge.a) : "a"} ⊕ {edge ? bitsOf(edge.b) : "b"}
+                  {kind === "xor" ? "" : ")"}
+                </span>{" "}
+                <span>= {result === undefined ? symbol : bitsOf(result)}</span>
+              </code>
+            </p>
+            <p>
+              {t("theory_octa_edge_triangle", face ? face.verts.map((lv) => THEORY_LEVELS[lv].short).join(",") : `a,b,${symbol}`)}
+              <br />
+              {t("theory_octa_edge_face_xor", parity)}
+            </p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
   const { t } = useTranslation();
-  const [pinned, setPinned] = useState<EdgeSelection>({ a: 2, b: 4 });
+  const [pinned, setPinned] = useState<EdgeSelection | null>(null);
   const [preview, setPreview] = useState<EdgeSelection | null>(null);
   usePinReset(setPreview);
   const selected = preview ?? pinned;
-  const selectedEdge = DUAL_OCTA_EDGES.find((edge) => sameEdge(selected, edge))!;
+  const selectedEdge = DUAL_OCTA_EDGES.find((edge) => sameEdge(selected, edge));
   const activate = (edge: EdgeSelection) => {
-    setPinned(edge);
+    setPinned((current) => (sameEdge(current, edge) ? null : edge));
     setPreview(null);
   };
   const interactions = (edge: EdgeSelection) => ({
@@ -36,7 +98,17 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
     <div data-testid="chromatic-octahedron" className="theory-octahedron" role="group" aria-label={t("theory_octa_aria")}>
       <div className="theory-octahedron-layout">
         <figure className="theory-octahedron-figure">
-          <svg viewBox="85 95 230 210" role="group" aria-label={t("theory_octa_diagram")}>
+          <svg
+            viewBox="85 95 230 210"
+            role="group"
+            aria-label={t("theory_octa_diagram")}
+            onClick={(event) => {
+              if (!(event.target as Element).closest("[data-octa-edge-control]")) {
+                setPinned(null);
+                setPreview(null);
+              }
+            }}
+          >
             {[...DUAL_OCTA_FACES]
               .sort((a, b) => a.center[2] - b.center[2])
               .map((face) => {
@@ -132,7 +204,7 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
                     key={lv}
                     data-octa-vertex={lv}
                     data-edge-node-role={edgeRole}
-                    pointerEvents="none"
+                    pointerEvents="all"
                     opacity={selectedEdge && !active ? 0.4 : 1}
                   >
                     <title>{THEORY_LEVELS[lv].short + " · " + bitsOf(lv)}</title>
@@ -183,47 +255,17 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
             ))}
           </div>
         </div>
-        <div className="theory-octahedron-status" data-testid="octahedron-selection" role="status" aria-live="polite" aria-atomic="true">
-          <strong>{t("theory_octa_edge_selected", THEORY_LEVELS[selectedEdge.a].short, THEORY_LEVELS[selectedEdge.b].short)}</strong>
-          <div className="theory-octahedron-edge-results">
-            {(
-              [
-                { kind: "xor", result: selectedEdge.xor, face: selectedEdge.xorFace, accent: XOR_ACCENT, parity: "000" },
-                {
-                  kind: "complement",
-                  result: selectedEdge.complement,
-                  face: selectedEdge.complementFace,
-                  accent: COMPLEMENT_ACCENT,
-                  parity: "111",
-                },
-              ] as const
-            ).map(({ kind, result, face, accent, parity }) => (
-              <div key={kind} data-edge-result={kind} className="theory-octahedron-edge-result" style={{ borderColor: accent }}>
-                <div className="theory-octahedron-result-heading">
-                  <strong style={{ color: accent }}>{t(kind === "xor" ? "theory_octa_edge_xor" : "theory_octa_edge_complement")}</strong>
-                  <span className="theory-octahedron-result-color">
-                    <span className="theory-octahedron-swatch" aria-hidden="true" style={{ background: THEORY_LEVELS[result].color }} />
-                    {THEORY_LEVELS[result].short} <code>{bitsOf(result)}</code>
-                  </span>
-                </div>
-                <p>
-                  <code className="theory-octahedron-equation">
-                    <span>
-                      {kind === "xor" ? "" : "¬("}
-                      {bitsOf(selectedEdge.a)} ⊕ {bitsOf(selectedEdge.b)}
-                      {kind === "xor" ? "" : ")"}
-                    </span>{" "}
-                    <span>= {bitsOf(result)}</span>
-                  </code>
-                </p>
-                <p>
-                  {t("theory_octa_edge_triangle", face.verts.map((lv) => THEORY_LEVELS[lv].short).join(","))}
-                  <br />
-                  {t("theory_octa_edge_face_xor", parity)}
-                </p>
-              </div>
-            ))}
-          </div>
+        <div
+          className="theory-octahedron-status"
+          data-testid="octahedron-selection"
+          data-empty={!selectedEdge}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <OctahedronResults edge={selectedEdge} />
+          {/* Reserve the concrete formulas' space without showing sample inputs. */}
+          {!selectedEdge && <OctahedronResults edge={DUAL_OCTA_EDGES[0]} sizing />}
         </div>
       </div>
     </div>

@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import type { K8Target } from "./k8-selection";
+import { interpolateStellaOrientation, stellaOrientation, type StellaOrientation } from "./stella-view";
 
 const DOUBLE_PRESS_INTERVAL = 200;
 const MAX_TAP_DURATION = 350;
 const TAP_SLOP = 24;
-type Tap = { x: number; y: number; time: number; selection: K8Target | null };
-type Click = Pick<Tap, "time" | "selection">;
+type Tap = { x: number; y: number; time: number; selection: K8Target | null; level: number | null };
+type Click = Pick<Tap, "time" | "selection" | "level">;
+type Pose = { frontLevel: number | null; orientation: StellaOrientation };
+const DEFAULT_POSE: Pose = { frontLevel: null, orientation: stellaOrientation(null) };
+
+function nodeAt(target: EventTarget | null): number | null {
+  const value = target instanceof Element ? target.closest("[data-stella-vertex]")?.getAttribute("data-stella-vertex") : null;
+  return value == null ? null : Number(value);
+}
 
 export function useStellaView(selection: K8Target | null, restoreSelection: (selection: K8Target | null) => void) {
-  const [symmetric, setSymmetric] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const position = useRef(0);
+  const [destination, setDestination] = useState(DEFAULT_POSE);
+  const [frameState, setFrameState] = useState(() => ({ orientation: DEFAULT_POSE.orientation, progress: 1 }));
+  const position = useRef(frameState.orientation);
+  const rotating = useRef(false);
+  const savedPose = useRef<Pose | null>(null);
+  const canReverse = useRef(false);
   const previousClick = useRef<Click | null>(null);
   const doubleClick = useRef<Click | null>(null);
   const touchStart = useRef<Tap | null>(null);
@@ -21,39 +32,69 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const from = position.current;
-    const target = symmetric ? 1 : 0;
-    const duration = 650 * Math.abs(target - from);
+    const target = destination.orientation;
+    const duration = 650;
     const start = performance.now();
     let frame = 0;
-    const update = (value: number) => {
+    const update = (value: StellaOrientation, progress: number) => {
       position.current = value;
-      setProgress(value);
+      rotating.current = progress < 1;
+      setFrameState({ orientation: value, progress });
     };
     const finish = () => {
       cancelAnimationFrame(frame);
-      update(target);
+      update(target, 1);
+      if (destination.frontLevel === null && savedPose.current) canReverse.current = true;
     };
     const animate = (now: number) => {
       const elapsed = Math.min(1, (now - start) / duration);
+      if (elapsed === 1) {
+        finish();
+        return;
+      }
       const eased = elapsed * elapsed * (3 - 2 * elapsed);
-      update(elapsed === 1 ? target : from + (target - from) * eased);
-      if (elapsed < 1) frame = requestAnimationFrame(animate);
+      update(interpolateStellaOrientation(from, target, eased), elapsed);
+      frame = requestAnimationFrame(animate);
     };
     const onMotionChange = () => {
       if (media.matches) finish();
     };
-    if (media.matches || duration === 0) finish();
-    else frame = requestAnimationFrame(animate);
+    if (media.matches || from === target) finish();
+    else {
+      update(from, 0);
+      frame = requestAnimationFrame(animate);
+    }
     media.addEventListener("change", onMotionChange);
     return () => {
       cancelAnimationFrame(frame);
       media.removeEventListener("change", onMotionChange);
     };
-  }, [symmetric]);
+  }, [destination]);
 
-  const toggle = (before: K8Target | null) => {
+  const aim = (level: number | null, before: K8Target | null) => {
     restoreSelection(before);
-    setSymmetric((value) => !value);
+    if (level !== null) {
+      if (rotating.current || level === destination.frontLevel) return;
+      savedPose.current = null;
+      canReverse.current = false;
+      rotating.current = true;
+      setDestination({ frontLevel: level, orientation: stellaOrientation(level, position.current) });
+      return;
+    }
+
+    // Finish the node turn and the first return before allowing reversals.
+    if (rotating.current && !canReverse.current) return;
+    let next: Pose;
+    if (destination.frontLevel === null) {
+      if (!savedPose.current) return;
+      next = savedPose.current;
+    } else {
+      // Keep the settled pose, including its roll, throughout every reversal.
+      if (!rotating.current) savedPose.current = destination;
+      next = DEFAULT_POSE;
+    }
+    rotating.current = position.current !== next.orientation;
+    setDestination(next);
   };
   const cancelTouch = () => {
     touchStart.current = null;
@@ -61,8 +102,8 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
   };
 
   return {
-    progress,
-    symmetric,
+    ...frameState,
+    frontLevel: destination.frontLevel,
     handlers: {
       onClickCapture(event: MouseEvent<SVGSVGElement>) {
         const now = performance.now();
@@ -73,21 +114,28 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
           return;
         }
         const previous = previousClick.current;
+        const level = nodeAt(event.target);
         // The browser may report dblclick at a slower, OS-defined interval.
         // Outside our shorter window, both clicks keep their normal action.
-        if (event.detail > 1 && event.detail % 2 === 0 && previous && now - previous.time <= DOUBLE_PRESS_INTERVAL) {
+        if (
+          event.detail > 1 &&
+          event.detail % 2 === 0 &&
+          previous &&
+          previous.level === level &&
+          now - previous.time <= DOUBLE_PRESS_INTERVAL
+        ) {
           doubleClick.current = previous;
           previousClick.current = null;
           event.preventDefault();
           event.stopPropagation();
-        } else previousClick.current = { time: now, selection };
+        } else previousClick.current = { time: now, selection, level };
       },
       onDoubleClick(event: MouseEvent<SVGSVGElement>) {
         event.preventDefault();
         event.stopPropagation();
         const candidate = doubleClick.current;
         doubleClick.current = null;
-        if (candidate && performance.now() >= ignoreDoubleClickUntil.current) toggle(candidate.selection);
+        if (candidate && performance.now() >= ignoreDoubleClickUntil.current) aim(candidate.level, candidate.selection);
       },
       onPointerDown(event: PointerEvent<SVGSVGElement>) {
         ignoreClickUntil.current = 0;
@@ -96,7 +144,7 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
           cancelTouch();
           return;
         }
-        touchStart.current = { x: event.clientX, y: event.clientY, time: performance.now(), selection };
+        touchStart.current = { x: event.clientX, y: event.clientY, time: performance.now(), selection, level: nodeAt(event.target) };
       },
       onPointerMove(event: PointerEvent<SVGSVGElement>) {
         const start = touchStart.current;
@@ -115,6 +163,7 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
         const previous = previousTap.current;
         if (
           previous &&
+          previous.level === start.level &&
           now - previous.time <= DOUBLE_PRESS_INTERVAL &&
           Math.hypot(start.x - previous.x, start.y - previous.y) <= TAP_SLOP
         ) {
@@ -123,7 +172,7 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
           // Some browsers synthesize both click and dblclick after touch.
           ignoreClickUntil.current = now + 500;
           ignoreDoubleClickUntil.current = now + 500;
-          toggle(previous.selection);
+          aim(start.level, previous.selection);
         } else previousTap.current = { ...start, time: now };
       },
     },

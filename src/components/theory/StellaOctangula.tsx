@@ -26,7 +26,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
   const { t } = useTranslation();
   const link = useK8Selection(onHover);
   const camera = useStellaView(link.selection, link.restoreSelection);
-  const view = useMemo(() => stellaView(camera.progress), [camera.progress]);
+  const view = useMemo(() => stellaView(camera.orientation), [camera.orientation]);
   const { visibleDistances, selectDistances } = link;
   const distances = DISTANCES.filter((distance) => visibleDistances.has(distance));
   const nodesOnly = distances.length === 0;
@@ -238,7 +238,8 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           <svg
             id="theory-stella-view"
             data-stella-distances={distances.join(" ") || "none"}
-            data-stella-view={camera.symmetric ? "symmetric" : "default"}
+            data-stella-view={camera.frontLevel === null ? "default" : "symmetric"}
+            data-stella-front={camera.frontLevel ?? undefined}
             data-stella-turn={camera.progress}
             viewBox="12 -15 156 156"
             role="group"

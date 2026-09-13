@@ -129,7 +129,7 @@ describe("ColorDice", () => {
     expect(faces.map((face) => face.querySelectorAll("[data-hue-net-pip]").length)).toEqual([2, 6, 4, 5, 1, 3]);
     const pipColors = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00"];
     for (const face of faces) {
-      expect(face.querySelector("polygon")!.getAttribute("fill")).toBe("#d8d8d8");
+      expect(face.querySelector("polygon")!.getAttribute("fill")).toBe("#e4e4e4");
       const level = Number(face.getAttribute("data-hue-net-face"));
       for (const pip of face.querySelectorAll("[data-hue-net-pip]")) {
         expect(pip.getAttribute("fill")?.toLowerCase()).toBe(pipColors[level]);
@@ -150,7 +150,7 @@ describe("ColorDice", () => {
       expect(shared).toHaveLength(2);
     }
     const cut = container.querySelector('[data-hue-net-cut="3-2"]');
-    expect(cut?.textContent).toContain("Cut M₃–R₂; fold to join");
+    expect(cut?.textContent).toContain("Cut R₂–M₃; fold to join");
     expect(net.querySelector("path, marker")).toBeNull();
     expect(container.textContent).not.toContain("ΔL");
     expect(screen.queryByTestId("hue-net-fold")).toBeNull();

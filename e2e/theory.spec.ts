@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 test("links cube selection and hue-edge views while keeping the consolidated panels responsive", async ({ page }) => {
   for (const language of ["ja", "en"]) {
@@ -612,12 +612,14 @@ test("shows gapless sums and compares K8 distance and rank in a compact responsi
           controlsBelow: modes.top >= graphic.bottom,
           controlCount: document.querySelectorAll(".theory-k8-controls button").length,
           metricsSideBySide: Math.abs(metrics[0].top - metrics[1].top) < 1 && metrics[0].right <= metrics[1].left,
-          modesInOneRow:
-            new Set([...document.querySelectorAll(".theory-k8-display-modes button")].map((button) => button.getBoundingClientRect().top))
-              .size === 1,
-          touchTargets: [...controls].every((node) => {
+          labelsInOneRow: [...controls].every((node) => {
+            const label = node.querySelector("span")!.getBoundingClientRect();
+            const count = node.querySelector("small")?.getBoundingClientRect();
+            return !count || (label.right <= count.left && Math.abs(label.top + label.height / 2 - count.top - count.height / 2) < 1);
+          }),
+          compactButtons: [...controls].every((node) => {
             const box = node.getBoundingClientRect();
-            return box.width >= 44 && box.height >= 32 && box.height <= 44;
+            return box.width >= 44 && box.height === 28;
           }),
           fits: [
             ...document.querySelectorAll(
@@ -633,8 +635,8 @@ test("shows gapless sums and compares K8 distance and rank in a compact responsi
         controlsBelow: true,
         controlCount: 4,
         metricsSideBySide: true,
-        modesInOneRow: true,
-        touchTargets: true,
+        labelsInOneRow: true,
+        compactButtons: true,
         fits: true,
       });
       const fanoControls = page.locator(".theory-fano-controls");
@@ -722,6 +724,7 @@ for (const language of ["ja", "en"]) {
           sideBySide: matrix.left >= geometry.right,
           plotWidth: root.querySelector(".theory-fano-plot")!.getBoundingClientRect().width,
           checkRowsHeight: root.querySelector(".theory-fano-check-rows")!.getBoundingClientRect().height,
+          checksHeight: root.querySelector(".theory-fano-checks")!.getBoundingClientRect().height,
           footerBottomInset: root.getBoundingClientRect().bottom - footer.bottom,
           footerControlsGap: Math.abs(footer.bottom - choices.bottom),
           largestSectionGap: Math.max(...matrixSections.slice(1).map((section, index) => section.top - matrixSections[index].bottom)),
@@ -747,7 +750,9 @@ for (const language of ["ja", "en"]) {
         expect(frame.panelHeight).toBeLessThanOrEqual(380);
       } else {
         expect(frame.stackedGap).toBeGreaterThanOrEqual(0);
-        expect(frame.rowGap).toBeLessThanOrEqual(23);
+        expect(frame.rowGap).toBeLessThanOrEqual(20);
+        expect(frame.checkRowsHeight).toBeLessThanOrEqual(22);
+        expect(frame.checksHeight).toBeLessThanOrEqual(111);
       }
       const filters = explorer.locator("[data-fano-filter]");
       await expect(filters).toHaveCount(3);
@@ -909,11 +914,26 @@ for (const language of ["ja", "en"]) {
         });
       });
     await expect(explorer.locator("td button")).toHaveCount(64);
-    for (const width of [320, 390, 779, 1280]) {
+    for (const width of [320, 390, 494, 543, 544, 779, 1280]) {
       await page.setViewportSize({ width, height: 1000 });
       await clear();
       await expect(readout).toHaveAttribute("data-state", "");
       const initial = await layout();
+      const readoutFrame = await readout.evaluate((root) => {
+        const values = root.querySelector(".theory-toggle-values")!.getBoundingClientRect();
+        const metrics = root.querySelector(".theory-k8-comparison-metrics")!.getBoundingClientRect();
+        return {
+          width: root.getBoundingClientRect().width,
+          height: root.getBoundingClientRect().height,
+          valuesHeight: values.height,
+          metricsBelow: metrics.top >= values.bottom,
+        };
+      });
+      expect(readoutFrame.metricsBelow).toBe(readoutFrame.width < 500);
+      if (readoutFrame.metricsBelow) {
+        expect(readoutFrame.height).toBeLessThanOrEqual(210);
+        expect(readoutFrame.valuesHeight).toBeLessThanOrEqual(40);
+      }
       await explorer.locator('[data-toggle-state="6"]').click();
       await expect(readout).toHaveAttribute("data-state", "6");
       await expect(readout).toHaveAttribute("data-mask", "");
@@ -1009,37 +1029,106 @@ test("reveals Hamming results in sequence and discards calculations from superse
   await page.addInitScript(() => localStorage.setItem("chromalum_lang", "en"));
   await page.clock.install({ time: new Date("2026-09-06T00:00:00Z") });
   await page.goto("theory-dev.html");
-  await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1011");
+  await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "0000");
   await page.clock.pauseAt(new Date("2026-09-06T01:00:00Z"));
+  for (const index of [1, 3, 4]) await page.getByTestId(`hamming-data-${index}`).click();
+  await page.clock.runFor(1800);
+  await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1011");
   const encoded = page.getByTestId("hamming-stage-encoded");
   const received = page.getByTestId("hamming-stage-received");
   const syndrome = page.getByTestId("hamming-stage-syndrome");
   const corrected = page.getByTestId("hamming-stage-corrected");
   const output = page.getByTestId("hamming-stage-output");
   const checks = page.getByTestId("hamming-parity-check-card");
+  const generation = page.getByTestId("hamming-parity-generation");
+  const generationFormulas = generation.locator(".theory-hamming-generation-formula");
+  await expect(generation.locator(".theory-hamming-generation-heading")).toHaveText(["D₁ D₂ D₄ P₁", "D₁ D₃ D₄ P₂", "D₂ D₃ D₄ P₄"]);
+  await expect(generationFormulas).toHaveText(["1 ⊕ 0 ⊕ 1 = 0", "1 ⊕ 1 ⊕ 1 = 1", "0 ⊕ 1 ⊕ 1 = 0"]);
+  const generationColumns = await generation.evaluate((root) => {
+    const textCenter = (element: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const box = range.getBoundingClientRect();
+      return box.x + box.width / 2;
+    };
+    return [...root.children].flatMap((card) => {
+      const heading = card.querySelector(".theory-hamming-generation-heading")!;
+      const formula = card.querySelector(".theory-hamming-generation-formula")!;
+      return [0, 2, 4, 6].map((column) => [textCenter(heading.children[column]), textCenter(formula.children[column])]);
+    });
+  });
+  generationColumns.forEach(([label, value]) => expect(value).toBeCloseTo(label, 1));
+  const readGenerationLayout = () =>
+    generation.evaluate((root) => {
+      const origin = root.getBoundingClientRect();
+      return [root, ...root.querySelectorAll("div, span, strong")].map((element) => {
+        const box = element.getBoundingClientRect();
+        return [box.x - origin.x, box.y - origin.y, box.width, box.height];
+      });
+    });
+  const readFormulaLayout = () =>
+    checks.locator(".theory-hamming-check-formula").evaluateAll((formulas) =>
+      formulas.map((formula) => {
+        const origin = formula.getBoundingClientRect();
+        return {
+          slots: [...formula.children].map((slot) => {
+            const box = slot.getBoundingClientRect();
+            return [box.x - origin.x, box.y - origin.y, box.width, box.height];
+          }),
+          xorSymbols: [...formula.querySelectorAll(".theory-hamming-check-operator")]
+            .filter((operator) => operator.textContent?.includes("⊕"))
+            .map((operator) => {
+              const node = operator.firstChild!;
+              const offset = node.textContent!.indexOf("⊕");
+              const range = document.createRange();
+              range.setStart(node, offset);
+              range.setEnd(node, offset + 1);
+              const box = range.getBoundingClientRect();
+              return [box.x - origin.x, box.y - origin.y];
+            }),
+        };
+      }),
+    );
 
+  const initialGenerationLayout = await readGenerationLayout();
   await page.getByTestId("hamming-data-2").click();
   await expect(encoded).toHaveAttribute("aria-busy", "true");
+  await expect(generation.locator("strong")).toHaveText(["P₁", "P₂", "P₄"]);
+  await expect(generationFormulas).toHaveText(["D₁ ⊕ D₂ ⊕ D₄ = P₁", "D₁ ⊕ D₃ ⊕ D₄ = P₂", "D₂ ⊕ D₃ ⊕ D₄ = P₄"]);
+  expect(await readGenerationLayout()).toEqual(initialGenerationLayout);
   await expect(encoded.locator("[data-bit-string]")).toHaveCount(0);
   await expect(output.locator("[data-bit-string]")).toHaveCount(0);
   await expect(page.getByTestId("hamming-status")).toContainText("Calculating");
   await page.clock.runFor(360);
   await expect(encoded.locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1111111");
+  await expect(generation.locator("strong")).toHaveText(["1", "1", "1"]);
+  await expect(generationFormulas).toHaveText(["1 ⊕ 1 ⊕ 1 = 1", "1 ⊕ 1 ⊕ 1 = 1", "1 ⊕ 1 ⊕ 1 = 1"]);
+  expect(await readGenerationLayout()).toEqual(initialGenerationLayout);
   await expect(received.locator("[data-bit-string]")).toHaveCount(0);
   await page.clock.runFor(360);
   await expect(received.locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1111111");
   await expect(checks.locator("[data-parity-check-result]")).toHaveCount(0);
+  await expect(checks.locator('[data-parity-check-channel="sG"]')).toContainText("r₄ ⊕ r₅ ⊕ r₆ ⊕ r₇");
+  await expect(checks.locator('[data-parity-check-channel="sR"]')).toContainText("r₂ ⊕ r₃ ⊕ r₆ ⊕ r₇");
+  await expect(checks.locator('[data-parity-check-channel="sB"]')).toContainText("r₁ ⊕ r₃ ⊕ r₅ ⊕ r₇");
+  const pendingFormulaLayout = await readFormulaLayout();
   await page.clock.runFor(180);
   await expect(checks.locator("[data-parity-check-result]")).toHaveCount(1);
   await expect(checks.locator('[data-parity-check-channel="sG"]')).toHaveAttribute("data-parity-check-result", "0");
+  await expect(checks.locator('[data-parity-check-channel="sG"]')).toContainText("1 ⊕ 1 ⊕ 1 ⊕ 1 = 0");
+  await expect(checks.locator('[data-parity-check-channel="sR"]')).toContainText("r₂ ⊕ r₃ ⊕ r₆ ⊕ r₇");
+  await expect(checks.locator('[data-parity-check-channel="sB"]')).toContainText("r₁ ⊕ r₃ ⊕ r₅ ⊕ r₇");
+  expect(await readFormulaLayout()).toEqual(pendingFormulaLayout);
   await expect(syndrome.locator("[data-syndrome-bits]")).toHaveCount(0);
   await page.clock.runFor(360);
   await expect(syndrome.locator("[data-syndrome-bits]")).toHaveAttribute("data-syndrome-bits", "000");
   await expect(corrected.locator("[data-bit-string]")).toHaveCount(0);
   await page.clock.runFor(540);
   await expect(output.locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1111");
+  expect(await readFormulaLayout()).toEqual(pendingFormulaLayout);
 
   await page.getByTestId("hamming-error-5").click();
+  expect(await readFormulaLayout()).toEqual(pendingFormulaLayout);
   await expect(encoded.locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1111111");
   await expect(received.locator("[data-bit-string]")).toHaveCount(0);
   await page.clock.runFor(180);
@@ -1062,18 +1151,20 @@ test("connects accessible parity-set controls to four positions, live equations,
     const sets = page.getByTestId("hamming-parity-sets");
     const blueCheck = page.getByTestId("hamming-venn-check-1");
     const node = page.getByTestId("hamming-venn-position-5");
-    const detail = page.getByTestId("hamming-venn-detail");
+    await expect(page.getByTestId("hamming-venn-detail")).toHaveCount(0);
     await expect(sets.locator('svg [role="button"]')).toHaveCount(7);
     await blueCheck.click();
     await expect(sets.locator('[data-check-member="true"]')).toHaveCount(4);
-    await expect(detail).toContainText("r₁ ⊕ r₃ ⊕ r₅ ⊕ r₇");
+    await expect(blueCheck).toContainText("0 ⊕ 0 ⊕ 0 ⊕ 0 = 0");
+    await expect(blueCheck.locator(".theory-hamming-check-reason")).toHaveText(language === "ja" ? "1が0個（偶数）" : "0 ones (even)");
     await node.focus();
     await node.press("Enter");
     await expect(node).toHaveAttribute("aria-pressed", "true");
     await expect(node).toBeFocused();
     await expect(page.getByTestId("hamming-error-5")).toHaveAttribute("aria-pressed", "true");
-    await expect(detail.locator("[data-check-value]")).toHaveAttribute("data-check-value", "1");
-    await expect(detail).toContainText("0 ⊕ 1 ⊕ 1 ⊕ 1 = 1");
+    await expect(blueCheck.locator("[data-check-value]")).toHaveAttribute("data-check-value", "1");
+    await expect(blueCheck).toContainText("0 ⊕ 0 ⊕ 1 ⊕ 0 = 1");
+    await expect(blueCheck.locator(".theory-hamming-check-reason")).toHaveText(language === "ja" ? "1が1個（奇数）" : "1 one (odd)");
     const receivedError = page.getByTestId("hamming-error-5");
     await expect(receivedError).toHaveCSS("border-color", "rgb(255, 64, 96)");
     await expect(receivedError.locator("[data-bit-value]")).toHaveCSS("text-decoration-line", "underline");
@@ -1085,20 +1176,17 @@ test("connects accessible parity-set controls to four positions, live equations,
     await blueCheck.click();
     await node.press("Space");
     await expect(node).toHaveAttribute("aria-pressed", "false");
-    await expect(detail.locator("[data-check-value]")).toHaveAttribute("data-check-value", "0");
+    await expect(blueCheck.locator("[data-check-value]")).toHaveAttribute("data-check-value", "0");
     await expect(node).toBeFocused();
     await blueCheck.click();
     await expect(sets.locator('[data-check-member="true"]')).toHaveCount(7);
-    for (const width of [320, 362, 395, 547, 639, 640, 715, 814, 866, 1039]) {
+    for (const width of [320, 362, 395, 448, 527, 547, 639, 640, 715, 814, 866, 1039]) {
       await page.setViewportSize({ width, height: 900 });
       await sets.scrollIntoViewIfNeeded();
       if ((await blueCheck.getAttribute("aria-pressed")) === "true") await blueCheck.click();
       const readPositions = () =>
         sets.evaluate((root) =>
-          [
-            root,
-            ...root.querySelectorAll(".theory-hamming-sets-figure, .theory-hamming-check-choice, .theory-hamming-set-detail-slot"),
-          ].map((element) => {
+          [root, ...root.querySelectorAll(".theory-hamming-sets-figure, .theory-hamming-check-choice")].map((element) => {
             const box = element.getBoundingClientRect();
             return { x: box.x + scrollX, y: box.y + scrollY, width: box.width, height: box.height };
           }),
@@ -1118,10 +1206,19 @@ test("connects accessible parity-set controls to four positions, live equations,
       }
       await blueCheck.click();
       const layout = await sets.evaluate((root) => {
+        const layoutBox = root.querySelector(".theory-hamming-sets-layout")!.getBoundingClientRect();
         const figure = root.querySelector("figure")!.getBoundingClientRect();
         const inspector = root.querySelector(".theory-hamming-check-choices")!.getBoundingClientRect();
-        const detail = root.querySelector(".theory-hamming-set-detail")!.getBoundingClientRect();
+        const legend = root.querySelector(".theory-hamming-sets-legend-row")!;
+        const legendBox = legend.getBoundingClientRect();
         return {
+          legendFitsOneLine:
+            legendBox.left >= figure.left &&
+            legendBox.right <= figure.right &&
+            [...legend.children].every((item) => {
+              const box = item.getBoundingClientRect();
+              return Math.abs(box.top + box.height / 2 - (legendBox.top + legendBox.height / 2)) < 1;
+            }),
           touchTargets: [...root.querySelectorAll(".theory-hamming-node-target, button")].every((element) => {
             const box = element.getBoundingClientRect();
             const minimum = element.tagName === "BUTTON" ? 44 : 24;
@@ -1129,17 +1226,42 @@ test("connects accessible parity-set controls to four positions, live equations,
           }),
           fits: [
             ...root.querySelectorAll(
-              "svg, button, p, .theory-hamming-check-heading, .theory-hamming-check-members, .theory-hamming-check-formula, .theory-hamming-check-values",
+              "svg, button, p, .theory-hamming-check-identity, .theory-hamming-check-formula, .theory-hamming-check-reason",
             ),
           ].every((element) => {
             const box = element.getBoundingClientRect();
             return box.left >= 0 && box.right <= window.innerWidth && element.scrollWidth <= element.clientWidth + 1;
           }),
           sideBySide: figure.right <= inspector.left && figure.top < inspector.bottom && inspector.top < figure.bottom,
-          detailBelow: detail.top >= Math.max(figure.bottom, inspector.bottom),
+          headingFits: [...root.querySelectorAll(".theory-hamming-check-heading")].every((heading) => {
+            const identity = heading.querySelector(".theory-hamming-check-identity")!.getBoundingClientRect();
+            const state = heading.querySelector(".theory-hamming-check-state")!.getBoundingClientRect();
+            return identity.right <= state.left;
+          }),
+          formulaAndReasonShareRow: [...root.querySelectorAll(".theory-hamming-check-choice")].every((button) => {
+            const formula = button.querySelector(".theory-hamming-check-formula")!.getBoundingClientRect();
+            const reason = button.querySelector(".theory-hamming-check-reason")!.getBoundingClientRect();
+            return formula.right <= reason.left && formula.top < reason.bottom && reason.top < formula.bottom;
+          }),
+          fullLabelsVisible: [...root.querySelectorAll(".theory-hamming-check-state-label, .theory-hamming-check-reason")].every(
+            (label) => {
+              const box = label.getBoundingClientRect();
+              return box.width > 0 && box.height > 0 && getComputedStyle(label).visibility === "visible";
+            },
+          ),
+          compactHeight: Math.abs(layoutBox.bottom - Math.max(figure.bottom, inspector.bottom)) < 1,
         };
       });
-      expect(layout).toEqual({ touchTargets: true, fits: true, sideBySide: true, detailBelow: width < 640 });
+      expect(layout).toEqual({
+        legendFitsOneLine: true,
+        touchTargets: true,
+        fits: true,
+        sideBySide: true,
+        headingFits: true,
+        formulaAndReasonShareRow: true,
+        fullLabelsVisible: true,
+        compactHeight: true,
+      });
     }
   }
 });
@@ -1170,7 +1292,7 @@ test("previews parity checks on hover and keyboard focus without replacing the c
   await expectActive(2);
   await expect(green).toHaveAttribute("aria-pressed", "true");
   await expect(red).toHaveAttribute("aria-pressed", "false");
-  await expect(sets.getByTestId("hamming-venn-detail")).toContainText("r₂ ⊕ r₃ ⊕ r₆ ⊕ r₇");
+  await expect(red).toContainText("0 ⊕ 0 ⊕ 0 ⊕ 0 = 0");
   await sets.locator("header").hover();
   await expectActive(4);
 
@@ -1203,7 +1325,7 @@ test.describe("parity inspection dismissal", () => {
         await page.getByTestId("hamming-data-1")[action]();
         await error[action]();
         await expect(green).toHaveAttribute("aria-pressed", "true");
-        await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "0011");
+        await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1000");
         await expect(page.getByTestId("hamming-stage-syndrome").locator("[data-syndrome-bits]")).toHaveAttribute(
           "data-syndrome-bits",
           "100",
@@ -1212,7 +1334,7 @@ test.describe("parity inspection dismissal", () => {
         const simulation = await stages.allTextContents();
         const readLayout = () =>
           sets.evaluate((root) =>
-            [root, ...root.querySelectorAll("figure, button, .theory-hamming-set-detail-slot")].map((element) => {
+            [root, ...root.querySelectorAll("figure, button")].map((element) => {
               const rect = element.getBoundingClientRect();
               return [rect.x + scrollX, rect.y + scrollY, rect.width, rect.height];
             }),
@@ -1299,6 +1421,122 @@ test("integrates compact rank relationships below the binary table without extra
   }
 });
 
+async function expectGeneralOctahedron(octahedron: Locator) {
+  await expect(octahedron.locator('[aria-pressed="true"], [data-edge-face-role], [data-edge-node-role]')).toHaveCount(0);
+  const xor = octahedron.locator('[data-edge-result="xor"]');
+  const complement = octahedron.locator('[data-edge-result="complement"]');
+  await expect(xor).toBeVisible();
+  await expect(complement).toBeVisible();
+  await expect(xor).toContainText("a ⊕ b = c");
+  await expect(complement).toContainText("¬(a ⊕ b) = ¬c");
+  await expect(octahedron.locator("[data-edge-result] .theory-octahedron-swatch")).toHaveCount(0);
+}
+
+test("shows general octahedron formulas and previews an edge without moving the diagram or controls", async ({ page }, testInfo) => {
+  for (const language of ["ja", "en"]) {
+    await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
+    await page.goto("theory-dev.html");
+    const octahedron = page.getByTestId("chromatic-octahedron");
+    const results = octahedron.getByTestId("octahedron-selection");
+    const frame = () =>
+      octahedron.evaluate((root) => {
+        const origin = root.getBoundingClientRect();
+        return [...root.querySelectorAll("svg, .theory-octahedron-choices button")].map((node) => {
+          const box = node.getBoundingClientRect();
+          return [box.left - origin.left, box.top - origin.top, box.width, box.height].map((value) => Math.round(value * 10) / 10);
+        });
+      });
+    for (const width of [320, 390, 564, 747, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.mouse.move(0, 0);
+      await octahedron.scrollIntoViewIfNeeded();
+      await expectGeneralOctahedron(octahedron);
+      const initial = await frame();
+      if (language === "ja" && [390, 564, 1440].includes(width)) {
+        await octahedron.screenshot({ path: testInfo.outputPath(`octahedron-general-${width}.png`) });
+      }
+      await octahedron.locator(".theory-octahedron-choices button").first().hover();
+      await expect(results.locator("[data-edge-result]")).toHaveCount(2);
+      await expect(results).toHaveAttribute("data-empty", "false");
+      await expect(results.locator(".theory-octahedron-edge-results")).toBeVisible();
+      await expect(results).toContainText("001 ⊕ 010 = 011");
+      expect(await frame(), `${language}, ${width}px first preview`).toEqual(initial);
+      await page.mouse.move(0, 0);
+      await expectGeneralOctahedron(octahedron);
+      expect(await frame(), `${language}, ${width}px after preview`).toEqual(initial);
+    }
+  }
+});
+
+for (const input of ["mouse", "touch"] as const) {
+  test.describe(`${input} octahedron selection`, () => {
+    test.use({
+      hasTouch: input === "touch",
+      isMobile: input === "touch",
+      viewport: input === "touch" ? { width: 390, height: 844 } : { width: 1075, height: 900 },
+    });
+
+    test("toggles edges and pair buttons and clears on background or vertex presses", async ({ page }) => {
+      await page.goto("theory-dev.html");
+      const octahedron = page.getByTestId("chromatic-octahedron");
+      const graph = octahedron.locator("svg");
+      const edge = octahedron.locator('[data-octa-edge-control="1-3"]');
+      const pair = octahedron.locator(".theory-octahedron-choices button").nth(1);
+      const other = octahedron.locator(".theory-octahedron-choices button").nth(5);
+      const press = (target: Locator) => (input === "touch" ? target.tap() : target.click());
+      const pressEdge = async () => {
+        await graph.scrollIntoViewIfNeeded();
+        // A vertical SVG line has a zero-width bounding box, so press the
+        // painted stroke's midpoint using its actual screen transform.
+        const point = await edge.locator("[data-octa-edge]").evaluate((node) => {
+          const line = node as SVGLineElement;
+          const point = new DOMPoint(
+            (line.x1.baseVal.value + line.x2.baseVal.value) / 2,
+            (line.y1.baseVal.value + line.y2.baseVal.value) / 2,
+          ).matrixTransform(line.getScreenCTM()!);
+          return { x: point.x, y: point.y };
+        });
+        if (input === "touch") await page.touchscreen.tap(point.x, point.y);
+        else await page.mouse.click(point.x, point.y);
+      };
+      await expectGeneralOctahedron(octahedron);
+      await pressEdge();
+      await expect(edge).toHaveAttribute("aria-pressed", "true");
+      await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 011 = 010");
+      await pressEdge();
+      await expectGeneralOctahedron(octahedron);
+      // Keep the pointer on the target: deselection must not reappear as hover.
+      await press(pair);
+      await expect(pair).toHaveAttribute("aria-pressed", "true");
+      await press(pair);
+      await expectGeneralOctahedron(octahedron);
+      await pressEdge();
+      await press(pair);
+      await expectGeneralOctahedron(octahedron);
+      await press(pair);
+      await press(other);
+      await expect(edge).toHaveAttribute("aria-pressed", "false");
+      await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("010 ⊕ 100 = 110");
+      await graph.scrollIntoViewIfNeeded();
+      const box = (await graph.boundingBox())!;
+      const position = { x: box.width / 2, y: box.height / 2 };
+      if (input === "touch") await graph.tap({ position });
+      else await graph.click({ position });
+      await expectGeneralOctahedron(octahedron);
+      await press(pair);
+      await press(octahedron.locator('[data-octa-vertex="3"]'));
+      await expectGeneralOctahedron(octahedron);
+      if (input === "mouse") {
+        await press(pair);
+        await other.hover();
+        await page.mouse.move(0, 0);
+        await expect(pair).toHaveAttribute("aria-pressed", "true");
+        await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 011 = 010");
+      }
+    });
+  });
+}
+
 test("shows a symmetric six-pointed octahedron with red above cyan and accessible edge selection", async ({ page }) => {
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
@@ -1312,8 +1550,7 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
     await expect(octahedron.locator('[data-octa-edge][data-hidden="true"]')).toHaveCount(3);
     await expect(octahedron.locator("[data-octa-edge-control][role='button']")).toHaveCount(12);
     await expect(octahedron.locator(".theory-octahedron-choices button")).toHaveCount(12);
-    await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("010 ⊕ 100 = 110");
-    await expect(octahedron.locator('[data-edge-result="complement"]')).toContainText("¬(010 ⊕ 100) = 001");
+    await expectGeneralOctahedron(octahedron);
     const edge = octahedron.locator('[data-octa-edge-control="1-2"]');
     await edge.focus();
     await edge.press("Enter");
@@ -1321,8 +1558,7 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
     await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 010 = 011");
     await expect(octahedron.locator('[data-octa-surface-face][data-active="true"]')).toHaveCount(2);
     await edge.press("Space");
-    await expect(edge).toHaveAttribute("aria-pressed", "true");
-    await expect(octahedron.locator("[data-edge-result]")).toHaveCount(2);
+    await expectGeneralOctahedron(octahedron);
     await octahedron.locator('[data-octa-edge-control="2-4"]').click();
     await expect(octahedron.locator('[data-edge-result="complement"]')).toContainText("¬(010 ⊕ 100) = 001");
     const fanoNote = section.locator("p#theory-octa-face-algebra");
@@ -1460,6 +1696,7 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
       await choices.nth(0).hover();
       await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 010 = 011");
       expect(await frame()).toEqual(initial);
+      await choices.nth(5).click();
       await choices.nth(0).click();
       await choices.nth(5).hover();
       expect(await frame()).toEqual(initial);
@@ -1477,8 +1714,19 @@ test("connects primary selection and the eight-state list with readable responsi
     const generation = page.getByTestId("primary-generation");
     const layers = generation.getByTestId("generation-layers");
     const inputs = generation.locator(".theory-generation-inputs button");
+    const venn = generation.locator(".theory-venn-svg");
+    await expect(generation.locator(".theory-generation-state-hint")).toHaveCount(0);
     await expect(layers.getByRole("button")).toHaveCount(8);
     const black = layers.locator('[data-level="0"]');
+    await expect(black).toHaveAttribute("aria-pressed", "true");
+    await expect(generation.locator("[data-generation-result]")).toHaveAttribute("data-generation-result", "0");
+    await expect(generation.getByRole("status")).toContainText("∅ → K");
+    await expect(generation.locator('.theory-generation-inputs button[aria-pressed="true"]')).toHaveCount(0);
+    await expect(venn).toHaveAttribute("data-selected-level", "0");
+    await expect(venn.locator('[data-venn-primary][data-active="true"]')).toHaveCount(0);
+    await expect(venn.locator("[data-venn-outline]")).toHaveCount(3);
+    await inputs.nth(0).click();
+    await expect(generation.locator("[data-generation-result]")).toHaveAttribute("data-generation-result", "4");
     await black.focus();
     await black.press("Enter");
     await expect(black).toBeFocused();
@@ -1495,7 +1743,6 @@ test("connects primary selection and the eight-state list with readable responsi
     await inputs.nth(1).click();
     await expect(layers.locator('[data-level="7"]')).toHaveAttribute("aria-pressed", "true");
     await expect(generation.getByRole("status")).toContainText("4+2+1=7");
-    const venn = generation.locator(".theory-venn-svg");
     const illuminatedPrimaries = () =>
       venn
         .locator('[data-venn-primary][data-active="true"]')
@@ -1512,27 +1759,24 @@ test("connects primary selection and the eight-state list with readable responsi
         const states = root.querySelector(".theory-generation-states")!.getBoundingClientRect();
         const buttons = [...root.querySelectorAll("button")];
         return {
-          diagramPlacement:
-            window.innerWidth >= 748
-              ? builder.right <= diagram.left && diagram.right <= states.left && Math.abs(diagram.top - builder.top) < 1
-              : diagram.bottom <= builder.top,
+          diagramPlacement: builder.right <= diagram.left && diagram.right <= states.left && Math.abs(diagram.top - builder.top) < 1,
           statePlacement: builder.right <= states.left,
           sameRow: Math.abs(builder.top - states.top) < 1,
-          compactHeight: root.getBoundingClientRect().height <= (window.innerWidth < 748 ? 510 : 330),
-          compactDiagram: window.innerWidth >= 748 || root.querySelector(".theory-venn-svg")!.getBoundingClientRect().width <= 240,
+          compactHeight: root.getBoundingClientRect().height <= (window.innerWidth < 748 ? 380 : 330),
+          compactDiagram: window.innerWidth >= 748 || root.querySelector(".theory-venn")!.getBoundingClientRect().width <= 264,
           fits: [...root.querySelectorAll("button, .theory-generation-heading, p, [role='status']")].every((el) => {
             const box = el.getBoundingClientRect();
             return box.left >= 0 && box.right <= window.innerWidth && el.scrollWidth <= el.clientWidth + 1;
           }),
           touchTargets: buttons.every((el) => {
             const box = el.getBoundingClientRect();
-            return box.width >= 32 && box.height >= 32;
+            return box.width >= 24 && box.height >= 32;
           }),
           readable: buttons.every((el) => Number.parseFloat(getComputedStyle(el).fontSize) >= 11),
           diagramLabels: [...root.querySelectorAll(".theory-venn-svg text")].every((el) => {
             const box = el.getBoundingClientRect();
             const svg = el.closest("svg")!.getBoundingClientRect();
-            return box.height >= 10 && box.left >= svg.left && box.right <= svg.right;
+            return box.height >= Math.min(10, svg.width * 0.04) && box.left >= svg.left && box.right <= svg.right;
           }),
         };
       });
@@ -1551,9 +1795,27 @@ test("connects primary selection and the eight-state list with readable responsi
 
     for (const width of [1186, 728, 564, 320]) {
       await page.setViewportSize({ width, height: 698 });
-      for (let level = 0; level < 8; level++) {
+      for (const [region, level] of [
+        [0, 0],
+        [2, 2],
+        [4, 6],
+        [2, 4],
+        [1, 5],
+        [2, 7],
+        [4, 3],
+        [2, 1],
+        [1, 0],
+        [6, 6],
+        [6, 0],
+        [7, 7],
+        [7, 0],
+        [6, 6],
+        [3, 7],
+        [6, 1],
+        [0, 0],
+      ]) {
         await venn.scrollIntoViewIfNeeded();
-        const label = (await generation.getByTestId(`venn-region-${level}`).boundingBox())!;
+        const label = (await generation.getByTestId(`venn-region-${region}`).boundingBox())!;
         await page.mouse.click(label.x + label.width / 2, label.y + label.height / 2);
         await expect(venn).toHaveAttribute("data-selected-level", String(level));
         await expect(generation.locator("[data-generation-result]")).toHaveAttribute("data-generation-result", String(level));
@@ -1565,7 +1827,7 @@ test("connects primary selection and the eight-state list with readable responsi
           await expect(inputs.nth(index)).toHaveAttribute("aria-pressed", String((level & weight) !== 0));
         }
         const frame = await generation.boundingBox();
-        const preview = (level + 1) % 8;
+        const preview = (region + 1) % 8;
         const hoveredLabel = (await generation.getByTestId(`venn-region-${preview}`).boundingBox())!;
         await page.mouse.move(hoveredLabel.x + hoveredLabel.width / 2, hoveredLabel.y + hoveredLabel.height / 2);
         await expect(venn).toHaveAttribute("data-highlighted-level", String(preview));
@@ -1586,6 +1848,12 @@ test("connects primary selection and the eight-state list with readable responsi
       await page.mouse.click(1, 1);
       await expect(venn).not.toHaveAttribute("data-highlighted-level");
       await expect(generation.locator("[data-generation-result]")).toHaveAttribute("data-generation-result", "7");
+      await generation.locator(".theory-generation-diagram").click({ position: { x: 2, y: 2 } });
+      await expect(venn).toHaveAttribute("data-selected-level", "0");
+      await expect(venn.locator('[data-venn-primary][data-active="true"]')).toHaveCount(0);
+      await expect(venn.locator("[stroke-dasharray]")).toHaveCount(0);
+      await expect(generation.locator('.theory-generation-inputs button[aria-pressed="true"]')).toHaveCount(0);
+      await expect(generation.getByRole("status")).toContainText("∅ → K");
     }
   }
 });
@@ -1812,8 +2080,8 @@ test("compares fixed GRB join and YCM meet with compact nodes and responsive ind
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");
     const diagrams = page.locator("#theory-mixing");
-    const grb = diagrams.getByRole("figure", { name: "GRB · join ∨" });
-    const ycm = diagrams.getByRole("figure", { name: "YCM · meet ∧" });
+    const grb = diagrams.getByRole("figure", { name: language === "ja" ? "GRBの論理和" : "GRB Logical OR" });
+    const ycm = diagrams.getByRole("figure", { name: language === "ja" ? "YCMの論理積" : "YCM Logical AND" });
     await expect(grb.locator("svg").getByRole("button")).toHaveCount(3);
     await expect(ycm.locator("svg").getByRole("button")).toHaveCount(3);
     await expect(diagrams.locator("button")).toHaveCount(0);
@@ -1914,9 +2182,9 @@ test.describe("mixing nodes on touch screens", () => {
     await page.addInitScript(() => localStorage.setItem("chromalum_lang", "en"));
     await page.goto("theory-dev.html");
     const diagrams = page.locator("#theory-mixing");
-    for (const [family, label, result] of [
-      ["rgb", "Input B, bits 001", "6"],
-      ["cmy", "Input Y, bits 110", "1"],
+    for (const [family, label, result, secondLabel, singleResult] of [
+      ["rgb", "Input B, bits 001", "6", "Input R, bits 010", "4"],
+      ["cmy", "Input Y, bits 110", "1", "Input C, bits 101", "3"],
     ]) {
       const figure = diagrams.locator(`[data-mixing-family="${family}"]`);
       const node = figure.getByRole("button", { name: label, exact: true });
@@ -1926,6 +2194,14 @@ test.describe("mixing nodes on touch screens", () => {
       const hit = await node.locator("[data-mixing-hit]").boundingBox();
       expect(hit!.width).toBeGreaterThanOrEqual(24);
       expect(hit!.height).toBeGreaterThanOrEqual(24);
+      await figure.getByRole("button", { name: secondLabel, exact: true }).tap();
+      await expect(figure.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", singleResult);
+      const remaining = figure.getByRole("button").first();
+      await remaining.tap();
+      await expect(figure.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "pending");
+      await expect(figure.getByRole("status")).toHaveText("Select an input color");
+      await remaining.tap();
+      await expect(figure.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", singleResult);
     }
   });
 });

@@ -40,7 +40,7 @@ function MixingFigure({ family, inputs }: { family: MixingFamily; inputs: readon
   const [selected, setSelected] = useState<readonly number[]>(inputs);
   const operands = inputs.filter((level) => selected.includes(level));
   const result =
-    operands.length < 2
+    operands.length === 0
       ? null
       : family === "rgb"
         ? operands.reduce((join, level) => join | level, 0)
@@ -210,6 +210,7 @@ function SignalBus({ points, active, markerX, markerY }: { points: string; activ
 
 function ColorNode({ level, x, y }: { level: number; x: number; y: number }) {
   const info = THEORY_LEVELS[level];
+  const channels = ["G", "R", "B"].filter((_, index) => info.bits[index] === 1);
   return (
     <g data-mixing-color={level}>
       <circle cx={x} cy={y} r={NODE_R} fill={info.color} stroke={C.textPrimary} strokeWidth={1} />
@@ -217,7 +218,7 @@ function ColorNode({ level, x, y }: { level: number; x: number; y: number }) {
         {info.bits.join("")}
       </text>
       <text x={x} y={y + 26}>
-        {info.short}
+        {channels.length === 0 ? "∅" : `{${channels.join(",")}}`}
       </text>
     </g>
   );

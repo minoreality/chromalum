@@ -145,18 +145,18 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 
-/* Map mode buttons: mobile uses 2+4 rows; desktop keeps a single row */
+/* Keep compact labels on one row; wrap longer labels when space is limited. */
 .map-mode-buttons {
   flex-wrap: wrap;
+  justify-content: center;
+}
+.map-mode-buttons > button {
+  flex-shrink: 0;
 }
 .panel-canvas--map .map-mode-buttons {
   box-sizing: border-box;
   max-width: var(--app-inline-content-width);
   width: var(--app-inline-content-width);
-}
-.map-mode-break {
-  flex-basis: 100%;
-  height: 0;
 }
 
 /* Gallery thumbnail grid */
@@ -364,24 +364,37 @@ button.theory-diagram-button {
   color: #c8c8d8;
 }
 .theory-generation-diagram {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  align-self: stretch;
   min-width: 0;
+}
+.theory-generation-with-diagram {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: start;
+}
+.theory-generation-heading-short {
+  display: none;
+}
+.theory-generation-with-diagram .theory-generation-heading {
+  text-align: center;
+}
+.theory-generation-diagram .theory-figure {
+  gap: 0;
 }
 .theory-generation-diagram .theory-figure > div {
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
 }
 .theory-generation-diagram .theory-figure > figcaption {
   color: #b3bedb;
   font-weight: 700;
   line-height: 1.5;
+  text-align: center;
 }
 .theory-venn {
   display: flex;
   justify-content: center;
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
 }
 .theory-venn-svg {
   display: block;
@@ -390,31 +403,33 @@ button.theory-diagram-button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-/* Matches the three-column limit at roughly a 748px Theory viewport. */
+/* Keep all three views alongside each other, including on phones. */
 @container generation-layout (width < 601px) {
+  .theory-generation-with-diagram .theory-generation-heading-long {
+    display: none;
+  }
+  .theory-generation-with-diagram .theory-generation-heading-short {
+    display: inline;
+  }
   .theory-generation-with-diagram {
-    row-gap: 8px;
+    grid-template-columns: clamp(78px, 18cqw, 108px) minmax(0, 1fr) clamp(84px, 20cqw, 132px);
+    gap: 8px 4px;
     padding-block: 8px;
   }
-  .theory-generation-diagram .theory-figure {
-    gap: 6px;
-  }
   .theory-generation-diagram .theory-figure > div {
-    max-width: clamp(220px, 44cqw, 240px);
+    max-width: clamp(240px, 48cqw, 264px);
+    overflow: hidden;
+  }
+  .theory-generation-diagram .theory-venn-svg {
+    /* Enlarge the circles by cropping only the diagram's empty side margins. */
+    flex-shrink: 0;
+    width: calc(100% * 248 / 204);
   }
 }
 @container generation-layout (min-width: 601px) {
   .theory-generation-with-diagram {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 1.2fr) minmax(0, 1fr);
     align-items: start;
-  }
-  .theory-generation-diagram {
-    grid-column: auto;
-    grid-row: auto;
-  }
-  .theory-generation-diagram .theory-figure > figcaption {
-    align-self: stretch;
-    text-align: left;
   }
 }
 @container generation-layout (min-width: 800px) {
@@ -457,10 +472,10 @@ button.theory-diagram-button {
 }
 .theory-generation-primary {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  min-height: 66px;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  min-height: 32px;
 }
 .theory-generation-primary-label {
   display: flex;
@@ -476,14 +491,6 @@ button.theory-diagram-button {
   height: 10px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 3px;
-}
-.theory-generation-check {
-  margin-left: auto;
-  color: #80a0ff;
-}
-.theory-generation-primary-bits {
-  color: #9090b8;
-  white-space: nowrap;
 }
 .theory-generation-primary[aria-pressed="true"],
 .theory-generation-state[aria-pressed="true"] {
@@ -560,12 +567,6 @@ button.theory-diagram-button {
 .theory-generation-states .theory-generation-heading {
   margin-bottom: 4px;
 }
-.theory-generation-state-hint {
-  margin: 0 0 10px;
-  font-size: 11px;
-  line-height: 1.5;
-  color: #9090b8;
-}
 .theory-generation-layers {
   display: grid;
   gap: 6px;
@@ -608,9 +609,7 @@ button.theory-diagram-button {
     font-size: 11px;
   }
   .theory-generation-primary {
-    gap: 4px;
-    min-height: 44px;
-    padding: 6px 4px;
+    padding-inline: 4px;
   }
   .theory-generation-primary-label {
     gap: 4px;
@@ -623,9 +622,6 @@ button.theory-diagram-button {
     flex-basis: 8px;
     width: 8px;
     height: 8px;
-  }
-  .theory-generation-check {
-    font-size: 10px;
   }
   .theory-generation-result {
     grid-template-columns: 32px minmax(0, 1fr);
@@ -646,10 +642,6 @@ button.theory-diagram-button {
     gap: 2px;
     font-size: 11px;
   }
-  .theory-generation-state-hint {
-    margin-bottom: 8px;
-    font-size: 10px;
-  }
   .theory-generation-layers {
     gap: 4px;
   }
@@ -659,12 +651,49 @@ button.theory-diagram-button {
     padding: 3px 2px;
   }
 }
-@container primary-generation (max-width: 400px) {
+@container primary-generation (width < 601px) {
+  .theory-generation-with-diagram .theory-generation-inputs .theory-generation-primary,
+  .theory-generation-with-diagram .theory-generation-layers .theory-generation-state {
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .theory-generation-with-diagram .theory-generation-inputs {
+    gap: 2px;
+  }
+  .theory-generation-with-diagram .theory-generation-heading {
+    overflow-wrap: anywhere;
+  }
+  .theory-generation-with-diagram .theory-generation-result {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .theory-generation-with-diagram .theory-generation-preview {
+    width: 22px;
+    height: 22px;
+  }
+  .theory-generation-with-diagram .theory-generation-result-value {
+    font-size: 12px;
+    gap: 4px;
+    letter-spacing: 0;
+  }
+  .theory-generation-with-diagram .theory-generation-formula > span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .theory-generation-with-diagram .theory-generation-layer-states {
+    gap: 2px;
+  }
+  .theory-generation-with-diagram .theory-generation-state {
+    padding-inline: 0;
+  }
+  .theory-generation-with-diagram .theory-generation-state-name {
+    gap: 2px;
+  }
   .theory-generation-primary {
     padding-inline: 2px;
   }
   .theory-generation-primary-label {
-    gap: 3px;
+    gap: 2px;
     font-size: 11px;
   }
 }
@@ -702,8 +731,9 @@ button.theory-diagram-button {
   opacity: 1;
 }
 .theory-cube-controls {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
   width: 100%;
   max-width: 360px;
@@ -724,8 +754,11 @@ button.theory-diagram-button {
   -webkit-tap-highlight-color: transparent;
 }
 .theory-cube-controls button {
-  min-height: 34px;
-  padding: 5px 4px;
+  flex: 0 0 auto;
+  min-width: 44px;
+  height: 28px;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 .theory-cube-controls button:hover {
   border-color: #a3b4d7;
@@ -865,13 +898,10 @@ button.theory-diagram-button {
     transform: translate(-13px, -16px);
   }
   .theory-cube-controls {
-    display: flex;
-    flex-wrap: wrap;
     gap: 3px;
   }
   .theory-cube-controls button {
-    flex: 1 0 auto;
-    padding-inline: 2px;
+    padding-inline: 4px;
     font-size: 10px;
   }
 }
@@ -1317,19 +1347,21 @@ button.theory-diagram-button {
   white-space: nowrap;
 }
 .theory-k8-display-modes {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
   width: 100%;
 }
 .theory-k8-display-modes button {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   box-sizing: border-box;
-  min-width: 0;
-  height: 36px;
+  min-width: 44px;
+  height: 28px;
   padding: 0 6px;
   border: 1px solid #303951;
   border-radius: 5px;
@@ -1393,9 +1425,7 @@ button.theory-diagram-button {
     gap: 4px;
   }
   .theory-k8-display-modes button {
-    flex-direction: column;
-    gap: 1px;
-    padding-inline: 2px;
+    padding-inline: 4px;
     font-size: 11px;
   }
   .theory-k8-display-modes button small {
@@ -2121,8 +2151,45 @@ button.theory-diagram-button {
     gap: 12px;
   }
   .theory-fano-matrix {
+    --fano-matrix-label-height: 20px;
+    --fano-matrix-bit-height: 20px;
     border-top: 1px solid #26263a;
-    padding-top: 8px;
+    padding-top: 6px;
+  }
+  .theory-fano-matrix-heading {
+    min-height: 22px;
+  }
+  .theory-fano-matrix-grid {
+    margin-top: 2px;
+  }
+  .theory-fano-word-axis,
+  .theory-fano-word-bit {
+    min-height: 20px;
+  }
+  .theory-fano-word-caption {
+    margin: 1px 0 4px;
+  }
+  .theory-fano-checks {
+    padding-top: 4px;
+  }
+  .theory-fano-checks-heading {
+    min-height: 18px;
+  }
+  .theory-fano-check-rows {
+    margin: 2px 0;
+  }
+  .theory-fano-check {
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    padding: 1px 0;
+  }
+  .theory-fano-check code {
+    min-width: 9ch;
+    text-align: center;
+  }
+  .theory-fano-syndrome {
+    padding: 0;
   }
 }
 @container fano-geometry (width < 280px) {
@@ -2314,6 +2381,43 @@ button.theory-diagram-button {
   border: 1px solid rgb(255 255 255 / 35%);
   border-radius: 2px;
 }
+@container k8-explorer (width < 500px) {
+  .theory-toggle-readout.theory-k8-comparison {
+    margin-top: 8px;
+    padding-top: 6px;
+  }
+  .theory-toggle-values dd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 0;
+  }
+  .theory-k8-comparison-metrics {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+  .theory-toggle-readout .theory-k8-comparison-prompt,
+  .theory-toggle-readout .theory-k8-comparison-relation {
+    min-height: 1.5em;
+    margin-top: 4px;
+  }
+  .theory-k8-comparison-details {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+  .theory-k8-comparison-details dl {
+    gap: 2px;
+  }
+  .theory-k8-comparison-details p {
+    margin-top: 4px;
+  }
+}
+@container k8-comparison (max-width: 300px) {
+  .theory-toggle-values dd {
+    gap: 2px;
+  }
+}
 @container k8-explorer (min-width: 500px) {
   .theory-toggle-readout {
     display: grid;
@@ -2454,6 +2558,9 @@ button.theory-diagram-button {
     font-size: 9px;
   }
 }
+#theory-octahedron > .theory-figure {
+  gap: 0;
+}
 .theory-octahedron {
   container: octahedron / inline-size;
   width: 100%;
@@ -2568,8 +2675,13 @@ button.theory-diagram-button {
   font-size: 12px;
   line-height: 1.6;
 }
+.theory-octahedron-status > [data-octa-sizing] {
+  visibility: hidden;
+  pointer-events: none;
+}
 .theory-octahedron-status > strong {
   display: block;
+  grid-area: 1 / 1;
   font-weight: 600;
 }
 .theory-octahedron-status strong {
@@ -2582,6 +2694,7 @@ button.theory-diagram-button {
 }
 .theory-octahedron-edge-results {
   display: grid;
+  grid-area: 2 / 1;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: repeat(2, minmax(min-content, 1fr));
   gap: 12px;
@@ -2710,24 +2823,23 @@ button.theory-diagram-button {
   container: color-die / inline-size;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: center;
+  grid-template-rows: repeat(4, auto);
   gap: 8px clamp(8px, 2.5vw, 32px);
   width: 100%;
   max-width: 640px;
   padding: 12px 0;
 }
 .theory-die-figure > * {
+  display: grid;
+  grid-row: span 4;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+  align-items: center;
+  justify-items: center;
   justify-self: center;
   width: 100%;
   min-width: 0;
   max-width: 280px;
-}
-.theory-die-net {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
 }
 .theory-die-net svg {
   display: block;
@@ -2739,19 +2851,17 @@ button.theory-diagram-button {
   white-space: nowrap;
 }
 .theory-die-ranks {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
   font-family: var(--font-mono);
   color: #c8c8d8;
   text-align: center;
 }
-.theory-die-ranks .theory-diagram-label {
+.theory-die-figure .theory-diagram-label {
+  align-self: start;
   margin: 0;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: #9090b8;
+  text-align: center;
 }
 .theory-die-numbering {
   font-size: 11px;
@@ -2819,10 +2929,7 @@ button.theory-diagram-button {
   .theory-die-net {
     --theory-net-caption-size: 9px;
   }
-  .theory-die-ranks {
-    gap: 8px;
-  }
-  .theory-die-ranks .theory-diagram-label {
+  .theory-die-figure .theory-diagram-label {
     font-size: 11px;
   }
   .theory-die-numbering,
@@ -3025,7 +3132,7 @@ button.theory-diagram-button {
   font-family: var(--font-mono);
 }
 .theory-hamming-set-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 .theory-hamming-set-node {
@@ -3063,31 +3170,43 @@ button.theory-diagram-button {
 .theory-hamming-sets-legend {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 4px 8px;
   margin-top: 4px;
   color: var(--c-text-muted, #9090b8);
   font-size: 11px;
   line-height: 1.5;
 }
-.theory-hamming-sets-legend > span {
+.theory-hamming-sets-legend-row {
+  display: flex;
+  align-items: center;
+  flex: none;
+  width: max-content;
+  gap: calc(8px * var(--hamming-legend-scale, 1));
+  font-size: calc(1em * var(--hamming-legend-scale, 1));
+  white-space: nowrap;
+}
+.theory-hamming-sets-legend-row,
+.theory-hamming-sets-legend-row * {
+  /* Fit measurements need final sizes, including under reduced-motion overrides. */
+  transition-property: none;
+}
+.theory-hamming-sets-legend-row > span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: calc(5px * var(--hamming-legend-scale, 1));
 }
 .theory-hamming-error-legend {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: calc(14px * var(--hamming-legend-scale, 1));
+  height: calc(14px * var(--hamming-legend-scale, 1));
   border-radius: 50%;
   background: var(--c-error, #ff4060);
   color: #fff;
 }
 .theory-hamming-dashed-legend {
-  width: 18px;
-  border-top: 2px dashed var(--c-text-muted, #9090b8);
+  width: calc(18px * var(--hamming-legend-scale, 1));
+  border-top: calc(2px * var(--hamming-legend-scale, 1)) dashed var(--c-text-muted, #9090b8);
 }
 .theory-hamming-sets-inspector {
   min-width: 0;
@@ -3095,10 +3214,12 @@ button.theory-diagram-button {
 .theory-hamming-check-choices {
   display: grid;
   gap: 4px;
+  container: hamming-checks / inline-size;
 }
 .theory-hamming-check-choice {
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 2px 8px;
   width: 100%;
   min-height: 44px;
   padding: 5px 8px;
@@ -3121,70 +3242,99 @@ button.theory-diagram-button {
   outline: 2px solid var(--c-accent-bright, #80a0ff);
   outline-offset: 3px;
 }
-.theory-hamming-check-heading,
-.theory-hamming-check-members {
+.theory-hamming-check-heading {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-}
-.theory-hamming-check-heading {
+  gap: 8px;
   font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.theory-hamming-check-identity {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 .theory-hamming-check-heading small,
 .theory-hamming-check-state,
-.theory-hamming-check-members {
+.theory-hamming-check-positions,
+.theory-hamming-check-reason {
   color: var(--c-text-muted, #9090b8);
   font-size: 11px;
 }
-.theory-hamming-check-members b {
-  color: var(--c-text-primary, #c8c8d8);
-  font-weight: 400;
+.theory-hamming-check-state {
+  flex-shrink: 0;
 }
-.theory-hamming-check-positions-short {
-  display: none;
+.theory-hamming-check-choice[data-parity-check-result="0"] .theory-hamming-check-state {
+  color: color-mix(in srgb, var(--c-text-primary, #c8c8d8) 75%, var(--c-text-muted, #9090b8));
 }
 .theory-hamming-check-state[data-failed="true"] {
   color: var(--c-error, #ff4060);
 }
-.theory-hamming-set-detail-slot {
-  display: grid;
-  min-width: 0;
-}
-.theory-hamming-set-detail {
-  grid-area: 1 / 1;
-  min-height: 0;
-  margin-top: 6px;
-  padding: 6px 0 0;
-  border-top: 1px solid var(--c-border, #2a2a40);
-  color: var(--c-text-primary, #c8c8d8);
-  font: 12px/1.55 var(--font-mono);
-  box-sizing: border-box;
-}
-.theory-hamming-set-detail p {
-  margin: 4px 0 0;
-  color: var(--c-text-muted, #9090b8);
-}
-.theory-hamming-set-detail-sizer {
-  visibility: hidden;
-  pointer-events: none;
-  user-select: none;
-}
-.theory-hamming-check-explanations {
-  display: grid;
-}
-.theory-hamming-check-explanations > p {
-  grid-area: 1 / 1;
-}
 .theory-hamming-check-formula {
-  margin-top: 4px;
-  color: var(--c-text-muted, #9090b8);
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  /* Keep operands, operators, and the result in the same slots in both states. */
+  grid-template-columns: repeat(8, 2ch) 1ch;
+  justify-content: start;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
   white-space: nowrap;
 }
-.theory-hamming-check-values {
-  font-size: 14px;
+.theory-hamming-check-reason {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  align-self: baseline;
+  /* Reserve the full localized count while its calculation is still pending. */
+  min-inline-size: 13ch;
+  line-height: 1.4;
+  text-align: right;
   white-space: nowrap;
+}
+.theory-hamming-check-choice[data-parity-check-result] .theory-hamming-check-reason {
+  color: color-mix(in srgb, var(--c-text-primary, #c8c8d8) 50%, var(--c-text-muted, #9090b8));
+}
+@container hamming-checks (max-width: 240px) {
+  .theory-hamming-check-heading,
+  .theory-hamming-check-formula {
+    font-size: 11px;
+  }
+  .theory-hamming-check-heading small,
+  .theory-hamming-check-state,
+  .theory-hamming-check-positions,
+  .theory-hamming-check-reason {
+    font-size: 10px;
+  }
+}
+@container hamming-checks (max-width: 210px) {
+  .theory-hamming-check-choice {
+    column-gap: 3px;
+  }
+  .theory-hamming-check-heading {
+    gap: 3px;
+  }
+  .theory-hamming-check-identity {
+    gap: 2px;
+  }
+  .theory-hamming-check-heading,
+  .theory-hamming-check-formula {
+    font-size: min(11px, 5.9cqw);
+  }
+  .theory-hamming-check-formula {
+    grid-template-columns: repeat(3, 2ch 1ch) 2ch 1ch 1ch;
+  }
+  .theory-hamming-check-heading small,
+  .theory-hamming-check-positions,
+  .theory-hamming-check-state,
+  .theory-hamming-check-reason {
+    font-size: min(10px, 5.45cqw);
+  }
 }
 @media (max-width: 639px) {
   .theory-hamming-sets-layout {
@@ -3202,42 +3352,16 @@ button.theory-diagram-button {
   .theory-hamming-check-choice {
     min-height: 44px;
     padding: 4px;
-    gap: 3px;
-  }
-  .theory-hamming-check-heading,
-  .theory-hamming-check-members {
-    flex-wrap: nowrap;
-    gap: 3px;
-    white-space: nowrap;
-  }
-  .theory-hamming-check-heading,
-  .theory-hamming-check-heading small,
-  .theory-hamming-check-state,
-  .theory-hamming-check-members {
-    font-size: 10px;
-  }
-  .theory-hamming-check-positions-full {
-    display: none;
-  }
-  .theory-hamming-check-positions-short {
-    display: inline;
+    row-gap: 3px;
   }
   .theory-hamming-sets-legend {
-    gap: 3px 6px;
-    margin-top: 4px;
     font-size: 9px;
   }
-  .theory-hamming-sets-legend > span {
-    white-space: nowrap;
-    gap: 3px;
+  .theory-hamming-sets-legend-row {
+    gap: calc(6px * var(--hamming-legend-scale, 1));
   }
-  .theory-hamming-set-detail-slot {
-    grid-column: 1 / -1;
-  }
-  .theory-hamming-set-detail {
-    min-height: 0;
-    margin-top: 2px;
-    padding-top: 6px;
+  .theory-hamming-sets-legend-row > span {
+    gap: calc(3px * var(--hamming-legend-scale, 1));
   }
 }
 .theory-binary-table {
@@ -3397,7 +3521,7 @@ button.theory-diagram-button {
   width: 100%;
 }
 .theory-hue-cycle .theory-diagram-label {
-  margin: 0 0 12px;
+  margin: 0 0 6px;
   font-size: 13px;
   color: #8ba8ff;
 }
@@ -3471,10 +3595,7 @@ button.theory-diagram-button {
 .theory-zigzag-level-name {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-}
-.theory-zigzag-level-count::before {
-  content: "· ";
+  gap: 3px;
 }
 .theory-zigzag-summary {
   display: grid;
@@ -3532,6 +3653,7 @@ button.theory-diagram-button {
   height: 25px;
 }
 .theory-hamming-generation {
+  container: hamming-generation / inline-size;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
@@ -3539,12 +3661,37 @@ button.theory-diagram-button {
   font: 12px/1.5 var(--font-mono);
 }
 .theory-hamming-generation > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-  padding: 4px 6px;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  padding: 4px;
   border: 1px solid #2a2a44;
   border-radius: 4px;
+}
+.theory-hamming-generation-heading,
+.theory-hamming-generation-formula {
+  display: grid;
+  /* Labels and values share columns; operators occupy the intervening slots. */
+  grid-template-columns: repeat(3, 2ch 1ch) 2ch;
+  text-align: center;
+  white-space: nowrap;
+}
+.theory-hamming-generation-inputs {
+  color: var(--c-text-muted, #9090b8);
+}
+.theory-hamming-generation-formula {
+  color: var(--c-text-primary, #c8c8d8);
+}
+.theory-hamming-generation-heading > *,
+.theory-hamming-generation-formula > * {
+  min-width: 0;
+  white-space: normal;
+}
+@container hamming-generation (max-width: 300px) {
+  .theory-hamming-generation > div {
+    padding-inline: 2px;
+    font-size: 11px;
+  }
 }
 .theory-hamming-flow [data-parity-member="true"] [data-bit-value] {
   text-decoration: underline;
@@ -3573,24 +3720,15 @@ button.theory-diagram-button {
     --theory-edge-cell-padding: 2px;
     --theory-edge-row-padding: 0;
   }
-  .theory-hamming-generation {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 @media (max-width: 600px) {
   .theory-zigzag-level-controls {
-    --theory-level-height: 32px;
-    --theory-level-gap: 0;
     --theory-level-padding: 1px;
-    --theory-level-font-size: 9px;
+    --theory-level-font-size: 12px;
     gap: 3px;
   }
   .theory-zigzag-level-button {
-    flex-direction: column;
     line-height: 1.3;
-  }
-  .theory-zigzag-level-count::before {
-    content: none;
   }
 }
 @media (max-width: 479px) {
@@ -3683,11 +3821,7 @@ button.theory-diagram-button {
     width: 420px;
     flex-shrink: 0;
   }
-  .panel-layout--tall-portrait .map-mode-break {
-    display: none;
-  }
   .panel-layout--tall-portrait .map-mode-buttons {
-    flex-wrap: nowrap;
     max-width: calc(100vw - 32px);
     width: max-content;
   }
@@ -3723,11 +3857,7 @@ button.theory-diagram-button {
     width: 420px;
     flex-shrink: 0;
   }
-  .panel-layout--portrait .map-mode-break {
-    display: none;
-  }
   .panel-layout--portrait .map-mode-buttons {
-    flex-wrap: nowrap;
     max-width: calc(100vw - 32px);
     width: max-content;
   }
@@ -3968,11 +4098,7 @@ button.theory-diagram-button {
   .theory-annotation {
     font-size: 11px !important;
   }
-  .map-mode-break {
-    display: none;
-  }
   .map-mode-buttons {
-    flex-wrap: nowrap;
     max-width: calc(100vw - 32px);
     width: max-content;
   }
@@ -3998,8 +4124,12 @@ button.theory-diagram-button {
   }
 }
 
-/* ── Safe area support for notched devices ── */
+/* Fill the current viewport, with safe-area padding included in its height.
+   The page background continues behind system bars; content stays inside. */
 #root {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
   padding-top: max(var(--sp-root-top), env(safe-area-inset-top));

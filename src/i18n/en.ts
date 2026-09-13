@@ -173,10 +173,6 @@ export const en = {
   toast_cleared: "Cleared (Ctrl+Z to undo)",
   toast_new_canvas_created: "Created new {0}×{1} canvas",
   toast_undo_history_cleared: "Undo history cleared",
-  pwa_update_available: "A new version is available",
-  pwa_update_reload: "Reload",
-  pwa_update_reloading: "Reloading...",
-  pwa_update_dismiss: "Dismiss update notice",
 
   // FileDrop
   toast_image_load_failed: "Failed to load image",
@@ -266,7 +262,7 @@ export const en = {
   theory_derivation_weights: "Unnamed weights",
   theory_derivation_ranks: "Color ranks",
   theory_derivation_convergence_note:
-    "Subset sums determine the unnamed weights {1,2,4}; color order determines the named ranks B=1, R=2, G=4. The two independent characterizations agree on the same L.",
+    "Subset sums determine the unnamed weights {1,2,4}; color order determines the primary ordering B<R<G. The two independent characterizations agree on the same L.",
   theory_derivation_consequences: "Finite consequences",
   theory_derivation_consequences_note:
     "The same A and L yield the valuation identities, complement reversal, one-bit geometry, seven-point structures, and the complete distance partition.",
@@ -277,11 +273,12 @@ export const en = {
   theory_generation_desc:
     "The three named atoms e_G={G}, e_R={R}, and e_B={B} generate A by Boolean join. Writing color generation as Γ(S)=∨_{c∈S}e_c, every state is uniquely the join of its constituent atoms. The empty join is K, and the binomial coefficients C(3,k) give the layer sizes 1,3,3,1.\n\nΓ determines which primaries are present in a state. XOR instead composes bit toggles acting on states that have already been generated. Distinguishing generation from transitions prevents mixing and toggling from being treated as the same operation. The eight states and their operations are now fixed, but their brightness rank has not yet been determined.",
   theory_generation_select: "Select from the three primary generators",
+  theory_generation_select_short: "Primaries",
   theory_generation_select_aria: "Primary generators G, R, and B",
   theory_generation_primary_aria: "Primary {0}, bits {1}, weight {2}",
   theory_generation_result: "Generated state",
   theory_generation_states_title: "Eight states by primary count",
-  theory_generation_states_hint: "Choose a state to select its primaries",
+  theory_generation_states_short: "8 states",
   theory_generation_state_aria: "Select the primaries for state {0}, bits {1}",
   theory_generation_layers_aria: "All eight states grouped by the number of selected primaries",
   theory_generation_layer_0: "0 primaries",
@@ -308,9 +305,9 @@ export const en = {
     "Assign the six chromatic colors to the six faces of a cube with complements on opposite faces; this is the Color Die. The cube is a chosen model for expressing hue order and complement through face connections. It assigns colors to faces, unlike the vertex embedding of the eight-state cube.\n\nCutting one edge of the hue six-cycle leaves a chain visiting all six faces once. The cube can unfold into the plane without overlapping squares while preserving the five connections in hue order. Cyclic order and opposite-face relations therefore coexist in one face arrangement; folding restores the cut connection.",
   theory_dice_net_cut: "Hue: R₂→Y₆→G₄→C₅→B₁→M₃",
   theory_dice_net_aria: "A 2–2–2 net of the Color Die preserving the five hue-order connections",
-  theory_dice_net_cut_edge: "Cut M₃–R₂; fold to join",
-  theory_dice_title: "Hue-Order Net and Color Die",
-  theory_dice_pairs_title: "Complements and opposite-face numbers",
+  theory_dice_net_cut_edge: "Cut R₂–M₃; fold to join",
+  theory_dice_title: "Hue-Order Net of the Color Die",
+  theory_dice_pairs_title: "Opposite Faces of the Color Die",
   theory_dice_desc:
     "The restriction of L to the chromatic states C=A∖{K,W} is a bijection from C to {1,…,6}. Assigning this rank to each face determines its number from the existing state order, without introducing new weights.",
   theory_dice_desc2:
@@ -343,19 +340,19 @@ export const en = {
   theory_fano_completion_input_b_aria: "{0}, level {1}, bits {2}, selected as the second input",
   theory_fano_completion_result_aria: "{0}, level {1}, bits {2}, calculated third point",
   theory_cube_title: "Color Cube",
-  theory_mixing_title: "GRB and YCM Mixing",
+  theory_mixing_title: "Additive and Subtractive Color Mixing",
   theory_mixing_desc:
     "In this three-bit model, GRB mixing uses join ∨ and YCM mixing uses meet ∧. Join is the least upper bound containing every input; meet is the greatest lower bound common to all inputs. Complement reverses inclusion and therefore exchanges least upper bounds with greatest lower bounds. This duality is De Morgan’s law: ¬(a∨b)=¬a∧¬b and ¬(a∧b)=¬a∨¬b.\n\nThe three primary atoms correspond to the three complementary coatoms under this order reversal. For any finite family of inputs, ¬(∨ᵢaᵢ)=∧ᵢ¬aᵢ: taking the complement of a join is equivalent to taking the meet of the complementary inputs.",
   theory_mixing_operations_desc:
     "With characteristic-vector order [G,R,B], ⊕ is addition modulo two in each coordinate and describes state differences and composition of toggles. For arbitrary states a and b, a∧b=000 implies a∨b=a⊕b, while a∨b=111 implies a∧b=XNOR(a,b), where XNOR(a,b)=¬(a⊕b).\n\nThe first equality requires disjoint channels; the second requires the two states together to cover every channel. Distinct GRB primaries satisfy the first condition and distinct YCM primaries the second. These conditional equalities do not identify join/meet with XOR/XNOR as operations.",
-  theory_mixing_grb: "GRB · join ∨",
-  theory_mixing_ycm: "YCM · meet ∧",
+  theory_mixing_grb: "GRB Logical OR",
+  theory_mixing_ycm: "YCM Logical AND",
   theory_mixing_join_rule: "Collect channels present in any input",
   theory_mixing_meet_rule: "Keep channels common to every input",
   theory_mixing_input: "Input",
   theory_mixing_result: "Result",
-  theory_mixing_choose_inputs: "Select at least two inputs",
-  theory_mixing_input_hint: "Press inputs to select two or three",
+  theory_mixing_choose_inputs: "Select an input color",
+  theory_mixing_input_hint: "Press inputs to select or deselect colors",
   theory_mixing_bus_legend: "Wire label 3 = three bits [G,R,B]",
   theory_mixing_input_aria: "Input {0}, bits {1}",
   theory_mixing_gate_aria: "Logic gate applying {0} to each of the three bits",
@@ -457,9 +454,10 @@ export const en = {
   theory_hamming_venn_node_aria: "Position {0}, {1}, received bit {2}. {3}",
   theory_hamming_venn_add_error: "Press to add an error",
   theory_hamming_venn_remove_error: "Press to remove the error",
-  theory_hamming_venn_inspect_hint:
-    "Select a G, R, or B check to see its four received bits and their XOR. Click empty space or the selected check to show all positions.",
   theory_hamming_venn_check_pending: "Waiting for this check to finish.",
+  theory_hamming_venn_even_count: "{0} ones (even)",
+  theory_hamming_venn_odd_count: "{0} ones (odd)",
+  theory_hamming_venn_one_count: "1 one (odd)",
   theory_hamming_venn_even: "An even number of 1s gives XOR 0: the check passes.",
   theory_hamming_venn_odd: "An odd number of 1s gives XOR 1: the check fails.",
   theory_hamming_generator_title: "Parity generator · even parity",
@@ -603,7 +601,7 @@ export const en = {
   theory_zigzag_table_delta: "ΔL",
   theory_zigzag_table_inclusion: "Inclusion",
 
-  theory_chromatic_octa_title: "Octahedron of Six Chromatic Colors",
+  theory_chromatic_octa_title: "Color Diamond",
   theory_octa_aria: "Explore XOR and complement on the edges of the chromatic octahedron",
   theory_octa_diagram: "Regular octahedron of six chromatic colors",
   theory_octa_hint: "Select an edge or a color pair. Dashed lines show the rear edges.",
@@ -620,7 +618,7 @@ export const en = {
   theory_octa_edge_choices: "Select an octahedral edge",
   theory_octa_edge_selected: "Two faces incident to edge {0}–{1}",
   theory_octa_edge_xor: "XOR",
-  theory_octa_edge_complement: "Its complement (XNOR)",
+  theory_octa_edge_complement: "XNOR",
   theory_octa_edge_triangle: "Face {{0}}",
   theory_octa_edge_face_xor: "Three-vertex XOR: {0}",
 

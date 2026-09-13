@@ -223,9 +223,9 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
           {/* Chapter 5 — finite face arrangements and their polyhedral duality */}
           <Section id="theory-polyhedra" title={t("theory_geometry_title")} desc={t("theory_geometry_desc")}>
             <Subsection id="theory-color-die" title={t("theory_dice_section_title")} desc={t("theory_dice_net_desc")}>
-              <Figure title={t("theory_dice_title")}>
+              <figure className="theory-figure">
                 <ColorDice hlLevel={hlLevel} onHover={onHover} />
-              </Figure>
+              </figure>
               <Paragraphs text={[t("theory_dice_desc"), t("theory_dice_desc2")]} />
             </Subsection>
             <Subsection id="theory-octahedron" title={t("theory_octahedron_section_title")} desc={t("theory_chromatic_octa_desc")}>

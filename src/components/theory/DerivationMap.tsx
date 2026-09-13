@@ -52,8 +52,8 @@ const EmpiricalResonance = React.memo(function EmpiricalResonance() {
       </figcaption>
       <div className="theory-derivation-order-visual">
         <div className="theory-derivation-comparisons">
-          <code>s(G)&gt;s(M)</code>
           <code>s(R)&gt;s(B)</code>
+          <code>s(G)&gt;s(M)</code>
         </div>
         <span className="theory-derivation-arrow" aria-hidden="true">
           ↓
@@ -70,9 +70,7 @@ const EmpiricalResonance = React.memo(function EmpiricalResonance() {
       <div className="theory-derivation-result">
         <span>{t("theory_derivation_ranks")}</span>
         <strong className="theory-derivation-named-ranks">
-          <span>B=1</span>
-          <span>R=2</span>
-          <span>G=4</span>
+          <span>B &lt; R &lt; G</span>
         </strong>
       </div>
     </figure>

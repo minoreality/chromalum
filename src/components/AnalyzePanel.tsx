@@ -81,21 +81,8 @@ export const AnalyzePanel = React.memo(
               displayHeight={displayHeight}
               {...(showToast ? { showToast } : {})}
             />
-            <div className="map-mode-buttons" style={{ display: "flex", gap: SP.xs, justifyContent: "center", marginTop: SP.xs }}>
-              {(["levelTone", "gradient"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMapMode(m)}
-                  style={{
-                    ...(mapMode === m ? S_BTN_ACTIVE : S_BTN),
-                    ...S_MAP_MODE_BTN,
-                  }}
-                >
-                  {t("map_map_" + m)}
-                </button>
-              ))}
-              <span className="map-mode-break" />
-              {(["region", "boundaryDistance", "isolation", "diversity"] as const).map((m) => (
+            <div className="map-mode-buttons" style={{ display: "flex", gap: SP.xs, marginTop: SP.xs }}>
+              {(["levelTone", "gradient", "region", "boundaryDistance", "isolation", "diversity"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMapMode(m)}

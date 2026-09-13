@@ -116,20 +116,20 @@ describe("TheoryPanel", () => {
 
     for (const retained of [
       "Venn Diagram",
-      "GRB and YCM Mixing",
+      "Additive and Subtractive Color Mixing",
       "Color Cube",
       "C-cycle",
       "Fano Plane",
       "Hamming [7,4,3] Code",
       "Tone Zigzag and Hue-Edge Differences",
-      "Hue-Order Net and Color Die",
-      "Octahedron of Six Chromatic Colors",
+      "Hue-Order Net of the Color Die",
+      "Color Diamond",
     ]) {
       expect(screen.getAllByText(retained).length).toBeGreaterThan(0);
     }
     expect(screen.getByRole("group", { name: "Eight-State Correspondence Table" })).toBeTruthy();
-    expect(screen.getByRole("figure", { name: "GRB · join ∨" }).closest(".theory-chapter")?.id).toBe("theory-algebra");
-    expect(screen.getByRole("figure", { name: "YCM · meet ∧" }).closest("details")).toBeNull();
+    expect(screen.getByRole("figure", { name: "GRB Logical OR" }).closest(".theory-chapter")?.id).toBe("theory-algebra");
+    expect(screen.getByRole("figure", { name: "YCM Logical AND" }).closest("details")).toBeNull();
 
     for (const omitted of ["Polyhedra network", "Octahedral Faces and Operations"]) {
       expect(screen.queryByText(omitted)).toBeNull();
@@ -267,7 +267,7 @@ describe("TheoryPanel", () => {
       fireEvent.click(venn);
       await Promise.resolve();
     });
-    await waitFor(() => expect(venn.querySelector('rect[stroke="#fff"]')).toBeTruthy());
+    await waitFor(() => expect(venn.getAttribute("data-highlighted-level")).toBe("0"));
 
     const resetSurface = container.querySelector(".theory-reset-surface");
     expect(resetSurface).toBeTruthy();
@@ -275,7 +275,7 @@ describe("TheoryPanel", () => {
       fireEvent.click(resetSurface!);
       await Promise.resolve();
     });
-    await waitFor(() => expect(venn.querySelector('rect[stroke="#fff"]')).toBeFalsy());
+    await waitFor(() => expect(venn.getAttribute("data-highlighted-level")).toBeNull());
   });
 
   it("keeps the K8 distance partition explorable through the retained stella", () => {

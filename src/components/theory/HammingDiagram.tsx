@@ -16,7 +16,7 @@ const HAMMING_COLUMN_BITS = ["001", "010", "011", "100", "101", "110", "111"] as
 const FLOW_ROW_COLUMNS = "var(--theory-hamming-row-columns, 24px minmax(72px, 0.4fr) minmax(0, 1fr))";
 const ZERO_ERRORS: HammingWord = [0, 0, 0, 0, 0, 0, 0];
 const EMPTY_SLOTS = CODE_POSITIONS.map(() => null);
-const INITIAL_DATA: DataWord = [1, 0, 1, 1];
+const INITIAL_DATA: DataWord = [0, 0, 0, 0];
 const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇";
 const FLOW_TIMELINE = {
   encoded: 360,
@@ -687,10 +687,26 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         >
           {parityResults.map((group) => (
             <div key={group.parity} data-testid={`hamming-generator-${group.parity}`} aria-busy={group.generated === null}>
-              <span style={{ color: readableLevelColor(group.parity) }}>
-                P{group.parity} = {group.data.map((index) => `D${index}`).join(" ⊕ ")}
+              <span className="theory-hamming-generation-heading">
+                {group.data.map((index, termIndex) => (
+                  <React.Fragment key={index}>
+                    {termIndex > 0 && <span aria-hidden="true"> </span>}
+                    <span className="theory-hamming-generation-inputs">D{SUBSCRIPT_DIGITS[index]}</span>
+                  </React.Fragment>
+                ))}
+                <span aria-hidden="true"> </span>
+                <span style={{ color: readableLevelColor(group.parity) }}>P{SUBSCRIPT_DIGITS[group.parity]}</span>
+              </span>{" "}
+              <span className="theory-hamming-generation-formula">
+                {group.data.map((index, termIndex) => (
+                  <React.Fragment key={index}>
+                    {termIndex > 0 && <span>{" ⊕ "}</span>}
+                    <span>{group.generated === null ? `D${SUBSCRIPT_DIGITS[index]}` : data[index - 1]}</span>
+                  </React.Fragment>
+                ))}
+                <span>{" = "}</span>
+                <strong>{group.generated ?? `P${SUBSCRIPT_DIGITS[group.parity]}`}</strong>
               </span>
-              <strong>{group.generated ?? "–"}</strong>
             </div>
           ))}
         </div>

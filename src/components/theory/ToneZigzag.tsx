@@ -495,19 +495,10 @@ export const ToneZigzag = React.memo(function ToneZigzag({
               </g>
             );
           })}
-          <circle
-            cx={xHue(360)}
-            cy={yLevel(CANONICAL_CHROMATIC_LEVEL_CYCLE[0])}
-            r={4.6}
-            fill={hueColor(360)}
-            stroke="#fff"
-            strokeWidth={1.2}
-            data-seam-copy="true"
-          />
           {currentLevel !== null && currentHueAngle != null && (
             <circle
               data-hue-current-node={currentLevel}
-              cx={xHue(currentHueAngle)}
+              cx={xHue(currentHueAngle % 360)}
               cy={yLevel(currentLevel)}
               r={8.5}
               fill="none"
@@ -518,7 +509,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
           )}
 
           {/* Named chromatic vertices and hue-angle ticks. */}
-          {[...CANONICAL_CHROMATIC_LEVEL_CYCLE, CANONICAL_CHROMATIC_LEVEL_CYCLE[0]].map((level, index) => (
+          {CANONICAL_CHROMATIC_LEVEL_CYCLE.map((level, index) => (
             <text
               key={`vertex-${index}`}
               x={xHue(index * 60)}
@@ -620,22 +611,21 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   style={{
                     ...(active ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN),
                     minWidth: 0,
-                    minHeight: "var(--theory-level-height, 30px)",
-                    gap: "var(--theory-level-gap, 2px)",
+                    minHeight: 28,
                     padding: "2px var(--theory-level-padding, 4px)",
                     whiteSpace: "nowrap",
                     borderColor: active ? (level === 0 ? C.textMuted : THEORY_LEVELS[level].color) : C.border,
                     color: active ? C.textPrimary : C.textMuted,
                     fontFamily: FONT.mono,
-                    fontSize: "var(--theory-level-font-size, 8px)",
+                    fontSize: "var(--theory-level-font-size, 13px)",
                   }}
                 >
                   <span className="theory-zigzag-level-name">
                     <span
                       aria-hidden="true"
                       style={{
-                        width: 7,
-                        height: 7,
+                        width: 8,
+                        height: 8,
                         borderRadius: "50%",
                         background: THEORY_LEVELS[level].color,
                         border: level === 0 ? `1px solid ${C.textDimmer}` : "none",
@@ -645,7 +635,6 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                     />
                     {levelLabel(level)}
                   </span>
-                  <span className="theory-zigzag-level-count">N={candidateCount}</span>
                 </button>
               );
             })}

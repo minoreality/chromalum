@@ -12,12 +12,10 @@ import { useImageImportCrop } from "./hooks/useImageImportCrop";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useExport } from "./hooks/useExport";
 import { useAppState } from "./hooks/useAppState";
-import { usePwaUpdate } from "./hooks/usePwaUpdate";
 import { DrawingContextProvider } from "./state/DrawingContext";
 import { GlazeContextProvider } from "./state/GlazeContext";
 import { C, Z, FS, FW, FONT } from "./styles/tokens";
 import { Toast } from "./components/Toast";
-import { PwaUpdateToast } from "./components/PwaUpdateToast";
 import { getTabButtonId, getTabPanelId, tabFromId } from "./tabs";
 import { AppTabBar } from "./components/AppTabBar";
 import { SourcePanel } from "./components/SourcePanel";
@@ -51,7 +49,6 @@ const THEORY_DEV_ACTIVE_ONLY = import.meta.env.DEV && import.meta.env.MODE !== "
    LAYOUT STYLE CONSTANTS
    ═══════════════════════════════════════════ */
 const S_ROOT: React.CSSProperties = {
-  minHeight: "100vh",
   background: C.bgRoot,
   color: C.textPrimary,
   fontFamily: FONT.sans,
@@ -174,7 +171,6 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
   const levelHistogram = state.levelHistogram;
   const [scrollToGallery, setScrollToGallery] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
-  const pwaUpdate = usePwaUpdate();
 
   useEffect(() => {
     document.title = `CHROMALUM - ${t(tabFromId(activeTabId).key)}`;
@@ -375,9 +371,6 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
       <div ref={ariaLiveRef} role="status" aria-live="polite" aria-atomic="true" style={S_SR_ONLY} />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
-      {pwaUpdate.hasUpdate && (
-        <PwaUpdateToast reloading={pwaUpdate.reloading} onReload={pwaUpdate.reload} onDismiss={pwaUpdate.dismiss} t={t} />
-      )}
 
       <NewCanvasModal open={showNewCanvas} onConfirm={handleNewCanvasConfirm} onCancel={handleNewCanvasCancel} />
       {cropImage && (

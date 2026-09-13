@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { LanguageProvider } from "../i18n";
-import { PWA_UPDATE_READY_EVENT } from "../pwa";
 
 vi.mock("../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
@@ -81,22 +80,20 @@ describe("App", () => {
     expect(screen.getByRole("dialog", { name: "Keyboard Shortcuts" })).toBeTruthy();
   }, 15000);
 
-  it("shows and dismisses the service worker update prompt", async () => {
+  it("does not interrupt the app with legacy service worker update notifications", async () => {
     renderApp();
 
     expect(await screen.findByRole("tab", { name: "Source" })).toBeTruthy();
 
     fireEvent(
       window,
-      new CustomEvent(PWA_UPDATE_READY_EVENT, {
+      new CustomEvent("chromalum:pwa-update-ready", {
         detail: { registration: { waiting: null } as unknown as ServiceWorkerRegistration },
       }),
     );
 
-    expect(await screen.findByText("A new version is available")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "Dismiss update notice" }));
     expect(screen.queryByText("A new version is available")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reload" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Source" }).getAttribute("aria-selected")).toBe("true");
   });
 });

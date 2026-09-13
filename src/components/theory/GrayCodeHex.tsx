@@ -5,7 +5,7 @@ import { useTranslation } from "../../i18n";
 
 const W = 300,
   H = 300;
-const VIEWBOX_INSET = 10;
+const VIEWBOX_INSET = 16;
 const DOT_R = 16;
 const NODE_HIT_R = 18;
 const EDGE_LABEL_OFFSET = 22;

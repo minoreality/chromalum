@@ -1,4 +1,4 @@
-import React, { useId } from "react";
+import React, { useId, useLayoutEffect, useRef } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
@@ -19,6 +19,55 @@ const POSITIONS = [
   { position: 7, x: 170, y: 153 },
 ] as const;
 const SUBSCRIPTS = "₀₁₂₃₄₅₆₇";
+
+function HammingLegend() {
+  const { t } = useTranslation();
+  const containerRef = useRef<HTMLElement>(null);
+  const rowRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const row = rowRef.current;
+    if (!container || !row) return;
+    let mounted = true;
+    const fit = () => {
+      if (!mounted) return;
+      // Measure at the normal size so widening the figure restores the text too.
+      row.style.removeProperty("--hamming-legend-scale");
+      const available = container.getBoundingClientRect().width;
+      const natural = row.getBoundingClientRect().width;
+      if (available > 0 && natural > available) {
+        row.style.setProperty("--hamming-legend-scale", String((available - 1) / natural));
+      }
+    };
+    fit();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
+    observer?.observe(container);
+    window.addEventListener("resize", fit);
+    void document.fonts?.ready.then(fit);
+    return () => {
+      mounted = false;
+      observer?.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, [t]);
+
+  return (
+    <figcaption className="theory-hamming-sets-legend" ref={containerRef}>
+      <span className="theory-hamming-sets-legend-row" ref={rowRef}>
+        <span>
+          <b>0 / 1</b> {t("theory_hamming_venn_bit_legend")}
+        </span>
+        <span>
+          <b className="theory-hamming-error-legend">!</b> {t("theory_hamming_venn_error_legend")}
+        </span>
+        <span>
+          <i className="theory-hamming-dashed-legend" aria-hidden="true" /> {t("theory_hamming_venn_failed_legend")}
+        </span>
+      </span>
+    </figcaption>
+  );
+}
 
 interface Check {
   readonly parity: number;
@@ -61,31 +110,6 @@ export const HammingParitySets = React.memo(function HammingParitySets({
   const orderedChecks = [...checks].sort((a, b) => b.parity - a.parity);
   const checkState = (failed: Bit | null) =>
     t(failed === null ? "theory_hamming_pending" : failed ? "theory_hamming_check_fail" : "theory_hamming_check_pass");
-  const renderCheckDetails = (check: Check, reserveSpace = false) => (
-    <>
-      <strong style={{ color: check.color }}>
-        {t("theory_hamming_venn_check_label", check.channel)} · P{check.parity}
-      </strong>
-      <div className="theory-hamming-check-formula">{check.checks.map((position) => `r${SUBSCRIPTS[position]}`).join(" ⊕ ")}</div>
-      <div className="theory-hamming-check-values" data-check-value={reserveSpace ? undefined : (check.failed ?? undefined)}>
-        {check.checks.map((position) => received?.[position - 1] ?? "–").join(" ⊕ ")} = <b>{check.failed ?? "–"}</b>
-      </div>
-      <div className="theory-hamming-check-explanations">
-        {(reserveSpace
-          ? (["theory_hamming_venn_check_pending", "theory_hamming_venn_odd", "theory_hamming_venn_even"] as const)
-          : [
-              check.failed === null
-                ? ("theory_hamming_venn_check_pending" as const)
-                : check.failed
-                  ? ("theory_hamming_venn_odd" as const)
-                  : ("theory_hamming_venn_even" as const),
-            ]
-        ).map((key) => (
-          <p key={key}>{t(key)}</p>
-        ))}
-      </div>
-    </>
-  );
 
   return (
     <section className="theory-hamming-sets" data-testid="hamming-parity-sets" aria-labelledby={titleId}>
@@ -138,7 +162,7 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                     fill={check.color}
                     className="theory-hamming-set-label"
                   >
-                    {check.channel} · P{parity}
+                    {t("theory_hamming_venn_check_label", check.channel)}
                   </text>
                 </g>
               );
@@ -234,17 +258,7 @@ export const HammingParitySets = React.memo(function HammingParitySets({
               );
             })}
           </svg>
-          <figcaption className="theory-hamming-sets-legend">
-            <span>
-              <b>0 / 1</b> {t("theory_hamming_venn_bit_legend")}
-            </span>
-            <span>
-              <b className="theory-hamming-error-legend">!</b> {t("theory_hamming_venn_error_legend")}
-            </span>
-            <span>
-              <i className="theory-hamming-dashed-legend" aria-hidden="true" /> {t("theory_hamming_venn_failed_legend")}
-            </span>
-          </figcaption>
+          <HammingLegend />
         </figure>
         <div className="theory-hamming-sets-inspector">
           <div
@@ -253,60 +267,78 @@ export const HammingParitySets = React.memo(function HammingParitySets({
             role="group"
             aria-label={t("theory_hamming_venn_select_check")}
           >
-            {orderedChecks.map((check) => (
-              <button
-                key={check.parity}
-                type="button"
-                className="theory-hamming-check-choice"
-                data-testid={`hamming-venn-check-${check.parity}`}
-                data-parity-check-channel={`s${check.channel}`}
-                data-parity-check-result={check.failed ?? undefined}
-                aria-busy={check.failed === null}
-                aria-pressed={selectedParity === check.parity}
-                aria-label={`${t("theory_hamming_venn_check_label", check.channel)} P${check.parity}, ${checkState(check.failed)}, ${t("theory_hamming_venn_positions")} ${check.checks.join(" · ")}, s${check.channel} = ${check.failed ?? "–"}`}
-                onClick={() => onSelectParity(selectedParity === check.parity ? null : check.parity)}
-                onPointerEnter={(event) => {
-                  if (event.pointerType !== "touch") onPreviewParity(check.parity);
-                }}
-                onPointerLeave={() => onPreviewParity(null)}
-                onFocus={(event) => {
-                  if (event.currentTarget.matches(":focus-visible")) onPreviewParity(check.parity);
-                }}
-                onBlur={() => onPreviewParity(null)}
-              >
-                <span className="theory-hamming-check-heading">
-                  <strong style={{ color: check.color }}>
-                    {t("theory_hamming_venn_check_label", check.channel)} <small>P{check.parity}</small>
-                  </strong>
-                  <span className="theory-hamming-check-state" data-failed={check.failed === 1}>
-                    {check.failed === null ? "–" : check.failed ? "×" : "✓"} {checkState(check.failed)}
+            {orderedChecks.map((check) => {
+              const pending = check.failed === null || received === null;
+              const terms = check.checks.map((position) => (pending ? `r${SUBSCRIPTS[position]}` : received[position - 1])).join(" ⊕ ");
+              const formula = pending ? terms : `${terms} = ${check.failed}`;
+              const ones = pending ? null : check.checks.reduce((total, position) => total + received[position - 1], 0);
+              const reason =
+                ones === null
+                  ? "—"
+                  : t(
+                      ones === 1
+                        ? "theory_hamming_venn_one_count"
+                        : check.failed
+                          ? "theory_hamming_venn_odd_count"
+                          : "theory_hamming_venn_even_count",
+                      String(ones),
+                    );
+              return (
+                <button
+                  key={check.parity}
+                  type="button"
+                  className="theory-hamming-check-choice"
+                  data-testid={`hamming-venn-check-${check.parity}`}
+                  data-parity-check-channel={`s${check.channel}`}
+                  data-parity-check-result={check.failed ?? undefined}
+                  aria-busy={check.failed === null}
+                  aria-pressed={selectedParity === check.parity}
+                  aria-label={`${t("theory_hamming_venn_check_label", check.channel)} P${check.parity}, ${checkState(check.failed)}, ${t("theory_hamming_venn_positions")} ${check.checks.join(" · ")}, s${check.channel} = ${formula}`}
+                  aria-description={
+                    pending
+                      ? t("theory_hamming_venn_check_pending")
+                      : `${reason} ${t(check.failed ? "theory_hamming_venn_odd" : "theory_hamming_venn_even")}`
+                  }
+                  onClick={() => onSelectParity(selectedParity === check.parity ? null : check.parity)}
+                  onPointerEnter={(event) => {
+                    if (event.pointerType !== "touch") onPreviewParity(check.parity);
+                  }}
+                  onPointerLeave={() => onPreviewParity(null)}
+                  onFocus={(event) => {
+                    if (event.currentTarget.matches(":focus-visible")) onPreviewParity(check.parity);
+                  }}
+                  onBlur={() => onPreviewParity(null)}
+                >
+                  <span className="theory-hamming-check-heading">
+                    <span className="theory-hamming-check-identity">
+                      <strong style={{ color: check.color }}>{t("theory_hamming_venn_check_label", check.channel)}</strong>
+                      <small>P{check.parity}</small>
+                      <span className="theory-hamming-check-positions">{check.checks.join("·")}</span>
+                    </span>
+                    <span className="theory-hamming-check-state" data-failed={check.failed === 1}>
+                      {check.failed === null ? "–" : check.failed ? "×" : "✓"}
+                      <span className="theory-hamming-check-state-label"> {checkState(check.failed)}</span>
+                    </span>
                   </span>
-                </span>
-                <span className="theory-hamming-check-members">
-                  <span className="theory-hamming-check-positions-full">
-                    {t("theory_hamming_venn_positions")} {check.checks.join(" · ")}
+                  <span
+                    className="theory-hamming-check-formula"
+                    data-check-value={check.failed ?? undefined}
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {check.checks.map((position, index) => (
+                      <React.Fragment key={position}>
+                        {index > 0 && <span className="theory-hamming-check-operator">{" ⊕ "}</span>}
+                        <span className="theory-hamming-check-term">{pending ? `r${SUBSCRIPTS[position]}` : received[position - 1]}</span>
+                      </React.Fragment>
+                    ))}
+                    <span className="theory-hamming-check-operator">{pending ? null : " = "}</span>
+                    <span className="theory-hamming-check-result">{pending ? null : check.failed}</span>
                   </span>
-                  <span className="theory-hamming-check-positions-short" aria-hidden="true">
-                    {check.checks.join("·")}
-                  </span>
-                  <b>
-                    s{check.channel} = {check.failed ?? "–"}
-                  </b>
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="theory-hamming-set-detail-slot">
-            <div className="theory-hamming-set-detail" data-testid="hamming-venn-detail" aria-live="polite">
-              {activeCheck ? renderCheckDetails(activeCheck) : <p>{t("theory_hamming_venn_inspect_hint")}</p>}
-            </div>
-            {/* Reserve the largest localized state without exposing inactive results. */}
-            <div className="theory-hamming-set-detail theory-hamming-set-detail-sizer" aria-hidden="true">
-              {renderCheckDetails(orderedChecks[0], true)}
-            </div>
-            <div className="theory-hamming-set-detail theory-hamming-set-detail-sizer" aria-hidden="true">
-              <p>{t("theory_hamming_venn_inspect_hint")}</p>
-            </div>
+                  <span className="theory-hamming-check-reason">{reason}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -12,8 +12,8 @@ function renderMixing() {
     </LanguageProvider>,
   );
   return {
-    grb: screen.getByRole("figure", { name: "GRB · join ∨" }),
-    ycm: screen.getByRole("figure", { name: "YCM · meet ∧" }),
+    grb: screen.getByRole("figure", { name: "GRB Logical OR" }),
+    ycm: screen.getByRole("figure", { name: "YCM Logical AND" }),
   };
 }
 
@@ -100,17 +100,22 @@ describe("ColorMixing", () => {
     }
   });
 
-  it("asks for a second input without presenting a false black or white result", () => {
+  it("passes each single input through and waits only when all inputs are off", () => {
     const { grb, ycm } = renderMixing();
     for (const figure of [grb, ycm]) {
-      const level = Number(figure.querySelector("[data-mixing-input]")!.getAttribute("data-mixing-input"));
-      for (const inputs of [[level], []]) {
-        selectInputs(figure, inputs);
-        expect(figure.querySelector("[data-mixing-result]")?.getAttribute("data-mixing-result")).toBe("pending");
-        expect(figure.querySelector("[data-mixing-result] circle")).toBeNull();
-        expect(within(figure).getByRole("status").textContent).toBe("Select at least two inputs");
-        expect([...figure.querySelectorAll("tfoot td")].map((cell) => cell.textContent).join("")).toBe("———");
+      for (const input of figure.querySelectorAll("[data-mixing-input]")) {
+        const level = Number(input.getAttribute("data-mixing-input"));
+        selectInputs(figure, [level]);
+        expectResult(figure, level);
+        expect(figure.querySelector("[data-mixing-result] circle")?.getAttribute("fill")).toBe(
+          input.querySelector("[data-mixing-color] circle")?.getAttribute("fill"),
+        );
       }
+      selectInputs(figure, []);
+      expect(figure.querySelector("[data-mixing-result]")?.getAttribute("data-mixing-result")).toBe("pending");
+      expect(figure.querySelector("[data-mixing-result] circle")).toBeNull();
+      expect(within(figure).getByRole("status").textContent).toBe("Select an input color");
+      expect([...figure.querySelectorAll("tfoot td")].map((cell) => cell.textContent).join("")).toBe("———");
     }
   });
 });

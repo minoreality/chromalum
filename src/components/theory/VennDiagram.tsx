@@ -2,7 +2,7 @@ import React, { useCallback, useId, useState } from "react";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
-const VIEWBOX = { x: 26, y: 0, width: 248, height: 220 };
+const VIEWBOX = { x: 26, y: 22, width: 248, height: 196 };
 const RAD = 60;
 
 // 3 circles in equilateral arrangement: R on top, G bottom-right, B bottom-left.
@@ -25,7 +25,7 @@ interface RegionInfo {
 
 // Label positions pre-computed to fall within the corresponding region's interior.
 const REGIONS: RegionInfo[] = [
-  { lv: 0, x: 40, y: 12, setLabel: "\u2205" },
+  { lv: 0, x: 52, y: 44, setLabel: "\u2205" },
   { lv: 2, x: 150, y: 62, setLabel: "{R}" },
   { lv: 4, x: 212, y: 165, setLabel: "{G}" },
   { lv: 1, x: 88, y: 165, setLabel: "{B}" },
@@ -82,15 +82,18 @@ export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover, s
       const { x, y } = svgCoords(e);
       const lv = regionOf(x, y);
       if (onSelect) {
-        onSelect(lv);
-        onHover(lv);
+        const current = selectedLevel ?? 0;
+        const allEnabled = (current & lv) === lv;
+        const next = lv === 0 ? 0 : allEnabled ? current & ~lv : current | lv;
+        onSelect(next);
+        onHover(next);
       } else {
         const next = pinned === lv ? null : lv;
         setPinned(next);
         onHover(next);
       }
     },
-    [onHover, onSelect, pinned],
+    [onHover, onSelect, pinned, selectedLevel],
   );
 
   const hl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : pinned;
@@ -106,19 +109,6 @@ export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover, s
           </g>
         ))}
       </g>
-      {level === 0 && (
-        <rect
-          x={VIEWBOX.x + 2}
-          y={VIEWBOX.y + 2}
-          width={VIEWBOX.width - 4}
-          height={VIEWBOX.height - 4}
-          rx={5}
-          fill="none"
-          stroke={color}
-          strokeDasharray="4,3"
-          strokeWidth={1.2}
-        />
-      )}
     </g>
   );
 
@@ -211,7 +201,7 @@ export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover, s
                 y={y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={10.5}
+                fontSize={lv === 0 ? 12.5 : 10.5}
                 fontWeight={700}
                 fontFamily="var(--font-mono)"
                 fill={textColor}

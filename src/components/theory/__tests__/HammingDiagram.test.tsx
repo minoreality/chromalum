@@ -38,6 +38,13 @@ function advance(ms: number) {
   act(() => vi.advanceTimersByTime(ms));
 }
 
+function renderExampleData(onHover = vi.fn()) {
+  const rendered = renderWithLanguage(onHover);
+  for (const index of [1, 3, 4]) fireEvent.click(screen.getByTestId(`hamming-data-${index}`));
+  advance(1800);
+  return rendered;
+}
+
 function parityBits() {
   return Array.from(screen.getByTestId("hamming-parity-check-card").querySelectorAll("[data-parity-check-channel]")).map((row) =>
     row.getAttribute("data-parity-check-result"),
@@ -51,7 +58,7 @@ describe("HammingDiagram", () => {
     vi.useRealTimers();
   });
 
-  it("encodes the initial data word with even parity", () => {
+  it("encodes a mixed data word with even parity", () => {
     expect(encodeHamming74([1, 0, 1, 1])).toEqual([0, 1, 1, 0, 0, 1, 1]);
   });
 
@@ -85,9 +92,9 @@ describe("HammingDiagram", () => {
     expect(screen.getByTestId("hamming-venn-position-3").querySelector("circle")?.getAttribute("cx")).toBe("125");
     expect(screen.getByTestId("hamming-venn-position-5").querySelector("circle")?.getAttribute("cy")).toBe("215");
     expect(screen.getByTestId("hamming-venn-position-6").querySelector("circle")?.getAttribute("cx")).toBe("215");
-    expect(stageBits("hamming-stage-data")).toBe("1011");
-    expect(stageBits("hamming-stage-encoded")).toBe("0110011");
-    expect(stageBits("hamming-stage-received")).toBe("0110011");
+    expect(stageBits("hamming-stage-data")).toBe("0000");
+    expect(stageBits("hamming-stage-encoded")).toBe("0000000");
+    expect(stageBits("hamming-stage-received")).toBe("0000000");
     expect(renderedSyndromeBits()).toBe("000");
     expect(screen.getByTestId("hamming-stage-syndrome").textContent).toContain("000₂");
     expect(screen.getByTestId("hamming-stage-syndrome").textContent).toContain("j=0");
@@ -97,8 +104,8 @@ describe("HammingDiagram", () => {
         channel.getAttribute("data-syndrome-channel"),
       ),
     ).toEqual(["sG", "sR", "sB"]);
-    expect(stageBits("hamming-stage-corrected")).toBe("0110011");
-    expect(stageBits("hamming-stage-output")).toBe("1011");
+    expect(stageBits("hamming-stage-corrected")).toBe("0000000");
+    expect(stageBits("hamming-stage-output")).toBe("0000");
 
     expect(screen.getByTestId("hamming-flow-bit-header").querySelectorAll("[data-code-position]")).toHaveLength(7);
     expect(
@@ -108,11 +115,11 @@ describe("HammingDiagram", () => {
     ).toEqual(["001", "010", "011", "100", "101", "110", "111"]);
     expect(stageSlot("hamming-stage-data", 1).dataset.empty).toBe("true");
     expect(stageSlot("hamming-stage-data", 2).dataset.empty).toBe("true");
-    expect(stageSlot("hamming-stage-data", 3).querySelector("[data-bit-value]")?.textContent).toBe("1");
+    expect(stageSlot("hamming-stage-data", 3).querySelector("[data-bit-value]")?.textContent).toBe("0");
     expect(stageSlot("hamming-stage-data", 4).dataset.empty).toBe("true");
     expect(stageSlot("hamming-stage-data", 5).querySelector("[data-bit-value]")?.textContent).toBe("0");
-    expect(stageSlot("hamming-stage-data", 6).querySelector("[data-bit-value]")?.textContent).toBe("1");
-    expect(stageSlot("hamming-stage-data", 7).querySelector("[data-bit-value]")?.textContent).toBe("1");
+    expect(stageSlot("hamming-stage-data", 6).querySelector("[data-bit-value]")?.textContent).toBe("0");
+    expect(stageSlot("hamming-stage-data", 7).querySelector("[data-bit-value]")?.textContent).toBe("0");
     for (const position of [3, 5, 6, 7]) {
       expect(stageSlot("hamming-stage-output", position).textContent).toBe(
         stageSlot("hamming-stage-data", position).querySelector("[data-bit-value]")?.textContent,
@@ -158,15 +165,22 @@ describe("HammingDiagram", () => {
     const dataTwo = screen.getByTestId("hamming-data-2");
     const errorOne = screen.getByTestId("hamming-error-1");
     const errorTwo = screen.getByTestId("hamming-error-2");
-    expect(dataOne.getAttribute("aria-pressed")).toBe("true");
+    expect(dataOne.getAttribute("aria-pressed")).toBe("false");
     expect(dataTwo.getAttribute("aria-pressed")).toBe("false");
     expect(errorOne.style.borderColor).toBe(errorTwo.style.borderColor);
     expect(errorOne.closest('[data-testid="hamming-stage-received"]')).not.toBeNull();
   });
 
   it("connects a selected check to its four Venn positions and received-bit calculation", () => {
-    renderWithLanguage();
+    renderExampleData();
     const greenCheck = screen.getByTestId("hamming-venn-check-4");
+    expect(screen.queryByTestId("hamming-venn-detail")).toBeNull();
+    expect(greenCheck.querySelector(".theory-hamming-check-heading")?.textContent).toContain("4·5·6·7");
+    expect(greenCheck.textContent).toContain("0 ⊕ 0 ⊕ 1 ⊕ 1 = 0");
+    expect(greenCheck.querySelector(".theory-hamming-check-reason")?.textContent).toBe("2 ones (even)");
+    expect(screen.getByTestId("hamming-venn-check-2").textContent).toContain("1 ⊕ 1 ⊕ 1 ⊕ 1 = 0");
+    expect(screen.getByTestId("hamming-venn-check-2").textContent).toContain("4 ones (even)");
+    expect(screen.getByTestId("hamming-venn-check-1").textContent).toContain("0 ⊕ 1 ⊕ 0 ⊕ 1 = 0");
     fireEvent.click(greenCheck);
 
     expect(greenCheck.getAttribute("aria-pressed")).toBe("true");
@@ -181,19 +195,21 @@ describe("HammingDiagram", () => {
         .filter((node) => node.dataset.checkMember === "true")
         .map((node) => node.dataset.testid),
     ).toEqual(["hamming-venn-position-4", "hamming-venn-position-5", "hamming-venn-position-6", "hamming-venn-position-7"]);
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("r₄ ⊕ r₅ ⊕ r₆ ⊕ r₇");
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 0 ⊕ 1 ⊕ 1 = 0");
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("even number");
+    expect(greenCheck.textContent).toContain("0 ⊕ 0 ⊕ 1 ⊕ 1 = 0");
+    expect(greenCheck.getAttribute("aria-label")).toContain("sG = 0 ⊕ 0 ⊕ 1 ⊕ 1 = 0");
+    expect(greenCheck.getAttribute("aria-description")).toContain("even number");
 
     fireEvent.click(greenCheck);
     expect(greenCheck.getAttribute("aria-pressed")).toBe("false");
     expect(screen.getAllByTestId(/hamming-venn-position-/).every((node) => node.dataset.checkMember === "true")).toBe(true);
+    expect(greenCheck.textContent).toContain("0 ⊕ 0 ⊕ 1 ⊕ 1 = 0");
   });
 
   it("toggles errors from keyboard-accessible Venn nodes while preserving delayed results", () => {
-    const { onHover } = renderWithLanguage();
+    const { onHover } = renderExampleData();
     const node = screen.getByTestId("hamming-venn-position-5");
-    fireEvent.click(screen.getByTestId("hamming-venn-check-1"));
+    const blueCheck = screen.getByTestId("hamming-venn-check-1");
+    fireEvent.click(blueCheck);
     fireEvent.focus(node);
     expect(onHover).toHaveBeenLastCalledWith(5);
     expect(node.getAttribute("role")).toBe("button");
@@ -202,13 +218,18 @@ describe("HammingDiagram", () => {
     expect(node.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("hamming-error-5").getAttribute("aria-pressed")).toBe("true");
     expect(node.dataset.receivedBit).toBeUndefined();
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("Waiting for this check");
+    expect(blueCheck.textContent).toContain("r₁ ⊕ r₃ ⊕ r₅ ⊕ r₇");
+    expect(blueCheck.getAttribute("aria-description")).toContain("Waiting for this check");
+    expect(blueCheck.querySelector(".theory-hamming-check-reason")?.textContent).toBe("—");
     advance(180);
     expect(node.dataset.receivedBit).toBe("1");
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 1 ⊕ 1 ⊕ 1 = –");
-    advance(420);
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 1 ⊕ 1 ⊕ 1 = 1");
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("odd number");
+    expect(blueCheck.textContent).toContain("r₁ ⊕ r₃ ⊕ r₅ ⊕ r₇");
+    advance(419);
+    expect(blueCheck.textContent).toContain("r₁ ⊕ r₃ ⊕ r₅ ⊕ r₇");
+    advance(1);
+    expect(blueCheck.textContent).toContain("0 ⊕ 1 ⊕ 1 ⊕ 1 = 1");
+    expect(blueCheck.getAttribute("aria-description")).toContain("odd number");
+    expect(blueCheck.querySelector(".theory-hamming-check-reason")?.textContent).toBe("3 ones (odd)");
     expect(screen.getByTestId("hamming-parity-set-1").querySelector("circle")?.getAttribute("stroke-dasharray")).toBe("6 4");
 
     fireEvent.keyDown(node, { key: " ", repeat: true });
@@ -217,9 +238,23 @@ describe("HammingDiagram", () => {
     expect(node.getAttribute("aria-pressed")).toBe("false");
     advance(1260);
     expect(node.dataset.receivedBit).toBe("0");
-    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 1 ⊕ 0 ⊕ 1 = 0");
+    expect(blueCheck.textContent).toContain("0 ⊕ 1 ⊕ 0 ⊕ 1 = 0");
     fireEvent.blur(node);
     expect(onHover).toHaveBeenLastCalledWith(null);
+  });
+
+  it("shows zero as even and one as odd only after each check has finished", () => {
+    renderWithLanguage();
+    for (const parity of [4, 2, 1]) {
+      expect(screen.getByTestId(`hamming-venn-check-${parity}`).textContent).toContain("0 ones (even)");
+    }
+    const greenCheck = screen.getByTestId("hamming-venn-check-4");
+    fireEvent.click(screen.getByTestId("hamming-error-4"));
+    advance(359);
+    expect(greenCheck.querySelector(".theory-hamming-check-reason")?.textContent).toBe("—");
+    advance(1);
+    expect(greenCheck.textContent).toContain("1 ⊕ 0 ⊕ 0 ⊕ 0 = 1");
+    expect(greenCheck.querySelector(".theory-hamming-check-reason")?.textContent).toBe("1 one (odd)");
   });
 
   it("distinguishes injected errors from checks that still pass with two errors", () => {
@@ -237,7 +272,11 @@ describe("HammingDiagram", () => {
   });
 
   it("calculates and reveals each stage in order after a data change", () => {
-    renderWithLanguage();
+    renderExampleData();
+    const generation = screen.getByTestId("hamming-parity-generation");
+    const generationFormulas = () =>
+      Array.from(generation.querySelectorAll(".theory-hamming-generation-formula")).map((formula) => formula.textContent);
+    expect(generationFormulas()).toEqual(["1 ⊕ 0 ⊕ 1 = 0", "1 ⊕ 1 ⊕ 1 = 1", "0 ⊕ 1 ⊕ 1 = 0"]);
     fireEvent.click(screen.getByTestId("hamming-data-2"));
 
     expect(stageBits("hamming-stage-data")).toBe("1111");
@@ -247,7 +286,8 @@ describe("HammingDiagram", () => {
     }
     expect(renderedSyndromeBits()).toBeNull();
     expect(parityBits()).toEqual([null, null, null]);
-    expect(screen.getByTestId("hamming-generator-1").querySelector("strong")?.textContent).toBe("–");
+    expect(screen.getByTestId("hamming-generator-1").querySelector("strong")?.textContent).toBe("P₁");
+    expect(generationFormulas()).toEqual(["D₁ ⊕ D₂ ⊕ D₄ = P₁", "D₁ ⊕ D₃ ⊕ D₄ = P₂", "D₂ ⊕ D₃ ⊕ D₄ = P₄"]);
     expect(screen.getByTestId("hamming-venn-check-4").getAttribute("data-parity-check-result")).toBeNull();
     expect(screen.getByTestId("hamming-status").textContent).toContain("Calculating");
     expect(screen.getByTestId("hamming-stage-output").textContent).not.toContain("DATA IN = DATA OUT");
@@ -257,6 +297,7 @@ describe("HammingDiagram", () => {
     advance(1);
     expect(stageBits("hamming-stage-encoded")).toBe("1111111");
     expect(screen.getByTestId("hamming-generator-1").querySelector("strong")?.textContent).toBe("1");
+    expect(generationFormulas()).toEqual(["1 ⊕ 1 ⊕ 1 = 1", "1 ⊕ 1 ⊕ 1 = 1", "1 ⊕ 1 ⊕ 1 = 1"]);
     expect(stageBits("hamming-stage-received")).toBeNull();
     advance(360);
     expect(stageBits("hamming-stage-received")).toBe("1111111");
@@ -285,7 +326,7 @@ describe("HammingDiagram", () => {
   });
 
   it("keeps completed encoding and delays reception onward when an error changes", () => {
-    renderWithLanguage();
+    renderExampleData();
     fireEvent.click(screen.getByTestId("hamming-error-3"));
 
     expect(stageBits("hamming-stage-data")).toBe("1011");
@@ -316,7 +357,7 @@ describe("HammingDiagram", () => {
   });
 
   it("finishes encoding before transmission when an error changes during pending encoding", () => {
-    renderWithLanguage();
+    renderExampleData();
     fireEvent.click(screen.getByTestId("hamming-data-2"));
     advance(200);
     fireEvent.click(screen.getByTestId("hamming-error-5"));
@@ -334,7 +375,7 @@ describe("HammingDiagram", () => {
   });
 
   it("cancels obsolete downstream results when the data changes again", () => {
-    renderWithLanguage();
+    renderExampleData();
     fireEvent.click(screen.getByTestId("hamming-data-2"));
     advance(1500);
     fireEvent.click(screen.getByTestId("hamming-data-1"));
@@ -368,7 +409,7 @@ describe("HammingDiagram", () => {
     { position: 6, received: "0110001", syndromeBits: "110", syndromeLabel: "Y₆" },
     { position: 7, received: "0110010", syndromeBits: "111", syndromeLabel: "W₇" },
   ])("shows and corrects a single error at position $position", ({ position, received, syndromeBits, syndromeLabel }) => {
-    renderWithLanguage();
+    renderExampleData();
 
     fireEvent.click(screen.getByTestId(`hamming-error-${position}`));
     advance(1260);
@@ -394,7 +435,7 @@ describe("HammingDiagram", () => {
   });
 
   it("makes the multi-error limit and resulting data mismatch explicit", () => {
-    renderWithLanguage();
+    renderExampleData();
 
     fireEvent.click(screen.getByTestId("hamming-error-1"));
     fireEvent.click(screen.getByTestId("hamming-error-2"));

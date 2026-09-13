@@ -3,12 +3,19 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../../../i18n";
 import { PrimaryGeneration } from "../PrimaryGeneration";
+import { VennDiagram } from "../VennDiagram";
 
 function renderDemo() {
   localStorage.setItem("chromalum_lang", "en");
   return render(
     <LanguageProvider>
-      <PrimaryGeneration hlLevel={null} onHover={vi.fn()} />
+      <PrimaryGeneration
+        hlLevel={null}
+        onHover={vi.fn()}
+        diagram={({ selectedLevel, onSelect }) => (
+          <VennDiagram hlLevel={null} onHover={vi.fn()} selectedLevel={selectedLevel} onSelect={onSelect} />
+        )}
+      />
     </LanguageProvider>,
   );
 }
@@ -26,6 +33,14 @@ describe("PrimaryGeneration", () => {
     ]);
 
     const equation = screen.getByTestId("generation-equation");
+    expect(equation.textContent).toContain("∅ → K");
+    expect(equation.textContent).toContain("K000");
+    expect(equation.textContent).toContain("0=0");
+    expect(generators.querySelectorAll('[aria-pressed="true"]')).toHaveLength(0);
+    expect(layers.querySelector('[data-level="0"]')?.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary G, bits 100, weight 4" }));
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary R, bits 010, weight 2" }));
     expect(equation.textContent).toContain("G ∨ R");
     expect(equation.textContent).toContain("Y110");
     expect(equation.textContent).toContain("4+2=6");
@@ -34,6 +49,24 @@ describe("PrimaryGeneration", () => {
     expect(equation.textContent).toContain("G ∨ R ∨ B");
     expect(equation.textContent).toContain("W111");
     expect(equation.textContent).toContain("4+2+1=7");
+  });
+
+  it("clears the diagram from surrounding space without cancelling clicks on its primary regions", () => {
+    const { container } = renderDemo();
+    const generators = screen.getByRole("group", { name: "Primary generators G, R, and B" });
+    const equation = screen.getByTestId("generation-equation");
+    const svg = container.querySelector(".theory-venn-svg")!;
+    svg.getBoundingClientRect = () => new DOMRect(26, 0, 248, 220);
+
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary G, bits 100, weight 4" }));
+    fireEvent.click(svg, { clientX: 150, clientY: 62 });
+    expect(equation.textContent).toContain("Y110");
+    expect(generators.querySelectorAll('[aria-pressed="true"]')).toHaveLength(2);
+
+    fireEvent.click(container.querySelector(".theory-generation-diagram")!);
+    expect(equation.textContent).toContain("K000");
+    expect(generators.querySelectorAll('[aria-pressed="true"]')).toHaveLength(0);
+    expect(svg.querySelectorAll('[data-venn-primary][data-active="true"]')).toHaveLength(0);
   });
 
   it("keeps the eight-state operand distinct from the three allowed primary toggles", () => {

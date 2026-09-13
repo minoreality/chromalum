@@ -30,14 +30,14 @@ describe("Theory copy", () => {
     expect(en.theory_empirical_order_intro).toContain("assume G exceeds M and R exceeds B");
     expect(en.theory_empirical_rank_note).toContain("does not assign the measured scores");
     expect(en.theory_derivation_convergence_note).toContain("unnamed weights {1,2,4}");
-    expect(en.theory_derivation_convergence_note).toContain("named ranks B=1, R=2, G=4");
+    expect(en.theory_derivation_convergence_note).toContain("primary ordering B<R<G");
     expect(ja.theory_subset_intro).toContain("正整数重み");
     expect(ja.theory_subset_rule).toContain("既存の最大値＋1");
     expect(ja.theory_empirical_desc).toContain("それ自体で名前付き順位");
     expect(ja.theory_empirical_order_intro).toContain("仮定します");
     expect(ja.theory_empirical_rank_note).toContain("測定スコアそのものを1・2・4とする主張ではありません");
     expect(ja.theory_derivation_convergence_note).toContain("無名の{1,2,4}");
-    expect(ja.theory_derivation_convergence_note).toContain("B=1、R=2、G=4という名前付き順位");
+    expect(ja.theory_derivation_convergence_note).toContain("B<R<Gという原色の順序");
   });
 
   it("explains rank correction and complement beside the binary table", () => {

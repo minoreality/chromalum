@@ -115,6 +115,7 @@ const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover, pinnedLe
 
   return (
     <div data-testid="hue-order-net" className="theory-die-net">
+      <div className="theory-diagram-label">{t("theory_dice_title")}</div>
       <p
         className="theory-annotation theory-die-net-sequence"
         style={{
@@ -155,7 +156,7 @@ const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover, pinnedLe
               <title>{`${ABBR[lv]} · L${lv} · ${bitsOf(lv)}`}</title>
               <polygon
                 points={points}
-                fill="#d8d8d8"
+                fill="#e4e4e4"
                 fillOpacity={dim ? 0.45 : 1}
                 stroke="#151522"
                 strokeWidth={1.2}

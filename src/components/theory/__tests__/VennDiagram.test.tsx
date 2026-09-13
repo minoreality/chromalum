@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { fireEvent, render } from "@testing-library/react";
 import { LanguageProvider } from "../../../i18n";
 import { VennDiagram } from "../VennDiagram";
@@ -55,6 +56,53 @@ describe("VennDiagram", () => {
     }
   });
 
+  it("adds missing primaries or removes all of a region's primaries when they are already enabled", () => {
+    const onHover = vi.fn();
+    function InteractiveDiagram() {
+      const [selected, setSelected] = useState(0);
+      return <VennDiagram hlLevel={null} onHover={onHover} selectedLevel={selected} onSelect={setSelected} />;
+    }
+    const { container } = render(
+      <LanguageProvider>
+        <InteractiveDiagram />
+      </LanguageProvider>,
+    );
+    const svg = container.querySelector("svg")!;
+    const [x, y, width, height] = svg.getAttribute("viewBox")!.split(" ").map(Number);
+    svg.getBoundingClientRect = () => new DOMRect(x, y, width, height);
+    for (const [region, selected] of [
+      [2, 2],
+      [4, 6],
+      [2, 4],
+      [1, 5],
+      [2, 7],
+      [4, 3],
+      [2, 1],
+      [1, 0],
+      [6, 6],
+      [6, 0],
+      [7, 7],
+      [7, 0],
+      [6, 6],
+      [3, 7],
+      [6, 1],
+      [3, 3],
+      [3, 0],
+      [5, 5],
+      [5, 0],
+      [2, 2],
+      [3, 3],
+      [5, 7],
+      [5, 2],
+      [0, 0],
+    ]) {
+      const label = container.querySelector(`[data-testid="venn-region-${region}"] text`)!;
+      fireEvent.click(svg, { clientX: Number(label.getAttribute("x")), clientY: Number(label.getAttribute("y")) });
+      expect(svg.getAttribute("data-selected-level")).toBe(String(selected));
+      expect(onHover).toHaveBeenLastCalledWith(selected);
+    }
+  });
+
   it("dims non-active regions when a level is highlighted", () => {
     const { container } = renderWithLanguage(vi.fn(), 6);
     const r6 = container.querySelector('[data-testid="venn-region-6"]');
@@ -63,9 +111,9 @@ describe("VennDiagram", () => {
     expect(Number(r1?.getAttribute("opacity"))).toBeLessThan(1);
   });
 
-  it("shows a dashed outer border when the empty-set region is active", () => {
+  it("does not draw an outer dashed frame when the empty-set region is active", () => {
     const { container } = renderWithLanguage(vi.fn(), 0);
-    expect(container.querySelector("svg rect[stroke-dasharray]")).toBeTruthy();
+    expect(container.querySelector("svg [stroke-dasharray]")).toBeNull();
   });
 
   it("calls onHover with the correct level when the mouse moves over a region", () => {
