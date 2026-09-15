@@ -128,7 +128,14 @@ const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover, pinnedLe
       >
         {t("theory_dice_net_cut")}
       </p>
-      <svg viewBox={`0 0 ${NET_W} ${NET_H}`} role="group" aria-label={t("theory_dice_net_aria")}>
+      <svg
+        viewBox={`0 0 ${NET_W} ${NET_H}`}
+        role="group"
+        aria-label={t("theory_dice_net_aria")}
+        onClick={(event) => {
+          if (!(event.target as Element).closest("[data-hue-net-face]")) onSelect(null);
+        }}
+      >
         {NET_FACES.map(({ lv, points, pips }, index) => {
           const info = THEORY_LEVELS[lv];
           const isComplement = hl !== null && (hl ^ 7) === lv;

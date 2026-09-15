@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { usePinReset } from "./pin-reset";
@@ -77,7 +77,11 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
   const { t } = useTranslation();
   const [pinned, setPinned] = useState<EdgeSelection | null>(null);
   const [preview, setPreview] = useState<EdgeSelection | null>(null);
-  usePinReset(setPreview);
+  const resetSelection = useCallback((value: null) => {
+    setPinned(value);
+    setPreview(value);
+  }, []);
+  usePinReset(resetSelection);
   const selected = preview ?? pinned;
   const selectedEdge = DUAL_OCTA_EDGES.find((edge) => sameEdge(selected, edge));
   const activate = (edge: EdgeSelection) => {
