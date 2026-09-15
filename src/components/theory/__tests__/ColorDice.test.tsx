@@ -118,6 +118,17 @@ describe("ColorDice", () => {
     expect(cyan.getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("clears the pinned pair from a blank press inside the net", () => {
+    const { container } = renderNetWithLanguage();
+    const net = screen.getByRole("group", { name: "A 2–2–2 net of the Color Die preserving the five hue-order connections" });
+    const cyan = container.querySelector('[data-hue-net-face="5"]')!;
+    fireEvent.click(cyan);
+    expect(cyan.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(net);
+    expect(container.querySelectorAll("[aria-pressed='true']")).toHaveLength(0);
+    expect(container.querySelectorAll('[data-hue-net-highlighted="true"]')).toHaveLength(0);
+  });
+
   it("shows a connected hue-order net without arrows, delta badges, or a folding banner", () => {
     const { container } = renderNetWithLanguage();
     const net = screen.getByRole("group", { name: "A 2–2–2 net of the Color Die preserving the five hue-order connections" });

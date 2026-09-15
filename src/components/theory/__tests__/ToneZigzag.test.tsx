@@ -137,6 +137,11 @@ describe("ToneZigzag", () => {
     fireEvent.click(levelFive);
     await waitFor(() => expect(levelFive.getAttribute("aria-pressed")).toBe("true"));
     expect(container.querySelector("[data-active-fiber='5']")?.textContent).toContain("N5 = 3");
+
+    fireEvent.click(container.querySelector(".theory-zigzag-svg")!);
+    expect(levelFive.getAttribute("aria-pressed")).toBe("false");
+    expect(container.querySelector("[data-active-fiber='5']")).toBeNull();
+    expect(onHover).toHaveBeenLastCalledWith(null);
   });
 
   it("restores direct graph hover without making the SVG keyboard-interactive", () => {

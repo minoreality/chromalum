@@ -145,6 +145,10 @@ export const ToneZigzag = React.memo(function ToneZigzag({
 
   const enterLevel = useCallback((level: number) => onHover(level), [onHover]);
   const leaveLevel = useCallback(() => onHover(null), [onHover]);
+  const clearPin = useCallback(() => {
+    setPinned(null);
+    onHover(null);
+  }, [onHover]);
   const pinLevel = useCallback(
     (level: number) => {
       setPinned((previous) => {
@@ -298,7 +302,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
           style={{ display: "block", width: "100%", maxWidth: "100%", alignSelf: "center", cursor: "default" }}
           role="img"
           aria-labelledby={`${titleId} ${descriptionId}`}
-          onClick={(event) => event.stopPropagation()}
+          onClick={clearPin}
         >
           <title id={titleId}>{t("theory_zigzag_title")}</title>
           <desc id={descriptionId}>

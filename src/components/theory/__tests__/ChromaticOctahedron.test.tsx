@@ -165,7 +165,7 @@ describe("ChromaticOctahedron", () => {
     }
   });
 
-  it("keeps the chosen edge and its results when the page reset clears a preview", () => {
+  it("clears a preview and a chosen edge when the page reset fires", () => {
     localStorage.setItem("chromalum_lang", "en");
     function Controlled({ reset }: { reset: number }) {
       return (
@@ -182,8 +182,9 @@ describe("ChromaticOctahedron", () => {
     expectGeneralResults();
     fireEvent.click(container.querySelector("[data-octa-edge-control='1-2']")!);
     fireEvent.mouseEnter(container.querySelector("[data-octa-edge-control='2-4']")!);
+    expect(container.querySelector("[data-octa-edge-control='1-2']")!.getAttribute("aria-pressed")).toBe("true");
     rerender(<Controlled reset={2} />);
-    expect(container.querySelectorAll("[data-edge-face-role], [data-edge-result]")).toHaveLength(4);
-    expect(screen.getByTestId("octahedron-selection").textContent).toContain("001 ⊕ 010 = 011");
+    expect(container.querySelectorAll("[aria-pressed='true'], [data-edge-face-role], [data-edge-node-role]")).toHaveLength(0);
+    expectGeneralResults();
   });
 });
