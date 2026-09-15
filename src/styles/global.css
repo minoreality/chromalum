@@ -1640,6 +1640,8 @@ button.theory-diagram-button {
 .theory-toggle-values {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  container-type: inline-size;
+  container-name: toggle-values;
   margin: 0;
   text-align: center;
 }
@@ -1669,6 +1671,16 @@ button.theory-diagram-button {
 .theory-toggle-values small {
   min-height: 18px;
   font-size: 11px;
+}
+/* Thirds of a narrow readout leave "Result x ⊕ m" about a pixel of room at
+   11px, so give the labels their own step before they can touch the rule. */
+@container toggle-values (max-width: 279px) {
+  .theory-toggle-values > div {
+    padding: 0;
+  }
+  .theory-toggle-values dt {
+    font-size: 10px;
+  }
 }
 .theory-toggle-hint {
   min-height: 33px;
@@ -2092,14 +2104,21 @@ button.theory-diagram-button {
   letter-spacing: 2px;
 }
 .theory-fano-syndrome > span {
-  display: flex;
+  display: grid;
   align-items: center;
-  justify-content: flex-end;
+  justify-items: end;
   min-height: 33px;
   color: #a5afca;
   font-size: 11px;
   line-height: 1.5;
   text-align: right;
+}
+.theory-fano-syndrome > span > span {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.theory-fano-syndrome > span > span[data-active] {
+  visibility: visible;
 }
 .theory-fano-matrix-footer {
   display: flex;
@@ -2119,7 +2138,7 @@ button.theory-diagram-button {
     text-align: center;
   }
   .theory-fano-syndrome > span {
-    justify-content: center;
+    justify-items: center;
     text-align: center;
   }
 }
