@@ -37,11 +37,20 @@ function patternHue(patternCandidateIndexByLevel: readonly number[]): number {
   return count > 0 ? sumAngle / count : 0;
 }
 
-/** Check whether any chromatic level in a pattern matches the hue filter. */
-function matchesHueFilter(patternCandidateIndexByLevel: readonly number[], filterHue: number, filterRange: number): boolean {
+/**
+ * Check whether any chromatic level that the image actually uses matches the hue filter.
+ * Levels absent from the canvas (histogram 0) are not visible and never match; levels with a
+ * single candidate (B, Y) still count, because their hue is on screen whenever they are used.
+ */
+function matchesHueFilter(
+  patternCandidateIndexByLevel: readonly number[],
+  filterHue: number,
+  filterRange: number,
+  levelHistogram: readonly number[],
+): boolean {
   for (let lv = 1; lv <= 6; lv++) {
+    if (!(levelHistogram[lv] > 0)) continue;
     const cands = LEVEL_CANDIDATES[lv];
-    if (cands.length <= 1) continue;
     const ci = patternCandidateIndexByLevel[lv] % cands.length;
     const angle = cands[ci].hueAngleDeg;
     if (angle < 0) continue;
@@ -70,6 +79,7 @@ interface GalleryDisplayOptions {
   filterHue: number;
   filterRange: number;
   currentCandidateIndexByLevel: readonly number[];
+  levelHistogram: readonly number[];
 }
 
 export function getDisplayGalleryItems({
@@ -80,11 +90,12 @@ export function getDisplayGalleryItems({
   filterHue,
   filterRange,
   currentCandidateIndexByLevel,
+  levelHistogram,
 }: GalleryDisplayOptions): GalleryItem[] {
   let list = filter === "bookmarks" ? bookmarkItems : items;
 
   if (filterRange < 180) {
-    list = list.filter((item) => matchesHueFilter(item.candidateIndexByLevel, filterHue, filterRange));
+    list = list.filter((item) => matchesHueFilter(item.candidateIndexByLevel, filterHue, filterRange, levelHistogram));
   }
 
   if (sortMode === "default") return list;

@@ -242,8 +242,9 @@ export const GalleryPanel = React.memo(function GalleryPanel({
       filterHue,
       filterRange,
       currentCandidateIndexByLevel: candidateIndexByLevel,
+      levelHistogram,
     });
-  }, [filter, items, bookmarkItems, sortMode, filterHue, filterRange, candidateIndexByLevel]);
+  }, [filter, items, bookmarkItems, sortMode, filterHue, filterRange, candidateIndexByLevel, levelHistogram]);
 
   const [thumbSize, setThumbSize] = useState<ThumbSize>("M");
   const previewDialogRef = useRef<HTMLDivElement>(null);
