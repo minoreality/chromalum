@@ -70,6 +70,20 @@ textarea {
   font: inherit;
 }
 
+/* Pressing a control or a figure node must never start a text selection: a
+   double press (level buttons, K8 node turns) would otherwise select the label. */
+button,
+summary,
+[role="button"],
+[role="tab"],
+[role="radio"],
+[role="checkbox"],
+[role="switch"],
+svg text {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Header action links (About / Shortcuts / language switcher) */
 .header-action-link:hover,
 .header-action-link:focus-visible {
