@@ -9,7 +9,7 @@ import {
 } from "../music/music-panel-derived";
 import { useMusicEngine } from "./useMusicEngine";
 import { useMusicFanoHandlers } from "./useMusicFanoHandlers";
-import { useMusicHuePaletteHandlers } from "./useMusicHuePaletteHandlers";
+import { useMusicHuePaletteHandlers, useMusicTransportShortcuts } from "./useMusicHuePaletteHandlers";
 import {
   useMusicAlgebraState,
   useMusicBurstHighlightState,
@@ -320,6 +320,8 @@ export function useMusicPanelController() {
     },
     signals: { setStopSignal },
   });
+
+  useMusicTransportShortcuts(handleStopAll, handleMuteToggle);
 
   const handleBackgroundStop = useCallback(() => {
     if (backgroundStoppedRef.current) return;

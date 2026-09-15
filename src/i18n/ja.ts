@@ -114,12 +114,6 @@ export const ja = {
 
   // HelpModal
   help_title: "ショートカット一覧",
-  help_brush: "ブラシ",
-  help_eraser: "消しゴム",
-  help_fill: "塗りつぶし",
-  help_line: "線分",
-  help_rect: "四角",
-  help_ellipse: "楕円",
   help_level: "トーンレベル選択",
   help_brush_size: "ブラシサイズ増減",
   help_pan: "パン",
@@ -147,6 +141,17 @@ export const ja = {
   help_arrow_pan_key: "矢印キー",
   help_drop_image: "画像読み込み",
   help_drop_image_key: "ドラッグ＆ドロップ",
+  help_hex_cycle: "そのレベルの候補色を切替",
+  help_music_play: "そのレベルを鳴らす",
+  help_theory_pin: "フォーカス中の図の要素を固定・解除",
+  help_theory_clear: "すべての図の固定を解除",
+  help_theory_navigate: "フォーカス中の表の中を移動",
+  help_theory_navigate_key: "矢印 / Home / End",
+  help_switch_tab: "タブ切替",
+  help_switch_language: "言語切替（EN / JA）",
+  help_music_stop_all: "すべての再生を停止",
+  help_music_mute: "ミュート切替",
+  help_save_color: "カラー画像を保存",
 
   // App - toast messages
   toast_restore_failed: "保存データの復元に失敗しました",

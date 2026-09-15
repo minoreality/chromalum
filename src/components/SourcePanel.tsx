@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { TOOLS, BRUSH_MIN, BRUSH_MAX, BRUSH_STEP, ZOOM_MIN, ZOOM_MAX } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
 import { S_BTN, S_BTN_ACTIVE, S_CANVAS_STATUS_STABLE, S_CHECKERBOARD, S_PANEL_SUBTITLE } from "../styles/shared";
@@ -199,6 +199,17 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     setConfirmSave(kind);
   }, []);
   const handleSaveColor = useCallback(() => requestSave("color"), [requestSave]);
+  // Ctrl+S makes the same request as the Save Color button; the panel is
+  // mounted only while the Source tab is active.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "s") return;
+      e.preventDefault();
+      handleSaveColor();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [handleSaveColor]);
   const handleSaveGray = useCallback(() => requestSave("gray"), [requestSave]);
   const handleSaveGlaze = useCallback(() => requestSave("glaze"), [requestSave]);
   const handleConfirmSave = useCallback(() => {

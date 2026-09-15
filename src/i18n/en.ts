@@ -114,12 +114,6 @@ export const en = {
 
   // HelpModal
   help_title: "Keyboard Shortcuts",
-  help_brush: "Brush",
-  help_eraser: "Eraser",
-  help_fill: "Fill",
-  help_line: "Line",
-  help_rect: "Rect",
-  help_ellipse: "Ellipse",
   help_level: "Select tone level",
   help_brush_size: "Brush size +/-",
   help_pan: "Pan",
@@ -147,6 +141,17 @@ export const en = {
   help_arrow_pan_key: "Arrow keys",
   help_drop_image: "Load image",
   help_drop_image_key: "Drag & drop",
+  help_hex_cycle: "Cycle the candidate color for that level",
+  help_music_play: "Play that level",
+  help_theory_pin: "Pin or release the focused figure element",
+  help_theory_clear: "Clear every figure's pinned selection",
+  help_theory_navigate: "Move within a focused table",
+  help_theory_navigate_key: "Arrows / Home / End",
+  help_switch_tab: "Switch tab",
+  help_switch_language: "Switch language (EN / JA)",
+  help_music_stop_all: "Stop every sequence",
+  help_music_mute: "Mute / unmute",
+  help_save_color: "Save color image",
 
   // App - toast messages
   toast_restore_failed: "Failed to restore saved data",

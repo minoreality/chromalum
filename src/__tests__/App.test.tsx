@@ -80,6 +80,18 @@ describe("App", () => {
     expect(screen.getByRole("dialog", { name: "Keyboard Shortcuts" })).toBeTruthy();
   }, 15000);
 
+  it("requests the color save from Ctrl+S on the Source tab", async () => {
+    renderApp();
+    fireEvent.click(await screen.findByRole("tab", { name: "Source" }));
+    await screen.findByTitle(/Save color PNG/);
+
+    const event = new KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true, cancelable: true });
+    document.body.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(await screen.findByText("Save color image?")).toBeTruthy();
+  }, 15000);
+
   it("does not interrupt the app with legacy service worker update notifications", async () => {
     renderApp();
 
