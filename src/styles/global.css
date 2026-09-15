@@ -2605,7 +2605,7 @@ button.theory-diagram-button {
   font-weight: 600;
   cursor: pointer;
 }
-.theory-octahedron button[aria-pressed="true"] {
+.theory-octahedron button[data-active="true"] {
   border-color: #a0b0ff;
   background: #171728;
   color: #fff;
@@ -2614,7 +2614,7 @@ button.theory-diagram-button {
   border-color: #a0b0ff;
   background: #151b2c;
 }
-.theory-octahedron button[aria-pressed="true"]:hover {
+.theory-octahedron button[data-active="true"]:hover {
   background: #20283b;
 }
 .theory-octahedron button:focus-visible {

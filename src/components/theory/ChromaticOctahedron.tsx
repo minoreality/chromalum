@@ -86,7 +86,8 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
   };
   const interactions = (edge: EdgeSelection) => ({
     "aria-label": t("theory_octa_edge_choice", THEORY_LEVELS[edge.a].short, bitsOf(edge.a), THEORY_LEVELS[edge.b].short, bitsOf(edge.b)),
-    "aria-pressed": sameEdge(selected, edge),
+    "aria-pressed": sameEdge(pinned, edge),
+    "data-active": sameEdge(selected, edge),
     onMouseEnter: () => setPreview(edge),
     onMouseLeave: () => setPreview(null),
     onFocus: () => setPreview(edge),
