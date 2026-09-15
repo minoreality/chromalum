@@ -196,6 +196,44 @@ describe("research-note invariants", () => {
     expect(deltas.reduce((sum, delta) => sum + Math.abs(delta), 0)).toBe(2 * (4 + 2 + 1));
   });
 
+  it("counts noninteger fibers as 2,4,2,4,2 and cuts the loop into eight arcs at levels 2.5 and 4.5", () => {
+    type Bit = 0 | 1;
+    type Vertex = readonly [Bit, Bit, Bit];
+    const weights = [4, 2, 1] as const;
+    const cycle: readonly Vertex[] = [
+      [0, 1, 0],
+      [1, 1, 0],
+      [1, 0, 0],
+      [1, 0, 1],
+      [0, 0, 1],
+      [0, 1, 1],
+    ];
+    const rank = (vertex: Vertex) => vertex.reduce<number>((sum, bit, index) => sum + bit * weights[index], 0);
+    const edges = cycle.map((from, index) => ({ from: rank(from), to: rank(cycle[(index + 1) % cycle.length]), start: 60 * index }));
+    const crosses = (level: number) => edges.filter(({ from, to }) => (level - from) * (level - to) < 0);
+    const midpoints = [1.5, 2.5, 3.5, 4.5, 5.5];
+
+    expect(midpoints.map((level) => crosses(level).length)).toEqual([2, 4, 2, 4, 2]);
+    for (const level of midpoints) expect(crosses(7 - level).length).toBe(crosses(level).length);
+
+    const cuts = [2.5, 4.5].flatMap((level) =>
+      crosses(level).map(({ from, to, start }) => ({ level, angle: start + (60 * (level - from)) / (to - from) })),
+    );
+    const angles = cuts.map(({ angle }) => angle).sort((a, b) => a - b);
+    expect(angles).toEqual([7.5, 37.5, 105, 150, 187.5, 217.5, 285, 330]);
+    for (const { level, angle } of cuts) {
+      const antipode = cuts.find((cut) => Math.abs(((((cut.angle - angle) % 360) + 360) % 360) - 180) < 1e-9);
+      expect(antipode?.level).toBe(7 - level);
+    }
+
+    const vertexAngles = cycle.map((_, index) => 60 * index);
+    const verticesInside = angles.map((from, index) => {
+      const to = angles[(index + 1) % angles.length];
+      return vertexAngles.filter((angle) => (from < to ? angle > from && angle < to : angle > from || angle < to)).length;
+    });
+    expect(verticesInside).toEqual([0, 1, 1, 1, 0, 1, 1, 1]);
+  });
+
   it("distinguishes the five automatic section-selector states from all nine manual complement sections", () => {
     const automaticSections = new Set<string>();
     for (let hueAngleDeg = 0; hueAngleDeg < 360; hueAngleDeg += 0.25) {
