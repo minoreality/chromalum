@@ -88,6 +88,42 @@ Genuinely throwaway scripts belong in a temp directory, not in the repo.
 - New entrypoints must be registered in the `knip` block of `package.json` (it already lists
   `src/theory-main.tsx` and the `prototypes/hue-euler/` files), or `verify` fails on dead code.
 
+## Claim boundaries
+
+Theory prose in `src/i18n/en.ts` and `ja.ts` is scholarly content under `docs/LICENSE.md`
+(CC BY 4.0, with its own citation templates), so rewording it edits a published claim, not UI
+chrome. `src/i18n/__tests__/theory-copy.test.ts` pins boundary sentences with `toContain`,
+which catches a sentence that disappears and not one that oversteps. The boundaries, each with
+its section in `docs/algebraic-color-model.md`:
+
+- The eight levels are the **GRB Binary Tone** (`Tone` / `トーン`), a rank coordinate
+  `L = 4G + 2R + B` that records the brightness order and subset-sum structure of the binary
+  vertices — not a scale of perceived or photometric brightness. "Green is weighted most" means
+  green is the most significant bit, never that green is four times brighter
+  (§Scope and Open Problem).
+- Only the brightness _order_ of the eight binary vertices enters the mathematics:
+  `w_G > w_R + w_B` and `w_R > w_B > 0`. Never substitute BT.601 or any photometric coefficient
+  as an integer weight, and never imply perceptual uniformity or derivation from an external
+  brightness standard (§Minimal Choices and Derived Definitions, §Evidence Boundary).
+- Two independent paths converge on the same named rank: the unnamed minimal subset-sum weights
+  `{1,2,4}` and the empirical primary order `B < R < G`. Present both; an explanation that
+  starts from "a coordinate convention" was rejected by the author as 恣意的
+  (§二経路の収束と感度).
+- XOR (⊕) is the symmetric difference of the Boolean ring `(A,⊕,∧) ≅ 𝔽₂×𝔽₂×𝔽₂` — not the field
+  GF(8), and not physical mixing. Describe it as composition and cancellation of channel
+  inversions; the Theory tab's mixing figure is join `∨` / meet `∧`, a different operation
+  (§GF(2)^3 / Z2 x Z2 x Z2, §One Boolean Algebra, Two Term-Equivalent Presentations).
+- The pure-hue loop `H` is a continuous display layer. Candidates sharing a level are
+  representatives in a fiber of `λ`, not new elements of `A` and not XOR operands
+  (§Scope and Open Problem; README "Design Intent").
+- Image import applies the 4:2:1 weights directly to sRGB input as an independent, lossy
+  classifier; its score is none of GRB Binary Tone, perceptual lightness, or photometric
+  luminance (§Color Labels).
+- The algebraic core and the `4G+2R+B` numbering are prior art (NEC 1981, Sinclair Research
+  1982); novelty is claimed only for the synthesis (§Abstract; Pars II).
+
+After a Theory copy change run `npm run test:theory-copy`, then `npm run verify:theory`.
+
 ## Commit messages
 
 Work lands through squash-merged PRs, so the PR title becomes the permanent subject and the PR
@@ -125,7 +161,7 @@ src/components/theory/   Theory figures and explorers (29 files)
 src/data/                theory-data.ts, color model tables
 src/i18n/                en.ts, ja.ts, LanguageContext — key parity covered by tests
 src/music/               audio engine
-docs/                    algebraic-color-model.md — the math, cited by commit SHA
+docs/                    README.md maps the notes; algebraic-color-model.md is the math, cited by commit SHA
 src/styles/global.css    every rule in the app
 e2e/                     theory, stella-view, stella-depth, app-flows, accessibility, pwa
 ```
