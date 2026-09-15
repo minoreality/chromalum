@@ -79,8 +79,8 @@ function shareCanvas(
   }, "image/png");
 }
 
-/** Render color preview to a temporary off-screen canvas. */
-function renderToTempCanvas(canvasData: CanvasData, colorLUT: [number, number, number][]): HTMLCanvasElement {
+/** Render to a temporary off-screen canvas. Glaze overrides are applied only for the glaze exports. */
+function renderToTempCanvas(canvasData: CanvasData, colorLUT: [number, number, number][], withGlaze: boolean): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = canvasData.width;
   c.height = canvasData.height;
@@ -94,7 +94,7 @@ function renderToTempCanvas(canvasData: CanvasData, colorLUT: [number, number, n
     c,
     cache,
     undefined,
-    canvasData.pixelCandidateOverrideMap,
+    withGlaze ? canvasData.pixelCandidateOverrideMap : null,
   );
   return c;
 }
@@ -107,7 +107,7 @@ export function useExport(
 ): ExportResult {
   const saveColor = useCallback(
     (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => {
-      const c = ref.current ?? renderToTempCanvas(canvasData, colorLUT);
+      const c = ref.current ?? renderToTempCanvas(canvasData, colorLUT, false);
       downloadCanvas(c, name, showToast, t);
     },
     [canvasData, colorLUT, showToast, t],
@@ -115,7 +115,7 @@ export function useExport(
 
   const saveColorWithLUT = useCallback(
     (lut: [number, number, number][], name: string) => {
-      const c = renderToTempCanvas(canvasData, lut);
+      const c = renderToTempCanvas(canvasData, lut, false);
       downloadCanvas(c, name, showToast, t);
     },
     [canvasData, showToast, t],
@@ -123,7 +123,7 @@ export function useExport(
 
   const saveGlaze = useCallback(
     (name: string) => {
-      const c = renderToTempCanvas(canvasData, colorLUT);
+      const c = renderToTempCanvas(canvasData, colorLUT, true);
       downloadCanvas(c, name, showToast, t);
     },
     [canvasData, colorLUT, showToast, t],
@@ -131,7 +131,7 @@ export function useExport(
 
   const shareColor = useCallback(
     (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => {
-      const c = ref.current ?? renderToTempCanvas(canvasData, colorLUT);
+      const c = ref.current ?? renderToTempCanvas(canvasData, colorLUT, false);
       shareCanvas(c, name, showToast, t);
     },
     [canvasData, colorLUT, showToast, t],
@@ -139,7 +139,7 @@ export function useExport(
 
   const shareGlaze = useCallback(
     (name: string) => {
-      const c = renderToTempCanvas(canvasData, colorLUT);
+      const c = renderToTempCanvas(canvasData, colorLUT, true);
       shareCanvas(c, name, showToast, t);
     },
     [canvasData, colorLUT, showToast, t],

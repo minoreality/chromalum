@@ -316,4 +316,66 @@ describe("useExport", () => {
       expect(args[6]).toEqual({ sourceImageData: null, previewImageData: null, sourcePixels32: null, previewPixels32: null }); // imgCache
     });
   });
+
+  /* ---------- glaze overrides: color exports ignore them, glaze exports keep them ---------- */
+
+  describe("glaze overrides", () => {
+    function glazedCanvas(): CanvasData {
+      const canvasData = makeCvs(4, 4);
+      canvasData.pixelCandidateOverrideMap[5] = 2;
+      return canvasData;
+    }
+
+    function stubDownload() {
+      vi.spyOn(document.body, "appendChild").mockReturnValue(null as unknown as Node);
+      vi.spyOn(document.body, "removeChild").mockReturnValue(null as unknown as Node);
+    }
+
+    it("saveColorWithLUT (Gallery save) renders the LUT without the glaze override map", () => {
+      const canvasData = glazedCanvas();
+      const { result } = setup(canvasData);
+      stubDownload();
+      const lut: [number, number, number][] = [[10, 20, 30]];
+
+      result.current.saveColorWithLUT(lut, "gallery.png");
+
+      expect(mockRenderBuf).toHaveBeenCalledTimes(1);
+      const args = mockRenderBuf.mock.calls[0];
+      expect(args[3]).toBe(lut);
+      expect(args[8]).toBeNull();
+    });
+
+    it("saveColor fallback renders without the glaze override map", () => {
+      const canvasData = glazedCanvas();
+      const { result } = setup(canvasData);
+      stubDownload();
+      const ref = { current: null } as React.RefObject<HTMLCanvasElement | null>;
+
+      result.current.saveColor(ref, "color.png");
+
+      expect(mockRenderBuf.mock.calls[0][8]).toBeNull();
+    });
+
+    it("saveGlaze renders with the glaze override map", () => {
+      const canvasData = glazedCanvas();
+      const { result } = setup(canvasData);
+      stubDownload();
+
+      result.current.saveGlaze("glaze.png");
+
+      expect(mockRenderBuf.mock.calls[0][8]).toBe(canvasData.pixelCandidateOverrideMap);
+    });
+
+    it("shareGlaze renders with the glaze override map and shareColor fallback without it", () => {
+      const canvasData = glazedCanvas();
+      const { result } = setup(canvasData);
+      const ref = { current: null } as React.RefObject<HTMLCanvasElement | null>;
+
+      result.current.shareGlaze("glaze.png");
+      result.current.shareColor(ref, "color.png");
+
+      expect(mockRenderBuf.mock.calls[0][8]).toBe(canvasData.pixelCandidateOverrideMap);
+      expect(mockRenderBuf.mock.calls[1][8]).toBeNull();
+    });
+  });
 });
