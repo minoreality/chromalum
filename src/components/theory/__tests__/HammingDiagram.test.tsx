@@ -79,6 +79,24 @@ describe("HammingDiagram", () => {
     expect(cases).toBe(128);
   });
 
+  it("returns syndrome 000 exactly when the error pattern is itself a codeword", () => {
+    let codewordPatterns = 0;
+    for (let mask = 0; mask < 128; mask++) {
+      const errors = [6, 5, 4, 3, 2, 1, 0].map((shift) => ((mask >> shift) & 1) as Bit) as unknown as HammingWord;
+      const isCodeword = encodeHamming74([errors[2], errors[4], errors[5], errors[6]]).join("") === errors.join("");
+      if (isCodeword && mask > 0) codewordPatterns++;
+      for (let value = 0; value < 16; value++) {
+        const data = dataWord(value);
+        const result = calculateHamming74(data, errors);
+        expect(result.syndrome === 0).toBe(isCodeword);
+        if (!isCodeword) continue;
+        expect(result.corrected).toEqual(result.received);
+        if (mask > 0) expect(result.output).not.toEqual(data);
+      }
+    }
+    expect(codewordPatterns).toBe(15);
+  });
+
   it("renders a standard three-set diagram and the complete six-stage flow", () => {
     renderWithLanguage();
 
@@ -452,6 +470,30 @@ describe("HammingDiagram", () => {
     expect(screen.getByTestId("hamming-flow-operation-transmit").textContent).toContain("Transmit (2-bit error)");
     expect(screen.getByTestId("hamming-flow-operation-correction").textContent).toContain("outside guaranteed correction");
     expect(stageSlot("hamming-stage-corrected", 3).dataset.flowEmphasis).toBe("warning");
+  });
+
+  it("reports a codeword-shaped error pattern as undetected instead of a flip at position 0", () => {
+    renderExampleData();
+
+    for (const position of [1, 2, 3]) fireEvent.click(screen.getByTestId(`hamming-error-${position}`));
+    advance(1260);
+
+    expect(stageBits("hamming-stage-received")).toBe("1000011");
+    expect(renderedSyndromeBits()).toBe("000");
+    expect(screen.getByTestId("hamming-stage-syndrome").textContent).toContain("j=0");
+    expect(screen.getByTestId("hamming-stage-syndrome").textContent).toContain("no error position");
+    expect(stageBits("hamming-stage-corrected")).toBe("1000011");
+    expect(stageBits("hamming-stage-output")).toBe("0011");
+    expect(screen.getByTestId("hamming-stage-output").textContent).toContain("DATA MISMATCH");
+    const status = screen.getByTestId("hamming-status").textContent;
+    expect(status).toContain("3 errors");
+    expect(status).toContain("itself a codeword");
+    expect(status).not.toContain("points to one position");
+    const correction = screen.getByTestId("hamming-flow-operation-correction").textContent;
+    expect(correction).toContain("j=0 → Keep RECEIVED unchanged (e is a codeword, undetected)");
+    expect(correction).not.toContain("position 0");
+    expect(screen.getByTestId("hamming-flow-operation-transmit").textContent).toContain("Transmit (3-bit error)");
+    expect(screen.getByTestId("hamming-stage-corrected").querySelectorAll('[data-flow-emphasis="warning"]')).toHaveLength(0);
   });
 
   it("toggles an injected error off and keeps level hover linked", () => {

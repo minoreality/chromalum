@@ -77,6 +77,21 @@ describe("Theory copy", () => {
     expect(ja.theory_hamming_desc).toContain("単一誤り位置");
   });
 
+  it("names a codeword-shaped error pattern as undetected, never as a flip at position 0", () => {
+    expect(en.theory_hamming_operation_correction_undetected).toContain("j=0 → Keep RECEIVED unchanged");
+    expect(en.theory_hamming_status_undetected).toContain("itself a codeword");
+    expect(en.theory_hamming_status_undetected).toContain("s=Heᵀ=000");
+    expect(en.theory_hamming_status_undetected).toContain("cannot detect");
+    expect(ja.theory_hamming_operation_correction_undetected).toContain("j=0 → 反転しない");
+    expect(ja.theory_hamming_status_undetected).toContain("それ自体符号語");
+    expect(ja.theory_hamming_status_undetected).toContain("s=Heᵀ=000");
+    expect(ja.theory_hamming_status_undetected).toContain("検出できません");
+    for (const copy of [en, ja]) {
+      expect(copy.theory_hamming_operation_correction_undetected).not.toMatch(/position 0|位置0/);
+      expect(copy.theory_hamming_status_undetected).not.toMatch(/position 0|位置0/);
+    }
+  });
+
   it("keeps the conditional operation identities in the dedicated mixing explanation", () => {
     for (const copy of [en, ja]) {
       const text = copy.theory_mixing_operations_desc;
