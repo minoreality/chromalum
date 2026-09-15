@@ -1161,6 +1161,22 @@ test("reveals Hamming results in sequence and discards calculations from superse
   await expect(page.getByTestId("hamming-status")).toContainText("position 5");
 });
 
+test("reports a codeword-shaped error pattern as undetected instead of a flip at position 0", async ({ page }) => {
+  for (const language of ["ja", "en"] as const) {
+    await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
+    await page.goto("theory-dev.html");
+    for (const position of [1, 2, 3]) await page.getByTestId(`hamming-error-${position}`).click();
+    await expect(page.getByTestId("hamming-stage-syndrome").locator("[data-syndrome-bits]")).toHaveAttribute("data-syndrome-bits", "000");
+    await expect(page.getByTestId("hamming-stage-corrected").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1110000");
+    await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "1000");
+    await expect(page.getByTestId("hamming-flow-operation-correction")).toContainText(
+      language === "ja" ? "j=0 → 反転しない（eが符号語のため検出不能）" : "j=0 → Keep RECEIVED unchanged (e is a codeword, undetected)",
+    );
+    await expect(page.getByTestId("hamming-status")).toContainText(language === "ja" ? "それ自体符号語" : "itself a codeword");
+    await expect(page.getByTestId("hamming-status")).not.toContainText(language === "ja" ? "位置0" : "position 0");
+  }
+});
+
 test("connects accessible parity-set controls to four positions, live equations, and delayed error toggles", async ({ page }) => {
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);

@@ -433,6 +433,7 @@ export const en = {
   theory_hamming_operation_correction_none: "j=0 → Keep RECEIVED unchanged",
   theory_hamming_operation_correction_single: "j={0} → Flip position {1} ({2}→{3})",
   theory_hamming_operation_correction_multiple: "j={0} → Trial flip at position {1} (outside guaranteed correction)",
+  theory_hamming_operation_correction_undetected: "j=0 → Keep RECEIVED unchanged (e is a codeword, undetected)",
   theory_hamming_operation_extract: "Extract data (D1–D4)",
   theory_hamming_output_match: "DATA IN = DATA OUT",
   theory_hamming_output_mismatch: "DATA MISMATCH",
@@ -441,6 +442,8 @@ export const en = {
     "One error detected at position {0} ({1}). The syndrome identifies the position, correction restores the codeword, and DATA OUT matches DATA IN.",
   theory_hamming_status_multiple:
     "{0} errors are selected. Syndrome {1}={2} still points to one position, but Hamming [7,4,3] guarantees correction only for one error. Check DATA OUT rather than treating that position as reliable.",
+  theory_hamming_status_undetected:
+    "{0} errors are selected, yet the syndrome is 000=K₀. The error pattern e is itself a codeword, so s=Heᵀ=000 and every parity check passes. Nothing is flipped, DATA OUT differs from DATA IN, and Hamming [7,4,3] cannot detect this pattern.",
   theory_hamming_venn_title: "Three Parity-Check Sets",
   theory_hamming_venn_aria: "Three overlapping parity-check sets P1, P2, and P4 containing the seven Hamming positions",
   theory_hamming_venn_help:

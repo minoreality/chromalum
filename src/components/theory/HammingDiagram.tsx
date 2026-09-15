@@ -626,7 +626,9 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         ? t("theory_hamming_status_none")
         : errorCount === 1
           ? t("theory_hamming_status_single", `${result.syndrome}`, levelLabel(result.syndrome))
-          : t("theory_hamming_status_multiple", `${errorCount}`, bits(result.syndromeBits), levelLabel(result.syndrome));
+          : result.syndrome === 0
+            ? t("theory_hamming_status_undetected", `${errorCount}`)
+            : t("theory_hamming_status_multiple", `${errorCount}`, bits(result.syndromeBits), levelLabel(result.syndrome));
   const transmissionOperation =
     errorCount === 0 ? t("theory_hamming_operation_transmit_clean") : t("theory_hamming_operation_transmit_errors", `${errorCount}`);
   const correctionOperation =
@@ -642,7 +644,9 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
               `${result.received[result.syndrome - 1]}`,
               `${result.corrected[result.syndrome - 1]}`,
             )
-          : t("theory_hamming_operation_correction_multiple", `${result.syndrome}`, `${result.syndrome}`);
+          : result.syndrome === 0
+            ? t("theory_hamming_operation_correction_undetected")
+            : t("theory_hamming_operation_correction_multiple", `${result.syndrome}`, `${result.syndrome}`);
   const receivedErrorPositions = errors.flatMap((bit, index) => (bit ? [index + 1] : []));
   const correctionPositions = result.corrected === null || result.syndrome === null || result.syndrome === 0 ? [] : [result.syndrome];
   const syndromePositionText =

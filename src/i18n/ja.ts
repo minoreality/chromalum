@@ -430,6 +430,7 @@ export const ja = {
   theory_hamming_operation_correction_none: "j=0 → 反転しない（受信語をそのまま通す）",
   theory_hamming_operation_correction_single: "j={0} → 位置{1}を反転（{2}→{3}）",
   theory_hamming_operation_correction_multiple: "j={0}を指示 → 位置{1}を仮反転（1ビット訂正保証外）",
+  theory_hamming_operation_correction_undetected: "j=0 → 反転しない（eが符号語のため検出不能）",
   theory_hamming_operation_extract: "データ抽出（D1–D4）",
   theory_hamming_output_match: "DATA IN = DATA OUT",
   theory_hamming_output_mismatch: "DATAが不一致",
@@ -438,6 +439,8 @@ export const ja = {
     "位置{0}（{1}）の1ビット誤りを検出しました。syndromeが位置を特定し、訂正後はDATA OUTとDATA INが一致します。",
   theory_hamming_status_multiple:
     "{0}個の誤りが選択されています。syndrome {1}={2}は一つの位置を指しますが、Hamming [7,4,3]が訂正を保証するのは1ビット誤りだけです。指示位置を正しいとみなさず、DATA OUTを確認してください。",
+  theory_hamming_status_undetected:
+    "{0}個の誤りが選択されていますが、syndromeは000=K₀です。誤りパターンeがそれ自体符号語なのでs=Heᵀ=000となり、三つのパリティ検査がすべて通ります。何も反転せず、DATA OUTはDATA INと一致しません。Hamming [7,4,3]はこの誤りを検出できません。",
   theory_hamming_venn_title: "三つのパリティ検査集合",
   theory_hamming_venn_aria: "七つのハミング位置を含むP1、P2、P4の三つの重なったパリティ検査集合",
   theory_hamming_venn_help: "検査にホバーすると対象の4点を強調し、クリックで選択します。点を押すと、その位置の誤りを切り替えます。",
