@@ -97,6 +97,41 @@ describe("ChromaticOctahedron", () => {
     expect(screen.getByTestId("octahedron-selection").textContent).toContain("001 ⊕ 010 = 011");
   });
 
+  it("keeps aria-pressed on the pinned edge while focus or hover previews another", () => {
+    const { container } = renderOctahedron();
+    const pinnedEdge = container.querySelector("[data-octa-edge-control='1-2']")!;
+    const otherEdge = container.querySelector("[data-octa-edge-control='2-4']")!;
+    const choices = screen.getByRole("group", { name: "Select an octahedral edge" });
+    const pinnedPair = within(choices).getByRole("button", { name: "Octahedral edge B 001 — R 010" });
+    const otherPair = within(choices).getByRole("button", { name: "Octahedral edge R 010 — G 100" });
+
+    fireEvent.focus(otherEdge);
+    expect(otherEdge.getAttribute("aria-pressed")).toBe("false");
+    expect(otherEdge.getAttribute("data-active")).toBe("true");
+    expect(otherPair.getAttribute("data-active")).toBe("true");
+    fireEvent.blur(otherEdge);
+    expect(otherEdge.getAttribute("data-active")).toBe("false");
+
+    fireEvent.keyDown(pinnedEdge, { key: "Enter" });
+    expect(pinnedEdge.getAttribute("aria-pressed")).toBe("true");
+    expect(pinnedPair.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.focus(otherEdge);
+    expect(pinnedEdge.getAttribute("aria-pressed")).toBe("true");
+    expect(pinnedPair.getAttribute("aria-pressed")).toBe("true");
+    expect(otherEdge.getAttribute("aria-pressed")).toBe("false");
+    expect(otherPair.getAttribute("aria-pressed")).toBe("false");
+    expect(pinnedPair.getAttribute("data-active")).toBe("false");
+    expect(otherPair.getAttribute("data-active")).toBe("true");
+    expect(screen.getByTestId("octahedron-selection").textContent).toContain("010 ⊕ 100 = 110");
+    fireEvent.blur(otherEdge);
+    fireEvent.mouseEnter(otherPair);
+    expect(pinnedEdge.getAttribute("aria-pressed")).toBe("true");
+    expect(otherPair.getAttribute("aria-pressed")).toBe("false");
+    expect(container.querySelectorAll("[aria-pressed='true']")).toHaveLength(2);
+    fireEvent.mouseLeave(otherPair);
+    expect(pinnedPair.getAttribute("data-active")).toBe("true");
+  });
+
   it("toggles the same edge from either SVG or native pair controls", () => {
     const { container } = renderOctahedron();
     const choices = screen.getByRole("group", { name: "Select an octahedral edge" });
