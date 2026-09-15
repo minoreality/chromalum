@@ -414,9 +414,19 @@ test("links all six cube faces and vertex incidence without losing the selected 
           labels: [...root.querySelectorAll(".theory-cube-face text")].flatMap((el) => {
             if (compact) return getComputedStyle(el).display === "none" ? [] : [`${el.textContent} visible while compact`];
             const box = el.getBoundingClientRect();
-            const svg = el.closest("svg")!.getBoundingClientRect();
+            const owner = el.closest("svg")!;
+            const svg = owner.getBoundingClientRect();
+            // Size the labels by what the layout controls: device px per viewBox unit
+            // (Math.max mirrors preserveAspectRatio="slice") times the authored font-size.
+            // Box height is ascent + descent, which spans 1.00em to 1.38em across fallback
+            // faces, so a floor on it tracks whichever face the runner resolves rather than
+            // the rendering. Keep a proportion guard so a squashed label still shows up.
+            const viewBox = owner.viewBox.baseVal;
+            const unit = viewBox.width > 0 && viewBox.height > 0 ? Math.max(svg.width / viewBox.width, svg.height / viewBox.height) : 0;
+            const rendered = parseFloat(getComputedStyle(el).fontSize) * unit;
             const issues = [
-              box.height < 8 ? `height ${box.height.toFixed(2)}` : "",
+              rendered >= 7.5 ? "" : `rendered ${rendered.toFixed(2)}`,
+              box.height >= rendered * 0.6 ? "" : `squashed ${(box.height / rendered).toFixed(2)}em`,
               box.left < svg.left ? `left -${(svg.left - box.left).toFixed(2)}` : "",
               box.right > svg.right ? `right +${(box.right - svg.right).toFixed(2)}` : "",
             ].filter(Boolean);

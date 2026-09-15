@@ -2865,9 +2865,15 @@ button.theory-diagram-button {
   width: 100%;
   overflow: visible;
 }
+/* These captions are set in mono because they carry notation, but their width is
+   not knowable here: any glyph the resolved face lacks — U+2192 and the subscript
+   digits — is served by a proportional or full-width fallback, and on those stacks
+   the line runs wider than the 134px net column at 320px. Let it break rather than
+   overflow; the copy's own break opportunity after the leading label is taken first,
+   and `anywhere` is the backstop that makes overflow impossible by construction. */
 .theory-die-net-sequence,
 .theory-die-net-cut {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .theory-die-ranks {
   font-family: var(--font-mono);
