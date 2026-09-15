@@ -4,6 +4,9 @@ import { useTranslation } from "../../i18n";
 
 const POSITIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 const CHANNELS = ["G", "R", "B"] as const;
+// All three notes share one grid cell so the row keeps the tallest note's
+// height in every font, and selecting a point never shifts the explorer.
+const SYNDROME_NOTES = ["theory_fano_matrix_codeword", "theory_fano_matrix_single_error", "theory_fano_matrix_choose"] as const;
 
 interface Props {
   activePoints: readonly number[];
@@ -126,13 +129,20 @@ export const FanoHammingMatrix = React.memo(function FanoHammingMatrix({
             Hxᵀ = <strong>{hasSelection ? syndromeBits : "– – –"}</strong>
           </code>
           <span>
-            {t(
-              activePoints.length === 3
-                ? "theory_fano_matrix_codeword"
-                : hasSelection
-                  ? "theory_fano_matrix_single_error"
-                  : "theory_fano_matrix_choose",
-            )}
+            {SYNDROME_NOTES.map((key) => (
+              <span
+                key={key}
+                data-active={
+                  (key === "theory_fano_matrix_codeword"
+                    ? activePoints.length === 3
+                    : key === "theory_fano_matrix_single_error"
+                      ? hasSelection && activePoints.length !== 3
+                      : !hasSelection) || undefined
+                }
+              >
+                {t(key)}
+              </span>
+            ))}
           </span>
         </div>
       </div>
