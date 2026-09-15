@@ -98,6 +98,32 @@ async function expectNodeView(graph: Locator, level: number, initial = false) {
   expect(edges.find((edge) => edge.pair.includes(level) && edge.pair.includes(level ^ 5))?.color).toBe("#00ffff");
 }
 
+test("ignores vertex hover while the camera turns and previews again once settled", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("theory-dev.html");
+  const graph = page.locator("#theory-stella-view");
+  await graph.scrollIntoViewIfNeeded();
+  const hover = async (level: number) => {
+    const box = (await graph.locator(`[data-stella-vertex="${level}"] [data-stella-hit]`).boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  };
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await doublePress(page, graph, "mouse", 7);
+  await page.clock.runFor(240);
+  expect(Number(await graph.getAttribute("data-stella-turn"))).toBeGreaterThan(0);
+  expect(Number(await graph.getAttribute("data-stella-turn"))).toBeLessThan(1);
+
+  await hover(3);
+  expect(await graph.locator('[data-stella-hovered="true"], [data-k8-edge-preview="true"]').count()).toBe(0);
+  await page.mouse.move(0, 0);
+
+  await page.clock.runFor(700);
+  await expect(graph).toHaveAttribute("data-stella-turn", "1");
+  await hover(3);
+  await expect(graph.locator('[data-stella-vertex="3"]')).toHaveAttribute("data-stella-hovered", "true");
+});
+
 for (const input of ["mouse", "touch"] as const) {
   test.describe(input, () => {
     test.use({

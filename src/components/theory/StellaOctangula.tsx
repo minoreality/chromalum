@@ -27,6 +27,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
   const link = useK8Selection(onHover);
   const camera = useStellaView(link.selection, link.restoreSelection);
   const view = useMemo(() => stellaView(camera.orientation), [camera.orientation]);
+  const turning = camera.progress < 1;
   const { visibleDistances, selectDistances } = link;
   const distances = DISTANCES.filter((distance) => visibleDistances.has(distance));
   const nodesOnly = distances.length === 0;
@@ -98,7 +99,9 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             disabled
               ? undefined
               : (event) => {
-                  if (event.pointerType !== "touch") link.onPreview(vertexPreview(lv), "graph", "hover");
+                  // Vertices sweep under a resting pointer while the camera turns;
+                  // only a hover on the settled view is a preview.
+                  if (event.pointerType !== "touch" && !turning) link.onPreview(vertexPreview(lv), "graph", "hover");
                 }
           }
           onPointerLeave={(event) => {
