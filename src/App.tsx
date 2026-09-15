@@ -240,6 +240,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
 
   const { saveColor, saveColorWithLUT, saveGlaze, shareColor, shareGlaze } = useExport(canvasData, colorLUT, showToast, t);
 
+  const { lang, setLang } = useTranslation();
+  const toggleLanguage = useCallback(() => setLang(lang === "ja" ? "en" : "ja"), [lang, setLang]);
   useKeyboardShortcuts({
     setTool,
     setBrushLevel,
@@ -256,6 +258,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     t,
     setZoom: panZoom.setZoom,
     activeTabId,
+    setActiveTabId,
+    toggleLanguage,
   });
 
   const handleClear = useCallback(() => {
@@ -383,7 +387,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
       )}
 
       <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
-      <HelpModal showHelp={showHelp} setShowHelp={setShowHelp} helpRef={helpRef} />
+      <HelpModal showHelp={showHelp} activeTabId={activeTabId} setShowHelp={setShowHelp} helpRef={helpRef} />
 
       <div style={S_HEADER}>
         <h1 className="app-title" style={S_TITLE}>
@@ -581,7 +585,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
             style={{ width: "100%", display: activeTabId === "theory" ? undefined : "none" }}
           >
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
-              <TheoryPanel />
+              <TheoryPanel active={activeTabId === "theory"} />
             </Suspense>
           </div>
         )}

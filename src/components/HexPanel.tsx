@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useEffect, useState } from "react";
 import { S_BTN, S_CANVAS_STATUS_STABLE, S_PANEL_SUBTITLE } from "../styles/shared";
 import { LEVEL_CANDIDATES } from "../color-engine";
+import { controlOwnsKey } from "../shortcuts";
 import { LEVEL_MASK } from "../constants";
 import { rgbStr } from "../utils";
 import { C, SP, FS, R } from "../styles/tokens";
@@ -100,7 +101,7 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
   // Keyboard 2-5: cycle candidate color for that level
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || controlOwnsKey(e.target, e)) return;
       const k = e.key;
       if (k >= "2" && k <= "5") {
         candidateIndexDispatch({ type: "cycle_color", levelIndex: +k, direction: 1 });

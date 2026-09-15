@@ -3,14 +3,17 @@ import { S_BTN } from "../styles/shared";
 import { useTranslation } from "../i18n";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { C, Z, SP, FS, FW, R, FONT } from "../styles/tokens";
+import { shortcutsForTab } from "../shortcuts";
+import type { MainTabId } from "../tabs";
 
 interface HelpModalProps {
   showHelp: boolean;
+  activeTabId: MainTabId;
   setShowHelp: React.Dispatch<React.SetStateAction<boolean>>;
   helpRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, helpRef }: HelpModalProps) {
+export const HelpModal = React.memo(function HelpModal({ showHelp, activeTabId, setShowHelp, helpRef }: HelpModalProps) {
   const { t } = useTranslation();
 
   useFocusTrap(helpRef, showHelp);
@@ -19,6 +22,11 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
   const stopPropagation = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
 
   if (!showHelp) return null;
+
+  const rows = shortcutsForTab(activeTabId).map((entry) => ({
+    keys: "key" in entry ? entry.key : t(entry.keyCopy),
+    label: t(entry.label),
+  }));
 
   return (
     <div
@@ -66,38 +74,9 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
         >
           {t("help_title")}
         </h2>
-        {[
-          // Drawing tools
-          ["B", t("help_brush")],
-          ["E", t("help_eraser")],
-          ["F", t("help_fill")],
-          ["L", t("help_line")],
-          ["R", t("help_rect")],
-          ["O", t("help_ellipse")],
-          // Drawing parameters
-          ["0-7", t("help_level")],
-          ["[ / ]", t("help_brush_size")],
-          [t("help_eyedropper_key"), t("help_eyedropper")],
-          [t("help_dblclick_level_key"), t("help_dblclick_level")],
-          // Navigation
-          [t("help_pan_combined_key"), t("help_pan")],
-          [t("help_arrow_pan_key"), t("help_arrow_pan")],
-          [t("help_zoom_key"), t("help_zoom")],
-          [t("help_middle_reset_key"), t("help_middle_reset")],
-          [t("help_zoom_pixel_key"), t("help_zoom_pixel")],
-          // File operations
-          ["Ctrl+N", t("help_new_canvas")],
-          ["Ctrl+V", t("help_paste")],
-          [t("help_drop_image_key"), t("help_drop_image")],
-          // Edit
-          ["Ctrl+Z", t("help_undo")],
-          ["Ctrl+Y / \u2318\u21E7Z", t("help_redo")],
-          // UI
-          ["?/F1", t("help_this_help")],
-          ["Esc", t("help_close")],
-        ].map(([k, v]) => (
+        {rows.map(({ keys, label }, index) => (
           <div
-            key={k}
+            key={index}
             style={{
               display: "grid",
               gridTemplateColumns: "minmax(116px, 0.9fr) minmax(0, 1fr)",
@@ -107,8 +86,8 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, setShowHelp, 
               borderBottom: `1px solid ${C.border}`,
             }}
           >
-            <span style={{ color: C.accentBright, fontFamily: FONT.mono, fontWeight: FW.bold, whiteSpace: "nowrap" }}>{k}</span>
-            <span style={{ color: C.textSecondary, minWidth: 0, textAlign: "right" }}>{v}</span>
+            <span style={{ color: C.accentBright, fontFamily: FONT.mono, fontWeight: FW.bold, whiteSpace: "nowrap" }}>{keys}</span>
+            <span style={{ color: C.textSecondary, minWidth: 0, textAlign: "right" }}>{label}</span>
           </div>
         ))}
         <button onClick={handleClose} tabIndex={0} style={{ ...S_BTN, marginTop: SP["2xl"], width: "100%", textAlign: "center" }}>

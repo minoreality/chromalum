@@ -5,6 +5,7 @@ import { LEVEL_CANDIDATES } from "../color-engine";
 import { resolveMusicCandidateIndices } from "../music/music-candidate-pairs";
 import { liveHueAngleDeg, normalizeHueAngleDeg } from "../music/music-phase";
 import { MUSIC_ACTIVE_LEVELS } from "../music/types";
+import { controlOwnsKey } from "../shortcuts";
 import type { MusicEngineReturn } from "./useMusicEngine";
 import type { useMusicBurstHighlightState, useMusicPaletteState, useMusicTransportState } from "./useMusicPanelState";
 
@@ -12,30 +13,6 @@ type MusicPaletteState = ReturnType<typeof useMusicPaletteState>;
 type MusicTransportState = ReturnType<typeof useMusicTransportState>;
 type MusicBurstHighlightState = ReturnType<typeof useMusicBurstHighlightState>;
 type MusicSonificationLevel = { levelIndex: number; hueAngleDeg: number };
-
-const MUSIC_SHORTCUT_CONTROL_SELECTOR = [
-  "input",
-  "select",
-  "textarea",
-  "button",
-  "a[href]",
-  "summary",
-  '[role="button"]',
-  '[role="checkbox"]',
-  '[role="combobox"]',
-  '[role="radio"]',
-  '[role="slider"]',
-  '[role="spinbutton"]',
-  '[role="switch"]',
-  '[role="textbox"]',
-].join(",");
-
-function isMusicShortcutControl(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  if (target.closest(MUSIC_SHORTCUT_CONTROL_SELECTOR)) return true;
-  const editable = target.closest("[contenteditable]");
-  return editable !== null && editable.getAttribute("contenteditable")?.toLowerCase() !== "false";
-}
 
 function useMusicKeyboardShortcuts(
   sonificationLevels: MusicSonificationLevel[],
@@ -48,7 +25,7 @@ function useMusicKeyboardShortcuts(
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || isMusicShortcutControl(e.target)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || controlOwnsKey(e.target, e)) return;
       const k = e.key;
       if (k >= "1" && k <= "6") {
         const levelIndex = +k;
@@ -59,6 +36,22 @@ function useMusicKeyboardShortcuts(
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onLevelTrigger]);
+}
+
+/** Esc stops every sequence and M toggles mute while the Music tab is mounted. */
+export function useMusicTransportShortcuts(onStopAll: () => void, onMuteToggle: () => void): void {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || controlOwnsKey(e.target, e)) return;
+      if (e.key === "Escape") {
+        // An open modal owns Escape.
+        if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return;
+        onStopAll();
+      } else if (e.key === "m") onMuteToggle();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onStopAll, onMuteToggle]);
 }
 
 interface UseMusicHuePaletteHandlersOptions {

@@ -180,7 +180,7 @@ describe("MusicPanel controller integration", () => {
     expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledWith(3, expect.any(Number));
   });
 
-  it("does not trigger music shortcuts while typing in interactive controls", () => {
+  it("does not trigger music shortcuts while typing in text controls", () => {
     renderWithLanguage(<MusicPanel />);
     musicEngineMock.engine.initAudio.mockClear();
     musicEngineMock.engine.triggerToneBurst.mockClear();
@@ -190,13 +190,7 @@ describe("MusicPanel controller integration", () => {
     editable.setAttribute("contenteditable", "true");
     document.body.append(textarea, editable);
 
-    for (const target of [
-      screen.getByLabelText("Volume"),
-      screen.getByRole("combobox", { name: "Fano point" }),
-      screen.getByRole("button", { name: "Reset" }),
-      textarea,
-      editable,
-    ]) {
+    for (const target of [screen.getByRole("combobox", { name: "Fano point" }), textarea, editable]) {
       fireEvent.keyDown(target, { key: "3" });
     }
 
@@ -204,6 +198,36 @@ describe("MusicPanel controller integration", () => {
     expect(musicEngineMock.engine.triggerToneBurst).not.toHaveBeenCalled();
     textarea.remove();
     editable.remove();
+  });
+
+  it("keeps music shortcuts while a button or slider has focus", () => {
+    renderWithLanguage(<MusicPanel />);
+    musicEngineMock.engine.triggerToneBurst.mockClear();
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Reset" }), { key: "3" });
+    fireEvent.keyDown(screen.getByLabelText("Volume"), { key: "4" });
+    fireEvent.keyDown(screen.getByLabelText("Volume"), { key: "ArrowUp" });
+
+    expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledTimes(2);
+    expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledWith(3, expect.any(Number));
+    expect(musicEngineMock.engine.triggerToneBurst).toHaveBeenCalledWith(4, expect.any(Number));
+  });
+
+  it("stops every sequence from Escape and toggles mute from M outside controls", () => {
+    renderWithLanguage(<MusicPanel />);
+    musicEngineMock.engine.stopFanoRhythm.mockClear();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(musicEngineMock.engine.stopFanoRhythm).toHaveBeenCalled();
+
+    const mute = screen.getByRole("button", { name: "Mute" });
+    expect(mute.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.keyDown(document, { key: "m" });
+    expect(mute.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Fano point" }), { key: "m" });
+    expect(mute.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(document, { key: "m" });
+    expect(mute.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("routes linked visualization origin and phase controls through the controller", () => {

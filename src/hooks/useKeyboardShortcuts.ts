@@ -4,7 +4,8 @@ import type { ToolId } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
 import type { CanvasAction } from "../types";
 import type { TranslationFn } from "../i18n";
-import type { MainTabId } from "../tabs";
+import { tabIdFromIndex, type MainTabId } from "../tabs";
+import { controlOwnsKey, hasDrawingShortcuts } from "../shortcuts";
 
 export interface KeyboardShortcutDeps {
   setTool: React.Dispatch<React.SetStateAction<ToolId>>;
@@ -22,6 +23,8 @@ export interface KeyboardShortcutDeps {
   t: TranslationFn;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   activeTabId: MainTabId;
+  setActiveTabId: (id: MainTabId) => void;
+  toggleLanguage: () => void;
 }
 
 interface KeyCommand {
@@ -29,13 +32,6 @@ interface KeyCommand {
   ctrl?: boolean;
   shift?: boolean;
   action: () => void;
-}
-
-function isInteractiveTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof Element &&
-    target.closest('button, a[href], input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="button"]') !== null
-  );
 }
 
 export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
@@ -55,6 +51,8 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     t,
     setZoom,
     activeTabId,
+    setActiveTabId,
+    toggleLanguage,
   } = deps;
 
   useEffect(() => {
@@ -151,24 +149,53 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
           announce(t("announce_ellipse"));
         },
       },
-      {
-        key: "?",
-        action: () => {
-          setShowHelp((v) => !v);
-        },
-      },
-      {
-        key: "Escape",
-        action: () => {
-          setShowHelp(false);
-        },
-      },
     ];
 
     const down = (e: KeyboardEvent) => {
-      // Native/custom controls own their keystrokes. In particular, Space must
-      // remain available to activate focused buttons instead of arming canvas pan.
-      if (isInteractiveTarget(e.target)) return;
+      // Global chords work from any focus: Alt+1..8 switch tabs in tab-bar
+      // order and Alt+L switches the language. Matched on e.code because
+      // Option+digit types a symbol on macOS.
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        const digit = /^Digit([1-8])$/.exec(e.code);
+        if (digit) {
+          const tab = tabIdFromIndex(Number(digit[1]) - 1);
+          if (tab === null) return;
+          e.preventDefault();
+          setActiveTabId(tab);
+          return;
+        }
+        if (e.code === "KeyL") {
+          e.preventDefault();
+          toggleLanguage();
+          return;
+        }
+        // Other Alt chords belong to the browser or the OS, not to the canvas.
+        return;
+      }
+
+      // A focused control keeps only the keys it uses itself (see controlOwnsKey):
+      // Space still activates a focused button instead of arming canvas pan, but
+      // a tool button that kept focus after a click does not silence the keys.
+      if (controlOwnsKey(e.target, e)) return;
+
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+      // Help is reachable from every tab. "?" always arrives with Shift held.
+      if (e.key === "F1" || (key === "?" && !isCtrl)) {
+        e.preventDefault();
+        setShowHelp((v) => !v);
+        return;
+      }
+      if (key === "Escape" && !isCtrl) {
+        setShowHelp(false);
+        return;
+      }
+
+      // Only the drawing tabs own the canvas shortcuts. Elsewhere Space scrolls,
+      // digits stay with Hex and Music, and history cannot change a hidden canvas.
+      if (!hasDrawingShortcuts(activeTabId)) return;
 
       // Space key for pan (stateful, handle separately)
       if (e.code === "Space" && !e.repeat) {
@@ -177,15 +204,6 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
         e.preventDefault();
         return;
       }
-      if (e.key === "F1") {
-        e.preventDefault();
-        setShowHelp((v) => !v);
-        return;
-      }
-
-      const isCtrl = e.ctrlKey || e.metaKey;
-      const isShift = e.shiftKey;
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
 
       // Try command registry
       for (const cmd of commands) {
@@ -196,10 +214,8 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
         }
       }
 
-      // Level keys 0-7 (no ctrl) — skip on Music tab (1-6) and Hex tab (2-5)
+      // Level keys 0-7 (no ctrl)
       if (!isCtrl && key >= "0" && key <= "7") {
-        if (activeTabId === "music" && key >= "1" && key <= "6") return;
-        if (activeTabId === "hex" && key >= "2" && key <= "5") return;
         setBrushLevel(+key);
         announce(t("announce_level", key, LEVEL_INFO[+key].name));
         return;
@@ -254,5 +270,7 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     t,
     setZoom,
     activeTabId,
+    setActiveTabId,
+    toggleLanguage,
   ]);
 }

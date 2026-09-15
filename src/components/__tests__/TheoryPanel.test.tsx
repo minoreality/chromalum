@@ -278,6 +278,23 @@ describe("TheoryPanel", () => {
     await waitFor(() => expect(venn.getAttribute("data-highlighted-level")).toBeNull());
   });
 
+  it("clears pinned highlights from Escape regardless of focus", async () => {
+    renderWithLanguage();
+
+    const venn = screen.getByRole("img", { name: "Venn Diagram" });
+    await act(async () => {
+      fireEvent.click(venn);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(venn.getAttribute("data-highlighted-level")).toBe("0"));
+
+    await act(async () => {
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(venn.getAttribute("data-highlighted-level")).toBeNull());
+  });
+
   it("keeps the K8 distance partition explorable through the retained stella", () => {
     renderWithLanguage();
 

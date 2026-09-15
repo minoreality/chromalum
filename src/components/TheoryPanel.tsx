@@ -1,7 +1,7 @@
 // Theory tab: dual-licensed. Implementation MIT; authored prose/labels and
 // rendered diagrams (when reused as content) CC BY 4.0 (Doctor Chromaticus).
 // See docs/LICENSE.md.
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { C, SP, FW, FONT } from "../styles/tokens";
 import { S_PANEL_SUBTITLE } from "../styles/shared";
 import { useTranslation } from "../i18n";
@@ -100,7 +100,7 @@ function Figure({ title, children }: { title: string; children: React.ReactNode 
   );
 }
 
-export const TheoryPanel = React.memo(function TheoryPanel() {
+export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { active?: boolean }) {
   const { t } = useTranslation();
   const [hlLevel, setHlLevel] = useState<number | null>(null);
   const onHover = useCallback((level: number | null) => setHlLevel(level), []);
@@ -111,6 +111,21 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
     setHlLevel(null);
     setPinReset((count) => count + 1);
   }, []);
+
+  // Esc clears every figure's pinned selection from any focus, the same
+  // path as a background click. The panel stays mounted while hidden, so
+  // listen only while its tab is active.
+  useEffect(() => {
+    if (!active) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target instanceof Element && event.target.closest('[role="dialog"]')) return;
+      setHlLevel(null);
+      setPinReset((count) => count + 1);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [active]);
 
   return (
     <PinResetContext.Provider value={pinReset}>
