@@ -1596,7 +1596,11 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
     await expect(octahedron.locator('[data-edge-result="complement"]')).toContainText("¬(010 ⊕ 100) = 001");
     const fanoNote = section.locator("p#theory-octa-face-algebra");
     await expect(fanoNote).toContainText("Fano");
+    // The surrounding prose is blank space: a click there releases the pinned edge.
     await fanoNote.click();
+    await expectGeneralOctahedron(octahedron);
+    await octahedron.locator('[data-octa-edge-control="2-4"]').focus();
+    await page.keyboard.press("Enter");
     await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("010 ⊕ 100 = 110");
     await expect(fanoNote).toContainText("000");
     await expect(fanoNote).toContainText("111");
@@ -1734,7 +1738,7 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
       await choices.nth(5).hover();
       expect(await frame()).toEqual(initial);
       await fanoNote.click();
-      await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 010 = 011");
+      await expectGeneralOctahedron(octahedron);
       expect(await frame()).toEqual(initial);
     }
   }
