@@ -126,5 +126,39 @@ describe("colorReducer", () => {
       const next = colorReducer(state, { type: "randomize" });
       expect(next.length).toBe(8);
     });
+
+    it("never lands on the combination already showing", () => {
+      const state = [...DEFAULT_CANDIDATE_INDEX_BY_LEVEL];
+      for (let i = 0; i < 300; i++) {
+        const next = colorReducer(state, { type: "randomize" });
+        expect(next).not.toEqual(state);
+      }
+    });
+
+    it("draws from every other combination when one level is left to roll", () => {
+      // Only L2 is on the canvas, so the roll has three combinations and must
+      // hand back one of the two that is not showing.
+      const histogram = [0, 0, 1, 0, 0, 0, 0, 0];
+      const state = [...DEFAULT_CANDIDATE_INDEX_BY_LEVEL];
+      state[2] = 1;
+      const seen = new Set<number>();
+      for (let i = 0; i < 200; i++) {
+        const next = colorReducer(state, { type: "randomize", levelHistogram: histogram });
+        expect(next[2]).not.toBe(1);
+        seen.add(next[2]);
+        // The levels that are not on the canvas keep whatever they were showing.
+        expect(next[3]).toBe(state[3]);
+        expect(next[5]).toBe(state[5]);
+      }
+      expect([...seen].sort()).toEqual([0, 2]);
+    });
+
+    it("hands the state straight back when no level is left to roll", () => {
+      const state = [...DEFAULT_CANDIDATE_INDEX_BY_LEVEL];
+      // Every multi-candidate level is either off the canvas or locked, so there is
+      // no second combination to move to.
+      expect(colorReducer(state, { type: "randomize", levelHistogram: [1, 1, 0, 0, 0, 0, 1, 1] })).toBe(state);
+      expect(colorReducer(state, { type: "randomize", lockedLevels: [false, false, true, true, true, true, false, false] })).toBe(state);
+    });
   });
 });
