@@ -2,6 +2,7 @@ import React from "react";
 import { THEORY_LEVELS, GRAY_PATH, GRAY_TOGGLES, GRAY_POINTS } from "../../data/theory-data";
 import { C } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
+import { levelLabelColor } from "../../color-engine";
 
 const W = 300,
   H = 300;
@@ -203,7 +204,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
                   fontSize={15}
                   fontWeight={900}
                   fontFamily="var(--font-mono)"
-                  fill={lv >= 4 ? "#000" : "#fff"}
+                  fill={levelLabelColor(lv)}
                 >
                   {info.bits.join("")}
                 </text>

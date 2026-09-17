@@ -1,5 +1,6 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
+import { levelLabelColor } from "../../color-engine";
 
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const W = 180,
@@ -121,7 +122,7 @@ export const DistributiveFlow = React.memo(function DistributiveFlow({ a, b, c, 
                 fontSize={FS.xxs}
                 fontWeight={FW.bold}
                 fontFamily="var(--font-mono)"
-                fill={n.lv >= 4 ? "#000" : "#fff"}
+                fill={levelLabelColor(n.lv)}
                 opacity={active ? 1 : 0.6}
               >
                 {n.lv}
@@ -149,7 +150,7 @@ export const DistributiveFlow = React.memo(function DistributiveFlow({ a, b, c, 
             fontSize={FS.xs}
             fontWeight={FW.bold}
             fontFamily="var(--font-mono)"
-            fill={left >= 4 ? "#000" : "#fff"}
+            fill={levelLabelColor(left)}
             opacity={phase === "equal" ? 1 : 0.4}
           >
             {left}

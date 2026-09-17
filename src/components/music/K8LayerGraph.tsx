@@ -2,6 +2,7 @@ import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { COMPLEMENT_EDGES, CUBE_EDGES, K8_EXPLORER_POINTS, STELLA_EDGES, TETRA_T0_EDGES } from "../../data/theory-data";
+import { levelLabelColor } from "../../color-engine";
 
 const COLOR_T0 = "#ffd36e";
 const COLOR_T1 = "#90c8ff";
@@ -20,9 +21,7 @@ function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonl
   return LV_COLORS[lv] ?? "#888";
 }
 
-function textColor(lv: number): string {
-  return lv >= 4 ? "#000" : "#fff";
-}
+const textColor = levelLabelColor;
 
 interface Props {
   /** `null` = no layer playing → render nodes only, no edges. */

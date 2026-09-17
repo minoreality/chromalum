@@ -12,6 +12,7 @@ import {
   chromalumGrbToRgb8,
   DEFAULT_CANDIDATE_INDEX_BY_LEVEL,
   findClosestCandidate,
+  levelLabelColor,
 } from "../color-engine";
 import { srgbCodeGrbScore8 } from "../srgb-level-estimator";
 
@@ -70,6 +71,22 @@ describe("LEVEL_INFO", () => {
 
   it("uses derived 8-bit GRB tone values", () => {
     expect(LEVEL_INFO.map(({ gray8 }) => gray8)).toEqual([0, 36, 73, 109, 146, 182, 219, 255]);
+  });
+});
+
+describe("levelLabelColor", () => {
+  it("gives the four levels without the green bit a white label", () => {
+    expect([0, 1, 2, 3].map(levelLabelColor)).toEqual(["#fff", "#fff", "#fff", "#fff"]);
+  });
+
+  it("gives the four levels with the green bit a black label", () => {
+    expect([4, 5, 6, 7].map(levelLabelColor)).toEqual(["#000", "#000", "#000", "#000"]);
+  });
+
+  it("switches exactly once, at the green bit", () => {
+    const colors = [0, 1, 2, 3, 4, 5, 6, 7].map(levelLabelColor);
+    const switches = colors.filter((color, index) => index > 0 && color !== colors[index - 1]);
+    expect(switches).toEqual(["#000"]);
   });
 });
 

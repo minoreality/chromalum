@@ -14,6 +14,7 @@ import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 import { usePinReset } from "./pin-reset";
 import { CubeFaceGrid } from "./CubeFaceGrid";
+import { levelLabelColor } from "../../color-engine";
 
 const DOT_R = 9;
 const HIT_R = 17;
@@ -474,7 +475,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                     fontSize={8}
                     fontWeight={900}
                     fontFamily="var(--font-mono)"
-                    fill={lv >= 4 ? "#000" : "#fff"}
+                    fill={levelLabelColor(lv)}
                     opacity={labelOpacity}
                   >
                     {info.bits.join("")}

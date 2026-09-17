@@ -2,6 +2,7 @@ import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { OCTA_EDGES } from "../../data/theory-data";
+import { levelLabelColor } from "../../color-engine";
 
 /* Regular hexagon: width 92, height ≈ 92·2/√3 ≈ 106, centered at (90, 79) */
 const PTS: Record<number, [number, number]> = {
@@ -36,9 +37,7 @@ function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonl
   return LV_COLORS[lv] ?? "#888";
 }
 
-function textColor(lv: number): string {
-  return lv >= 4 ? "#000" : "#fff";
-}
+const textColor = levelLabelColor;
 
 interface Props {
   lvA: number | null;

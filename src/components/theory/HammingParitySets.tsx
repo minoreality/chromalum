@@ -3,6 +3,7 @@ import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
 import type { Bit, HammingWord } from "./HammingDiagram";
+import { levelLabelColor } from "../../color-engine";
 
 const CIRCLES = [
   { parity: 2, cx: 170, cy: 94, labelX: 170, labelY: -4 },
@@ -235,7 +236,7 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                     y={y}
                     dominantBaseline="central"
                     textAnchor="middle"
-                    fill={position >= 4 ? "#000" : "#fff"}
+                    fill={levelLabelColor(position)}
                     className="theory-hamming-received-bit"
                     aria-hidden="true"
                   >

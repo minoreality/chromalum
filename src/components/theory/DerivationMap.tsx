@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { SubsetSumDerivation } from "./SubsetSumDerivation";
+import { levelLabelColor } from "../../color-engine";
 
 export const DerivationMap = React.memo(function DerivationMap() {
   const { t } = useTranslation();
@@ -61,7 +62,7 @@ const EmpiricalResonance = React.memo(function EmpiricalResonance() {
         <ol className="theory-derivation-order-colors" aria-label="K<B<R<M<G<C<Y<W">
           {THEORY_LEVELS.map((info, level) => (
             <li key={level}>
-              <span style={{ background: level === 0 ? C.bgRoot : info.color, color: level <= 1 ? "#fff" : "#000" }}>{info.short}</span>
+              <span style={{ background: level === 0 ? C.bgRoot : info.color, color: levelLabelColor(level) }}>{info.short}</span>
               <span>{level}</span>
             </li>
           ))}

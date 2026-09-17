@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, memo } from "react";
 import randomDiceUrl from "../assets/random-dice.png";
-import { LEVEL_CANDIDATES } from "../color-engine";
+import { LEVEL_CANDIDATES, levelLabelColor } from "../color-engine";
 import { NUM_VERTICES } from "../constants";
 import {
   HEX_VERTICES,
@@ -298,7 +298,7 @@ export const HexDiagram = memo(
                         fontSize={Math.max(FS.sm, r * 0.7)}
                         fontWeight={900}
                         fontFamily="var(--font-mono)"
-                        fill={act ? (lv >= 4 ? "#000" : C.textWhite) : color}
+                        fill={act ? levelLabelColor(lv) : color}
                       >
                         {lv}
                       </text>
@@ -402,7 +402,7 @@ export const HexDiagram = memo(
                       fontSize={Math.max(FS.xxs, r * 0.9)}
                       fontWeight={FW.bold}
                       fontFamily="var(--font-mono)"
-                      fill={act ? (lv >= 4 ? "#000" : C.textWhite) : color}
+                      fill={act ? levelLabelColor(lv) : color}
                     >
                       {lv}
                     </text>
