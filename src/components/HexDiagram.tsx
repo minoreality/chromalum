@@ -117,7 +117,12 @@ export const HexDiagram = memo(
       return DOT_MIN_ACTIVE + (DOT_MAX - DOT_MIN_ACTIVE) * Math.sqrt(share);
     };
     const { cp } = useMemo(() => {
-      const points = HEX_DOTS.filter((d) => isA(d.level, d.candidateIndex))
+      // Only levels the canvas actually uses close the ring. An unused level is
+      // already a factor of 1 in the pattern count, skipped by randomize and hollow
+      // in the swatch row; letting it pull a corner of the outline would overstate
+      // the palette that is on the canvas. Below three the ring has no shape to
+      // draw, so none is drawn.
+      const points = HEX_DOTS.filter((d) => isA(d.level, d.candidateIndex) && levelHistogram[d.level] > 0)
         .map((d) => {
           let pos: { x: number; y: number };
           if (d.vertexIndex >= 0) pos = vp[d.vertexIndex];
@@ -135,9 +140,9 @@ export const HexDiagram = memo(
         .filter((p): p is NonNullable<typeof p> => p !== null)
         .sort((a, b) => a.ang - b.ang);
       const path =
-        points.length > 1 ? points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ") + "Z" : "";
+        points.length > 2 ? points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ") + "Z" : "";
       return { actP: points, cp: path };
-    }, [candidateIndexByLevel, vp, isA]); // eslint-disable-line react-hooks/exhaustive-deps -- isA depends on candidateIndexByLevel
+    }, [candidateIndexByLevel, levelHistogram, vp, isA]); // eslint-disable-line react-hooks/exhaustive-deps -- isA depends on candidateIndexByLevel
 
     return (
       <div className="hex-diag-wrap" style={{ display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
