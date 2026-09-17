@@ -1,5 +1,5 @@
 import { LEVEL_MASK } from "../constants";
-import { findClosestCandidate } from "../color-engine";
+import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import { forEachBrushPixel } from "./brush-mask";
 import type { BrushMask } from "./brush-mask";
 
@@ -9,10 +9,21 @@ import type { BrushMask } from "./brush-mask";
    Geometry matches paint.ts but writes per-pixel variant.
    ═══════════════════════════════════════════ */
 
+/**
+ * The 1-indexed candidate a level takes at this hue, or 0 for a level whose
+ * fiber holds a single candidate. There is nothing to choose on K, B, Y and W,
+ * which is already what GlazeCandidateGrid shows the reader and what the hue
+ * ticks in GlazePanel skip; 0 is the same "leave this level alone" the direct
+ * LUT below uses, so a stroke across them records no override to display.
+ */
+export function glazeOverrideValue(level: number, hueAngleDeg: number): number {
+  return LEVEL_CANDIDATES[level].length > 1 ? findClosestCandidate(level, hueAngleDeg) + 1 : 0;
+}
+
 /** Pre-compute level→override value lookup for a given hue. Call once per stroke. */
 export function buildGlazeLUT(hueAngleDeg: number): Uint8Array {
   const lut = new Uint8Array(8);
-  for (let lv = 0; lv < 8; lv++) lut[lv] = findClosestCandidate(lv, hueAngleDeg) + 1;
+  for (let lv = 0; lv < 8; lv++) lut[lv] = glazeOverrideValue(lv, hueAngleDeg);
   return lut;
 }
 

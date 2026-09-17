@@ -288,9 +288,12 @@ export const CompositionDonut = React.memo(function CompositionDonut({
       }}
     >
       <div style={{ maxWidth: "min(260px, 90vw)", width: "100%" }}>
+        {/* No height attribute: auto is a CSS value, not an svg <length>, so
+            Chrome rejected it and logged on every render. width and a square
+            viewBox already give the box the intrinsic ratio it sizes from, and
+            the rendered 260x260 is the same with the attribute gone. */}
         <svg
           width="100%"
-          height="auto"
           viewBox={`0 0 ${size} ${size}`}
           role="img"
           aria-label={t("map_composition")}

@@ -274,11 +274,11 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     toggleLanguage,
   });
 
-  const handleClear = useCallback(() => {
-    if (levelHistogram[0] !== canvasData.width * canvasData.height) {
-      dispatch({ type: "clear" });
-    }
-  }, [levelHistogram, canvasData.width, canvasData.height, dispatch]);
+  // buildMergedClearDiff is the whole no-op test and the reducer returns the
+  // same state when it comes back empty, so nothing is gained by asking again
+  // here. The copy that used to stand in this spot read levelHistogram alone and
+  // so refused to clear glaze overrides sitting on an otherwise blank canvas.
+  const handleClear = useCallback(() => dispatch({ type: "clear" }), [dispatch]);
 
   const canvasTransform = useMemo(
     () => ({

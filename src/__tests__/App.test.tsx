@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { LanguageProvider } from "../i18n";
+import { loadStateWithStatus } from "../utils/idb-persistence";
 
 vi.mock("../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
@@ -107,6 +108,36 @@ describe("App", () => {
     expect(save.defaultPrevented).toBe(false);
     expect(screen.queryByText("Save color image?")).toBeNull();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  }, 15000);
+
+  it("clears a restored canvas whose only content is glaze overrides", async () => {
+    // What a canvas saved before glaze stopped marking K, B, Y and W looks like:
+    // every level zero, overrides on top of them. The reducer treats either map
+    // being non-blank as something to clear, and App must not decide otherwise.
+    const pixelCandidateOverrideMap = new Uint8Array(320 * 320);
+    pixelCandidateOverrideMap.fill(1, 0, 2154);
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({
+      status: "loaded",
+      state: {
+        width: 320,
+        height: 320,
+        levelData: new Uint8Array(320 * 320),
+        pixelCandidateOverrideMap,
+        candidateIndexByLevel: [0, 0, 0, 0, 0, 0, 0, 0],
+        version: 1,
+        revision: 1,
+      },
+    });
+
+    renderApp();
+    fireEvent.click(await screen.findByRole("tab", { name: "Source" }));
+    const undo = await screen.findByRole("button", { name: "↩Undo" });
+    await screen.findByTitle("Clear canvas");
+    expect(undo.hasAttribute("disabled")).toBe(true);
+
+    fireEvent.click(screen.getByTitle("Clear canvas"));
+
+    expect(screen.getByRole("button", { name: "↩Undo" }).hasAttribute("disabled")).toBe(false);
   }, 15000);
 
   it("does not interrupt the app with legacy service worker update notifications", async () => {
