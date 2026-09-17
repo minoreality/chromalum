@@ -39,6 +39,29 @@ and `analyze (javascript-typescript)` checks — but `enforce_admins` is off, so
 succeeds with a bypass notice. That notice is not a failure; it means the protection was
 skipped.
 
+## Rejected tooling changes
+
+Each of these is ordinary advice elsewhere, was proposed against this repo, measured, and
+dropped. Re-propose one only with a number that contradicts the one recorded here.
+
+- **Turn off `required_status_checks.strict`.** Of the 15 pull requests authored by hand,
+  none has ever overlapped another, and the median one stayed open 7 minutes, so `main`
+  does not move between a green check and the merge. The one session that did pay for
+  `strict` had twelve branches in flight at once; collect those onto a single branch and
+  merge that instead.
+- **Point `test:e2e` at a production build.** 36 of the suite's 49 `page.goto` targets are
+  `theory-dev.html`, which `vite build` does not emit. Adding it to the build inputs would
+  publish a development harness to Pages, which Prototypes forbids for the same reason.
+- **Cache the Playwright browser between runs.** The install step costs 37 seconds, most of
+  it the `apt-get` work behind `--with-deps` that a cache hit still has to repeat.
+- **Filter `ci.yml` by path so a docs-only change skips the suite.** `validate` is a
+  required check: a skipped job never reports, and the pull request can then never merge.
+- **`trace: "retain-on-failure"`.** `on-first-retry` is not stale config but the counterpart
+  of `retries`, which is unset on purpose: setting `retries` brings the trace with it at no
+  cost, while `retain-on-failure` instruments every test on every run. Whether to set
+  `retries` is held open until a86016b has had time to show whether it moved a flake rate
+  measured at one run in 46 days.
+
 ## Fonts, and why layout tests fail only on CI
 
 No webfonts are bundled — `--font-mono` and `--font-sans` are system stacks. Ubuntu CI
