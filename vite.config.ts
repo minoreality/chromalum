@@ -7,6 +7,10 @@ import react from "@vitejs/plugin-react";
 
 const reactVendorPackages = ["/node_modules/react/", "/node_modules/react-dom/"];
 const serviceWorkerFileName = "sw.js";
+// Files that ship in dist but the app itself never fetches, so precaching them
+// buys no offline behaviour. Social crawlers read og-image.png straight from
+// the absolute og:image URL and do not run a service worker.
+const networkOnlyFileNames: ReadonlySet<string> = new Set([serviceWorkerFileName, "og-image.png"]);
 
 function toPrecacheUrl(filePath: string): string {
   return `./${filePath.split(sep).join("/")}`;
@@ -18,7 +22,7 @@ async function collectDistFiles(dir: string, root = dir): Promise<string[]> {
     entries.map(async (entry) => {
       const absolutePath = join(dir, entry.name);
       if (entry.isDirectory()) return collectDistFiles(absolutePath, root);
-      if (entry.name === serviceWorkerFileName) return [];
+      if (networkOnlyFileNames.has(entry.name)) return [];
       return [relative(root, absolutePath)];
     }),
   );

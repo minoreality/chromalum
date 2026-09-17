@@ -98,6 +98,10 @@ test("pre-caches the production app shell and works offline", async ({ page, con
       "/chromalum/icon-maskable-512.png",
     ]),
   );
+  // The social card is fetched from its absolute og:image URL by crawlers that
+  // never run a service worker, so precaching it would cost every install and
+  // every update 171 KB for nothing the app can use.
+  expect(swInfo.cachedPaths.some((path) => path.endsWith("/og-image.png"))).toBe(false);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/MusicPanel-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/TheoryPanel-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/flood-fill\.worker-.+\.js$/.test(path))).toBe(true);
