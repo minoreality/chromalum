@@ -335,6 +335,47 @@ describe("useCanvasDrawing", () => {
     });
   });
 
+  it("keeps the brush ring through a stroke that leaves the workspace", () => {
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ brushLevel: 3, brushSize: 1 })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    const outside = () => pointerEvent({ clientX: 160, clientY: -160, target: canvas });
+
+    // With no stroke, leaving the workspace still hands the pointer back.
+    act(() => {
+      result.current.onMove(outside());
+    });
+    expect(cursorOverlayMocks.clearCursor).toHaveBeenCalled();
+
+    cursorOverlayMocks.trackCursor.mockClear();
+    cursorOverlayMocks.clearCursor.mockClear();
+
+    act(() => {
+      result.current.onDown(pointerEvent({ clientX: 160, clientY: 160, target: canvas }));
+    });
+    act(() => {
+      result.current.onMove(outside());
+    });
+
+    // The ring follows the pointer out — the overlay clips it — instead of
+    // blinking off and on each time the stroke crosses the border.
+    expect(cursorOverlayMocks.trackCursor).toHaveBeenCalled();
+    expect(cursorOverlayMocks.clearCursor).not.toHaveBeenCalled();
+
+    // And nobody else can clear it out from under the live stroke.
+    act(() => {
+      result.current.clearCursor();
+    });
+    expect(cursorOverlayMocks.clearCursor).not.toHaveBeenCalled();
+
+    // Releasing outside ends the stroke, and then the ring does go away.
+    act(() => {
+      result.current.onUp();
+      result.current.clearCursor();
+    });
+    expect(cursorOverlayMocks.clearCursor).toHaveBeenCalledTimes(1);
+  });
+
   it("uses the true outside endpoint for line strokes instead of clamping to the edge", () => {
     const { result } = renderHook(() => useCanvasDrawing(makeOpts({ tool: "line", brushLevel: 3, brushSize: 1 })));
     const canvas = result.current.cursorCanvasRef.current!;

@@ -1570,6 +1570,9 @@ for (const input of ["mouse", "touch"] as const) {
 }
 
 test("shows a symmetric six-pointed octahedron with red above cyan and accessible edge selection", async ({ page }) => {
+  // This scenario checks 2 languages across 24 viewport widths, each one a full
+  // layout sweep. Keep individual assertion deadlines while allowing the sequence.
+  test.setTimeout(60_000);
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");

@@ -212,11 +212,16 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       // digits stay with Hex and Music, and history cannot change a hidden canvas.
       if (!hasDrawingShortcuts(activeTabId)) return;
 
-      // Space key for pan (stateful, handle separately)
-      if (e.code === "Space" && !e.repeat) {
-        spaceRef.current = true;
-        setCursorMode("grab");
+      // Space key for pan (stateful, handle separately). The repeats a held key
+      // sends have to be prevented too: holding Space is the gesture, and letting
+      // one repeat through hands the key back to the browser, which scrolls the
+      // page out from under the drag. Only the first arms the pan.
+      if (e.code === "Space") {
         e.preventDefault();
+        if (!e.repeat) {
+          spaceRef.current = true;
+          setCursorMode("grab");
+        }
         return;
       }
 

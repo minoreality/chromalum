@@ -48,11 +48,20 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
     };
   }, [drawing.scheduleCursorRedrawRef, glazeDrawing.scheduleCursorRedrawRef, sharedScheduleCursorRedrawRef]);
 
-  // Cleanup RAF on unmount
+  // Cleanup RAF on unmount. The handle has to be cleared as well as the frame
+  // cancelled: scheduleCursorRedraw reads a non-null ref as "a redraw is already
+  // queued", so a cancelled frame that leaves its id behind makes every later
+  // schedule a no-op and freezes the cursor overlay for the life of the page.
   useEffect(
     () => () => {
-      if (drawing.cursorRafRef.current) cancelAnimationFrame(drawing.cursorRafRef.current);
-      if (glazeDrawing.cursorRafRef.current) cancelAnimationFrame(glazeDrawing.cursorRafRef.current);
+      if (drawing.cursorRafRef.current) {
+        cancelAnimationFrame(drawing.cursorRafRef.current);
+        drawing.cursorRafRef.current = null;
+      }
+      if (glazeDrawing.cursorRafRef.current) {
+        cancelAnimationFrame(glazeDrawing.cursorRafRef.current);
+        glazeDrawing.cursorRafRef.current = null;
+      }
     },
     [drawing.cursorRafRef, glazeDrawing.cursorRafRef],
   );

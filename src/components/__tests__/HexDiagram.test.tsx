@@ -51,6 +51,31 @@ describe("HexDiagram", () => {
     expect(withAriaPressed.length).toBe(buttons.length);
   });
 
+  /** The selected-palette outline: the only dashed 4,3 path in the diagram. */
+  function outlinePoints(container: HTMLElement): number {
+    const path = [...container.querySelectorAll("path")].find((p) => p.getAttribute("stroke-dasharray") === "4,3");
+    const d = path?.getAttribute("d");
+    return d ? (d.match(/[ML]/g) ?? []).length : 0;
+  }
+
+  it("closes the outline over the levels the canvas uses, not all six", () => {
+    // L1..L6 are the chromatic levels the outline can pass through; drop two.
+    const { container } = render(<HexDiagram {...makeProps({ levelHistogram: [100, 50, 30, 0, 10, 0, 3, 1], total: 194 })} />);
+    expect(outlinePoints(container)).toBe(4);
+
+    const all = render(<HexDiagram {...makeProps()} />);
+    expect(outlinePoints(all.container)).toBe(6);
+  });
+
+  it("draws no outline when fewer than three levels are left to close it", () => {
+    // Two points are a line drawn there and back, one is nothing to enclose.
+    const two = render(<HexDiagram {...makeProps({ levelHistogram: [100, 50, 30, 0, 0, 0, 0, 1], total: 181 })} />);
+    expect(outlinePoints(two.container)).toBe(0);
+
+    const none = render(<HexDiagram {...makeProps({ levelHistogram: [100, 0, 0, 0, 0, 0, 0, 1], total: 101 })} />);
+    expect(outlinePoints(none.container)).toBe(0);
+  });
+
   it("suppresses the mobile tap highlight on the dice button", () => {
     render(<HexDiagram {...makeProps()} />);
     const diceButton = screen.getByRole("button", { name: "btn_random_color()" });
