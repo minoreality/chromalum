@@ -2513,12 +2513,15 @@ button.theory-diagram-button {
 .theory-valuation code {
   font-family: var(--font-mono);
 }
+/* Centred to sit over its own figure: the complement formulas below the pair
+   grid are centred too, and a left caption read as belonging to whatever was
+   above it rather than to the pairs it names. */
 .theory-valuation figcaption {
   margin-bottom: 6px;
   color: #a0b4ff;
   font-size: 12px;
   font-weight: 700;
-  text-align: left;
+  text-align: center;
 }
 .theory-valuation-pairs {
   display: grid;
@@ -2533,6 +2536,10 @@ button.theory-diagram-button {
   gap: 6px;
 }
 .theory-valuation-pair {
+  /* Each pair is narrower than the equal-width track it sits in, so leaving it
+     flush left spent the slack on the right of every cell and pulled the whole
+     row off the figure's centre that the caption and formulas sit on. */
+  justify-content: center;
   padding: 2px 0;
   white-space: nowrap;
 }
