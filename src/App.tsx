@@ -87,7 +87,13 @@ const S_HEADER_ACTION: React.CSSProperties = {
 };
 const S_HEADER_SEPARATOR: React.CSSProperties = { color: C.textSubtle };
 const S_HEADER_LANGUAGE_SEPARATOR: React.CSSProperties = { color: C.textSubtle, marginLeft: 4, marginRight: 4 };
-const S_TAB_CENTER: React.CSSProperties = { display: "flex", justifyContent: "center", width: "100%" };
+// The footer sits in flow under this, and the tabs differ in height by an order
+// of magnitude — Theory settles at some 11,000px, the lazy fallback under it at
+// 240. Without a floor the footer rises into view while a tab is still loading
+// and drops back out when it lands, twice over on a tab switch. Holding the
+// panel to a viewport keeps the footer below the fold in every state, so it has
+// nowhere visible to move.
+const S_TAB_CENTER: React.CSSProperties = { display: "flex", justifyContent: "center", width: "100%", minHeight: "100dvh" };
 const S_FOOTER: React.CSSProperties = {
   marginTop: "auto",
   paddingTop: 40,
