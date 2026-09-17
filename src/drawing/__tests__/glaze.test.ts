@@ -3,7 +3,7 @@ import { findClosestCandidate, LEVEL_CANDIDATES } from "../../color-engine";
 import { computeGlazeDiff, applyDiffToPixelCandidateOverrideMap, buildDiffFromGlazeFill } from "../../state/undo-diff";
 import { glazeFloodFill } from "../flood-fill";
 import { getBrushMask } from "../brush-mask";
-import { buildGlazeLUT, paintGlazeBrush, paintGlazeCircle, eraseGlazeCircle } from "../glaze-paint";
+import { buildGlazeLUT, paintGlazeBrush } from "../glaze-paint";
 import { buildGlazeHighlightPixels, GLAZE_HIGHLIGHT_RGBA } from "../glaze-highlight";
 import { renderCanvasBuffers } from "../render-buf";
 
@@ -156,25 +156,6 @@ describe("buildGlazeLUT", () => {
     expect([...pixelCandidateOverrideMap.subarray(0, 2)]).toEqual([0, 0]);
     expect(pixelCandidateOverrideMap[2]).toBeGreaterThan(0);
     expect(pixelCandidateOverrideMap[3]).toBeGreaterThan(0);
-  });
-});
-
-describe("paintGlazeCircle / eraseGlazeCircle", () => {
-  it("paints glaze values based on pixel levels", () => {
-    const levelData = new Uint8Array([3, 3, 5, 5]);
-    const pixelCandidateOverrideMap = new Uint8Array(4);
-    const lut = buildGlazeLUT(120);
-    paintGlazeCircle(pixelCandidateOverrideMap, levelData, 0, 0, 0, 2, 2, lut);
-    // Should write a non-zero value at (0,0)
-    expect(pixelCandidateOverrideMap[0]).toBeGreaterThan(0);
-  });
-
-  it("eraseGlazeCircle resets to 0", () => {
-    const pixelCandidateOverrideMap = new Uint8Array([5, 5, 5, 5]);
-    eraseGlazeCircle(pixelCandidateOverrideMap, 0, 0, 0, 2, 2);
-    expect(pixelCandidateOverrideMap[0]).toBe(0);
-    // Others should remain
-    expect(pixelCandidateOverrideMap[1]).toBe(5);
   });
 });
 

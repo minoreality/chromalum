@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { canvasReducer, createInitialState } from "../canvas-reducer";
 import { computeDiff, computeGlazeDiff } from "../undo-diff";
-import { paintCircle, paintLine } from "../../drawing/paint";
+import { getBrushMask } from "../../drawing/brush-mask";
+import { paintBrush, paintBrushLine } from "../../drawing/paint";
 
 /**
  * Integration tests for the stroke → undo → redo lifecycle.
@@ -25,7 +26,7 @@ describe("stroke lifecycle integration", () => {
     expect(s0.canvasData.levelData[0]).toBe(0);
 
     const s1 = applyStroke(s0, (data) => {
-      paintCircle(data, 0, 0, 0, 3, 16, 16);
+      paintBrush(data, 0, 0, getBrushMask(1), 3, 16, 16);
     });
     expect(s1.canvasData.levelData[0]).toBe(3);
     expect(s1.undoStack.length).toBe(1);
@@ -35,7 +36,7 @@ describe("stroke lifecycle integration", () => {
   it("undo reverts brush stroke", () => {
     const s0 = mkCanvas(16, 16);
     const s1 = applyStroke(s0, (data) => {
-      paintLine(data, 0, 0, 15, 0, 0, 5, 16, 16);
+      paintBrushLine(data, 0, 0, 15, 0, getBrushMask(1), 5, 16, 16);
     });
     // All pixels on row 0 should be 5
     for (let x = 0; x <= 15; x++) expect(s1.canvasData.levelData[x]).toBe(5);
@@ -50,7 +51,7 @@ describe("stroke lifecycle integration", () => {
   it("redo restores undone stroke", () => {
     const s0 = mkCanvas(16, 16);
     const s1 = applyStroke(s0, (data) => {
-      paintCircle(data, 8, 8, 2, 7, 16, 16);
+      paintBrush(data, 8, 8, getBrushMask(5), 7, 16, 16);
     });
     const s2 = canvasReducer(s1, { type: "undo" });
     const s3 = canvasReducer(s2, { type: "redo" });
