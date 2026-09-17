@@ -130,6 +130,46 @@ describe("HexDiagram", () => {
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "set_color", levelIndex: 3 }));
   });
 
+  // Which focus deserves an outline is the browser's own heuristic, and jsdom
+  // does not model input modality, so :focus-visible is stubbed here: what is
+  // under test is that the ring follows that answer, not the answer itself.
+  // The heuristic proper is checked by hand in a real browser.
+  function renderDiceWithFocusVisible(focusVisible: boolean) {
+    render(<HexDiagram {...makeProps()} />);
+    const diceButton = screen.getByRole("button", { name: "btn_random_color()" });
+    vi.spyOn(diceButton, "matches").mockImplementation((selector: string) => selector === ":focus-visible" && focusVisible);
+    return { diceButton, ringsIn: () => diceButton.querySelectorAll('circle[stroke][fill="none"]').length };
+  }
+
+  it("rings the dice button for a focus the browser would outline", () => {
+    const { diceButton, ringsIn } = renderDiceWithFocusVisible(true);
+    expect(ringsIn()).toBe(0);
+
+    // fireEvent, not .focus(): a programmatic focus() on an svg <g> moves
+    // activeElement without dispatching focus events.
+    fireEvent.focus(diceButton);
+    expect(ringsIn()).toBe(1);
+
+    fireEvent.blur(diceButton);
+    expect(ringsIn()).toBe(0);
+  });
+
+  it("leaves the dice button unringed for a focus the browser would not outline", () => {
+    const { diceButton, ringsIn } = renderDiceWithFocusVisible(false);
+
+    fireEvent.focus(diceButton);
+    expect(ringsIn()).toBe(0);
+  });
+
+  it("leaves the dice button unfocusable, and unringed, with nothing to randomize", () => {
+    render(<HexDiagram {...makeProps({ canRandomize: false })} />);
+    const diceButton = screen.getByRole("button", { name: "btn_random_color()" });
+    expect(diceButton.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.focus(diceButton);
+    expect(diceButton.querySelectorAll('circle[stroke][fill="none"]').length).toBe(0);
+  });
+
   it("keyboard Enter triggers onClick (dispatch)", () => {
     const dispatch = vi.fn();
     render(<HexDiagram {...makeProps({ dispatch })} />);

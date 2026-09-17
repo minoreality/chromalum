@@ -48,6 +48,20 @@ const DOT_MIN_ACTIVE = DOT_MIN_VERTEX;
  * position another dot could occupy, and never past it.
  */
 const DOT_MAX = HEX_R / 4;
+/**
+ * Whether this focus is one the browser would have outlined itself. A mouse
+ * press focuses the die as well as activating it, and a ring left sitting
+ * there afterwards is exactly what :focus-visible exists to spare the reader;
+ * the ring is drawn by hand only because an svg outline is clipped by the
+ * viewBox. An engine without the selector shows the ring, the safer side.
+ */
+function wantsVisibleFocus(element: Element): boolean {
+  try {
+    return element.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
 
 const DICE_CX = HEX_CX;
 const DICE_CY = HEX_CY + 6;
@@ -70,6 +84,7 @@ export const HexDiagram = memo(
     const { t } = useTranslation();
     const [hl, setHl] = useState<number | null>(null);
     const [focusedLv, setFocusedLv] = useState<number | null>(null);
+    const [diceFocused, setDiceFocused] = useState(false);
     const [diceRolling, setDiceRolling] = useState(false);
     const diceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const handleRandomize = useCallback(() => {
@@ -458,6 +473,8 @@ export const HexDiagram = memo(
               aria-pressed={false}
               aria-disabled={!canRandomize}
               aria-label={t("btn_random_color")}
+              onFocus={canRandomize ? (event) => setDiceFocused(wantsVisibleFocus(event.currentTarget)) : undefined}
+              onBlur={() => setDiceFocused(false)}
               onKeyDown={
                 canRandomize
                   ? (ev) => {
@@ -469,6 +486,12 @@ export const HexDiagram = memo(
                   : undefined
               }
             >
+              {/* The outline every focusable g in the app loses to global.css is
+                  drawn back as geometry, the way the level dots above do it: an
+                  svg outline is clipped by the viewBox, a circle is not. */}
+              {diceFocused && (
+                <circle cx={DICE_CX} cy={DICE_CY + 2} r={DICE_HIT_RADIUS - 6} fill="none" stroke={C.accent} strokeWidth={2} />
+              )}
               <circle cx={DICE_CX} cy={DICE_CY + 2} r={DICE_HIT_RADIUS} fill="transparent" />
               <g
                 aria-hidden="true"
