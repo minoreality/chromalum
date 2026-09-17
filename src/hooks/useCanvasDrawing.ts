@@ -114,12 +114,19 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   } | null>(null);
   const floodFillWorker = useFloodFillWorker();
 
-  // A New/Open/Undo/Redo can replace the canvas while a Worker fill is in
-  // flight. Invalidate that request immediately so its result cannot be
-  // committed into a different canvas or keep drawing blocked.
+  // Undo, Redo and Clear can replace the canvas mid-stroke, and not only while
+  // a Worker fill is in flight: their buttons carry no isStrokeActive() guard,
+  // so a second pointer reaches them with the first still down. A brush stroke
+  // paints into buffers
+  // snapshotted from the canvas it started on, so a replacement leaves it
+  // measuring against an image that is gone: the release either stamps those
+  // stale pixels onto the new one or, once the reducer's compare-and-swap
+  // rejects them, dispatches nothing — and with no state change there is no
+  // second render, so the replacement useCanvasCoordination skipped while the
+  // stroke was live never gets drawn. Dropping the stroke here, before that
+  // redraw runs in the same commit, settles both.
   useLayoutEffect(() => {
     fillGenerationRef.current++;
-    if (!fillPendingRef.current) return;
     fillPendingRef.current = false;
     pendingUpRef.current = false;
     strokeRef.current = null;
