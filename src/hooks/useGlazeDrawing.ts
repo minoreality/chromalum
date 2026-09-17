@@ -435,7 +435,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function doMove(e: React.PointerEvent) {
-    if (isInWorkspaceBounds(e)) {
+    if (isInWorkspaceBounds(e) || drawingRef.current) {
       cursor.trackCursor(e);
     } else {
       cursor.clearCursor();
@@ -597,22 +597,31 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doWorkspaceMove reads from sync refs
   }, []);
 
+  /**
+   * A live stroke owns its ring — see the same wrapper in useCanvasDrawing. doMove
+   * keeps it tracking outside the workspace, clipped by the overlay, and this stops
+   * the leave handlers, the panel's onMouseLeave and the document-level pointermove
+   * from clearing it mid-stroke.
+   */
+  const clearCursor = useCallback(() => {
+    if (drawingRef.current) return;
+    cursor.clearCursor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- drawingRef is a stable ref read via .current
+  }, [cursor.clearCursor]);
+
   const onWorkspaceLeave = useCallback(
     (e: React.PointerEvent) => {
       if (pendingWorkspaceStartRef.current) {
         pendingWorkspaceStartRef.current = null;
-        cursor.clearCursor();
+        clearCursor();
         return;
       }
-      if (drawingRef.current && hasPointerCapture(e)) {
-        cursor.clearCursor();
-        return;
-      }
+      if (drawingRef.current && hasPointerCapture(e)) return;
       onUp();
-      cursor.clearCursor();
+      clearCursor();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hasPointerCapture reads event/current refs only
-    [onUp, cursor.clearCursor],
+    [onUp, clearCursor],
   );
 
   /** Eyedropper: pick hue from any pixel (glazed or default). */
@@ -663,6 +672,6 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     onWorkspaceLeave,
     pickHue,
     trackCursor: cursor.trackCursor,
-    clearCursor: cursor.clearCursor,
+    clearCursor,
   };
 }

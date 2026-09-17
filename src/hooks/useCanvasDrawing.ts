@@ -412,7 +412,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     statusMode: CanvasStatusMode,
   ) {
     const canvasEl = refEl ?? activeCanvasRef.current ?? cursor.cursorCanvasRef.current;
-    if (isInWorkspaceBounds(e, canvasEl)) {
+    if (isInWorkspaceBounds(e, canvasEl) || drawingRef.current) {
       cursorTrack(e);
     } else {
       clearCursor();
@@ -599,22 +599,39 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     [cursor.trackCursor, cursor.clearCursor],
   );
 
+  /**
+   * A live stroke owns its ring. doMove keeps the ring tracking once the pointer
+   * leaves the workspace, and the overlay clips it, so it thins out at the border
+   * instead of blinking off and on every time the pointer crosses. These wrappers
+   * are what everyone else holds — the leave handlers, the panels' onMouseLeave,
+   * the document-level pointermove — so none of them can clear it mid-stroke.
+   * finishStroke drops drawingRef before the clear that ends the stroke, so the
+   * ring still goes away when the pointer is released outside.
+   */
+  const clearCursor = useCallback(() => {
+    if (drawingRef.current) return;
+    cursor.clearCursor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- drawingRef is a stable ref read via .current
+  }, [cursor.clearCursor]);
+
+  const clearPreviewCursor = useCallback(() => {
+    if (drawingRef.current) return;
+    cursor.clearPreviewCursor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- drawingRef is a stable ref read via .current
+  }, [cursor.clearPreviewCursor]);
+
   const onWorkspaceLeave = useCallback(
     (e: React.PointerEvent) => {
       if (pendingWorkspaceStartRef.current) {
         pendingWorkspaceStartRef.current = null;
-        cursor.clearCursor();
+        clearCursor();
         return;
       }
-      if (drawingRef.current && hasPointerCapture(e, [sourceCanvasRef.current])) {
-        cursor.clearCursor();
-        return;
-      }
+      if (drawingRef.current && hasPointerCapture(e, [sourceCanvasRef.current])) return;
       onUp();
-      cursor.clearCursor();
+      clearCursor();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hasPointerCapture reads event/current refs only
-    [onUp, cursor.clearCursor],
+    [onUp, clearCursor],
   );
 
   const onPreviewWorkspacePointerDown = useCallback(
@@ -637,18 +654,14 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     (e: React.PointerEvent) => {
       if (pendingWorkspaceStartRef.current) {
         pendingWorkspaceStartRef.current = null;
-        cursor.clearPreviewCursor();
+        clearPreviewCursor();
         return;
       }
-      if (drawingRef.current && hasPointerCapture(e, [previewCanvasRef.current])) {
-        cursor.clearPreviewCursor();
-        return;
-      }
+      if (drawingRef.current && hasPointerCapture(e, [previewCanvasRef.current])) return;
       onUp();
-      cursor.clearPreviewCursor();
+      clearPreviewCursor();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hasPointerCapture reads event/current refs only
-    [onUp, cursor.clearPreviewCursor, previewCanvasRef],
+    [onUp, clearPreviewCursor, previewCanvasRef],
   );
 
   return {
@@ -670,13 +683,13 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     onWorkspaceMove,
     onWorkspaceLeave,
     trackCursor: cursor.trackCursor,
-    clearCursor: cursor.clearCursor,
+    clearCursor,
     onPreviewPointerDown,
     onPreviewPointerMove,
     onPreviewWorkspacePointerDown,
     onPreviewWorkspacePointerMove,
     onWorkspaceLeavePrv,
     trackPreviewCursor: cursor.trackPreviewCursor,
-    clearPreviewCursor: cursor.clearPreviewCursor,
+    clearPreviewCursor,
   };
 }
