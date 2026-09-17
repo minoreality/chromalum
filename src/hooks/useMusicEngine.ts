@@ -77,7 +77,7 @@ export interface MusicEngineReturn {
   setToneMode: (mode: "symmetric" | "grbTone") => void;
   stopAlgebra: () => void;
   setDroneMuted: (muted: boolean) => void;
-  playComplementCanon: (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse?: boolean) => void;
+  playComplementCanon: (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse?: boolean, loop?: boolean) => void;
   playZigzagMelody: (onStep: (stepIndex: number | null) => void) => void;
   stopZigzagMelody: () => void;
   playToneCrossingMelody: (onStep: (stepIndex: number | null) => void) => void;
@@ -446,9 +446,9 @@ export function useMusicEngine({
 
   /* ── 12. playComplementCanon ── */
   const playComplementCanon = useCallback(
-    (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse = false) => {
+    (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse = false, loop = false) => {
       if (!nodesRef.current) return;
-      scheduleComplementCanon(onStep, reverse, oneShotPlayback);
+      scheduleComplementCanon(onStep, reverse, oneShotPlayback, loop);
     },
     [nodesRef, oneShotPlayback],
   );
