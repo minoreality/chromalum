@@ -13,6 +13,7 @@ import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { S_THEORY_BTN, S_THEORY_BTN_ACTIVE } from "../../styles/shared";
 import { C, FONT, FS, FW, SP } from "../../styles/tokens";
+import { hueCycleDeltaLabel, hueCycleStage } from "./hue-cycle-label";
 import { usePinReset } from "./pin-reset";
 
 const ML = 69;
@@ -29,10 +30,6 @@ const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
 
 function levelLabel(level: number): string {
   return `${THEORY_LEVELS[level].short}${SUBSCRIPT_DIGITS[level]}`;
-}
-
-function signed(value: number): string {
-  return value > 0 ? `+${value}` : `${value}`.replace("-", "−");
 }
 
 function hueColor(hueAngleDeg: number): string {
@@ -172,10 +169,9 @@ export const ToneZigzag = React.memo(function ToneZigzag({
   const activeLevel = externalLevel ?? pinned;
   const complementLevel = activeLevel === null ? null : CHROMALUM_TONE_DENOMINATOR - activeLevel;
   const intersectionSequence = CANONICAL_HUE_CYCLE.map(({ levelIndex }) => levelIndex).join(" ");
+  const zigzagStage = hueCycleStage(currentLevel, selectedEdge);
   const edgeDeltaLabel = (index: number) =>
-    selectedEdge === index
-      ? signed(CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] * direction)
-      : `${currentLevel === null ? "Δ" : "±"}${Math.abs(CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index])}`;
+    hueCycleDeltaLabel(CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] * direction, zigzagStage, selectedEdge === index);
   const currentHueAngle =
     currentLevel === null
       ? null

@@ -3,6 +3,7 @@ import { THEORY_LEVELS, GRAY_PATH, GRAY_TOGGLES, GRAY_POINTS } from "../../data/
 import { C } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { levelLabelColor } from "../../color-engine";
+import { HUE_CYCLE_NAME, hueCycleDeltaDescription, hueCycleDeltaLabel, hueCycleStage } from "./hue-cycle-label";
 
 const W = 300,
   H = 300;
@@ -42,7 +43,8 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
         };
   const isAdding = transition !== null && transition.to > transition.from;
   const toggleIndex = transition?.channel === "G" ? 0 : transition?.channel === "R" ? 1 : 2;
-  const cycleName = transition ? "A-cycle" : currentLevel === null ? "C-cycle" : "B-cycle";
+  const stage = hueCycleStage(currentLevel, selectedEdge);
+  const cycleName = HUE_CYCLE_NAME[stage];
 
   return (
     <div className="theory-hue-cycle">
@@ -67,9 +69,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
             const tgColor = CHANNEL_COLORS[tg];
             const isCurrentEdge = i === selectedEdge;
             const delta = (nLv - lv) * direction;
-            const deltaLabel = isCurrentEdge
-              ? `${delta > 0 ? "+" : "−"}${Math.abs(delta)}`
-              : `${currentLevel === null ? "Δ" : "±"}${Math.abs(delta)}`;
+            const deltaLabel = hueCycleDeltaLabel(delta, stage, isCurrentEdge);
             const midpointX = (p0.x + p1.x) / 2;
             const midpointY = (p0.y + p1.y) / 2;
             const outwardAngle = Math.atan2(midpointY - H / 2, midpointX - W / 2);
@@ -81,7 +81,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
                 role="img"
                 aria-current={isCurrentEdge ? "step" : undefined}
                 aria-label={THEORY_LEVELS[lv].short + "–" + THEORY_LEVELS[nLv].short}
-                aria-description={currentLevel === null ? `|ΔL| = ${Math.abs(delta)}` : `ΔL = ${deltaLabel}`}
+                aria-description={hueCycleDeltaDescription(delta, stage, isCurrentEdge)}
               >
                 <line
                   x1={p0.x}

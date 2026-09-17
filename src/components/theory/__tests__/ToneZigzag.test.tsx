@@ -97,7 +97,7 @@ describe("ToneZigzag", () => {
     expect(rows[0].textContent).toContain("R₂↔Y₆");
     expect(rows[0].querySelectorAll("td")[1].textContent).toBe("G");
     expect(rows[0].querySelectorAll("td")[1].getAttribute("title")).toBe("wG=4");
-    expect(rows[0].textContent).toContain("Δ4");
+    expect(rows[0].textContent).toContain("|4|");
     expect(rows[0].textContent).toContain("R₂⊂Y₆");
     expect(rows[1].textContent).toContain("Y₆⊃G₄");
   });

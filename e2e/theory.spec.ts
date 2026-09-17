@@ -32,7 +32,7 @@ for (const language of ["ja", "en"]) {
       }
     };
     await expect(caption).toHaveText("Each node represents a color state.");
-    await expectDifferences(["Δ4", "Δ2", "Δ1", "Δ4", "Δ2", "Δ1"]);
+    await expectDifferences(["|4|", "|2|", "|1|", "|4|", "|2|", "|1|"]);
     await expect(hue.locator("[data-hue-current-node]")).toHaveCount(0);
     await expect(hue.locator("[data-edge-row] td:first-child")).toHaveText(["R₂↔Y₆", "Y₆↔G₄", "G₄↔C₅", "C₅↔B₁", "B₁↔M₃", "M₃↔R₂"]);
     await expect(clockwise).toBeDisabled();
@@ -44,7 +44,7 @@ for (const language of ["ja", "en"]) {
     await start.press("Enter");
     await expect(start).toHaveAttribute("aria-current", "true");
     await expect(caption).toHaveText("The selected state is red.");
-    await expectDifferences(["±4", "±2", "±1", "±4", "±2", "±1"]);
+    await expectDifferences(["Δ4", "Δ2", "Δ1", "Δ4", "Δ2", "Δ1"]);
     await expect(hue.locator("[data-hue-current-node]")).toHaveAttribute("data-hue-current-node", "2");
     await expect(hue.locator('[data-hue-selected="true"], [data-hue-action]')).toHaveCount(0);
     await expect(clockwise).toBeEnabled();
