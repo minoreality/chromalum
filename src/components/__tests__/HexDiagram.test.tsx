@@ -24,6 +24,12 @@ function makeProps(overrides?: Partial<Parameters<typeof HexDiagram>[0]>) {
   };
 }
 
+/** A dot's own circle: the last one in its group, after any rings and hit area. */
+function dotBody(g: Element): SVGCircleElement {
+  const circles = [...g.querySelectorAll("circle")];
+  return circles[circles.length - 1] as SVGCircleElement;
+}
+
 describe("HexDiagram", () => {
   it("renders an SVG element", () => {
     const { container } = render(<HexDiagram {...makeProps()} />);
@@ -63,8 +69,7 @@ describe("HexDiagram", () => {
 
     const radius = new Map<number, number>();
     container.querySelectorAll('g[data-lv][aria-pressed="true"]').forEach((g) => {
-      const filled = [...g.querySelectorAll("circle")].filter((c) => !["transparent", "none"].includes(c.getAttribute("fill") ?? ""));
-      if (filled.length) radius.set(Number(g.getAttribute("data-lv")), Math.max(...filled.map((c) => Number(c.getAttribute("r")))));
+      radius.set(Number(g.getAttribute("data-lv")), Number(dotBody(g).getAttribute("r")));
     });
 
     // Shares run 5 > 2 > 6 > 1 > 4 > 3, and so must the radii.
@@ -92,8 +97,7 @@ describe("HexDiagram", () => {
       candidateIndexByLevel[level] = candidateIndex;
       const { container, unmount } = render(<HexDiagram {...makeProps({ levelHistogram, total, candidateIndexByLevel })} />);
       const g = container.querySelector(`g[data-lv="${level}"][aria-pressed="true"]`)!;
-      const filled = [...g.querySelectorAll("circle")].filter((c) => !["transparent", "none"].includes(c.getAttribute("fill") ?? ""));
-      const r = Math.max(...filled.map((c) => Number(c.getAttribute("r"))));
+      const r = Number(dotBody(g).getAttribute("r"));
       unmount();
       return r;
     };
@@ -103,6 +107,27 @@ describe("HexDiagram", () => {
       expect(second).toBeCloseTo(first, 10);
       expect(third).toBeCloseTo(first, 10);
     }
+  });
+
+  it("leaves the selected dot of an unused level hollow, and still selectable", () => {
+    // Level 2 holds pixels, level 3 holds none. Both are selected candidates.
+    const levelHistogram = [0, 0, 160, 0, 0, 0, 0, 0];
+    const total = 160;
+    const dispatch = vi.fn();
+    const { container } = render(<HexDiagram {...makeProps({ levelHistogram, total, dispatch })} />);
+    const used = container.querySelector('g[data-lv="2"][aria-pressed="true"]')!;
+    const unused = container.querySelector('g[data-lv="3"][aria-pressed="true"]')!;
+    const filled = (g: Element) => (dotBody(g).getAttribute("fill") ?? "none") !== "none";
+    expect(filled(used)).toBe(true);
+    expect(filled(unused)).toBe(false);
+
+    // Hollow, but not inert: the level's other candidates stay in the tab order
+    // and still dispatch, so a palette can be set up before anything is
+    // painted. The already-selected one is out of the tab order either way.
+    const otherCandidate = container.querySelector('g[data-lv="3"][aria-pressed="false"]')!;
+    expect(otherCandidate.getAttribute("tabindex")).toBe("0");
+    fireEvent.click(otherCandidate);
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "set_color", levelIndex: 3 }));
   });
 
   it("keyboard Enter triggers onClick (dispatch)", () => {
