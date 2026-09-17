@@ -48,7 +48,7 @@ describe("Shared hue traversal", () => {
     const clockwise = screen.getByRole("button", { name: "Clockwise" });
     const counterclockwise = screen.getByRole("button", { name: "Counter-clockwise" });
     expect(within(cycle).getAllByRole("button")).toHaveLength(6);
-    expectAllDeltas(container, ["Δ4", "Δ2", "Δ1", "Δ4", "Δ2", "Δ1"]);
+    expectAllDeltas(container, ["|4|", "|2|", "|1|", "|4|", "|2|", "|1|"]);
     expect((clockwise as HTMLButtonElement).disabled).toBe(true);
     expect((counterclockwise as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(clockwise);
@@ -61,7 +61,7 @@ describe("Shared hue traversal", () => {
     expect(container.querySelector(".theory-hue-caption")?.textContent).toBe("Each node represents a color state.");
 
     fireEvent.click(within(cycle).getByRole("button", { name: "Choose R 010 as the starting color" }));
-    expectAllDeltas(container, ["±4", "±2", "±1", "±4", "±2", "±1"]);
+    expectAllDeltas(container, ["Δ4", "Δ2", "Δ1", "Δ4", "Δ2", "Δ1"]);
     expect((clockwise as HTMLButtonElement).disabled).toBe(false);
     expect((counterclockwise as HTMLButtonElement).disabled).toBe(false);
     expect(selectedEdges(container)).toEqual([[], [], []]);
