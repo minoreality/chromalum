@@ -242,6 +242,10 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
 
   const { lang, setLang } = useTranslation();
   const toggleLanguage = useCallback(() => setLang(lang === "ja" ? "en" : "ja"), [lang, setLang]);
+  const isStrokeActive = useCallback(
+    () => drawing.drawingRef.current || glazeDrawing.drawingRef.current,
+    [drawing.drawingRef, glazeDrawing.drawingRef],
+  );
   useKeyboardShortcuts({
     setTool,
     setBrushLevel,
@@ -249,7 +253,9 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     dispatch,
     announce,
     endPan: panZoom.endPan,
+    showHelp,
     setShowHelp,
+    isStrokeActive,
     setCursorMode: panZoom.setCursorMode,
     spaceRef: panZoom.spaceRef,
     panningRef: panZoom.panningRef,

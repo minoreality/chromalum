@@ -16,9 +16,10 @@ interface HelpModalProps {
 export const HelpModal = React.memo(function HelpModal({ showHelp, activeTabId, setShowHelp, helpRef }: HelpModalProps) {
   const { t } = useTranslation();
 
-  useFocusTrap(helpRef, showHelp);
-
   const handleClose = useCallback(() => setShowHelp(false), [setShowHelp]);
+  // Escape closes Help inside the trap, like every other dialog, so it never
+  // depends on reaching the window-level shortcut handler.
+  useFocusTrap(helpRef, showHelp, handleClose);
   const stopPropagation = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
 
   if (!showHelp) return null;

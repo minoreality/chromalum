@@ -14,7 +14,10 @@ export interface KeyboardShortcutDeps {
   dispatch: React.Dispatch<CanvasAction>;
   announce: (msg: string) => void;
   endPan: () => void;
+  showHelp: boolean;
   setShowHelp: React.Dispatch<React.SetStateAction<boolean>>;
+  /** True while a brush, shape, or glaze stroke is still being drawn. */
+  isStrokeActive: () => boolean;
   setCursorMode: React.Dispatch<React.SetStateAction<null | "grab" | "grabbing">>;
   spaceRef: React.MutableRefObject<boolean>;
   panningRef: React.MutableRefObject<boolean>;
@@ -42,7 +45,9 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     dispatch,
     announce,
     endPan,
+    showHelp,
     setShowHelp,
+    isStrokeActive,
     setCursorMode,
     spaceRef,
     panningRef,
@@ -64,26 +69,29 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
           setShowNewCanvas(true);
         },
       },
+      // History waits for the pointer to come up: a stroke commits its own diff
+      // on release, and rewriting the canvas underneath it would leave the two
+      // disagreeing about what the stroke changed.
       {
         key: "z",
         ctrl: true,
         shift: true,
         action: () => {
-          dispatch({ type: "redo" });
+          if (!isStrokeActive()) dispatch({ type: "redo" });
         },
       },
       {
         key: "z",
         ctrl: true,
         action: () => {
-          dispatch({ type: "undo" });
+          if (!isStrokeActive()) dispatch({ type: "undo" });
         },
       },
       {
         key: "y",
         ctrl: true,
         action: () => {
-          dispatch({ type: "redo" });
+          if (!isStrokeActive()) dispatch({ type: "redo" });
         },
       },
       {
@@ -178,6 +186,12 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       // a tool button that kept focus after a click does not silence the keys.
       if (controlOwnsKey(e.target, e)) return;
 
+      // An open dialog owns the keyboard: its focus trap handles Escape, and the
+      // canvas behind it must not change tool, level, or history. Help is the
+      // one dialog these shortcuts open, so it stays closable from here.
+      const dialogOpen = document.querySelector('[role="dialog"][aria-modal="true"]') !== null;
+      if (dialogOpen && !showHelp) return;
+
       const isCtrl = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
       const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -192,6 +206,7 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
         setShowHelp(false);
         return;
       }
+      if (dialogOpen) return;
 
       // Only the drawing tabs own the canvas shortcuts. Elsewhere Space scrolls,
       // digits stay with Hex and Music, and history cannot change a hidden canvas.
@@ -264,7 +279,9 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     dispatch,
     announce,
     endPan,
+    showHelp,
     setShowHelp,
+    isStrokeActive,
     setCursorMode,
     setShowNewCanvas,
     t,
