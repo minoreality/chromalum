@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { usePanZoom } from "../usePanZoom";
+import { classifyWheelDevice, usePanZoom, wheelDeltaPx } from "../usePanZoom";
 import type { CanvasData } from "../../types";
-import { ZOOM_MAX, ZOOM_MIN } from "../../constants";
+import { MOUSE_NOTCH_PX, WHEEL_LINE_PX, WHEEL_PAGE_PX, ZOOM_MAX, ZOOM_MIN, ZOOM_PINCH_RATE, ZOOM_STEP } from "../../constants";
 
 function makeMocks() {
   const canvasData: CanvasData = {
@@ -64,7 +64,11 @@ describe("usePanZoom", () => {
       ...overrides?.rect,
     } as DOMRect;
     return {
-      deltaY: -100,
+      deltaX: 0,
+      deltaY: -MOUSE_NOTCH_PX,
+      deltaMode: 0,
+      ctrlKey: false,
+      metaKey: false,
       clientX: 160,
       clientY: 160,
       preventDefault: vi.fn(),
@@ -255,6 +259,77 @@ describe("usePanZoom", () => {
         result.current.onWheel(makeWheelEvent({ deltaY: 100 }));
       });
       expect(result.current.zoom).toBe(ZOOM_MIN);
+    });
+
+    it("zooms by distance travelled, not by event count", () => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      // Two notches must land on ZOOM_STEP squared, not on whatever a per-event
+      // factor would give. A pinch splits the same travel over dozens of events.
+      act(() => {
+        result.current.onWheel(makeWheelEvent({ deltaY: -MOUSE_NOTCH_PX }));
+        result.current.onWheel(makeWheelEvent({ deltaY: -MOUSE_NOTCH_PX }));
+      });
+      expect(result.current.zoom).toBeCloseTo(ZOOM_STEP * ZOOM_STEP, 5);
+    });
+
+    it("accumulates a pinch over its whole gesture, not per event", () => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      // A trackpad pinch: ctrlKey set, twenty sub-notch deltas covering 100px.
+      act(() => {
+        for (let i = 0; i < 20; i++) result.current.onWheel(makeWheelEvent({ deltaY: -5, ctrlKey: true }));
+      });
+      expect(result.current.zoom).toBeCloseTo(Math.exp(100 * ZOOM_PINCH_RATE), 5);
+    });
+
+    it("pans with a two-finger scroll and leaves zoom alone", () => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      // displayWidth === canvasData.width, so scale is 1 and deltas are canvas px.
+      act(() => {
+        result.current.onWheel(makeWheelEvent({ deltaX: -4, deltaY: -12 }));
+      });
+      // Fingers up report a negative deltaY and scroll the view up, so the canvas
+      // under it moves down — against the fingers, as a scrolling document does.
+      expect(result.current.pan).toEqual({ x: 4, y: 12 });
+      expect(result.current.zoom).toBe(1);
+    });
+
+    it("holds a gesture's device when one delta happens to match a notch", () => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      // A fast flick can land on an exact notch value mid-scroll; that must not
+      // turn one frame of the same gesture into a zoom.
+      act(() => {
+        result.current.onWheel(makeWheelEvent({ deltaY: -12 }));
+        result.current.onWheel(makeWheelEvent({ deltaY: -MOUSE_NOTCH_PX }));
+      });
+      expect(result.current.zoom).toBe(1);
+      expect(result.current.pan).toEqual({ x: 0, y: 12 + MOUSE_NOTCH_PX });
+    });
+
+    it("classifies the pointing device from one wheel event", () => {
+      const mouse = { deltaX: 0, deltaY: -MOUSE_NOTCH_PX, deltaMode: 0 };
+      expect(classifyWheelDevice(mouse, "trackpad")).toBe("mouse");
+      expect(classifyWheelDevice({ deltaX: 0, deltaY: -3, deltaMode: 1 }, "trackpad")).toBe("mouse");
+      expect(classifyWheelDevice({ deltaX: 0, deltaY: -12, deltaMode: 0 }, "mouse")).toBe("trackpad");
+      expect(classifyWheelDevice({ deltaX: 0, deltaY: -100.5, deltaMode: 0 }, "mouse")).toBe("trackpad");
+      expect(classifyWheelDevice({ deltaX: -2, deltaY: 0, deltaMode: 0 }, "mouse")).toBe("trackpad");
+      // A pure zero says nothing, so the sticky value survives it.
+      expect(classifyWheelDevice({ deltaX: 0, deltaY: 0, deltaMode: 0 }, "trackpad")).toBe("trackpad");
+      expect(classifyWheelDevice({ deltaX: 0, deltaY: 0, deltaMode: 0 }, "mouse")).toBe("mouse");
+    });
+
+    it("normalises line and page wheel deltas to pixels", () => {
+      expect(wheelDeltaPx(-100, 0)).toBe(-100);
+      expect(wheelDeltaPx(-3, 1)).toBe(-3 * WHEEL_LINE_PX);
+      expect(wheelDeltaPx(-1, 2)).toBe(-WHEEL_PAGE_PX);
+      expect(wheelDeltaPx(-100, undefined)).toBe(-100);
     });
 
     it("clamps wheel-generated pan to canvas bounds", () => {

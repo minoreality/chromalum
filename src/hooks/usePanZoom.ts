@@ -1,5 +1,15 @@
 import { useState, useCallback, useRef } from "react";
-import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from "../constants";
+import {
+  ZOOM_MIN,
+  ZOOM_MAX,
+  MOUSE_NOTCH_PX,
+  WHEEL_GESTURE_GAP_MS,
+  WHEEL_LINE_PX,
+  WHEEL_PAGE_PX,
+  ZOOM_PINCH_RATE,
+  ZOOM_WHEEL_MAX_DELTA,
+  ZOOM_WHEEL_RATE,
+} from "../constants";
 import { useSyncRef } from "./useSyncRef";
 import type { CanvasData } from "../types";
 
@@ -68,6 +78,33 @@ function panForCanvasFocus(point: ViewportPoint, zoom: number, focus: ViewportPo
 }
 
 /**
+ * Wheel deltas arrive in three units. Normalise to CSS pixels so one zoom
+ * formula covers a mouse notch, a trackpad scroll and a pinch alike.
+ */
+export function wheelDeltaPx(delta: number, deltaMode: number | undefined): number {
+  if (deltaMode === 1) return delta * WHEEL_LINE_PX;
+  if (deltaMode === 2) return delta * WHEEL_PAGE_PX;
+  return delta;
+}
+
+export type WheelDevice = "mouse" | "trackpad";
+
+/**
+ * A wheel event does not say what produced it. A classic notch is one large,
+ * whole-pixel, vertical-only delta — or a line/page delta, which only a wheel
+ * emits. A precision trackpad streams sub-notch deltas and moves both axes.
+ * Returns `prev` when an event says nothing either way, and the caller seeds it
+ * with "mouse", so an unrecognised device keeps zooming as the help panel says.
+ */
+export function classifyWheelDevice(e: Pick<WheelEvent, "deltaX" | "deltaY" | "deltaMode">, prev: WheelDevice): WheelDevice {
+  if (e.deltaMode) return "mouse";
+  if (e.deltaX !== 0 || !Number.isInteger(e.deltaX) || !Number.isInteger(e.deltaY)) return "trackpad";
+  const dy = Math.abs(e.deltaY);
+  if (dy === 0) return prev;
+  return dy % MOUSE_NOTCH_PX === 0 ? "mouse" : "trackpad";
+}
+
+/**
  * Clamp pan so the canvas never drifts fully off-screen (max ±w or ±h).
  * setPan applies it to every update, so the bound holds for whoever calls it
  * rather than for whoever remembers to wrap the argument.
@@ -94,6 +131,8 @@ export function usePanZoom(
   const panOriginRef = useRef({ x: 0, y: 0 });
   const spaceRef = useRef(false);
   const lastMiddleDownRef = useRef(0);
+  const wheelDeviceRef = useRef<WheelDevice>("mouse");
+  const wheelGestureRef = useRef({ at: 0, device: "mouse" as WheelDevice });
 
   const zoomRef = useSyncRef(zoom);
   const panRef = useSyncRef(pan);
@@ -203,8 +242,37 @@ export function usePanZoom(
       const curZoom = zoomRef.current,
         curPan = panRef.current,
         cv = canvasDataRef.current;
-      const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
-      const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, curZoom * factor));
+
+      // Classify once per gesture, not per event: a fast trackpad flick can hit a
+      // whole notch value, and re-deciding mid-scroll would swap pan for zoom for
+      // one frame. The sticky device still updates, it just takes effect next time.
+      const now = performance.now();
+      wheelDeviceRef.current = classifyWheelDevice(e, wheelDeviceRef.current);
+      const device = now - wheelGestureRef.current.at < WHEEL_GESTURE_GAP_MS ? wheelGestureRef.current.device : wheelDeviceRef.current;
+      wheelGestureRef.current = { at: now, device };
+
+      // A trackpad pinch arrives as a wheel event with ctrlKey set: the gesture the
+      // browser synthesises, not a key anyone held.
+      const zoomGesture = e.ctrlKey || e.metaKey;
+
+      if (device === "trackpad" && !zoomGesture) {
+        // Two-finger scroll moves the view, not the image: the canvas travels
+        // against the fingers, the way every other scrolling surface on the
+        // machine does under the system's scroll-direction setting.
+        const scale = (displayWidth * curZoom) / cv.width;
+        setPan({
+          x: curPan.x - wheelDeltaPx(e.deltaX, e.deltaMode) / scale,
+          y: curPan.y - wheelDeltaPx(e.deltaY, e.deltaMode) / scale,
+        });
+        scheduleCursorRedrawRef.current?.();
+        return;
+      }
+
+      // Proportional, not per-event: a trackpad fires dozens of small-delta wheel
+      // events per gesture, and a fixed factor turned each one into a full step.
+      const rate = zoomGesture && device === "trackpad" ? ZOOM_PINCH_RATE : ZOOM_WHEEL_RATE;
+      const deltaPx = Math.max(-ZOOM_WHEEL_MAX_DELTA, Math.min(ZOOM_WHEEL_MAX_DELTA, wheelDeltaPx(e.deltaY, e.deltaMode)));
+      const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, curZoom * Math.exp(-deltaPx * rate)));
       if (newZoom === curZoom) return;
       const pointer = getViewportPoint({ x: e.clientX, y: e.clientY }, e.currentTarget);
       if (!pointer) return;
@@ -213,7 +281,7 @@ export function usePanZoom(
       setPan(panForCanvasFocus(pointer, newZoom, focus, cv));
       scheduleCursorRedrawRef.current?.();
     },
-    [zoomRef, panRef, canvasDataRef, scheduleCursorRedrawRef, setZoom, setPan],
+    [zoomRef, panRef, canvasDataRef, displayWidth, scheduleCursorRedrawRef, setZoom, setPan],
   );
 
   // ── Pinch-to-zoom handlers ──
