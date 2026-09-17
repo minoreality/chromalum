@@ -13,7 +13,7 @@ function renderMixing() {
   );
   return {
     grb: screen.getByRole("figure", { name: "GRB Logical OR" }),
-    ycm: screen.getByRole("figure", { name: "YCM Logical AND" }),
+    mcy: screen.getByRole("figure", { name: "MCY Logical AND" }),
   };
 }
 
@@ -32,22 +32,22 @@ function expectResult(figure: HTMLElement, expected: number) {
 
 describe("ColorMixing", () => {
   it("shows both fixed operations with complementary positions and three-bit nodes", () => {
-    const { grb, ycm } = renderMixing();
+    const { grb, mcy } = renderMixing();
     expectResult(grb, 7);
-    expectResult(ycm, 0);
+    expectResult(mcy, 0);
     expect(within(grb).getByRole("status").textContent).toBe("G ∨ R ∨ B = W");
-    expect(within(ycm).getByRole("status").textContent).toBe("M ∧ C ∧ Y = K");
+    expect(within(mcy).getByRole("status").textContent).toBe("M ∧ C ∧ Y = K");
     expect(grb.querySelector("[data-mixing-operator]")?.textContent).toBe("∨");
-    expect(ycm.querySelector("[data-mixing-operator]")?.textContent).toBe("∧");
+    expect(mcy.querySelector("[data-mixing-operator]")?.textContent).toBe("∧");
     expect(
       within(grb).getByRole("img", { name: "Logic gate applying OR to each of the three bits" }).getAttribute("data-mixing-gate"),
     ).toBe("or");
     expect(
-      within(ycm).getByRole("img", { name: "Logic gate applying AND to each of the three bits" }).getAttribute("data-mixing-gate"),
+      within(mcy).getByRole("img", { name: "Logic gate applying AND to each of the three bits" }).getAttribute("data-mixing-gate"),
     ).toBe("and");
     expect(within(grb).getAllByRole("button")).toHaveLength(3);
-    expect(within(ycm).getAllByRole("button")).toHaveLength(3);
-    const inputNodes = [grb, ycm].map((figure) => [...figure.querySelectorAll("[data-mixing-input]")]);
+    expect(within(mcy).getAllByRole("button")).toHaveLength(3);
+    const inputNodes = [grb, mcy].map((figure) => [...figure.querySelectorAll("[data-mixing-input]")]);
     for (let index = 0; index < 3; index++) {
       expect(
         Number(inputNodes[0][index].getAttribute("data-mixing-input")) ^ Number(inputNodes[1][index].getAttribute("data-mixing-input")),
@@ -58,7 +58,7 @@ describe("ColorMixing", () => {
         );
       }
     }
-    for (const figure of [grb, ycm]) {
+    for (const figure of [grb, mcy]) {
       expect(figure.querySelectorAll('svg [role="button"][tabindex="0"]')).toHaveLength(3);
       expect(figure.querySelectorAll("button")).toHaveLength(0);
       for (const node of figure.querySelectorAll("[data-mixing-color]")) {
@@ -69,7 +69,7 @@ describe("ColorMixing", () => {
   });
 
   it("calculates all six pairs and both triples independently, including corresponding complements", () => {
-    const { grb, ycm } = renderMixing();
+    const { grb, mcy } = renderMixing();
     const cases = [
       { primary: [4, 2], secondary: [3, 5], join: 6, meet: 1 },
       { primary: [4, 1], secondary: [3, 6], join: 5, meet: 2 },
@@ -80,15 +80,15 @@ describe("ColorMixing", () => {
     for (const example of cases) {
       selectInputs(grb, example.primary);
       expectResult(grb, example.join);
-      expectResult(ycm, previousMeet);
-      selectInputs(ycm, example.secondary);
-      expectResult(ycm, example.meet);
+      expectResult(mcy, previousMeet);
+      selectInputs(mcy, example.secondary);
+      expectResult(mcy, example.meet);
       expectResult(grb, example.join);
       expect(example.join ^ example.meet).toBe(7);
       previousMeet = example.meet;
       for (const [figure, selected] of [
         [grb, example.primary],
-        [ycm, example.secondary],
+        [mcy, example.secondary],
       ] as const) {
         for (const row of figure.querySelectorAll("tbody tr")) {
           const level = Number(row.getAttribute("data-mixing-bit-input"));
@@ -101,8 +101,8 @@ describe("ColorMixing", () => {
   });
 
   it("passes each single input through and waits only when all inputs are off", () => {
-    const { grb, ycm } = renderMixing();
-    for (const figure of [grb, ycm]) {
+    const { grb, mcy } = renderMixing();
+    for (const figure of [grb, mcy]) {
       for (const input of figure.querySelectorAll("[data-mixing-input]")) {
         const level = Number(input.getAttribute("data-mixing-input"));
         selectInputs(figure, [level]);

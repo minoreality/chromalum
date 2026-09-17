@@ -2,12 +2,13 @@ import React, { useId, useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C, FONT } from "../../styles/tokens";
+import { levelLabelColor } from "../../color-engine";
 
 type MixingFamily = "rgb" | "cmy";
 
 // Complementary inputs occupy the same positions in both diagrams.
 const GRB_INPUTS = [4, 2, 1] as const;
-const YCM_INPUTS = GRB_INPUTS.map((level) => level ^ 7);
+const MCY_INPUTS = GRB_INPUTS.map((level) => level ^ 7);
 const INPUT_X = 36;
 const INPUT_YS = [44, 102, 160];
 const OPERATOR_X = 152;
@@ -24,7 +25,7 @@ export const ColorMixing = React.memo(function ColorMixing() {
   return (
     <div id="theory-mixing" className="theory-mixing-pair">
       <MixingFigure family="rgb" inputs={GRB_INPUTS} />
-      <MixingFigure family="cmy" inputs={YCM_INPUTS} />
+      <MixingFigure family="cmy" inputs={MCY_INPUTS} />
       <p className="theory-mixing-hint">
         <span>{t("theory_mixing_input_hint")}</span>
         <span>{t("theory_mixing_bus_legend")}</span>
@@ -46,7 +47,7 @@ function MixingFigure({ family, inputs }: { family: MixingFamily; inputs: readon
         ? operands.reduce((join, level) => join | level, 0)
         : operands.reduce((meet, level) => meet & level, 7);
   const symbol = family === "rgb" ? "∨" : "∧";
-  const title = t(family === "rgb" ? "theory_mixing_grb" : "theory_mixing_ycm");
+  const title = t(family === "rgb" ? "theory_mixing_grb" : "theory_mixing_mcy");
   const equation =
     result === null
       ? t("theory_mixing_choose_inputs")
@@ -214,7 +215,7 @@ function ColorNode({ level, x, y }: { level: number; x: number; y: number }) {
   return (
     <g data-mixing-color={level}>
       <circle cx={x} cy={y} r={NODE_R} fill={info.color} stroke={C.textPrimary} strokeWidth={1} />
-      <text x={x} y={y} dominantBaseline="central" fontSize={10} fill={level === 0 || level === 1 ? "#fff" : "#000"}>
+      <text x={x} y={y} dominantBaseline="central" fontSize={10} fill={levelLabelColor(level)}>
         {info.bits.join("")}
       </text>
       <text x={x} y={y + 26}>

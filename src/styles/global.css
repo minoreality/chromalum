@@ -1255,6 +1255,12 @@ button.theory-diagram-button {
   stroke: var(--c-accent-bright, #80a0ff);
   opacity: 1;
 }
+/* A click hands the graph the keyboard so the keypad can turn it. That control
+   is undocumented, so focus must stay silent and draw no ring. */
+#theory-stella-view:focus,
+#theory-stella-view:focus-visible {
+  outline: none;
+}
 .theory-k8-explorer {
   container: k8-explorer / inline-size;
   display: flex;
@@ -1281,7 +1287,9 @@ button.theory-diagram-button {
   display: block;
   width: 100%;
   max-width: clamp(280px, 42cqw, 320px);
-  touch-action: manipulation;
+  /* A finger on this figure turns it, so the browser must not read the same
+     movement as a scroll and take the gesture away. */
+  touch-action: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -2648,18 +2656,16 @@ button.theory-diagram-button {
   max-width: clamp(260px, 45cqw, calc(340px - var(--theory-octahedron-reduction, 0px)));
   margin: 0 auto;
   overflow: visible;
-}
-.theory-octahedron-edge {
-  cursor: pointer;
-}
-.theory-octahedron-edge:focus-visible {
-  outline: none;
-}
-.theory-octahedron-edge:focus-visible .theory-octahedron-edge-hit {
-  stroke: rgb(160 176 255 / 30%);
+  /* A finger on this figure turns it, so the browser must not read the same
+     movement as a scroll and take the gesture away. */
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .theory-octahedron-figure figcaption {
-  margin-top: 8px;
+  /* Turning the figure swings a vertex out to the ball's rim, and the svg draws
+     past its own box, so the caption keeps clear of the widest pose rather than
+     of the resting one. */
+  margin-top: 26px;
   color: #9090b8;
   font-size: 11px;
   line-height: 1.6;

@@ -347,11 +347,11 @@ export const en = {
   theory_cube_title: "Color Cube",
   theory_mixing_title: "Additive and Subtractive Color Mixing",
   theory_mixing_desc:
-    "In this three-bit model, GRB mixing uses join ∨ and YCM mixing uses meet ∧. Join is the least upper bound containing every input; meet is the greatest lower bound common to all inputs. Complement reverses inclusion and therefore exchanges least upper bounds with greatest lower bounds. This duality is De Morgan’s law: ¬(a∨b)=¬a∧¬b and ¬(a∧b)=¬a∨¬b.\n\nThe three primary atoms correspond to the three complementary coatoms under this order reversal. For any finite family of inputs, ¬(∨ᵢaᵢ)=∧ᵢ¬aᵢ: taking the complement of a join is equivalent to taking the meet of the complementary inputs.",
+    "In this three-bit model, GRB mixing uses join ∨ and MCY mixing uses meet ∧. Join is the least upper bound containing every input; meet is the greatest lower bound common to all inputs. Complement reverses inclusion and therefore exchanges least upper bounds with greatest lower bounds. This duality is De Morgan’s law: ¬(a∨b)=¬a∧¬b and ¬(a∧b)=¬a∨¬b.\n\nThe three primary atoms correspond to the three complementary coatoms under this order reversal. For any finite family of inputs, ¬(∨ᵢaᵢ)=∧ᵢ¬aᵢ: taking the complement of a join is equivalent to taking the meet of the complementary inputs.",
   theory_mixing_operations_desc:
-    "With characteristic-vector order [G,R,B], ⊕ is addition modulo two in each coordinate and describes state differences and composition of toggles. For arbitrary states a and b, a∧b=000 implies a∨b=a⊕b, while a∨b=111 implies a∧b=XNOR(a,b), where XNOR(a,b)=¬(a⊕b).\n\nThe first equality requires disjoint channels; the second requires the two states together to cover every channel. Distinct GRB primaries satisfy the first condition and distinct YCM primaries the second. These conditional equalities do not identify join/meet with XOR/XNOR as operations.",
+    "With characteristic-vector order [G,R,B], ⊕ is addition modulo two in each coordinate and describes state differences and composition of toggles. For arbitrary states a and b, a∧b=000 implies a∨b=a⊕b, while a∨b=111 implies a∧b=XNOR(a,b), where XNOR(a,b)=¬(a⊕b).\n\nThe first equality requires disjoint channels; the second requires the two states together to cover every channel. Distinct GRB primaries satisfy the first condition and distinct MCY primaries the second. These conditional equalities do not identify join/meet with XOR/XNOR as operations.",
   theory_mixing_grb: "GRB Logical OR",
-  theory_mixing_ycm: "YCM Logical AND",
+  theory_mixing_mcy: "MCY Logical AND",
   theory_mixing_join_rule: "Collect channels present in any input",
   theory_mixing_meet_rule: "Keep channels common to every input",
   theory_mixing_input: "Input",
@@ -612,7 +612,7 @@ export const en = {
   theory_chromatic_octa_title: "Color Diamond",
   theory_octa_aria: "Explore XOR and complement on the edges of the chromatic octahedron",
   theory_octa_diagram: "Regular octahedron of six chromatic colors",
-  theory_octa_hint: "Select an edge or a color pair. Dashed lines show the rear edges.",
+  theory_octa_hint: "Select an edge or a color pair.",
   theory_octa_duality_note:
     "This octahedron is dual to the Color Die in the preceding section: each die face corresponds to a vertex. Joining the six face centers of a regular cube gives the same regular octahedron.",
   theory_octa_geometry_note:

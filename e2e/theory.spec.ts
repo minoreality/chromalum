@@ -1513,15 +1513,16 @@ for (const input of ["mouse", "touch"] as const) {
       await page.goto("theory-dev.html");
       const octahedron = page.getByTestId("chromatic-octahedron");
       const graph = octahedron.locator("svg");
-      const edge = octahedron.locator('[data-octa-edge-control="1-3"]');
       const pair = octahedron.locator(".theory-octahedron-choices button").nth(1);
       const other = octahedron.locator(".theory-octahedron-choices button").nth(5);
       const press = (target: Locator) => (input === "touch" ? target.tap() : target.click());
-      const pressEdge = async () => {
+      // The figure only draws the solid, so pressing a painted edge releases the
+      // choice rather than making one.
+      const pressPaintedEdge = async () => {
         await graph.scrollIntoViewIfNeeded();
         // A vertical SVG line has a zero-width bounding box, so press the
         // painted stroke's midpoint using its actual screen transform.
-        const point = await edge.locator("[data-octa-edge]").evaluate((node) => {
+        const point = await octahedron.locator('[data-octa-edge="1-3"]').evaluate((node) => {
           const line = node as SVGLineElement;
           const point = new DOMPoint(
             (line.x1.baseVal.value + line.x2.baseVal.value) / 2,
@@ -1533,22 +1534,20 @@ for (const input of ["mouse", "touch"] as const) {
         else await page.mouse.click(point.x, point.y);
       };
       await expectGeneralOctahedron(octahedron);
-      await pressEdge();
-      await expect(edge).toHaveAttribute("aria-pressed", "true");
-      await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 011 = 010");
-      await pressEdge();
+      await pressPaintedEdge();
       await expectGeneralOctahedron(octahedron);
       // Keep the pointer on the target: deselection must not reappear as hover.
       await press(pair);
       await expect(pair).toHaveAttribute("aria-pressed", "true");
       await press(pair);
       await expectGeneralOctahedron(octahedron);
-      await pressEdge();
       await press(pair);
+      await pressPaintedEdge();
       await expectGeneralOctahedron(octahedron);
       await press(pair);
       await press(other);
-      await expect(edge).toHaveAttribute("aria-pressed", "false");
+      await expect(pair).toHaveAttribute("aria-pressed", "false");
+      await expect(other).toHaveAttribute("aria-pressed", "true");
       await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("010 ⊕ 100 = 110");
       await graph.scrollIntoViewIfNeeded();
       const box = (await graph.boundingBox())!;
@@ -1581,25 +1580,28 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
     await expect(octahedron.locator("[data-cube-edge], [data-die-vertex]")).toHaveCount(0);
     await expect(octahedron.locator("[data-octa-vertex]")).toHaveCount(6);
     await expect(octahedron.locator('[data-octa-edge][data-hidden="true"]')).toHaveCount(3);
-    await expect(octahedron.locator("[data-octa-edge-control][role='button']")).toHaveCount(12);
+    // Every control is in the list; the figure holds none.
+    await expect(octahedron.locator("svg [role='button']")).toHaveCount(0);
     await expect(octahedron.locator(".theory-octahedron-choices button")).toHaveCount(12);
     await expectGeneralOctahedron(octahedron);
-    const edge = octahedron.locator('[data-octa-edge-control="1-2"]');
+    const choice = (...bits: string[]) =>
+      octahedron.locator(".theory-octahedron-choices button" + bits.map((value) => `[aria-label*="${value}"]`).join(""));
+    const edge = choice("001", "010");
     await edge.focus();
     await edge.press("Enter");
     await expect(edge).toHaveAttribute("aria-pressed", "true");
     await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("001 ⊕ 010 = 011");
     await expect(octahedron.locator('[data-octa-surface-face][data-active="true"]')).toHaveCount(2);
-    await edge.press("Space");
+    await edge.press("Enter");
     await expectGeneralOctahedron(octahedron);
-    await octahedron.locator('[data-octa-edge-control="2-4"]').click();
+    await choice("010", "100").click();
     await expect(octahedron.locator('[data-edge-result="complement"]')).toContainText("¬(010 ⊕ 100) = 001");
     const fanoNote = section.locator("p#theory-octa-face-algebra");
     await expect(fanoNote).toContainText("Fano");
     // The surrounding prose is blank space: a click there releases the pinned edge.
     await fanoNote.click();
     await expectGeneralOctahedron(octahedron);
-    await octahedron.locator('[data-octa-edge-control="2-4"]').focus();
+    await choice("010", "100").focus();
     await page.keyboard.press("Enter");
     await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("010 ⊕ 100 = 110");
     await expect(fanoNote).toContainText("000");
@@ -2115,20 +2117,20 @@ for (const language of ["ja", "en"]) {
   }
 }
 
-test("compares fixed GRB join and YCM meet with compact nodes and responsive independent controls", async ({ page }) => {
+test("compares fixed GRB join and MCY meet with compact nodes and responsive independent controls", async ({ page }) => {
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");
     const diagrams = page.locator("#theory-mixing");
     const grb = diagrams.getByRole("figure", { name: language === "ja" ? "GRBの論理和" : "GRB Logical OR" });
-    const ycm = diagrams.getByRole("figure", { name: language === "ja" ? "YCMの論理積" : "YCM Logical AND" });
+    const mcy = diagrams.getByRole("figure", { name: language === "ja" ? "MCYの論理積" : "MCY Logical AND" });
     await expect(grb.locator("svg").getByRole("button")).toHaveCount(3);
-    await expect(ycm.locator("svg").getByRole("button")).toHaveCount(3);
+    await expect(mcy.locator("svg").getByRole("button")).toHaveCount(3);
     await expect(diagrams.locator("button")).toHaveCount(0);
     await expect(grb.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "7");
-    await expect(ycm.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "0");
+    await expect(mcy.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "0");
     const blue = grb.getByRole("button", { name: language === "ja" ? "入力B、ビット001" : "Input B, bits 001", exact: true });
-    const yellow = ycm.getByRole("button", { name: language === "ja" ? "入力Y、ビット110" : "Input Y, bits 110", exact: true });
+    const yellow = mcy.getByRole("button", { name: language === "ja" ? "入力Y、ビット110" : "Input Y, bits 110", exact: true });
     await blue.focus();
     await blue.press("Space");
     await expect(blue).toBeFocused();
@@ -2138,9 +2140,9 @@ test("compares fixed GRB join and YCM meet with compact nodes and responsive ind
     await blue.press("Enter");
     await expect(grb.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "7");
     await blue.press("Space");
-    await expect(ycm.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "0");
+    await expect(mcy.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "0");
     await yellow.click();
-    await expect(ycm.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "1");
+    await expect(mcy.locator("[data-mixing-result]")).toHaveAttribute("data-mixing-result", "1");
 
     for (const width of [320, 395, 538, 639, 760, 761, 1280]) {
       await page.setViewportSize({ width, height: 900 });
@@ -2209,7 +2211,7 @@ test("compares fixed GRB join and YCM meet with compact nodes and responsive ind
       });
     }
     await expect(grb.locator('path[data-mixing-gate="or"]')).toHaveCount(1);
-    await expect(ycm.locator('path[data-mixing-gate="and"]')).toHaveCount(1);
+    await expect(mcy.locator('path[data-mixing-gate="and"]')).toHaveCount(1);
     await expect(diagrams.locator("path:not([data-mixing-gate])")).toHaveCount(0);
     await expect(diagrams).not.toContainText("theory_mixing_");
   }

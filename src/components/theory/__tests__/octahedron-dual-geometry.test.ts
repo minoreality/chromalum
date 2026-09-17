@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { TETRA_T0 } from "../../../data/theory-data";
 import {
+  DUAL_BALL,
   DUAL_CUBE_VERTICES,
   DUAL_CUBE_EDGES,
   DUAL_DIE_FACES,
   DUAL_OCTA_VERTICES,
   DUAL_OCTA_EDGES,
   DUAL_OCTA_FACES,
+  dualOctaView,
   projectDualPoint,
 } from "../octahedron-dual-geometry";
+import { dragStellaOrientation, stellaBallDirection, stellaOrientation, type StellaOrientation } from "../stella-view";
 
 const distance = (a: readonly number[], b: readonly number[]) => Math.hypot(...a.map((x, i) => x - b[i]));
 
@@ -97,7 +100,7 @@ describe("regular cube and octahedron dual geometry", () => {
         .map((square) => square.lv)
         .sort();
       expect([...face.verts].sort()).toEqual(incident);
-      expect(face.hidden).toBe(DUAL_CUBE_VERTICES[face.color][2] < 0);
+      expect(face.hidden).toBe(DUAL_CUBE_VERTICES[face.color][2] > 0);
     }
     for (const { a, b } of DUAL_OCTA_EDGES) {
       const left = DUAL_DIE_FACES.find((face) => face.lv === a)!;
@@ -120,5 +123,93 @@ describe("regular cube and octahedron dual geometry", () => {
         expect(Math.hypot(point.x - other.x, point.y - other.y)).toBeGreaterThan(44);
       }
     });
+  });
+
+  it("grabs a ball through the vertex centers, so a drag across a diameter is a half turn", () => {
+    // The drag grips a sphere, and that sphere is the one the six vertices sit on.
+    // A vertex reaches the rim when it crosses the silhouette and never passes it.
+    let furthest = 0;
+    for (let step = 0; step < 2000; step++) {
+      const raw = [Math.sin(step), Math.cos(step * 1.7), Math.sin(step * 2.3), Math.cos(step * 0.6)] as const;
+      const length = Math.hypot(...raw);
+      const pose = raw.map((part) => part / length) as unknown as StellaOrientation;
+      for (const point of Object.values(dualOctaView(pose).points)) {
+        furthest = Math.max(furthest, Math.hypot(point.x - DUAL_BALL.centreX, point.y - DUAL_BALL.centreY));
+      }
+    }
+    expect(furthest).toBeLessThanOrEqual(DUAL_BALL.radius + 1e-9);
+    expect(furthest).toBeCloseTo(DUAL_BALL.radius, 6);
+
+    // The centre of the figure grips the near pole, never the far side.
+    expect(stellaBallDirection(DUAL_BALL.centreX, DUAL_BALL.centreY, "sphere", DUAL_BALL)).toEqual([0, 0, -1]);
+
+    // Opposite points of the rim are antipodal, which makes a diameter a half turn.
+    const left = stellaBallDirection(DUAL_BALL.centreX - DUAL_BALL.radius, DUAL_BALL.centreY, "sphere", DUAL_BALL);
+    const right = stellaBallDirection(DUAL_BALL.centreX + DUAL_BALL.radius, DUAL_BALL.centreY, "sphere", DUAL_BALL);
+    expect(left[0] * right[0] + left[1] * right[1] + left[2] * right[2]).toBeCloseTo(-1, 9);
+
+    // Past the rim the grip stays on the equator instead of wrapping to the back.
+    for (const beyond of [1.2, 2, 6]) {
+      const outside = stellaBallDirection(DUAL_BALL.centreX + DUAL_BALL.radius * beyond, DUAL_BALL.centreY, "sphere", DUAL_BALL);
+      expect(outside[2]).toBeCloseTo(0, 9);
+      expect(Math.hypot(...outside)).toBeCloseTo(1, 9);
+    }
+  });
+
+  it("hands back its edges farthest first, so the nearest one wins a pointer at a crossing", () => {
+    for (let step = 0; step < 500; step++) {
+      const raw = [Math.sin(step * 1.1), Math.cos(step * 1.9), Math.sin(step * 0.7), Math.cos(step * 2.5)] as const;
+      const length = Math.hypot(...raw);
+      const pose = raw.map((part) => part / length) as unknown as StellaOrientation;
+      const view = dualOctaView(pose);
+      const depth = (edge: { a: number; b: number }) => (view.vertices[edge.a][2] + view.vertices[edge.b][2]) / 2;
+      for (let i = 1; i < view.edges.length; i++) {
+        expect(depth(view.edges[i - 1])).toBeGreaterThanOrEqual(depth(view.edges[i]) - 1e-12);
+      }
+      // A fully hidden edge can never end up in front of a visible one.
+      const lastHidden = view.edges.map((edge) => edge.hidden).lastIndexOf(true);
+      const firstVisible = view.edges.findIndex((edge) => !edge.hidden);
+      if (lastHidden >= 0 && firstVisible >= 0) expect(lastHidden).toBeLessThan(firstVisible + view.edges.length);
+      expect(view.edges).toHaveLength(12);
+    }
+  });
+
+  it("turns the near side the way the pointer goes, so a drag pulls the face you took hold of", () => {
+    // The viewer sits at -z, so the near vertices are the ones with the smaller z,
+    // and they are the ones drawn solid rather than dashed.
+    const rest = stellaOrientation(null);
+    const before = dualOctaView(rest);
+    const near = Object.keys(before.vertices)
+      .map(Number)
+      .filter((lv) => before.vertices[lv][2] < 0);
+    const far = Object.keys(before.vertices)
+      .map(Number)
+      .filter((lv) => before.vertices[lv][2] > 0);
+    expect(near).toHaveLength(3);
+    expect(far).toHaveLength(3);
+    // Those near vertices carry the visible edges; the hidden ones are the far triangle.
+    for (const edge of before.edges.filter((e) => e.hidden)) {
+      expect(far).toContain(edge.a);
+      expect(far).toContain(edge.b);
+    }
+
+    const grab = stellaBallDirection(DUAL_BALL.centreX, DUAL_BALL.centreY, "sphere", DUAL_BALL);
+    for (const [label, dx, dy] of [
+      ["right", DUAL_BALL.radius * 0.3, 0],
+      ["left", -DUAL_BALL.radius * 0.3, 0],
+      ["down", 0, DUAL_BALL.radius * 0.3],
+      ["up", 0, -DUAL_BALL.radius * 0.3],
+    ] as const) {
+      const pointer = stellaBallDirection(DUAL_BALL.centreX + dx, DUAL_BALL.centreY + dy, "sphere", DUAL_BALL);
+      const after = dualOctaView(dragStellaOrientation(rest, grab, pointer));
+      for (const lv of near) {
+        const moved = [after.points[lv].x - before.points[lv].x, after.points[lv].y - before.points[lv].y];
+        expect(moved[0] * dx + moved[1] * dy, "near vertex " + lv + " should follow a drag " + label).toBeGreaterThan(0);
+      }
+      for (const lv of far) {
+        const moved = [after.points[lv].x - before.points[lv].x, after.points[lv].y - before.points[lv].y];
+        expect(moved[0] * dx + moved[1] * dy, "far vertex " + lv + " should go against a drag " + label).toBeLessThan(0);
+      }
+    }
   });
 });

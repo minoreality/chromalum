@@ -129,7 +129,7 @@ describe("TheoryPanel", () => {
     }
     expect(screen.getByRole("group", { name: "Eight-State Correspondence Table" })).toBeTruthy();
     expect(screen.getByRole("figure", { name: "GRB Logical OR" }).closest(".theory-chapter")?.id).toBe("theory-algebra");
-    expect(screen.getByRole("figure", { name: "YCM Logical AND" }).closest("details")).toBeNull();
+    expect(screen.getByRole("figure", { name: "MCY Logical AND" }).closest("details")).toBeNull();
 
     for (const omitted of ["Polyhedra network", "Octahedral Faces and Operations"]) {
       expect(screen.queryByText(omitted)).toBeNull();
