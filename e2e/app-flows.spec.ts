@@ -307,6 +307,104 @@ test.describe("mobile touch", () => {
   /** How far each dispatched touch moves along the rim. */
   const STEP_DEG = 15;
 
+  /**
+   * A flick: a short sweep along the rim that lifts while still moving. Driven
+   * from inside the page, a frame apart, because what a coast answers to is the
+   * gap between the last move and the lift - and over CDP that gap is round-trip
+   * latency, which drifted to 137ms here and read, correctly, as a finger that
+   * had already stopped.
+   */
+  async function flick(page: Page, wheel: { x: number; y: number; r: number }) {
+    await page.evaluate(
+      async ({ cx, cy, r }) => {
+        const svg = document.querySelector(".linked-viz-root svg")!;
+        const grab = svg.querySelector('g[style*="grab"]')!;
+        const at = (deg: number) => ({
+          clientX: cx + r * 0.8 * Math.cos((deg * Math.PI) / 180),
+          clientY: cy + r * 0.8 * Math.sin((deg * Math.PI) / 180),
+        });
+        const send = (target: Element, type: string, deg: number) =>
+          target.dispatchEvent(
+            new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: "touch", isPrimary: true, ...at(deg) }),
+          );
+        const frame = () => new Promise((done) => setTimeout(done, 16));
+        send(grab, "pointerdown", 0);
+        for (let deg = 12; deg <= 120; deg += 12) {
+          await frame();
+          send(svg, "pointermove", deg);
+        }
+        send(svg, "pointerup", 120);
+      },
+      { cx: wheel.x, cy: wheel.y, r: wheel.r },
+    );
+    return alphaReadout(page);
+  }
+
+  test("carries the hue wheel on after a flick, and stops it when a finger lands again", async ({ page }) => {
+    const figure = await openWheel(page);
+    const wheel = await wheelCentre(figure);
+
+    const atRelease = await flick(page, wheel);
+    // The coast is the whole point, so it has to show as travel the finger did
+    // not make. A 120 deg sweep over ten frames is roughly 750 deg/s, which
+    // exp(-t / 0.5) carries a few hundred degrees further.
+    await expect.poll(() => alphaReadout(page).then((a) => Math.abs(turnedBy(atRelease, a))), { timeout: 3000 }).toBeGreaterThan(40);
+
+    // ...and it has to settle rather than turn for ever.
+    await expect
+      .poll(
+        async () => {
+          const first = await alphaReadout(page);
+          await page.waitForTimeout(250);
+          return first === (await alphaReadout(page));
+        },
+        { timeout: 6000 },
+      )
+      .toBe(true);
+
+    // A hand on the platter stops it, the way it stops a record.
+    await flick(page, wheel);
+    await page.waitForTimeout(60);
+    const moving = await alphaReadout(page);
+    await page.evaluate(
+      ({ cx, cy, r }) => {
+        const grab = document.querySelector('.linked-viz-root svg g[style*="grab"]')!;
+        grab.dispatchEvent(
+          new PointerEvent("pointerdown", {
+            bubbles: true,
+            cancelable: true,
+            pointerId: 9,
+            pointerType: "touch",
+            isPrimary: true,
+            clientX: cx + r * 0.8,
+            clientY: cy,
+          }),
+        );
+      },
+      { cx: wheel.x, cy: wheel.y, r: wheel.r },
+    );
+    const grabbed = await alphaReadout(page);
+    await page.waitForTimeout(400);
+    expect(Math.abs(turnedBy(grabbed, await alphaReadout(page)))).toBeLessThanOrEqual(1);
+    expect(Math.abs(turnedBy(atRelease, moving))).toBeGreaterThan(0);
+
+    expect(await cancels(page)).toBe(0);
+  });
+
+  test("leaves the hue wheel where the finger left it when motion is not wanted", async ({ page }) => {
+    // e2e runs at the browser default, so the reduced-motion path is only ever
+    // exercised where a test asks for it. A coast that ignored the preference
+    // would pass every other test in this file.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const figure = await openWheel(page);
+    const wheel = await wheelCentre(figure);
+
+    const atRelease = await flick(page, wheel);
+    await page.waitForTimeout(800);
+
+    expect(Math.abs(turnedBy(atRelease, await alphaReadout(page)))).toBeLessThanOrEqual(1);
+  });
+
   test("turns the hue wheel from a touch drag instead of letting the page scroll away with it", async ({ page, context }) => {
     const figure = await openWheel(page);
     const wheel = await wheelCentre(figure);

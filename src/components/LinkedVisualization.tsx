@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { SP, C, R } from "../styles/tokens";
 import { S_CURSOR_POINTER } from "../styles/shared";
 import { useTranslation } from "../i18n";
@@ -62,6 +62,48 @@ export interface LinkedVisualizationProps {
 const DOT_HIT_R = 10;
 const DOT_TRANSITION = "r 0.3s, opacity 0.3s, stroke 0.3s, stroke-width 0.3s, fill 0.3s";
 
+/**
+ * Letting go of the wheel leaves it turning. Speed is averaged over this much
+ * of the closing travel rather than the last pair of moves, which at a touch
+ * screen's sampling rate is mostly jitter. The window is measured back from the
+ * last move and not from the lift, because how densely the pointer was sampled
+ * is the device's business: measured from the lift, a pair 126ms and 63ms old
+ * left one sample inside the window and no flick at all.
+ */
+const SPIN_SAMPLE_MS = 90;
+/**
+ * A finger whose last movement is older than this had stopped before it lifted,
+ * and a wheel it stopped stays stopped. Longer than a frame or two of a real
+ * flick, shorter than the pause a hand makes when it means to park the wheel.
+ */
+const SPIN_REST_MS = 120;
+/**
+ * Velocity decays as exp(-t / SPIN_DECAY_S), so a release carries the wheel
+ * about velocity x SPIN_DECAY_S degrees: half a second sends a brisk 720 deg/s
+ * flick around once and stops it inside two.
+ */
+const SPIN_DECAY_S = 0.5;
+/** A degree every three frames reads as stopped, so stop. */
+const SPIN_MIN_DEG_PER_S = 20;
+/** A frame this long is a stall rather than motion, and must not jump the wheel. */
+const SPIN_MAX_FRAME_S = 1 / 20;
+/**
+ * Follow the pointer once it leaves the figure. A capture the browser will not
+ * grant - the touch already ended, or the id is not one it is tracking - throws,
+ * and losing the drag over it would be worse than following the pointer only
+ * while it stays inside.
+ */
+function capturePointer(element: SVGSVGElement | null, pointerId: number) {
+  try {
+    element?.setPointerCapture(pointerId);
+  } catch {
+    /* the pointer is gone; the drag still ends on its own pointerup */
+  }
+}
+
+/** Shortest way round from one angle to another, in (-180, 180]. */
+const angleStep = (from: number, to: number) => ((((to - from) % 360) + 540) % 360) - 180;
+
 /* ── Toggle button style ── */
 const S_TOGGLE: React.CSSProperties = {
   padding: "var(--linked-viz-toggle-padding, 3px 10px)",
@@ -107,7 +149,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const { t } = useTranslation();
   const [originModeInternal, setOriginModeInternal] = useState<0 | 7>(0);
   const mode = originModeProp ?? originModeInternal;
-  const setMode = useCallback(
+  const setModeRaw = useCallback(
     (m: 0 | 7) => {
       if (originModeProp === undefined) setOriginModeInternal(m);
       onOriginModeChange?.(m);
@@ -148,11 +190,38 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
    * read as 100. A hand steadying the phone is enough to do it.
    */
   const dragRef = useRef<
-    | { pointerId: number; type: "wheel"; startAngle: number; startAlpha: number }
+    | { pointerId: number; type: "wheel"; startAlpha: number; lastAngle: number; travelled: number }
     | { pointerId: number; type: "hue" }
     | { pointerId: number; type: "hue-bottom" }
     | null
   >(null);
+  /**
+   * How far the wheel has been turned, and when, over the closing stretch of a
+   * drag. Travel is accumulated rather than measured against the angle the drag
+   * opened at, so it runs past a full turn instead of folding back at the atan2
+   * seam, which is what a velocity would otherwise read as a 360 deg jump.
+   */
+  const spinSamplesRef = useRef<{ time: number; travelled: number }[]>([]);
+  const spinRef = useRef<{ velocity: number; alpha: number; mode: 0 | 7; time: number | null; frame: number } | null>(null);
+  const setAlphaRef = useRef({ setAlpha0, setAlpha7 });
+  useEffect(() => {
+    setAlphaRef.current = { setAlpha0, setAlpha7 };
+  });
+
+  const stopSpin = useCallback(() => {
+    if (spinRef.current) cancelAnimationFrame(spinRef.current.frame);
+    spinRef.current = null;
+  }, []);
+  useEffect(() => stopSpin, [stopSpin]);
+  // A coast belongs to the origin it was released under, so switching origin
+  // ends it rather than carrying its speed over to the other one's alpha.
+  const setMode = useCallback(
+    (m: 0 | 7) => {
+      stopSpin();
+      setModeRaw(m);
+    },
+    [setModeRaw, stopSpin],
+  );
 
   const activeAlpha = mode === 0 ? alpha0 : alpha7;
   const activeRadiusFn = mode === 0 ? toneR0 : toneR7;
@@ -178,12 +247,22 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const onWheelPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (dragRef.current) return;
+      // A hand on the platter stops it, the way it stops a record.
+      const coasting = spinRef.current;
+      stopSpin();
       const pt = svgCoord(e.clientX, e.clientY);
       const angle = (Math.atan2(pt.y - CY, pt.x - CX) * 180) / Math.PI;
-      dragRef.current = { pointerId: e.pointerId, type: "wheel", startAngle: angle, startAlpha: activeAlpha };
-      svgRef.current?.setPointerCapture(e.pointerId);
+      dragRef.current = {
+        pointerId: e.pointerId,
+        type: "wheel",
+        startAlpha: coasting ? coasting.alpha : activeAlpha,
+        lastAngle: angle,
+        travelled: 0,
+      };
+      spinSamplesRef.current = [{ time: e.timeStamp, travelled: 0 }];
+      capturePointer(svgRef.current, e.pointerId);
     },
-    [activeAlpha, svgCoord],
+    [activeAlpha, svgCoord, stopSpin],
   );
 
   // Hue line drag (on right graph)
@@ -192,7 +271,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       e.stopPropagation();
       if (dragRef.current) return;
       dragRef.current = { pointerId: e.pointerId, type: "hue" };
-      svgRef.current?.setPointerCapture(e.pointerId);
+      capturePointer(svgRef.current, e.pointerId);
       // Immediately update hue
       const pt = svgCoord(e.clientX, e.clientY);
       const hue = clampHueFromRightGraphX(pt.x);
@@ -207,7 +286,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       e.stopPropagation();
       if (dragRef.current) return;
       dragRef.current = { pointerId: e.pointerId, type: "hue-bottom" };
-      svgRef.current?.setPointerCapture(e.pointerId);
+      capturePointer(svgRef.current, e.pointerId);
       const pt = svgCoord(e.clientX, e.clientY);
       const hue = clampHueFromBottomGraphY(pt.y);
       onHueAngleDegChange?.(Math.round(hue));
@@ -222,8 +301,12 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
       const pt = svgCoord(e.clientX, e.clientY);
       if (drag.type === "wheel") {
         const angle = (Math.atan2(pt.y - CY, pt.x - CX) * 180) / Math.PI;
-        const delta = angle - drag.startAngle;
-        const newAlpha = (((drag.startAlpha + delta) % 360) + 360) % 360;
+        drag.travelled += angleStep(drag.lastAngle, angle);
+        drag.lastAngle = angle;
+        const samples = spinSamplesRef.current;
+        samples.push({ time: e.timeStamp, travelled: drag.travelled });
+        while (samples.length > 2 && e.timeStamp - samples[0].time > SPIN_SAMPLE_MS) samples.shift();
+        const newAlpha = normalizeHueAngleDeg(drag.startAlpha + drag.travelled);
         if (mode === 0) setAlpha0(newAlpha);
         else setAlpha7(newAlpha);
       } else if (drag.type === "hue") {
@@ -237,10 +320,74 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     [svgCoord, mode, setAlpha0, setAlpha7, onHueAngleDegChange],
   );
 
+  /** One frame of the coast: decay the speed, move alpha, ask for the next. */
+  const spinStep = useCallback((now: number) => {
+    const spin = spinRef.current;
+    if (!spin) return;
+    if (spin.time === null) {
+      // The first frame only starts the clock. rAF hands us its own timestamp,
+      // so the coast never reads a clock of its own and never has to guess how
+      // long the gap since the finger lifted was.
+      spin.time = now;
+      spin.frame = requestAnimationFrame(spinStep);
+      return;
+    }
+    const elapsed = Math.min((now - spin.time) / 1000, SPIN_MAX_FRAME_S);
+    spin.time = now;
+    spin.alpha = normalizeHueAngleDeg(spin.alpha + spin.velocity * elapsed);
+    spin.velocity *= Math.exp(-elapsed / SPIN_DECAY_S);
+    const { setAlpha0: set0, setAlpha7: set7 } = setAlphaRef.current;
+    if (spin.mode === 0) set0(spin.alpha);
+    else set7(spin.alpha);
+    if (Math.abs(spin.velocity) < SPIN_MIN_DEG_PER_S) {
+      spinRef.current = null;
+      return;
+    }
+    spin.frame = requestAnimationFrame(spinStep);
+  }, []);
+
   // Only the pointer that owns the drag ends it. A second finger lifting, or
   // leaving the figure, used to drop a turn that was still under way.
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    if (dragRef.current?.pointerId === e.pointerId) dragRef.current = null;
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const drag = dragRef.current;
+      if (drag?.pointerId !== e.pointerId) return;
+      dragRef.current = null;
+      if (drag.type !== "wheel") return;
+
+      const samples = spinSamplesRef.current;
+      spinSamplesRef.current = [];
+      const last = samples[samples.length - 1];
+      // A finger that had already stopped leaves the wheel where it put it.
+      if (!last || e.timeStamp - last.time > SPIN_REST_MS) return;
+      const first = samples.find((s) => last.time - s.time <= SPIN_SAMPLE_MS);
+      if (!first || first === last) return;
+      const seconds = (last.time - first.time) / 1000;
+      if (seconds <= 0) return;
+      const velocity = (last.travelled - first.travelled) / seconds;
+      if (Math.abs(velocity) < SPIN_MIN_DEG_PER_S) return;
+      // A coast is motion, and a reader who asked for less of it gets the wheel
+      // stopped where the finger left it instead.
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      stopSpin();
+      const spin = {
+        velocity,
+        alpha: normalizeHueAngleDeg(drag.startAlpha + drag.travelled),
+        mode,
+        time: null as number | null,
+        frame: 0,
+      };
+      spinRef.current = spin;
+      spin.frame = requestAnimationFrame(spinStep);
+    },
+    [mode, spinStep, stopSpin],
+  );
+
+  const onPointerCancel = useCallback((e: React.PointerEvent) => {
+    if (dragRef.current?.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    spinSamplesRef.current = [];
   }, []);
 
   // Pre-compute all sine/cosine paths so vizContent doesn't recalculate them
@@ -448,8 +595,9 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         onPointerLeave={onPointerUp}
         // Nothing should cancel a turn now that the figure claims the gesture,
         // but a cancel that went unhandled left the drag armed, so the next
-        // move resumed it from a stale origin.
-        onPointerCancel={onPointerUp}
+        // move resumed it from a stale origin. A gesture taken away is not a
+        // release, so it drops the drag without leaving the wheel coasting.
+        onPointerCancel={onPointerCancel}
       >
         <defs>
           <filter id="dot-glow" x="-50%" y="-50%" width="200%" height="200%">
