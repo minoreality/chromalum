@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useSyncRef } from "../../hooks/useSyncRef";
 import { useTranslation } from "../../i18n";
 import { C, SP } from "../../styles/tokens";
 import { ComplementPairs } from "./ComplementPairs";
@@ -13,28 +14,18 @@ interface Props {
 const S_COL: React.CSSProperties = { display: "flex", flexDirection: "column", gap: SP.sm, alignItems: "center" };
 const S_LABEL: React.CSSProperties = { fontSize: "var(--music-card-label-fs, 11px)", color: C.textDim, whiteSpace: "nowrap" };
 
-const LOOP_PERIOD_MS = 1800;
 type Direction = "forward" | "reverse" | null;
 
 export const ComplementPairsCard = React.memo(function ComplementPairsCard({ engine, stopSignal }: Props) {
   const { t } = useTranslation();
   const [activePair, setActivePair] = useState(-1);
   const [playing, setPlaying] = useState<Direction>(null);
-  const loopTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const clearLoop = useCallback(() => {
-    if (loopTimerRef.current !== null) {
-      clearInterval(loopTimerRef.current);
-      loopTimerRef.current = null;
-    }
-  }, []);
 
   const stopLoop = useCallback(() => {
-    clearLoop();
     engine.stopAlgebra?.();
     setActivePair(-1);
     setPlaying(null);
-  }, [clearLoop, engine]);
+  }, [engine]);
 
   const mountedRef = useRef(false);
   useEffect(() => {
@@ -42,12 +33,20 @@ export const ComplementPairsCard = React.memo(function ComplementPairsCard({ eng
       mountedRef.current = true;
       return;
     }
-    clearLoop();
     setActivePair(-1);
     setPlaying(null);
-  }, [clearLoop, stopSignal]);
+  }, [stopSignal]);
 
-  useEffect(() => clearLoop, [clearLoop]);
+  // The canon's repeat lives on the engine's algebra timers now, so leaving
+  // takes it with us only while we are the ones playing it.
+  const playingRef = useSyncRef(playing);
+  const stopAlgebra = engine.stopAlgebra;
+  useEffect(
+    () => () => {
+      if (playingRef.current) stopAlgebra?.();
+    },
+    [playingRef, stopAlgebra],
+  );
 
   const handleClick = useCallback(
     (reverse: boolean) => {
@@ -56,19 +55,18 @@ export const ComplementPairsCard = React.memo(function ComplementPairsCard({ eng
         stopLoop();
         return;
       }
-      clearLoop();
       engine.initAudio();
-      const play = () => {
-        engine.playComplementCanon?.((idx, phase) => {
+      engine.playComplementCanon?.(
+        (idx, phase) => {
           setActivePair(idx);
           if (!phase) setActivePair(-1);
-        }, reverse);
-      };
-      play();
-      loopTimerRef.current = setInterval(play, LOOP_PERIOD_MS);
+        },
+        reverse,
+        true,
+      );
       setPlaying(dir);
     },
-    [clearLoop, engine, playing, stopLoop],
+    [engine, playing, stopLoop],
   );
 
   const fwdLabel = playing === "forward" ? t("music_complement_stop") : t("music_complement_play");
