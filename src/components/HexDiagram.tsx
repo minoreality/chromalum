@@ -232,6 +232,13 @@ export const HexDiagram = memo(
                 const { key, levelIndex: lv, ai, x, y, r, color, vertex, vertexIdx } = item;
                 const act = isA(lv, ai),
                   hov = hl === lv;
+                // A level the canvas does not use contributes a factor of 1 to
+                // the pattern count, is skipped by randomize, and shows hollow
+                // in the swatch row. Its dot says the same here: still
+                // selectable, so a palette can be set before anything is
+                // painted, but not filled in, because choosing it changes
+                // nothing that is on the canvas yet.
+                const used = levelHistogram[lv] > 0;
                 if (vertex && vertexIdx !== undefined) {
                   const v = HEX_VERTICES[vertexIdx];
                   const la = (v.angleDeg * Math.PI) / 180,
@@ -307,10 +314,10 @@ export const HexDiagram = memo(
                         cx={x}
                         cy={y}
                         r={r}
-                        fill={act ? color : "none"}
-                        stroke={act ? C.textWhite : color}
+                        fill={act && used ? color : "none"}
+                        stroke={act && used ? C.textWhite : color}
                         strokeWidth={act ? 3 : 1.5}
-                        fillOpacity={act ? O.soft : 1}
+                        fillOpacity={act && used ? O.soft : 1}
                       />
                       <text
                         x={x}
@@ -320,7 +327,7 @@ export const HexDiagram = memo(
                         fontSize={Math.max(FS.sm, r * 0.7)}
                         fontWeight={900}
                         fontFamily="var(--font-mono)"
-                        fill={act ? levelLabelColor(lv) : color}
+                        fill={act && used ? levelLabelColor(lv) : color}
                       >
                         {lv}
                       </text>
@@ -411,10 +418,10 @@ export const HexDiagram = memo(
                       cx={x}
                       cy={y}
                       r={r}
-                      fill={act ? color : "none"}
-                      stroke={act ? C.textWhite : color}
+                      fill={act && used ? color : "none"}
+                      stroke={act && used ? C.textWhite : color}
                       strokeWidth={act ? 2.5 : 1.5}
-                      fillOpacity={act ? O.soft : 1}
+                      fillOpacity={act && used ? O.soft : 1}
                     />
                     <text
                       x={x}
@@ -424,7 +431,7 @@ export const HexDiagram = memo(
                       fontSize={Math.max(FS.xxs, r * 0.9)}
                       fontWeight={FW.bold}
                       fontFamily="var(--font-mono)"
-                      fill={act ? levelLabelColor(lv) : color}
+                      fill={act && used ? levelLabelColor(lv) : color}
                     >
                       {lv}
                     </text>
