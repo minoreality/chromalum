@@ -174,6 +174,25 @@ describe("canvasReducer", () => {
       const next = canvasReducer(initialState, { type: "clear" });
       expect(next).toBe(initialState);
     });
+
+    it("clears overrides left on a canvas whose levels are all zero", () => {
+      const pixelCandidateOverrideMap = new Uint8Array(initialState.canvasData.pixelCandidateOverrideMap.length);
+      pixelCandidateOverrideMap[7] = 2;
+      const glazed = {
+        ...initialState,
+        canvasData: { ...initialState.canvasData, pixelCandidateOverrideMap },
+      };
+
+      const next = canvasReducer(glazed, { type: "clear" });
+      expect(next).not.toBe(glazed);
+      expect(next.canvasData.pixelCandidateOverrideMap[7]).toBe(0);
+      expect(next.undoStack.length).toBe(1);
+
+      // The override, not a level, is what the undo entry has to restore.
+      const undone = canvasReducer(next, { type: "undo" });
+      expect(undone.canvasData.pixelCandidateOverrideMap[7]).toBe(2);
+      expect(undone.levelHistogram[0]).toBe(undone.canvasData.width * undone.canvasData.height);
+    });
   });
 
   describe("new_canvas", () => {

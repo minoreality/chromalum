@@ -5,23 +5,22 @@
  * level change and any associated override change together.
  */
 import { MAX_UNDO, LEVEL_MASK, isAllowedCanvasSize } from "../constants";
-import { computeDiff, applyDiff, applyDiffToPixelCandidateOverrideMap, compressDiff, decompressDiff } from "./undo-diff";
+import { applyDiff, applyDiffToPixelCandidateOverrideMap, compressDiff, decompressDiff } from "./undo-diff";
 import { RingBuffer } from "../utils/ring-buffer";
 import type { AppState, CanvasAction, CompressedDiff, Diff } from "../types";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../constants";
 
-/** Build a merged diff that clears both level data and pixel candidate overrides to zero. */
-function buildMergedClearDiff(
-  levelData: Uint8Array,
-  pixelCandidateOverrideMap: Uint8Array,
-  levelDataDiff: { indices: Uint32Array; oldLevelValues: Uint8Array; newLevelValues: Uint8Array },
-): import("../types").Diff {
+/**
+ * Build a merged diff that clears both level data and pixel candidate overrides
+ * to zero. A row is needed wherever either map is already non-zero: clearing
+ * targets zero, so "this pixel's level changes" and "this pixel's level is not
+ * already zero" are the same test, and neither map has to be diffed first.
+ */
+function buildMergedClearDiff(levelData: Uint8Array, pixelCandidateOverrideMap: Uint8Array): import("../types").Diff {
   const n = levelData.length;
-  const levelDataChanged = new Set<number>();
-  for (let i = 0; i < levelDataDiff.indices.length; i++) levelDataChanged.add(levelDataDiff.indices[i]);
   let count = 0;
   for (let i = 0; i < n; i++) {
-    if (levelDataChanged.has(i) || pixelCandidateOverrideMap[i] !== 0) count++;
+    if (levelData[i] !== 0 || pixelCandidateOverrideMap[i] !== 0) count++;
   }
   const indices = new Uint32Array(count);
   const oldLevelValues = new Uint8Array(count),
@@ -30,7 +29,7 @@ function buildMergedClearDiff(
     newPixelCandidateOverrideValues = new Uint8Array(count);
   let j = 0;
   for (let i = 0; i < n; i++) {
-    if (levelDataChanged.has(i) || pixelCandidateOverrideMap[i] !== 0) {
+    if (levelData[i] !== 0 || pixelCandidateOverrideMap[i] !== 0) {
       indices[j] = i;
       oldLevelValues[j] = levelData[i];
       newLevelValues[j] = 0;
@@ -250,12 +249,12 @@ export function canvasReducer(state: AppState, action: CanvasAction): AppState {
     case "clear": {
       const n = state.canvasData.width * state.canvasData.height;
       const blank = new Uint8Array(n);
-      const levelDataDiff = computeDiff(state.canvasData.levelData, blank);
-      if (levelDataDiff.indices.length === 0 && state.canvasData.pixelCandidateOverrideMap.every((v) => v === 0)) return state;
+      const mergedDiff = buildMergedClearDiff(state.canvasData.levelData, state.canvasData.pixelCandidateOverrideMap);
+      // An empty merged diff already means both maps are blank, so this is the
+      // whole no-op test; nothing needs diffing ahead of it.
+      if (mergedDiff.indices.length === 0) return state;
       const clearHist = new Array(8).fill(0);
       clearHist[0] = n;
-      const mergedDiff = buildMergedClearDiff(state.canvasData.levelData, state.canvasData.pixelCandidateOverrideMap, levelDataDiff);
-      if (mergedDiff.indices.length === 0) return state;
       const newUndo = state.undoStack.clone();
       newUndo.push(compressDiff(mergedDiff));
       return {
