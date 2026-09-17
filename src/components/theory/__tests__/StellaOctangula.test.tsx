@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../../../i18n";
@@ -37,6 +37,276 @@ function setDistances(distances: number[]) {
 }
 
 describe("StellaOctangula", () => {
+  it("turns the graph by dragging, and does not let the drag act as a click", async () => {
+    const { container } = renderStella();
+    const diagram = container.querySelector("#theory-stella-view")!;
+    const positions = () =>
+      [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map(
+        (circle) => `${circle.getAttribute("cx")},${circle.getAttribute("cy")}`,
+      );
+    const before = positions();
+
+    // A press that barely moves stays a click: it selects the vertex it is on.
+    const vertex = diagram.querySelector('[data-stella-vertex="3"] [data-stella-hit]')!;
+    fireEvent.pointerDown(vertex, { pointerId: 1, clientX: 100, clientY: 100, buttons: 1 });
+    fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 102, clientY: 100, buttons: 1 });
+    fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 102, clientY: 100, buttons: 1 });
+    fireEvent.click(vertex, { detail: 1 });
+    expect(diagram.getAttribute("data-stella-view")).toBe("default");
+    expect(positions()).toEqual(before);
+    expect(diagram.querySelector('[data-stella-vertex="3"]')!.getAttribute("aria-pressed")).toBe("true");
+
+    // Past the threshold the same gesture turns the graph instead.
+    fireEvent.pointerDown(diagram, { pointerId: 2, clientX: 100, clientY: 100, buttons: 1 });
+    fireEvent.pointerMove(diagram, { pointerId: 2, clientX: 140, clientY: 100, buttons: 1 });
+    expect(diagram.getAttribute("data-stella-view")).toBe("free");
+    const turned = positions();
+    expect(turned).not.toEqual(before);
+
+    // Dragging further keeps turning from where it already is.
+    fireEvent.pointerMove(diagram, { pointerId: 2, clientX: 180, clientY: 130, buttons: 1 });
+    expect(positions()).not.toEqual(turned);
+
+    // The click the browser sends after the drag must not reach the figure.
+    fireEvent.pointerUp(diagram, { pointerId: 2, clientX: 180, clientY: 130, buttons: 1 });
+    const afterDrag = positions();
+    fireEvent.click(diagram, { detail: 1 });
+    expect(diagram.querySelector('[data-stella-vertex="3"]')!.getAttribute("aria-pressed")).toBe("true");
+    expect(positions()).toEqual(afterDrag);
+
+    // Once that breath has passed, a click is a click again. A drag that ends
+    // without a trailing click must not eat the reader's next one.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    fireEvent.click(diagram.querySelector('[data-stella-vertex="5"] [data-stella-hit]')!, { detail: 1 });
+    await waitFor(() => expect(diagram.querySelector('[data-stella-vertex="5"]')!.getAttribute("aria-pressed")).toBe("true"));
+  });
+
+  it("turns with either button, and only the right one reaches past the ball", () => {
+    const turnOf = (button: number, buttons: number, reach: number) => {
+      const { container, unmount } = renderStella();
+      const diagram = container.querySelector("#theory-stella-view")!;
+      // Press at the centre of the drawing surface, then pull out to `reach`.
+      fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 120, clientY: 120, button, buttons });
+      fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 120 + reach, clientY: 120, buttons });
+      const result = [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map(
+        (circle) => `${circle.getAttribute("cx")},${circle.getAttribute("cy")}`,
+      );
+      const view = diagram.getAttribute("data-stella-view");
+      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 120 + reach, clientY: 120, buttons: 0 });
+      unmount();
+      return { result, view };
+    };
+
+    // Both buttons turn the figure.
+    expect(turnOf(0, 1, 60).view).toBe("free");
+    expect(turnOf(2, 2, 60).view).toBe("free");
+
+    // The left button holds the ball itself, so past its rim the turn stops growing.
+    expect(turnOf(0, 1, 400).result).toEqual(turnOf(0, 1, 900).result);
+    // The right button keeps its hold on the sheet beyond, so it keeps turning.
+    expect(turnOf(2, 2, 400).result).not.toEqual(turnOf(2, 2, 900).result);
+  });
+
+  it("keeps turning under the middle button, and holds still when motion is reduced", async () => {
+    const reduce = vi.spyOn(window, "matchMedia");
+    const media = (matches: boolean) =>
+      ({
+        matches,
+        media: "(prefers-reduced-motion: reduce)",
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList;
+
+    const spinFor = async (reduced: boolean) => {
+      reduce.mockImplementation(() => media(reduced));
+      const { container, unmount } = renderStella();
+      const diagram = container.querySelector("#theory-stella-view")!;
+      const pose = () =>
+        [...diagram.querySelectorAll("[data-stella-vertex]")].map((node) => node.getAttribute("data-stella-depth")).join(" ");
+
+      // Take hold at the centre, pull out well past the rim, then stop moving.
+      fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 120, clientY: 120, button: 1, buttons: 4 });
+      fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 200, clientY: 120, buttons: 4 });
+      fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 600, clientY: 120, buttons: 4 });
+      const held = pose();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const later = pose();
+      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 600, clientY: 120, buttons: 0 });
+
+      // And it stops once the button is let go.
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const released = pose();
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const settled = pose();
+      unmount();
+      return { moved: held !== later, stopped: released === settled };
+    };
+
+    const normal = await spinFor(false);
+    expect(normal.moved).toBe(true);
+    expect(normal.stopped).toBe(true);
+
+    // Motion nobody asked for is exactly what the setting rules out.
+    const reduced = await spinFor(true);
+    expect(reduced.moved).toBe(false);
+
+    reduce.mockRestore();
+  });
+
+  it("drops the ball while Shift is held, turning as far as the hand goes", () => {
+    const pull = (reach: number, shiftKey: boolean) => {
+      const { container, unmount } = renderStella();
+      const diagram = container.querySelector("#theory-stella-view")!;
+      fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 120, clientY: 120, button: 0, buttons: 1, shiftKey });
+      fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 120 + reach, clientY: 120, buttons: 1, shiftKey });
+      const pose = [...diagram.querySelectorAll("[data-stella-vertex]")].map((node) => node.getAttribute("data-stella-depth")).join(" ");
+      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 120 + reach, clientY: 120, buttons: 0 });
+      unmount();
+      return pose;
+    };
+
+    // Without Shift the ball runs out at its rim and a longer pull adds nothing.
+    expect(pull(400, false)).toBe(pull(900, false));
+    // With Shift there is no ball to run out, so it keeps turning.
+    expect(pull(400, true)).not.toBe(pull(900, true));
+    // And a short pull still turns the figure.
+    expect(pull(40, true)).not.toBe(pull(0, true));
+  });
+
+  it("follows a finger at one rate everywhere, with no ball to run out of", () => {
+    const pullBy = (reach: number, pointerType: "mouse" | "touch") => {
+      const { container, unmount } = renderStella();
+      const diagram = container.querySelector("#theory-stella-view")!;
+      fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 120, clientY: 120, pointerType, button: 0, buttons: 1 });
+      fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 120 + reach, clientY: 120, pointerType, buttons: 1 });
+      const pose = [...diagram.querySelectorAll("[data-stella-vertex]")].map((node) => node.getAttribute("data-stella-depth")).join(" ");
+      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 120 + reach, clientY: 120, pointerType, buttons: 0 });
+      unmount();
+      return pose;
+    };
+
+    // A finger has no button and no room outside the ball, so it never meets a rim.
+    expect(pullBy(400, "touch")).not.toBe(pullBy(900, "touch"));
+    // The same drag from a mouse holds the ball, which runs out at its rim.
+    expect(pullBy(400, "mouse")).toBe(pullBy(900, "mouse"));
+  });
+
+  it("keeps the context menu for a right click that never became a drag", () => {
+    const { container } = renderStella();
+    const diagram = container.querySelector("#theory-stella-view")!;
+
+    // A right press that does not move leaves the menu alone.
+    fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 120, clientY: 120, button: 2, buttons: 2 });
+    fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 120, clientY: 120, buttons: 0 });
+    const kept = fireEvent.contextMenu(diagram);
+    expect(kept).toBe(true);
+
+    // A right drag ends in a menu nobody asked for, so that one is swallowed.
+    fireEvent.pointerDown(diagram, { pointerId: 2, clientX: 120, clientY: 120, button: 2, buttons: 2 });
+    fireEvent.pointerMove(diagram, { pointerId: 2, clientX: 180, clientY: 150, buttons: 2 });
+    const duringDrag = fireEvent.contextMenu(diagram);
+    expect(duringDrag).toBe(false);
+    fireEvent.pointerUp(diagram, { pointerId: 2, clientX: 180, clientY: 150, buttons: 0 });
+    expect(fireEvent.contextMenu(diagram)).toBe(false);
+  });
+
+  it("stops turning once the button is released, even off the figure", () => {
+    const { container } = renderStella();
+    const diagram = container.querySelector("#theory-stella-view")!;
+    const positions = () =>
+      [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map(
+        (circle) => `${circle.getAttribute("cx")},${circle.getAttribute("cy")}`,
+      );
+
+    // Press on the figure, then release somewhere else: no pointerup arrives here.
+    fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 100, clientY: 100, buttons: 1 });
+    const before = positions();
+
+    // Passing back over the figure with no button held must not turn it.
+    fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 160, clientY: 140, buttons: 0 });
+    expect(positions()).toEqual(before);
+    expect(diagram.getAttribute("data-stella-view")).toBe("default");
+
+    fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 200, clientY: 180, buttons: 0 });
+    expect(positions()).toEqual(before);
+  });
+
+  it("turns the same amount whichever way the drag is split into moves", () => {
+    const coordsOf = (diagram: Element) =>
+      [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].flatMap((circle) => [
+        Number(circle.getAttribute("cx")),
+        Number(circle.getAttribute("cy")),
+      ]);
+    const dragBy = (steps: [number, number][]) => {
+      const { container, unmount } = renderStella();
+      const diagram = container.querySelector("#theory-stella-view")!;
+      fireEvent.pointerDown(diagram, { pointerId: 1, clientX: 100, clientY: 100, buttons: 1 });
+      for (const [x, y] of steps) fireEvent.pointerMove(diagram, { pointerId: 1, clientX: x, clientY: y, buttons: 1 });
+      const last = steps[steps.length - 1];
+      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: last[0], clientY: last[1], buttons: 1 });
+      const result = coordsOf(diagram);
+      unmount();
+      return result;
+    };
+
+    // One long move and the same path in small moves must land together.
+    const oneMove = dragBy([[160, 100]]);
+    const manyMoves = dragBy([
+      [110, 100],
+      [120, 100],
+      [130, 100],
+      [140, 100],
+      [150, 100],
+      [160, 100],
+    ]);
+    expect(manyMoves).toHaveLength(oneMove.length);
+    manyMoves.forEach((value, index) => expect(value).toBeCloseTo(oneMove[index], 9));
+  });
+
+  it("turns the graph from the numeric keypad once it is clicked, and stays silent about it", () => {
+    const { container } = renderStella();
+    const diagram = container.querySelector("#theory-stella-view")!;
+    expect(diagram.getAttribute("data-stella-view")).toBe("default");
+    // An undocumented control: no tab stop, no shortcut hint on the element.
+    expect(diagram.getAttribute("tabindex")).toBe("-1");
+    expect(diagram.getAttribute("aria-keyshortcuts")).toBeNull();
+
+    // The keypad does nothing until the graph has been clicked.
+    fireEvent.keyDown(document.body, { code: "Numpad8", key: "8" });
+    expect(diagram.getAttribute("data-stella-view")).toBe("default");
+
+    fireEvent.pointerDown(diagram);
+    expect(document.activeElement).toBe(diagram);
+
+    // The number row and modifier chords belong to the browser, not the graph.
+    fireEvent.keyDown(diagram, { code: "Digit8", key: "8" });
+    fireEvent.keyDown(diagram, { code: "Numpad8", key: "8", ctrlKey: true });
+    expect(diagram.getAttribute("data-stella-view")).toBe("default");
+
+    for (const code of ["Numpad7", "Numpad8", "Numpad9", "Numpad4", "Numpad6", "Numpad1", "Numpad2", "Numpad3"]) {
+      fireEvent.keyDown(diagram, { code, key: "" });
+      expect(diagram.getAttribute("data-stella-view")).toBe("free");
+      fireEvent.keyDown(diagram, { code: "Numpad5", key: "5" });
+      expect(diagram.getAttribute("data-stella-view")).toBe("default");
+    }
+  });
+
+  it("moves the drawn vertices once a keypad turn settles", async () => {
+    const { container } = renderStella();
+    const diagram = container.querySelector("#theory-stella-view")!;
+    const positions = () =>
+      [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map(
+        (circle) => `${circle.getAttribute("cx")},${circle.getAttribute("cy")}`,
+      );
+    const before = positions();
+
+    fireEvent.pointerDown(diagram);
+    fireEvent.keyDown(diagram, { code: "Numpad8", key: "8" });
+
+    await waitFor(() => expect(diagram.getAttribute("data-stella-turn")).toBe("1"));
+    expect(positions()).not.toEqual(before);
+  });
+
   it("combines and removes distance layers independently without moving vertices or duplicating pairs", () => {
     const { container } = renderStella();
     const diagram = container.querySelector("#theory-stella-view")!;

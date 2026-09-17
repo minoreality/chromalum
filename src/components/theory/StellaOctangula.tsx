@@ -1,12 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { THEORY_LEVELS, hammingDist } from "../../data/theory-data";
 import { C, FW } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 import { ToggleActionTable } from "./ToggleActionTable";
 import { targetState, useK8Selection, type K8Target } from "./k8-selection";
-import { stellaView } from "./stella-view";
+import { stellaView, STELLA_VIEWBOX } from "./stella-view";
 import { useStellaView } from "./useStellaView";
+import { levelLabelColor } from "../../color-engine";
 
 const VR = 5.7;
 const HIT_R = 14;
@@ -17,6 +18,21 @@ const edgeColor = (mask: number) => THEORY_LEVELS[mask].color;
 const DISTANCES = [1, 2, 3] as const;
 const DISTANCE_TERMS = ["", "Q₃(12)", "2K₄(12)", "M₄(4)"];
 
+// The numeric keypad read as the direction pad it looks like: each key pushes
+// the graph the way it sits around 5, which restores the default projection.
+// Matched on event.code so the keys work with Num Lock either way, and so the
+// number row keeps whatever the surrounding page does with it.
+const KEYPAD_TURNS = {
+  Numpad7: [1, -1],
+  Numpad8: [1, 0],
+  Numpad9: [1, 1],
+  Numpad4: [0, -1],
+  Numpad6: [0, 1],
+  Numpad1: [-1, -1],
+  Numpad2: [-1, 0],
+  Numpad3: [-1, 1],
+} as const satisfies Record<string, readonly [up: number, right: number]>;
+
 interface Props {
   hlLevel: number | null;
   onHover: (lv: number | null) => void;
@@ -26,8 +42,9 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
   const { t } = useTranslation();
   const link = useK8Selection(onHover);
   const camera = useStellaView(link.selection, link.restoreSelection);
+  const graphRef = useRef<SVGSVGElement>(null);
   const view = useMemo(() => stellaView(camera.orientation), [camera.orientation]);
-  const turning = camera.progress < 1;
+  const turning = camera.interacting;
   const { visibleDistances, selectDistances } = link;
   const distances = DISTANCES.filter((distance) => visibleDistances.has(distance));
   const nodesOnly = distances.length === 0;
@@ -149,7 +166,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             fontSize={5}
             fontFamily="var(--font-mono)"
             fontWeight={FW.bold}
-            fill={dim ? C.textPrimary : lv >= 3 ? "#000" : "#fff"}
+            fill={dim ? C.textPrimary : levelLabelColor(lv)}
             opacity={dim ? 0.3 : 1}
           >
             {info.bits.join("")}
@@ -239,15 +256,38 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       <div className="theory-k8-overview">
         <div className="theory-k8-graph">
           <svg
+            ref={graphRef}
             id="theory-stella-view"
             data-stella-distances={distances.join(" ") || "none"}
-            data-stella-view={camera.frontLevel === null ? "default" : "symmetric"}
+            data-stella-view={camera.frontLevel !== null ? "symmetric" : camera.isDefaultView ? "default" : "free"}
             data-stella-front={camera.frontLevel ?? undefined}
             data-stella-turn={camera.progress}
-            viewBox="12 -15 156 156"
+            viewBox={`${STELLA_VIEWBOX.x} ${STELLA_VIEWBOX.y} ${STELLA_VIEWBOX.size} ${STELLA_VIEWBOX.size}`}
             role="group"
+            // Focusable only by the click below, never by Tab: the keypad turn is
+            // an undocumented control, so it adds no tab stop and no focus ring.
+            tabIndex={-1}
             aria-label={t("theory_stella_diagram")}
             {...camera.handlers}
+            onPointerDownCapture={(event) => {
+              // One click on the graph hands it the keyboard, with no visible
+              // change to say so.
+              if (!(event.target as Element).closest("[data-stella-vertex], button")) graphRef.current?.focus();
+            }}
+            onKeyDown={(event) => {
+              if (event.ctrlKey || event.metaKey || event.altKey) return;
+              const nudge = KEYPAD_TURNS[event.code as keyof typeof KEYPAD_TURNS];
+              if (nudge) {
+                // Num Lock off sends the arrow keys, which would scroll the page.
+                event.preventDefault();
+                camera.turn(nudge[0], nudge[1]);
+                return;
+              }
+              if (event.code === "Numpad5") {
+                event.preventDefault();
+                camera.resetView();
+              }
+            }}
           >
             {renderGraph()}
           </svg>

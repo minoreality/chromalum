@@ -445,6 +445,8 @@ test("does not treat touch drags or synthesized mouse events as another camera g
   const box = (await graph.boundingBox())!;
   const x = box.x + 10,
     y = box.y + 10;
+  // No button is held, so this is a pointer passing over the figure rather than
+  // a drag. A real touch drag turns the graph; the test below covers that one.
   await graph.dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true, clientX: x, clientY: y });
   await graph.dispatchEvent("pointermove", { pointerType: "touch", isPrimary: true, clientX: x, clientY: y + 40 });
   await graph.dispatchEvent("pointerup", { pointerType: "touch", isPrimary: true, clientX: x, clientY: y + 40 });
@@ -454,5 +456,40 @@ test("does not treat touch drags or synthesized mouse events as another camera g
   await page.touchscreen.tap(x, y);
   await expect(graph).toHaveAttribute("data-stella-view", "default");
   expect(await page.evaluate(() => window.visualViewport!.scale)).toBe(1);
+  await context.close();
+});
+
+test("turns from a touch drag instead of letting the page scroll away with it", async ({ browser }) => {
+  const context = await browser.newContext({
+    hasTouch: true,
+    isMobile: true,
+    viewport: { width: 390, height: 844 },
+    reducedMotion: "reduce",
+  });
+  const page = await context.newPage();
+  await page.goto("http://127.0.0.1:4173/chromalum/theory-dev.html");
+  const graph = page.locator("#theory-stella-view");
+  await graph.scrollIntoViewIfNeeded();
+  await expect(graph).toHaveAttribute("data-stella-view", "default");
+
+  const box = (await graph.boundingBox())!;
+  const before = await geometry(graph);
+  const scrolled = await page.evaluate(() => window.scrollY);
+
+  // Real touch input, so the browser's own gesture handling decides whether the
+  // figure or the page gets the movement. A vertical drag is the one a scroll
+  // would steal.
+  const client = await context.newCDPSession(page);
+  const x = box.x + box.width / 2;
+  const top = box.y + box.height * 0.25;
+  await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: top }] });
+  for (const step of [0.1, 0.2, 0.3, 0.4]) {
+    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: top + box.height * step }] });
+  }
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+  await expect(graph).toHaveAttribute("data-stella-view", "free");
+  expect(geometryDistance(before, await geometry(graph))).toBeGreaterThan(1);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
   await context.close();
 });
