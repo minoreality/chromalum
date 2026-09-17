@@ -20,8 +20,12 @@ npm run test:e2e -- --workers=2  # default worker count flakes on this machine
 npx playwright test e2e/theory.spec.ts -g "<title>"
 ```
 
-`.husky/pre-push` runs `npm run verify`, so a push takes minutes — that is the hook, not
-a hang. An e2e failure is only real if it survives `--workers=1` in isolation.
+`.husky/pre-push` runs `typecheck:app` and `lint`, about 20 seconds against the 77 a full
+`verify` takes. It leaves the tests to you and to `ci.yml`, which runs all of them on the
+pull request anyway: the suite is load-sensitive enough that the hook could refuse a push
+over a timeout in something the change never touched. Run `npm run verify` yourself before
+a push worth trusting. An e2e failure is only real if it survives `--workers=1` in
+isolation.
 
 ## CI
 
