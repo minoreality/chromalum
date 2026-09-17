@@ -1,5 +1,6 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
+import { levelLabelColor } from "../../color-engine";
 
 const TRIADS: [number, number, number][] = [
   [3, 5, 1],
@@ -16,9 +17,7 @@ function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonl
   return LV_COLORS[lv] ?? "#888";
 }
 
-function textColor(lv: number): string {
-  return lv >= 4 ? "#000" : "#fff";
-}
+const textColor = levelLabelColor;
 
 function binaryLevelLabel(lv: number): string {
   return lv.toString(2).padStart(3, "0");

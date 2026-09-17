@@ -162,6 +162,123 @@ describe("research-note invariants", () => {
     expect(observedWords).toEqual(new Set(["GRBGRB", "RBGRBG", "BGRBGR", "BRGBRG", "RGBRGB", "GBRGBR"]));
   });
 
+  it("walks the hue-order masks twice into an Euler circuit of the twelve octahedron edges", () => {
+    // Raw three-bit words, chromatic only: the note's octahedron drops K and W.
+    const chromatic = [1, 2, 3, 4, 5, 6];
+    const hueOrder = [2, 6, 4, 5, 1, 3]; // R Y G C B M
+    const primaries = [4, 2, 1]; // G R B
+    const secondaries = [3, 5, 6]; // M C Y
+    const xorAll = (masks: readonly number[]) => masks.reduce((total, mask) => total ^ mask, 0);
+    const edgeKey = (left: number, right: number) => (left < right ? `${left}-${right}` : `${right}-${left}`);
+
+    // The octahedron graph: every chromatic pair that is not a complement pair.
+    const edges = new Set<string>();
+    for (const a of chromatic) for (const b of chromatic) if (a < b && (a ^ b) !== 7) edges.add(edgeKey(a, b));
+    expect(edges.size).toBe(12);
+    // Every vertex has degree four, so an Euler circuit exists whatever the walk.
+    for (const vertex of chromatic) expect(chromatic.filter((other) => other !== vertex && (vertex ^ other) !== 7)).toHaveLength(4);
+
+    // One round of either mask set is the complement map; that is what forces two.
+    expect(xorAll(hueOrder)).toBe(7);
+    expect(xorAll(primaries)).toBe(7);
+    expect(xorAll(secondaries)).toBe(0);
+
+    // A step is legal while it stays on a chromatic vertex.
+    const walk = (start: number, masks: readonly number[], rounds: number) => {
+      let vertex = start;
+      const used: string[] = [];
+      for (let step = 0; step < masks.length * rounds; step++) {
+        const mask = masks[step % masks.length];
+        if (!chromatic.includes(vertex ^ mask)) return null;
+        used.push(edgeKey(vertex, vertex ^ mask));
+        vertex = vertex ^ mask;
+      }
+      return { used, closes: vertex === start };
+    };
+
+    // Hue order, twice, covers all twelve edges once and closes.
+    const fromBlue = walk(1, hueOrder, 2)!;
+    expect(fromBlue.closes).toBe(true);
+    expect(new Set(fromBlue.used)).toEqual(edges);
+
+    // The same mechanism one level down covers the six vertices instead.
+    let vertex = 2;
+    const visited: number[] = [];
+    for (let step = 0; step < 6; step++) {
+      vertex = vertex ^ primaries[step % 3];
+      visited.push(vertex);
+    }
+    expect(visited).toEqual([...CANONICAL_CHROMATIC_LEVEL_CYCLE.slice(1), CANONICAL_CHROMATIC_LEVEL_CYCLE[0]]);
+    expect(new Set(visited).size).toBe(6);
+
+    // And the secondaries close in a single round, giving the two triangles.
+    const triangle = walk(1, [3, 6, 5], 1)!;
+    expect(triangle.closes).toBe(true);
+    expect(triangle.used).toHaveLength(3);
+
+    // The note's scope: hue order is one of many, not the reason it works.
+    const orderings: number[][] = [];
+    const permute = (rest: readonly number[], taken: readonly number[]) => {
+      if (rest.length === 0) return void orderings.push([...taken]);
+      rest.forEach((mask, index) => permute([...rest.slice(0, index), ...rest.slice(index + 1)], [...taken, mask]));
+    };
+    permute(hueOrder, []);
+    expect(orderings).toHaveLength(720);
+
+    const working = new Set<string>();
+    let legalPairs = 0;
+    let eulerPairs = 0;
+    for (const masks of orderings) {
+      for (const start of chromatic) {
+        const result = walk(start, masks, 2);
+        if (!result) continue;
+        legalPairs++;
+        working.add(masks.join(","));
+        if (result.closes && new Set(result.used).size === 12) eulerPairs++;
+      }
+    }
+    expect(legalPairs).toBe(384);
+    // Every legal walk is an Euler circuit, so the ordering is not what does it.
+    expect(eulerPairs).toBe(legalPairs);
+    expect(working.size).toBe(192);
+    expect(working.has(hueOrder.join(","))).toBe(true);
+    // Round two is round one's antipode, edge for edge: one round is a transversal
+    // of the twelve edges paired antipodally, and two rounds close the cover.
+    const antipode = (edge: string) => {
+      const [left, right] = edge.split("-").map(Number);
+      return edgeKey(left ^ 7, right ^ 7);
+    };
+    expect(fromBlue.used.slice(0, 6).map(antipode)).toEqual(fromBlue.used.slice(6));
+
+    // A step fails only where the vertex is the mask itself or the mask's complement.
+    const illegal: Array<[number, number]> = [];
+    for (const vertex of chromatic) for (const mask of chromatic) if (!chromatic.includes(vertex ^ mask)) illegal.push([vertex, mask]);
+    expect(illegal).toHaveLength(12);
+    expect(illegal.filter(([vertex, mask]) => vertex === mask)).toHaveLength(6);
+    expect(illegal.filter(([vertex, mask]) => vertex === (mask ^ 7))).toHaveLength(6);
+
+    // What sets the hue order apart: its own step sequence is the same C6 that the
+    // primaries trace one level down, and every such ordering is legal.
+    const isOneBitCycle = (masks: readonly number[]) =>
+      masks.every((mask, index) => {
+        const next = masks[(index + 1) % masks.length];
+        return [1, 2, 4].includes(mask ^ next);
+      });
+    const cycleOrderings = orderings.filter(isOneBitCycle);
+    expect(cycleOrderings).toHaveLength(12); // six rotations, two directions
+    expect(isOneBitCycle(hueOrder)).toBe(true);
+    for (const masks of cycleOrderings) expect(working.has(masks.join(","))).toBe(true);
+
+    // Among the hue order's own six rotations, each opening mask admits exactly
+    // one complementary pair of starting vertices.
+    for (let rotation = 0; rotation < 6; rotation++) {
+      const masks = hueOrder.map((_, index) => hueOrder[(index + rotation) % 6]);
+      const starts = chromatic.filter((start) => walk(start, masks, 2) !== null);
+      expect(starts).toHaveLength(2);
+      expect(starts[0] ^ starts[1]).toBe(7);
+    }
+  });
+
   it("derives the hue-edge rank law, double closure, and total variation from the raw cycle", () => {
     type Bit = 0 | 1;
     type Vertex = readonly [Bit, Bit, Bit];

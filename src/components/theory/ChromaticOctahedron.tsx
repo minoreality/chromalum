@@ -1,15 +1,17 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { usePinReset } from "./pin-reset";
-import { DUAL_OCTA_VERTICES, DUAL_OCTA_EDGES, DUAL_OCTA_FACES, projectDualPoint } from "./octahedron-dual-geometry";
+import { DUAL_OCTA_VERTICES, DUAL_OCTA_EDGES, DUAL_BALL, DUAL_VIEWBOX, dualOctaView } from "./octahedron-dual-geometry";
+import { stellaOrientation, type StellaOrientation } from "./stella-view";
+import { useTrackballDrag } from "./useTrackballDrag";
+import { levelLabelColor } from "../../color-engine";
 
 type EdgeSelection = { readonly a: number; readonly b: number };
 const XOR_ACCENT = "#82b6ff";
 const COMPLEMENT_ACCENT = "#f6c26b";
 const bitsOf = (lv: number) => THEORY_LEVELS[lv].bits.join("");
 const sameEdge = (a: EdgeSelection | null, b: EdgeSelection) => a?.a === b.a && a.b === b.b;
-const points = Object.fromEntries(Object.entries(DUAL_OCTA_VERTICES).map(([lv, point]) => [lv, projectDualPoint(point)]));
 
 function OctahedronResults({ edge, sizing = false }: { edge: (typeof DUAL_OCTA_EDGES)[number] | undefined; sizing?: boolean }) {
   const { t } = useTranslation();
@@ -76,6 +78,17 @@ function OctahedronResults({ edge, sizing = false }: { edge: (typeof DUAL_OCTA_E
 export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
   const { t } = useTranslation();
   const [pinned, setPinned] = useState<EdgeSelection | null>(null);
+  const [orientation, setOrientation] = useState<StellaOrientation>(() => stellaOrientation(null));
+  const view = useMemo(() => dualOctaView(orientation), [orientation]);
+  const points = view.points;
+  const orientationRef = useRef(orientation);
+  orientationRef.current = orientation;
+  const trackball = useTrackballDrag({
+    viewBox: DUAL_VIEWBOX,
+    ball: DUAL_BALL,
+    orientation: () => orientationRef.current,
+    onTurn: (next) => setOrientation((previous) => next(previous)),
+  });
   const [preview, setPreview] = useState<EdgeSelection | null>(null);
   const resetSelection = useCallback((value: null) => {
     setPinned(value);
@@ -88,6 +101,8 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
     setPinned((current) => (sameEdge(current, edge) ? null : edge));
     setPreview(null);
   };
+  // The list below is the only place an edge is chosen. The figure draws the
+  // solid and takes drags; it neither previews nor selects.
   const interactions = (edge: EdgeSelection) => ({
     "aria-label": t("theory_octa_edge_choice", THEORY_LEVELS[edge.a].short, bitsOf(edge.a), THEORY_LEVELS[edge.b].short, bitsOf(edge.b)),
     "aria-pressed": sameEdge(pinned, edge),
@@ -104,18 +119,29 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
       <div className="theory-octahedron-layout">
         <figure className="theory-octahedron-figure">
           <svg
-            viewBox="85 95 230 210"
+            viewBox={`${DUAL_VIEWBOX.x} ${DUAL_VIEWBOX.y} ${DUAL_VIEWBOX.size} 210`}
             role="group"
             aria-label={t("theory_octa_diagram")}
-            onClick={(event) => {
-              if (!(event.target as Element).closest("[data-octa-edge-control]")) {
-                setPinned(null);
-                setPreview(null);
-              }
+            onPointerDown={trackball.onPointerDown}
+            onPointerMove={trackball.onPointerMove}
+            onPointerUp={trackball.onPointerUp}
+            onPointerCancel={trackball.onPointerUp}
+            onContextMenu={trackball.onContextMenu}
+            onClickCapture={(event) => {
+              // The click a finished drag leaves behind is not a selection.
+              if (!trackball.swallowsClick()) return;
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onClick={() => {
+              // The figure only shows the solid. Choosing an edge happens in the
+              // list below, so a click here can only mean "clear".
+              setPinned(null);
+              setPreview(null);
             }}
           >
-            {[...DUAL_OCTA_FACES]
-              .sort((a, b) => a.center[2] - b.center[2])
+            {[...view.faces]
+              .sort((a, b) => b.center[2] - a.center[2])
               .map((face) => {
                 const edgeRole =
                   selectedEdge?.xorFace.color === face.color
@@ -139,57 +165,35 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
                   />
                 );
               })}
-            {[...DUAL_OCTA_EDGES]
-              .sort((a, b) => Number(b.hidden) - Number(a.hidden))
-              .map((edge) => {
-                const { a, b, hidden } = edge;
-                const common = sameEdge(selected, edge);
-                const xorSide = selectedEdge?.xorFace.verts.includes(a) && selectedEdge.xorFace.verts.includes(b);
-                const complementSide = selectedEdge?.complementFace.verts.includes(a) && selectedEdge.complementFace.verts.includes(b);
-                const active = common || xorSide || complementSide;
-                return (
-                  <g
-                    key={a + "-" + b}
-                    data-octa-edge-control={a + "-" + b}
-                    className="theory-octahedron-edge"
-                    role="button"
-                    tabIndex={0}
-                    {...interactions(edge)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        activate(edge);
-                      }
-                    }}
-                  >
-                    <line
-                      className="theory-octahedron-edge-hit"
-                      x1={points[a].x}
-                      y1={points[a].y}
-                      x2={points[b].x}
-                      y2={points[b].y}
-                      stroke="transparent"
-                      strokeWidth={14}
-                      vectorEffect="non-scaling-stroke"
-                      pointerEvents="stroke"
-                    />
-                    <line
-                      data-octa-edge={a + "-" + b}
-                      data-edge-selected={common}
-                      data-hidden={hidden}
-                      x1={points[a].x}
-                      y1={points[a].y}
-                      x2={points[b].x}
-                      y2={points[b].y}
-                      stroke={common ? "#fff" : xorSide ? XOR_ACCENT : complementSide ? COMPLEMENT_ACCENT : "#8296d8"}
-                      strokeWidth={common ? 2 : active ? 1.5 : 1}
-                      strokeDasharray={hidden ? "4 4" : undefined}
-                      opacity={active ? 1 : selectedEdge ? 0.22 : hidden ? 0.45 : 0.8}
-                      pointerEvents="none"
-                    />
-                  </g>
-                );
-              })}
+            {view.edges.map((edge) => {
+              const { a, b, hidden } = edge;
+              const common = sameEdge(selected, edge);
+              const xorSide = selectedEdge?.xorFace.verts.includes(a) && selectedEdge.xorFace.verts.includes(b);
+              const complementSide = selectedEdge?.complementFace.verts.includes(a) && selectedEdge.complementFace.verts.includes(b);
+              const active = common || xorSide || complementSide;
+              return (
+                <line
+                  key={a + "-" + b}
+                  data-octa-edge={a + "-" + b}
+                  data-edge-selected={common}
+                  data-hidden={hidden}
+                  x1={points[a].x}
+                  y1={points[a].y}
+                  x2={points[b].x}
+                  y2={points[b].y}
+                  // At rest an edge wears the mask that carries one end to the
+                  // other, so the six one-channel edges trace the hue cycle in
+                  // the primaries and the other six outline the two opposite
+                  // faces in the secondaries. A selection overrides that, since
+                  // the accents there name the two faces the panel is reading.
+                  stroke={common ? "#fff" : xorSide ? XOR_ACCENT : complementSide ? COMPLEMENT_ACCENT : THEORY_LEVELS[edge.xor].color}
+                  strokeWidth={common ? 2 : active ? 1.5 : 1}
+                  strokeDasharray={hidden ? "4 4" : undefined}
+                  opacity={active ? 1 : selectedEdge ? 0.22 : hidden ? 0.45 : 0.8}
+                  pointerEvents="none"
+                />
+              );
+            })}
             {Object.keys(DUAL_OCTA_VERTICES)
               .map(Number)
               .map((lv) => {
@@ -238,7 +242,7 @@ export const ChromaticOctahedron = React.memo(function ChromaticOctahedron() {
                       textAnchor="middle"
                       fontSize={7}
                       fontWeight={700}
-                      fill={lv >= 4 ? "#000" : "#fff"}
+                      fill={levelLabelColor(lv)}
                     >
                       {THEORY_LEVELS[lv].short}
                     </text>

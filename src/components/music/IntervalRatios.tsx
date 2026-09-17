@@ -13,6 +13,7 @@ import { liveHueAngleDeg } from "../../music/music-phase";
 import { C } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import type { LinkedVisualizationDot, LinkedVisualizationOverlayContext } from "../LinkedVisualization";
+import { levelLabelColor } from "../../color-engine";
 
 interface RatioMember {
   levelIndex: number;
@@ -43,9 +44,7 @@ const SCALE_MEMBER_SQ = 12;
 const MEMBER_GAP = 2;
 const SCALE_MEMBER_GAP = 1.5;
 const SCALE_MEMBER_LABEL_OPACITY = 0.85;
-function memberTextColor(levelIndex: number): string {
-  return levelIndex >= 4 ? "#000" : "#fff";
-}
+const memberTextColor = levelLabelColor;
 
 function buildRatioRows(
   activeDots: LinkedVisualizationDot[],

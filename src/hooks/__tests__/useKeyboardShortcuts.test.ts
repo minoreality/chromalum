@@ -14,6 +14,7 @@ function makeArgs() {
   const announce = vi.fn() as (msg: string) => void;
   const endPan = vi.fn() as () => void;
   const setShowHelp = vi.fn() as unknown as React.Dispatch<React.SetStateAction<boolean>>;
+  const isStrokeActive = vi.fn(() => false);
   const setCursorMode = vi.fn() as unknown as React.Dispatch<React.SetStateAction<null | "grab" | "grabbing">>;
   const spaceRef = { current: false };
   const panningRef = { current: false };
@@ -31,7 +32,9 @@ function makeArgs() {
     dispatch,
     announce,
     endPan,
+    showHelp: false,
     setShowHelp,
+    isStrokeActive,
     setCursorMode,
     spaceRef,
     panningRef,
@@ -53,6 +56,7 @@ function makeArgs() {
     announce,
     endPan,
     setShowHelp,
+    isStrokeActive,
     setCursorMode,
     spaceRef,
     panningRef,
@@ -224,6 +228,87 @@ describe("useKeyboardShortcuts", () => {
       fireKey("z", { ctrlKey: true, shiftKey: true });
 
       expect(vi.mocked(dispatch)).toHaveBeenCalledWith({ type: "redo" });
+    });
+
+    it("holds undo and redo while a stroke is still down, but keeps the tool keys", () => {
+      const { deps, dispatch, setTool, isStrokeActive } = makeArgs();
+      isStrokeActive.mockReturnValue(true);
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
+      cleanup = unmount;
+
+      fireKey("z", { ctrlKey: true });
+      fireKey("z", { ctrlKey: true, shiftKey: true });
+      fireKey("y", { ctrlKey: true });
+      fireKey("e");
+
+      expect(vi.mocked(dispatch)).not.toHaveBeenCalled();
+      expect(vi.mocked(setTool)).toHaveBeenCalledWith("eraser");
+    });
+  });
+
+  describe("while a dialog is open", () => {
+    function openDialog() {
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      dialog.setAttribute("aria-modal", "true");
+      document.body.appendChild(dialog);
+      return () => dialog.remove();
+    }
+
+    it("keeps tool, level, history, and help keys away from the canvas behind it", () => {
+      const closeDialog = openDialog();
+      const { deps, dispatch, setTool, setBrushLevel, setShowHelp, setShowNewCanvas } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
+      cleanup = () => {
+        unmount();
+        closeDialog();
+      };
+
+      fireKey("b");
+      fireKey("3");
+      fireKey("z", { ctrlKey: true });
+      fireKey("n", { ctrlKey: true });
+      fireKey("?", { shiftKey: true });
+      fireKey("F1");
+
+      expect(vi.mocked(setTool)).not.toHaveBeenCalled();
+      expect(vi.mocked(setBrushLevel)).not.toHaveBeenCalled();
+      expect(vi.mocked(dispatch)).not.toHaveBeenCalled();
+      expect(vi.mocked(setShowNewCanvas)).not.toHaveBeenCalled();
+      expect(vi.mocked(setShowHelp)).not.toHaveBeenCalled();
+    });
+
+    it("still lets ? and Escape close the Help dialog itself", () => {
+      const closeDialog = openDialog();
+      const { deps, setShowHelp, setTool } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, showHelp: true }));
+      cleanup = () => {
+        unmount();
+        closeDialog();
+      };
+
+      fireKey("b");
+      expect(vi.mocked(setTool)).not.toHaveBeenCalled();
+
+      fireKey("?", { shiftKey: true });
+      expect(vi.mocked(setShowHelp)).toHaveBeenCalledTimes(1);
+
+      fireKey("Escape");
+      expect(vi.mocked(setShowHelp)).toHaveBeenLastCalledWith(false);
+    });
+
+    it("leaves Alt+digit tab switching available", () => {
+      const closeDialog = openDialog();
+      const { deps, setActiveTabId } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
+      cleanup = () => {
+        unmount();
+        closeDialog();
+      };
+
+      fireKey("2", { altKey: true, code: "Digit2" });
+
+      expect(vi.mocked(setActiveTabId)).toHaveBeenCalled();
     });
   });
 

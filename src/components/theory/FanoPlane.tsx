@@ -5,6 +5,7 @@ import { usePinReset } from "./pin-reset";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 import { FanoHammingMatrix } from "./FanoHammingMatrix";
+import { levelLabelColor } from "../../color-engine";
 
 const W = 300,
   H = 232,
@@ -314,7 +315,7 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
                     fontSize={11}
                     fontWeight={900}
                     fontFamily="var(--font-mono)"
-                    fill={dim ? "#aaaac4" : lv >= 4 ? "#000" : "#fff"}
+                    fill={dim ? "#aaaac4" : levelLabelColor(lv)}
                   >
                     {info.bits.join("")}
                   </text>

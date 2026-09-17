@@ -1,5 +1,6 @@
 import React from "react";
 import { C } from "../../styles/tokens";
+import { levelLabelColor } from "../../color-engine";
 
 interface GL32ArrowsProps {
   perm: number[]; // current permutation [0,1,2,3,4,5,6,7] or permuted
@@ -22,9 +23,7 @@ function lvColor(lv: number, activeLevels: GL32ArrowsProps["activeLevels"]): str
   return LV_COLORS[lv] ?? "#888";
 }
 
-function labelColor(lv: number): string {
-  return lv >= 4 ? "#000" : "#fff";
-}
+const labelColor = levelLabelColor;
 
 function isIdentity(perm: number[]): boolean {
   return LEVELS.every((lv) => perm[lv] === lv);

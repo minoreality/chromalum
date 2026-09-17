@@ -41,6 +41,15 @@ export const LEVEL_INFO: readonly LevelInfo[] = ["Black", "Blue", "Red", "Magent
   gray8: levelTone8(i),
 }));
 
+/**
+ * Text colour for a label drawn on a level's own colour. The four levels
+ * without the green bit (K, B, R, M) take white, the four with it take black.
+ * Every figure reads this one rule so the thresholds cannot drift apart.
+ */
+export function levelLabelColor(level: number): string {
+  return level >= CHROMALUM_GRB_WEIGHTS.G ? "#000" : "#fff";
+}
+
 /** Canvas/PNG adapter. Device bytes are not used to recover model coordinates. */
 export function chromalumGrbToRgb8([g, r, b]: ChromalumGrb): [number, number, number] {
   const toByte = (channel: number) => Math.round(255 * clamp01(channel / CHROMALUM_CHANNEL_MAX));

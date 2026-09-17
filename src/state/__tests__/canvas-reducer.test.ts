@@ -51,6 +51,60 @@ describe("canvasReducer", () => {
       expect(next.levelHistogram).toEqual([64, 0, 0, 0, 0, 0, 0, 0]);
       expect(next.undoStack.length).toBe(0);
     });
+
+    it("keeps an undo that landed mid-stroke instead of restoring the stroke's stale snapshot", () => {
+      // Stroke A paints pixel 0, then the stroke's buffers for stroke B are snapshotted.
+      const strokeA = new Uint8Array(initialState.canvasData.levelData.length);
+      strokeA[0] = 5;
+      const afterA = canvasReducer(initialState, {
+        type: "stroke_end",
+        finalLevelData: strokeA,
+        diff: computeDiff(initialState.canvasData.levelData, strokeA),
+      });
+      const snapshotForB = new Uint8Array(afterA.canvasData.levelData);
+
+      // Undo A while B is still being drawn, then B commits a diff that only names pixel 1.
+      const undone = canvasReducer(afterA, { type: "undo" });
+      expect(undone.canvasData.levelData[0]).toBe(0);
+      const finalB = new Uint8Array(snapshotForB);
+      finalB[1] = 3;
+      const next = canvasReducer(undone, { type: "stroke_end", finalLevelData: finalB, diff: computeDiff(snapshotForB, finalB) });
+
+      expect(next.canvasData.levelData[0]).toBe(0);
+      expect(next.canvasData.levelData[1]).toBe(3);
+      expect(next.levelHistogram[5]).toBe(0);
+      expect(next.levelHistogram[3]).toBe(1);
+      expect(next.levelHistogram[0]).toBe(initialState.levelHistogram[0] - 1);
+    });
+
+    it("applies only the glaze diff onto the current override map", () => {
+      const n = initialState.canvasData.levelData.length;
+      const levelData = initialState.canvasData.levelData;
+      const snapshotOverrides = new Uint8Array(n);
+      const finalOverrides = new Uint8Array(n);
+      finalOverrides[2] = 1;
+      const diff = {
+        indices: new Uint32Array([2]),
+        oldLevelValues: new Uint8Array([levelData[2]]),
+        newLevelValues: new Uint8Array([levelData[2]]),
+        oldPixelCandidateOverrideValues: new Uint8Array([0]),
+        newPixelCandidateOverrideValues: new Uint8Array([1]),
+      };
+      // Meanwhile pixel 7 gained an override the stroke's snapshot never saw.
+      const current = { ...initialState, canvasData: { ...initialState.canvasData, pixelCandidateOverrideMap: new Uint8Array(n) } };
+      current.canvasData.pixelCandidateOverrideMap[7] = 2;
+      expect(snapshotOverrides[7]).toBe(0);
+
+      const next = canvasReducer(current, {
+        type: "stroke_end",
+        finalLevelData: new Uint8Array(levelData),
+        finalPixelCandidateOverrideMap: finalOverrides,
+        diff,
+      });
+
+      expect(next.canvasData.pixelCandidateOverrideMap[2]).toBe(1);
+      expect(next.canvasData.pixelCandidateOverrideMap[7]).toBe(2);
+    });
   });
 
   describe("undo / redo", () => {

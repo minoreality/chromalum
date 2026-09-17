@@ -2,6 +2,7 @@ import React from "react";
 import { FANO_LINES } from "../../data/theory-data";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { FANO_LINE_DUAL_POINTS, FANO_POINT_POSITIONS, FANO_VIEWBOX_HEIGHT, FANO_VIEWBOX_WIDTH, fanoLineSvgPath } from "./fano-geometry";
+import { levelLabelColor } from "../../color-engine";
 
 interface MiniFanoChordProps {
   hoveredLine: number | null;
@@ -108,7 +109,7 @@ export const MiniFanoChord = React.memo(function MiniFanoChord({
           (isPlaying === false && (playingLevel !== null || playingLineLevels !== null) && !anyHovered) ||
           (partitionActive && !isPartitionHighlighted);
         // Dark text for bright levels (G, C, Y, W), white for dark levels (B, R, M)
-        const textColor = lv >= 4 ? "#000" : "#fff";
+        const textColor = levelLabelColor(lv);
 
         return (
           <g

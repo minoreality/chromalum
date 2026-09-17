@@ -3,6 +3,7 @@ import { CHROMALUM_GRB_WEIGHTS, type ChromalumChannel } from "../../chromalum-co
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C, FS, FW, SP, FONT, R } from "../../styles/tokens";
+import { levelLabelColor } from "../../color-engine";
 
 const CHANNELS = [
   { channel: "G", bitIndex: 0 },
@@ -336,7 +337,7 @@ function ColorBadge({
         borderRadius: R.xl,
         border: highlighted ? "2px solid #fff" : `1px solid ${level === 0 ? C.borderHover : info.color}`,
         background: level === 0 ? C.bgRoot : info.color,
-        color: level >= G ? "#000" : "#fff",
+        color: levelLabelColor(level),
         display: "inline-flex",
         flexDirection: compact ? "row" : "column",
         alignItems: "center",
@@ -383,7 +384,7 @@ function LevelButton({
         borderRadius: R.lg,
         border: active ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
         background: level === 0 ? C.bgRoot : info.color,
-        color: level >= G ? "#000" : "#fff",
+        color: levelLabelColor(level),
         opacity: active ? 1 : 0.52,
         cursor: "pointer",
         fontFamily: FONT.mono,

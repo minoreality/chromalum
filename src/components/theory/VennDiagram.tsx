@@ -1,6 +1,7 @@
 import React, { useCallback, useId, useState } from "react";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
+import { levelLabelColor } from "../../color-engine";
 
 const VIEWBOX = { x: 26, y: 22, width: 248, height: 196 };
 const RAD = 60;
@@ -193,7 +194,9 @@ export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover, s
         {REGIONS.map(({ lv, x, y, setLabel }) => {
           const dim = hl !== null && hl !== lv;
           const visibleLevel = lv & activePrimaries;
-          const textColor = dim ? "#e1e7f5" : visibleLevel >= 4 ? "#000" : visibleLevel === 0 ? "#aeb7ca" : "#fff";
+          // Tone 0 is the region outside every circle, sitting on the panel
+          // background rather than on a fill, so it keeps its own muted label.
+          const textColor = dim ? "#e1e7f5" : visibleLevel === 0 ? "#aeb7ca" : levelLabelColor(visibleLevel);
           return (
             <g key={`r${lv}`} opacity={dim ? 0.8 : 1} pointerEvents="none" data-testid={`venn-region-${lv}`}>
               <text

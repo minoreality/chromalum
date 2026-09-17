@@ -1,14 +1,27 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import type { K8Target } from "./k8-selection";
-import { interpolateStellaOrientation, stellaOrientation, type StellaOrientation } from "./stella-view";
+import {
+  interpolateStellaOrientation,
+  stellaOrientation,
+  STELLA_BALL,
+  STELLA_TURN_STEP,
+  STELLA_VIEWBOX,
+  turnStellaOrientation,
+  type StellaOrientation,
+} from "./stella-view";
+import { useTrackballDrag } from "./useTrackballDrag";
 
 const DOUBLE_PRESS_INTERVAL = 200;
 const MAX_TAP_DURATION = 350;
 const TAP_SLOP = 24;
+// A vertex turn sweeps up to half a revolution; a keypad nudge is a small step,
+// so it gets a short duration or holding the key would lag behind the presses.
+const TURN_DURATION = 650;
+const NUDGE_DURATION = 130;
 type Tap = { x: number; y: number; time: number; selection: K8Target | null; level: number | null };
 type Click = Pick<Tap, "time" | "selection" | "level">;
-type Pose = { frontLevel: number | null; orientation: StellaOrientation };
-const DEFAULT_POSE: Pose = { frontLevel: null, orientation: stellaOrientation(null) };
+type Pose = { frontLevel: number | null; orientation: StellaOrientation; duration: number };
+const DEFAULT_POSE: Pose = { frontLevel: null, orientation: stellaOrientation(null), duration: TURN_DURATION };
 
 function nodeAt(target: EventTarget | null): number | null {
   const value = target instanceof Element ? target.closest("[data-stella-vertex]")?.getAttribute("data-stella-vertex") : null;
@@ -28,13 +41,26 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
   const previousTap = useRef<Tap | null>(null);
   const ignoreClickUntil = useRef(0);
   const ignoreDoubleClickUntil = useRef(0);
+  const trackball = useTrackballDrag({
+    viewBox: STELLA_VIEWBOX,
+    ball: STELLA_BALL,
+    orientation: () => position.current,
+    onTurn: (next) => setDestination((pose) => ({ frontLevel: null, orientation: next(pose.orientation), duration: 0 })),
+    onDragStart: () => {
+      savedPose.current = null;
+      canReverse.current = false;
+    },
+  });
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const from = position.current;
     const target = destination.orientation;
-    const duration = 650;
-    const start = performance.now();
+    const duration = destination.duration;
+    // Time the turn from the first animation frame. The frame timestamp and
+    // performance.now() are not guaranteed to share an origin, and mixing them
+    // can start the turn already past its end.
+    let start: number | null = null;
     let frame = 0;
     const update = (value: StellaOrientation, progress: number) => {
       position.current = value;
@@ -47,7 +73,8 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
       if (destination.frontLevel === null && savedPose.current) canReverse.current = true;
     };
     const animate = (now: number) => {
-      const elapsed = Math.min(1, (now - start) / duration);
+      if (start === null) start = now;
+      const elapsed = Math.min(1, Math.max(0, (now - start) / duration));
       if (elapsed === 1) {
         finish();
         return;
@@ -59,7 +86,9 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
     const onMotionChange = () => {
       if (media.matches) finish();
     };
-    if (media.matches || from === target) finish();
+    // A drag is direct manipulation, not motion the page plays by itself, so it
+    // asks for no duration and lands on each frame the pointer produces.
+    if (media.matches || from === target || duration <= 0) finish();
     else {
       update(from, 0);
       frame = requestAnimationFrame(animate);
@@ -78,7 +107,7 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
       savedPose.current = null;
       canReverse.current = false;
       rotating.current = true;
-      setDestination({ frontLevel: level, orientation: stellaOrientation(level, position.current) });
+      setDestination({ frontLevel: level, orientation: stellaOrientation(level, position.current), duration: TURN_DURATION });
       return;
     }
 
@@ -90,25 +119,62 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
       next = savedPose.current;
     } else {
       // Keep the settled pose, including its roll, throughout every reversal.
-      if (!rotating.current) savedPose.current = destination;
+      if (!rotating.current) savedPose.current = { ...destination, duration: TURN_DURATION };
       next = DEFAULT_POSE;
     }
     rotating.current = position.current !== next.orientation;
     setDestination(next);
   };
+  /**
+   * Push the view one step toward a screen direction. Chaining from the
+   * destination rather than the drawn frame lets a held key accumulate instead
+   * of fighting the animation still running from the previous press.
+   */
+  const turn = (up: number, right: number) => {
+    savedPose.current = null;
+    canReverse.current = false;
+    rotating.current = true;
+    setDestination({
+      frontLevel: null,
+      orientation: turnStellaOrientation(destination.orientation, up, right, STELLA_TURN_STEP),
+      duration: NUDGE_DURATION,
+    });
+  };
+
+  const resetView = () => {
+    savedPose.current = null;
+    canReverse.current = false;
+    rotating.current = position.current !== DEFAULT_POSE.orientation;
+    setDestination(DEFAULT_POSE);
+  };
+
   const cancelTouch = () => {
     touchStart.current = null;
     previousTap.current = null;
   };
 
+  const endDrag = (event: PointerEvent<SVGSVGElement>) => {
+    if (!trackball.onPointerUp(event)) return false;
+    cancelTouch();
+    return true;
+  };
+
   return {
     ...frameState,
     frontLevel: destination.frontLevel,
+    // Only the untouched projection is the default one; a nudged view is free.
+    isDefaultView: destination.frontLevel === null && destination.orientation === DEFAULT_POSE.orientation,
+    // Vertices sweep under a resting pointer while the view moves, whether the
+    // camera is playing a turn or the reader is dragging it.
+    interacting: frameState.progress < 1 || trackball.dragging,
+    turn,
+    resetView,
     handlers: {
       onClickCapture(event: MouseEvent<SVGSVGElement>) {
         const now = performance.now();
         doubleClick.current = null;
-        if (now < ignoreClickUntil.current) {
+        if (now < ignoreClickUntil.current || trackball.swallowsClick()) {
+          previousClick.current = null;
           event.preventDefault();
           event.stopPropagation();
           return;
@@ -139,6 +205,7 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
       },
       onPointerDown(event: PointerEvent<SVGSVGElement>) {
         ignoreClickUntil.current = 0;
+        trackball.onPointerDown(event);
         if (event.pointerType !== "touch") return;
         if (!event.isPrimary) {
           cancelTouch();
@@ -147,11 +214,17 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
         touchStart.current = { x: event.clientX, y: event.clientY, time: performance.now(), selection, level: nodeAt(event.target) };
       },
       onPointerMove(event: PointerEvent<SVGSVGElement>) {
+        if (trackball.onPointerMove(event)) return;
         const start = touchStart.current;
         if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 12) cancelTouch();
       },
-      onPointerCancel: cancelTouch,
+      onContextMenu: trackball.onContextMenu,
+      onPointerCancel(event: PointerEvent<SVGSVGElement>) {
+        endDrag(event);
+        cancelTouch();
+      },
       onPointerUp(event: PointerEvent<SVGSVGElement>) {
+        if (endDrag(event)) return;
         if (event.pointerType !== "touch") return;
         const start = touchStart.current;
         touchStart.current = null;

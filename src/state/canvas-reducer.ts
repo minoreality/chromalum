@@ -167,10 +167,17 @@ export function canvasReducer(state: AppState, action: CanvasAction): AppState {
       const { finalLevelData, finalPixelCandidateOverrideMap, diff } = action;
       if (!diff || diff.indices.length === 0) return state;
       if (!isValidStrokeResult(state, finalLevelData, finalPixelCandidateOverrideMap, diff)) return state;
-      const overrideUpdate = finalPixelCandidateOverrideMap
-        ? { pixelCandidateOverrideMap: finalPixelCandidateOverrideMap, diff }
-        : clearOverridesForLevelChanges(state.canvasData.pixelCandidateOverrideMap, diff);
-      const newCanvasData = { ...state.canvasData, levelData: finalLevelData };
+      // The stroke's buffers are a snapshot taken when it began; only its diff is
+      // applied, so pixels changed elsewhere mid-stroke (an undo landed while the
+      // pointer was still down) survive instead of being overwritten.
+      const overrideUpdate =
+        finalPixelCandidateOverrideMap && diff.oldPixelCandidateOverrideValues
+          ? {
+              pixelCandidateOverrideMap: applyDiffToPixelCandidateOverrideMap(state.canvasData.pixelCandidateOverrideMap, diff, false),
+              diff,
+            }
+          : clearOverridesForLevelChanges(state.canvasData.pixelCandidateOverrideMap, diff);
+      const newCanvasData = { ...state.canvasData, levelData: applyDiff(state.canvasData.levelData, diff, false) };
       if (overrideUpdate.pixelCandidateOverrideMap !== state.canvasData.pixelCandidateOverrideMap) {
         newCanvasData.pixelCandidateOverrideMap = overrideUpdate.pixelCandidateOverrideMap;
       }

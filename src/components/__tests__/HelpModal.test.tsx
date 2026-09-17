@@ -38,12 +38,25 @@ vi.mock("../../i18n", () => ({
 }));
 
 // Mock the focus trap hook
+const useFocusTrapMock = vi.fn();
 vi.mock("../../hooks/useFocusTrap", () => ({
-  useFocusTrap: () => {},
+  useFocusTrap: (...args: unknown[]) => useFocusTrapMock(...args),
 }));
 
 describe("HelpModal", () => {
   const helpRef = React.createRef<HTMLDivElement>();
+
+  it("closes on Escape through its own focus trap, not the window shortcut handler", () => {
+    const setShowHelp = vi.fn();
+    render(<HelpModal showHelp={true} activeTabId="source" setShowHelp={setShowHelp} helpRef={helpRef} />);
+    const calls = useFocusTrapMock.mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall?.[1]).toBe(true);
+    const onEscape = lastCall?.[2] as (() => void) | undefined;
+    expect(typeof onEscape).toBe("function");
+    onEscape?.();
+    expect(setShowHelp).toHaveBeenCalledWith(false);
+  });
 
   it("does not render when showHelp is false", () => {
     const { container } = render(<HelpModal showHelp={false} activeTabId="source" setShowHelp={() => {}} helpRef={helpRef} />);
