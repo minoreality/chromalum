@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, memo } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
 import randomDiceUrl from "../assets/random-dice.png";
 import { LEVEL_CANDIDATES, levelLabelColor } from "../color-engine";
 import { NUM_VERTICES } from "../constants";
@@ -24,7 +24,7 @@ interface Props {
   levelHistogram: number[];
   total: number;
   lockedLevels: boolean[];
-  onToggleLock: (levelIndex: number) => void;
+  onSetLock: (levelIndex: number, locked: boolean) => void;
   onRandomize: () => void;
   canRandomize: boolean;
 }
@@ -49,6 +49,24 @@ const DOT_MIN_ACTIVE = DOT_MIN_VERTEX;
  */
 const DOT_MAX = HEX_R / 4;
 /**
+ * Radii the rings around a dot sit at, outward from its edge. The pin ring
+ * takes the selected ring's place rather than adding to it: pinning a dot
+ * selects it, so the two states always land on the same dot, and drawn at the
+ * same radius the gold one simply hid the dashes underneath it.
+ */
+const RING_HOVER = 4;
+const RING_SELECTED = 5;
+const RING_FOCUS = 8;
+/**
+ * A press held this long stands in for a right-click where there is no right
+ * button. Chrome on Android raises its own contextmenu at about the same
+ * moment, so the pin guards against being applied twice for one gesture; iOS
+ * Safari raises none, which is why the timer exists at all.
+ */
+const LONG_PRESS_MS = 500;
+/** A press that wanders this far is a scroll or a drag, not a long press. */
+const LONG_PRESS_SLOP_PX = 10;
+/**
  * Whether this focus is one the browser would have outlined itself. A mouse
  * press focuses the die as well as activating it, and a ring left sitting
  * there afterwards is exactly what :focus-visible exists to spare the reader;
@@ -61,6 +79,29 @@ function wantsVisibleFocus(element: Element): boolean {
   } catch {
     return true;
   }
+}
+
+/**
+ * The ring a level's selected dot wears. Pinning selects, so "pinned" is a
+ * state of this one ring rather than a second ring around it: gold and solid
+ * where the level is held, white and dashed where it is merely current. The
+ * dashes are not the outline's 4,3 — that pattern stays the palette outline's
+ * alone, so two different claims are not made in the same stroke.
+ */
+function SelectedRing({ cx, cy, r, locked, hovered }: { cx: number; cy: number; r: number; locked: boolean; hovered: boolean }) {
+  return (
+    <circle
+      className="hex-dot-selected-ring"
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill="none"
+      stroke={locked ? C.warning : C.textWhite}
+      strokeWidth={locked ? 2.5 : 1.5}
+      strokeDasharray={locked ? undefined : "2,2"}
+      opacity={hovered || locked ? 1 : O.soft}
+    />
+  );
 }
 
 const DICE_CX = HEX_CX;
@@ -77,13 +118,12 @@ export const HexDiagram = memo(
     levelHistogram,
     total,
     lockedLevels,
-    onToggleLock,
+    onSetLock,
     onRandomize,
     canRandomize,
   }: Props) {
     const { t } = useTranslation();
     const [hl, setHl] = useState<number | null>(null);
-    const [focusedLv, setFocusedLv] = useState<number | null>(null);
     const [diceFocused, setDiceFocused] = useState(false);
     const [diceRolling, setDiceRolling] = useState(false);
     const diceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -96,6 +136,110 @@ export const HexDiagram = memo(
     const vp = HEX_VERTEX_POSITIONS;
     const sel = (levelIndex: number, ai: number) => dispatch({ type: "set_color", levelIndex, candidateIndex: ai });
     const isA = (levelIndex: number, ai: number) => candidateIndexByLevel[levelIndex] % LEVEL_CANDIDATES[levelIndex].length === ai;
+
+    /**
+     * Whether a level can hold a pin. One candidate is nothing to hold, and a
+     * level the canvas does not use is already skipped by the roll, so a ring
+     * there would stand for a constraint that constrains nothing.
+     */
+    const canPin = (levelIndex: number) => LEVEL_CANDIDATES[levelIndex].length > 1 && levelHistogram[levelIndex] > 0;
+    /**
+     * Right-click, or its long-press stand-in, pins the level to the dot under
+     * the pointer: the dot is selected and the level held there, in one
+     * gesture. The same dot again releases it; any other dot of the level takes
+     * the pin over. Nothing is announced — the gold ring is the whole report.
+     */
+    const pin = (levelIndex: number, ai: number) => {
+      if (!canPin(levelIndex)) return;
+      if (lockedLevels[levelIndex] && isA(levelIndex, ai)) {
+        onSetLock(levelIndex, false);
+        return;
+      }
+      if (!isA(levelIndex, ai)) sel(levelIndex, ai);
+      onSetLock(levelIndex, true);
+    };
+
+    const pressTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const pressOrigin = useRef<{ x: number; y: number } | null>(null);
+    /**
+     * Set when the long press pinned, so the contextmenu Chrome on Android
+     * raises for the same press is swallowed instead of undoing it. The other
+     * order is covered by the contextmenu cancelling the pending press, so
+     * neither needs to know which of the two arrived first.
+     */
+    const pressPinned = useRef(false);
+    const endPress = useCallback(() => {
+      clearTimeout(pressTimer.current);
+      pressOrigin.current = null;
+    }, []);
+    // A press still counting down when the tab changes would otherwise pin a
+    // level after the diagram that was pressed has gone.
+    useEffect(
+      () => () => {
+        clearTimeout(pressTimer.current);
+        clearTimeout(diceTimer.current);
+      },
+      [],
+    );
+
+    /**
+     * One dot's handlers. They are no longer withheld from the selected dot:
+     * it has to take a right-click to be unpinned, and a dot that ignores the
+     * pointer lets it through to whatever sits behind, which for the largest
+     * dot on the diagram was the hexagon's own fill and its neighbour's hit
+     * area — the level under the cursor highlighting a different level.
+     */
+    const dotProps = (levelIndex: number, ai: number) => {
+      const locked = lockedLevels[levelIndex];
+      const active = isA(levelIndex, ai);
+      // A pinned level holds its candidate against every path that would move
+      // it from here: the click, the keyboard, and the die. The Color tab's own
+      // arrows are a visible control in a panel that shows no pin, so they stay
+      // free; the ring follows whichever candidate ends up selected.
+      const choose = () => {
+        if (!locked && !active) sel(levelIndex, ai);
+      };
+      return {
+        onFocus: () => setHl(levelIndex),
+        onBlur: () => setHl(null),
+        onClick: choose,
+        onKeyDown: (ev: React.KeyboardEvent) => {
+          if (ev.key !== "Enter" && ev.key !== " ") return;
+          ev.preventDefault();
+          choose();
+        },
+        onContextMenu: (ev: React.MouseEvent) => {
+          ev.preventDefault();
+          endPress();
+          if (pressPinned.current) {
+            pressPinned.current = false;
+            return;
+          }
+          pin(levelIndex, ai);
+        },
+        onPointerDown: (ev: React.PointerEvent) => {
+          if (ev.pointerType === "mouse") return;
+          pressPinned.current = false;
+          pressOrigin.current = { x: ev.clientX, y: ev.clientY };
+          clearTimeout(pressTimer.current);
+          pressTimer.current = setTimeout(() => {
+            pressPinned.current = true;
+            pin(levelIndex, ai);
+          }, LONG_PRESS_MS);
+        },
+        onPointerMove: (ev: React.PointerEvent) => {
+          const origin = pressOrigin.current;
+          if (!origin) return;
+          if (Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) > LONG_PRESS_SLOP_PX) endPress();
+        },
+        onPointerUp: endPress,
+        onPointerCancel: endPress,
+        onPointerLeave: endPress,
+        tabIndex: 0,
+        role: "button",
+        "aria-pressed": active,
+      };
+    };
 
     // Event delegation for mouse enter/leave on SVG groups with data-lv attribute
     const onSvgMouseOver = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
@@ -251,7 +395,8 @@ export const HexDiagram = memo(
               return allCircles.map((item) => {
                 const { key, levelIndex: lv, ai, x, y, r, color, vertex, vertexIdx } = item;
                 const act = isA(lv, ai),
-                  hov = hl === lv;
+                  hov = hl === lv,
+                  locked = lockedLevels[lv];
                 // A level the canvas does not use contributes a factor of 1 to
                 // the pattern count, is skipped by randomize, and shows hollow
                 // in the swatch row. Its dot says the same here: still
@@ -267,69 +412,24 @@ export const HexDiagram = memo(
                   return (
                     <g
                       key={key}
+                      className="hex-dot"
                       data-lv={lv}
-                      onFocus={
-                        act
-                          ? undefined
-                          : () => {
-                              setHl(lv);
-                              setFocusedLv(lv);
-                            }
-                      }
-                      onBlur={
-                        act
-                          ? undefined
-                          : () => {
-                              setHl(null);
-                              setFocusedLv(null);
-                            }
-                      }
-                      onClick={
-                        act
-                          ? undefined
-                          : () => {
-                              if (!lockedLevels[lv]) sel(lv, ai);
-                            }
-                      }
-                      onContextMenu={
-                        act
-                          ? undefined
-                          : (e) => {
-                              e.preventDefault();
-                              onToggleLock(lv);
-                            }
-                      }
-                      style={{ cursor: act ? "default" : "pointer", pointerEvents: act ? "none" : "auto" }}
-                      tabIndex={act ? -1 : 0}
-                      onKeyDown={
-                        act
-                          ? undefined
-                          : (ev) => {
-                              if (ev.key === "Enter" || ev.key === " ") {
-                                ev.preventDefault();
-                                sel(lv, ai);
-                              }
-                            }
-                      }
-                      role="button"
-                      aria-pressed={act}
+                      {...dotProps(lv, ai)}
+                      style={{ cursor: act && !locked ? "default" : "pointer" }}
                       aria-label={t("hex_vertex_label", v.label, lv)}
                     >
                       {r < 24 && <circle cx={x} cy={y} r={24} fill="transparent" />}
-                      {focusedLv === lv && <circle cx={x} cy={y} r={r + 8} fill="none" stroke={C.accent} strokeWidth={2} />}
-                      {act && (
-                        <circle
-                          cx={x}
-                          cy={y}
-                          r={r + 5}
-                          fill="none"
-                          stroke={C.textWhite}
-                          strokeWidth={1.5}
-                          strokeDasharray="4,3"
-                          opacity={O.soft}
-                        />
-                      )}
-                      {hov && !act && <circle cx={x} cy={y} r={r + 4} fill="none" stroke={C.svgStrokeHover} strokeWidth={1} />}
+                      <circle
+                        className="hex-dot-focus-ring"
+                        cx={x}
+                        cy={y}
+                        r={r + RING_FOCUS}
+                        fill="none"
+                        stroke={C.accent}
+                        strokeWidth={2}
+                      />
+                      {act && <SelectedRing cx={x} cy={y} r={r + RING_SELECTED} locked={locked} hovered={hov} />}
+                      {hov && !act && <circle cx={x} cy={y} r={r + RING_HOVER} fill="none" stroke={C.svgStrokeHover} strokeWidth={1} />}
                       <circle
                         cx={x}
                         cy={y}
@@ -364,75 +464,21 @@ export const HexDiagram = memo(
                       >
                         {v.label}
                       </text>
-                      {lockedLevels[lv] && <circle cx={x} cy={y} r={r + 5} fill="none" stroke={C.warning} strokeWidth={2.5} />}
                     </g>
                   );
                 }
                 return (
                   <g
                     key={key}
+                    className="hex-dot"
                     data-lv={lv}
-                    onFocus={
-                      act
-                        ? undefined
-                        : () => {
-                            setHl(lv);
-                            setFocusedLv(lv);
-                          }
-                    }
-                    onBlur={
-                      act
-                        ? undefined
-                        : () => {
-                            setHl(null);
-                            setFocusedLv(null);
-                          }
-                    }
-                    onClick={
-                      act
-                        ? undefined
-                        : () => {
-                            if (!lockedLevels[lv]) sel(lv, ai);
-                          }
-                    }
-                    onContextMenu={
-                      act
-                        ? undefined
-                        : (e) => {
-                            e.preventDefault();
-                            onToggleLock(lv);
-                          }
-                    }
-                    style={{ cursor: act ? "default" : "pointer", pointerEvents: act ? "none" : "auto" }}
-                    tabIndex={act ? -1 : 0}
-                    onKeyDown={
-                      act
-                        ? undefined
-                        : (ev) => {
-                            if (ev.key === "Enter" || ev.key === " ") {
-                              ev.preventDefault();
-                              sel(lv, ai);
-                            }
-                          }
-                    }
-                    role="button"
-                    aria-pressed={act}
+                    {...dotProps(lv, ai)}
+                    style={{ cursor: act && !locked ? "default" : "pointer" }}
                     aria-label={t("hex_edge_label", lv, color)}
                   >
-                    {focusedLv === lv && <circle cx={x} cy={y} r={r + 8} fill="none" stroke={C.accent} strokeWidth={2} />}
-                    {act && (
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r={r + 5}
-                        fill="none"
-                        stroke={C.textWhite}
-                        strokeWidth={1.5}
-                        strokeDasharray="3,2"
-                        opacity={O.soft}
-                      />
-                    )}
-                    {hov && !act && <circle cx={x} cy={y} r={r + 4} fill="none" stroke={C.svgStrokeHover} strokeWidth={1} />}
+                    <circle className="hex-dot-focus-ring" cx={x} cy={y} r={r + RING_FOCUS} fill="none" stroke={C.accent} strokeWidth={2} />
+                    {act && <SelectedRing cx={x} cy={y} r={r + RING_SELECTED} locked={locked} hovered={hov} />}
+                    {hov && !act && <circle cx={x} cy={y} r={r + RING_HOVER} fill="none" stroke={C.svgStrokeHover} strokeWidth={1} />}
                     {r < 22 && <circle cx={x} cy={y} r={22} fill="transparent" />}
                     <circle
                       cx={x}
@@ -455,7 +501,6 @@ export const HexDiagram = memo(
                     >
                       {lv}
                     </text>
-                    {lockedLevels[lv] && <circle cx={x} cy={y} r={r + 4} fill="none" stroke={C.warning} strokeWidth={2.5} />}
                   </g>
                 );
               });

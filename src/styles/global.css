@@ -127,6 +127,26 @@ svg g[tabindex]:focus-visible {
   user-select: none;
 }
 
+/* A dot's focus ring is geometry, because an svg outline is clipped by the
+   viewBox, but which focus earns one is still the browser's call: the ring
+   rides :focus-visible so a mouse press does not leave one behind. It is one
+   element inside the focused dot, so a level's other dots stay unringed. */
+.hex-dot-focus-ring {
+  opacity: 0;
+}
+.hex-dot:focus-visible .hex-dot-focus-ring {
+  opacity: 1;
+}
+/* Pinning a dot is a long press on touch. The callout and the text selection
+   the platform would otherwise raise on that press have to go, or the gesture
+   ends in a system menu instead of a pin. */
+.hex-dot {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
 /* Checkbox — dark theme */
 input[type="checkbox"] {
   appearance: none;

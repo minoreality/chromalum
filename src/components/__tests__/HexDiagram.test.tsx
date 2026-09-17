@@ -17,7 +17,7 @@ function makeProps(overrides?: Partial<Parameters<typeof HexDiagram>[0]>) {
     levelHistogram: [100, 50, 30, 20, 10, 5, 3, 1],
     total: 219,
     lockedLevels: [false, false, false, false, false, false, false, false],
-    onToggleLock: vi.fn(),
+    onSetLock: vi.fn(),
     onRandomize: vi.fn(),
     canRandomize: true,
     ...overrides,
@@ -148,11 +148,172 @@ describe("HexDiagram", () => {
 
     // Hollow, but not inert: the level's other candidates stay in the tab order
     // and still dispatch, so a palette can be set up before anything is
-    // painted. The already-selected one is out of the tab order either way.
+    // painted.
     const otherCandidate = container.querySelector('g[data-lv="3"][aria-pressed="false"]')!;
     expect(otherCandidate.getAttribute("tabindex")).toBe("0");
     fireEvent.click(otherCandidate);
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "set_color", levelIndex: 3 }));
+  });
+
+  /** Every dot of a level, in the order the diagram lays them out. */
+  function dotsOf(container: HTMLElement, level: number): Element[] {
+    return [...container.querySelectorAll(`g[data-lv="${level}"]`)];
+  }
+  const selectedDot = (container: HTMLElement, level: number) => container.querySelector(`g[data-lv="${level}"][aria-pressed="true"]`)!;
+  const otherDot = (container: HTMLElement, level: number) => container.querySelector(`g[data-lv="${level}"][aria-pressed="false"]`)!;
+
+  it("keeps the selected dot reachable, so it can be unpinned and can say it is selected", () => {
+    // It used to be dropped from the tab order and given pointer-events: none,
+    // which left the level's current colour the one dot that could neither be
+    // hovered nor announced, and let a pointer over it reach the dot behind.
+    const { container } = render(<HexDiagram {...makeProps()} />);
+    for (const level of [2, 3, 4, 5]) {
+      for (const dot of dotsOf(container, level)) {
+        expect(dot.getAttribute("tabindex")).toBe("0");
+        expect((dot as SVGElement).style.pointerEvents).not.toBe("none");
+      }
+    }
+    expect(selectedDot(container, 2).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("pins the level to the right-clicked dot, selecting it in the same gesture", () => {
+    const dispatch = vi.fn();
+    const onSetLock = vi.fn();
+    const { container } = render(<HexDiagram {...makeProps({ dispatch, onSetLock })} />);
+
+    fireEvent.contextMenu(otherDot(container, 2));
+
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "set_color", levelIndex: 2 }));
+    expect(onSetLock).toHaveBeenCalledWith(2, true);
+  });
+
+  it("releases the pin when the dot holding it is right-clicked again", () => {
+    const dispatch = vi.fn();
+    const onSetLock = vi.fn();
+    const lockedLevels = [false, false, true, false, false, false, false, false];
+    const { container } = render(<HexDiagram {...makeProps({ dispatch, onSetLock, lockedLevels })} />);
+
+    fireEvent.contextMenu(selectedDot(container, 2));
+
+    expect(onSetLock).toHaveBeenCalledWith(2, false);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("moves the pin to another dot of a level that already holds one", () => {
+    const dispatch = vi.fn();
+    const onSetLock = vi.fn();
+    const lockedLevels = [false, false, true, false, false, false, false, false];
+    const { container } = render(<HexDiagram {...makeProps({ dispatch, onSetLock, lockedLevels })} />);
+
+    fireEvent.contextMenu(otherDot(container, 2));
+
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "set_color", levelIndex: 2 }));
+    expect(onSetLock).toHaveBeenCalledWith(2, true);
+  });
+
+  it("refuses a pin on a level the canvas does not use, or one with a single candidate", () => {
+    const dispatch = vi.fn();
+    const onSetLock = vi.fn();
+    // Level 3 holds no pixels; levels 1 and 6 hold pixels but offer one
+    // candidate each, so there is nothing for a pin to hold them to.
+    const levelHistogram = [0, 40, 160, 0, 15, 700, 80, 5];
+    const total = levelHistogram.reduce((sum, count) => sum + count, 0);
+    const { container } = render(<HexDiagram {...makeProps({ dispatch, onSetLock, levelHistogram, total })} />);
+
+    for (const dot of [...dotsOf(container, 3), ...dotsOf(container, 1), ...dotsOf(container, 6)]) {
+      fireEvent.contextMenu(dot);
+    }
+
+    expect(onSetLock).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("holds a pinned level against the keyboard as well as the click", () => {
+    // Enter used to go straight to the dispatch while the click beside it
+    // checked the pin, so the level changed colour with its ring still on.
+    const dispatch = vi.fn();
+    const lockedLevels = [false, false, true, false, false, false, false, false];
+    const { container } = render(<HexDiagram {...makeProps({ dispatch, lockedLevels })} />);
+    const dot = otherDot(container, 2);
+
+    fireEvent.click(dot);
+    fireEvent.keyDown(dot, { key: "Enter" });
+    fireEvent.keyDown(dot, { key: " " });
+
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("marks a pinned level with the selected dot's own ring, not a second one over it", () => {
+    // The gold ring and the dashed one used to land on the same radius, so the
+    // level that was pinned was the one that stopped reading as selected.
+    const ringsOf = (g: Element) => [...g.querySelectorAll("circle")].filter((c) => c.getAttribute("fill") === "none");
+    const plain = render(<HexDiagram {...makeProps()} />);
+    const pinned = render(<HexDiagram {...makeProps({ lockedLevels: [false, false, true, false, false, false, false, false] })} />);
+
+    const before = ringsOf(selectedDot(plain.container, 2));
+    const after = ringsOf(selectedDot(pinned.container, 2));
+    expect(after.length).toBe(before.length);
+
+    const ring = after.find((c) => c.classList.contains("hex-dot-selected-ring"))!;
+    expect(ring.getAttribute("stroke")).toBe("#ffd700");
+    expect(ring.getAttribute("stroke-dasharray")).toBeNull();
+    expect(ring.getAttribute("r")).toBe(before.find((c) => c.classList.contains("hex-dot-selected-ring"))!.getAttribute("r"));
+  });
+
+  it("gives every dot one focus ring, left to :focus-visible rather than to state", () => {
+    // A focus ring driven by a level-wide state ringed all three of a level's
+    // dots for one focused element, and outlived the focus that raised it
+    // because the handler that cleared it was removed as the dot became
+    // selected. The ring is now an element per dot, shown by CSS.
+    const { container } = render(<HexDiagram {...makeProps()} />);
+    for (const dot of container.querySelectorAll("g[data-lv]")) {
+      expect(dot.querySelectorAll(".hex-dot-focus-ring").length).toBe(1);
+    }
+    const dot = otherDot(container, 2);
+    fireEvent.focus(dot);
+    expect(container.querySelectorAll(".hex-dot-focus-ring").length).toBe(container.querySelectorAll("g[data-lv]").length);
+  });
+
+  it("pins on a long press, and not on a press that turns into a scroll", () => {
+    vi.useFakeTimers();
+    try {
+      const onSetLock = vi.fn();
+      const { container } = render(<HexDiagram {...makeProps({ onSetLock })} />);
+      const dot = otherDot(container, 2);
+
+      // A press that wanders is the start of a scroll, not a pin.
+      fireEvent.pointerDown(dot, { pointerType: "touch", clientX: 100, clientY: 100 });
+      fireEvent.pointerMove(dot, { pointerType: "touch", clientX: 100, clientY: 140 });
+      vi.advanceTimersByTime(1000);
+      expect(onSetLock).not.toHaveBeenCalled();
+
+      fireEvent.pointerDown(dot, { pointerType: "touch", clientX: 100, clientY: 100 });
+      vi.advanceTimersByTime(1000);
+      expect(onSetLock).toHaveBeenCalledWith(2, true);
+
+      // Chrome on Android raises its own contextmenu for that same press; it
+      // must not undo the pin the timer just placed.
+      onSetLock.mockClear();
+      fireEvent.contextMenu(dot);
+      expect(onSetLock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves a mouse press alone, so a held button is not a pin", () => {
+    vi.useFakeTimers();
+    try {
+      const onSetLock = vi.fn();
+      const { container } = render(<HexDiagram {...makeProps({ onSetLock })} />);
+
+      fireEvent.pointerDown(otherDot(container, 2), { pointerType: "mouse", clientX: 100, clientY: 100 });
+      vi.advanceTimersByTime(1000);
+
+      expect(onSetLock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // Which focus deserves an outline is the browser's own heuristic, and jsdom

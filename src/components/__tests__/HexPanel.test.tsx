@@ -33,9 +33,8 @@ function makeProps(overrides?: Partial<React.ComponentProps<typeof HexPanel>>): 
     levelHistogram: [1, 2, 3, 4, 5, 6, 7, 8],
     total: 36,
     lockedLevels: new Array(8).fill(false),
-    toggleLevelLock: vi.fn(),
+    setLevelLock: vi.fn(),
     handleRandomize: vi.fn(),
-    handleUnlockAll: vi.fn(),
     canRandomize: true,
     patternInfo: { total: 42, expanded: "1 x 2 x 3", perLevel: [1, 2, 3, 4, 5, 6, 7, 8] },
     t,
@@ -75,17 +74,17 @@ describe("HexPanel", () => {
     expect(onPatternClick).toHaveBeenCalledTimes(3);
   });
 
-  it("renders unlock-all only when a level is locked", () => {
-    const handleUnlockAll = vi.fn();
-    const { rerender } = render(
-      <HexPanel {...makeProps({ lockedLevels: [false, true, false, false, false, false, false, false], handleUnlockAll })} />,
-    );
+  it("leaves a pinned level out of the 2-5 shortcut", () => {
+    // The shortcut is the keyboard's form of clicking the level's dot, so it
+    // answers to the pin the same way: level 3 is held, level 5 is not.
+    const props = makeProps({ lockedLevels: [false, false, false, true, false, false, false, false] });
+    render(<HexPanel {...props} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "btn_unlock_all" }));
-    expect(handleUnlockAll).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(document, { key: "3" });
+    fireEvent.keyDown(document, { key: "5" });
 
-    rerender(<HexPanel {...makeProps({ lockedLevels: new Array(8).fill(false), handleUnlockAll })} />);
-    expect(screen.queryByRole("button", { name: "btn_unlock_all" })).toBeNull();
+    expect(props.candidateIndexDispatch).toHaveBeenCalledTimes(1);
+    expect(props.candidateIndexDispatch).toHaveBeenCalledWith({ type: "cycle_color", levelIndex: 5, direction: 1 });
   });
 
   it("does not expose the pattern-count row as a button without a gallery callback", () => {

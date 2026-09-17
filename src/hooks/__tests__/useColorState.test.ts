@@ -26,20 +26,40 @@ describe("useColorState", () => {
     expect(result.current.lockedLevels.every((v) => v === false)).toBe(true);
   });
 
-  it("toggleLevelLock toggles a single locked state", () => {
-    const { result } = renderHook(() => useColorState(emptyHist));
+  it("setLevelLock pins and releases one level, leaving the rest alone", () => {
+    const { result } = renderHook(() => useColorState(activeHist));
 
     act(() => {
-      result.current.toggleLevelLock(3);
+      result.current.setLevelLock(3, true);
     });
     expect(result.current.lockedLevels[3]).toBe(true);
     expect(result.current.lockedLevels[0]).toBe(false);
 
-    // Toggle back
     act(() => {
-      result.current.toggleLevelLock(3);
+      result.current.setLevelLock(3, false);
     });
     expect(result.current.lockedLevels[3]).toBe(false);
+  });
+
+  it("releases a pin when its level leaves the canvas, and keeps the others", () => {
+    // A pin can only be placed on a level the canvas uses, so it must not
+    // outlive one: painting over the last pixel of level 3 takes its pin with
+    // it, while level 5 still holds pixels and keeps its own.
+    const { result, rerender } = renderHook(({ hist }) => useColorState(hist), { initialProps: { hist: [...activeHist] } });
+
+    act(() => {
+      result.current.setLevelLock(3, true);
+      result.current.setLevelLock(5, true);
+    });
+    expect(result.current.lockedLevels[3]).toBe(true);
+    expect(result.current.lockedLevels[5]).toBe(true);
+
+    const without3 = [...activeHist];
+    without3[3] = 0;
+    rerender({ hist: without3 });
+
+    expect(result.current.lockedLevels[3]).toBe(false);
+    expect(result.current.lockedLevels[5]).toBe(true);
   });
 
   it("handleRandomize changes candidateIndexByLevel values (with Math.random mock)", () => {
@@ -62,11 +82,11 @@ describe("useColorState", () => {
   });
 
   it("handleRandomize respects locked levels", () => {
-    const { result } = renderHook(() => useColorState(emptyHist));
+    const { result } = renderHook(() => useColorState(activeHist));
 
     // Lock level 0
     act(() => {
-      result.current.toggleLevelLock(0);
+      result.current.setLevelLock(0, true);
     });
     const level0Before = result.current.candidateIndexByLevel[0];
 
@@ -100,23 +120,5 @@ describe("useColorState", () => {
       });
       expect(result.current.candidateIndexByLevel[lv]).toBe(maxIdx);
     }
-  });
-
-  it("handleUnlockAll resets all locks to false", () => {
-    const { result } = renderHook(() => useColorState(emptyHist));
-
-    act(() => {
-      result.current.toggleLevelLock(1);
-    });
-    act(() => {
-      result.current.toggleLevelLock(3);
-    });
-    expect(result.current.lockedLevels[1]).toBe(true);
-    expect(result.current.lockedLevels[3]).toBe(true);
-
-    act(() => {
-      result.current.handleUnlockAll();
-    });
-    expect(result.current.lockedLevels.every((v) => v === false)).toBe(true);
   });
 });
