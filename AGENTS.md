@@ -156,8 +156,11 @@ After a Theory copy change run `npm run test:theory-copy`, then `npm run verify:
 
 ## Commit messages
 
-Work lands through squash-merged PRs, so the PR title becomes the permanent subject and the PR
-description becomes the permanent body. Write both under these rules, not as work summaries.
+Work lands through squash-merged PRs. The subject is the PR title, or the lone commit's
+subject when the PR holds one; the body is always the commit messages, each subject prefixed
+with `* ` once there is more than one. The PR description is discarded, so the commit messages
+are the permanent record — a PR may carry several commits without any of their subjects being
+lost. Write them under these rules, not as work summaries.
 
 **Subject.** Sentence-case imperative, no prefix, no trailing period, at most 65 characters —
 the squash appends ` (#NN)`. Name something a later `git log --grep` could find: a component,
