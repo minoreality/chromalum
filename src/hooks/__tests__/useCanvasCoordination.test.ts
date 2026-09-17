@@ -131,6 +131,41 @@ describe("useCanvasCoordination", () => {
     expect(secondGlazeScheduler).toHaveBeenCalledTimes(1);
   });
 
+  it("releases the cursor redraw handles on unmount, not just the frames", () => {
+    const drawing = makeDrawingResult(null);
+    const glazeDrawing = makeGlazeDrawingResult(null);
+    drawing.cursorRafRef.current = 11;
+    glazeDrawing.cursorRafRef.current = 22;
+    const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+
+    const { unmount } = renderHook(() =>
+      useCanvasCoordination({
+        canvasData: makeCanvasData(),
+        colorLUT: Array.from({ length: 8 }, () => [0, 0, 0] as [number, number, number]),
+        activeTabId: "source" as const,
+        drawing,
+        glazeDrawing,
+        sourceCanvasWrapRef: ref<HTMLDivElement | null>(null),
+        previewCanvasWrapRef: ref<HTMLDivElement | null>(null),
+        glazeWrapRef: ref<HTMLDivElement | null>(null),
+        previewCanvasRef: ref<HTMLCanvasElement | null>(null),
+        hexPreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
+        glazePreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
+        sharedScheduleCursorRedrawRef: ref<(() => void) | null>(null),
+        onWheel: vi.fn(),
+      }),
+    );
+    unmount();
+
+    expect(cancel).toHaveBeenCalledWith(11);
+    expect(cancel).toHaveBeenCalledWith(22);
+    // A left-behind handle reads as "a redraw is already queued", so every later
+    // schedule returns early and the overlay never paints again.
+    expect(drawing.cursorRafRef.current).toBeNull();
+    expect(glazeDrawing.cursorRafRef.current).toBeNull();
+    cancel.mockRestore();
+  });
+
   it("clears cursor overlays when the pointer leaves a mounted workspace", () => {
     const drawing = makeDrawingResult(null);
     const glazeDrawing = makeGlazeDrawingResult();
