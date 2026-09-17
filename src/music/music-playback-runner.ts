@@ -95,8 +95,10 @@ export function scheduleWeightSpectrum(onStep: SpectrumStepHandler, runtime: Mus
   runtime.schedule(() => onStep([], -1, events.length), timedCodewordEnd(events, 7));
 }
 
-export function scheduleComplementCanon(onStep: ComplementCanonStepHandler, reverse: boolean, runtime: MusicPlaybackRuntime) {
-  runtime.clear();
+/** One turn of the canon, and the rest it closes on. */
+const COMPLEMENT_CANON_PERIOD_MS = 1800;
+
+function runComplementCanonCycle(onStep: ComplementCanonStepHandler, reverse: boolean, runtime: MusicPlaybackRuntime, loop: boolean) {
   for (const event of complementCanonPairs(reverse)) {
     runtime.schedule(() => {
       const [a, b] = event.pair;
@@ -105,7 +107,27 @@ export function scheduleComplementCanon(onStep: ComplementCanonStepHandler, reve
       onStep(event.pairIndex, "playing");
     }, event.at);
   }
-  runtime.schedule(() => onStep(-1, null), 1800);
+  runtime.schedule(() => {
+    onStep(-1, null);
+    if (!loop) return;
+    // Every step of this turn has fired, so clearing drops their spent handles
+    // rather than a live one, and the list does not grow for as long as the
+    // canon repeats.
+    runtime.clear();
+    runComplementCanonCycle(onStep, reverse, runtime, loop);
+  }, COMPLEMENT_CANON_PERIOD_MS);
+}
+
+/**
+ * The canon is the one demo that repeats until it is stopped. Its repeat rides
+ * the shared timer list rather than an interval of its own, so the demo that
+ * claims the list next cancels it exactly like any other pending step — an
+ * interval outside the list went on calling clear() underneath whichever demo
+ * had started in the meantime, cutting that one short.
+ */
+export function scheduleComplementCanon(onStep: ComplementCanonStepHandler, reverse: boolean, runtime: MusicPlaybackRuntime, loop = false) {
+  runtime.clear();
+  runComplementCanonCycle(onStep, reverse, runtime, loop);
 }
 
 export function schedulePointFanoContext(point: number, onStep: (lineIdx: number | null) => void, runtime: MusicPlaybackRuntime) {

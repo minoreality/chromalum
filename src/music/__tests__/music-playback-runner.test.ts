@@ -92,6 +92,50 @@ describe("music-playback-runner", () => {
     expect(onSpectrumStep).toHaveBeenLastCalledWith([], -1, 16);
   });
 
+  it("repeats the canon on the shared timers and lets the next demo cancel it", () => {
+    // Unlike createRuntime's spy, this clear() empties the pending list the way
+    // the engine's shared algebra timers do, so preemption can be modelled.
+    let pending: Array<{ fn: () => void; ms: number }> = [];
+    const runtime: MusicPlaybackRuntime = {
+      clear: () => {
+        pending = [];
+      },
+      schedule: (fn, ms) => {
+        pending.push({ fn, ms });
+      },
+      playBitVectorLevel: vi.fn(),
+      triggerToneValueBurst: vi.fn(),
+      triggerErrorMarker: vi.fn(),
+    };
+    const fireAll = () => {
+      const due = pending;
+      pending = [];
+      for (const event of due) event.fn();
+    };
+
+    const onStep = vi.fn();
+    scheduleComplementCanon(onStep, false, runtime, true);
+    const perTurn = pending.length;
+    expect(perTurn).toBeGreaterThan(1);
+
+    // A turn re-arms the next one, and the list does not grow as it repeats.
+    fireAll();
+    expect(pending).toHaveLength(perTurn);
+    fireAll();
+    expect(pending).toHaveLength(perTurn);
+
+    // Starting any other demo takes the timer list, which must end the repeat:
+    // what is queued afterwards is that demo's alone, and firing it re-arms
+    // nothing.
+    const onXorStep = vi.fn();
+    scheduleXorTriple(1, 2, onXorStep, runtime);
+    onStep.mockClear();
+    fireAll();
+    expect(onXorStep).toHaveBeenCalled();
+    expect(onStep).not.toHaveBeenCalled();
+    expect(pending).toHaveLength(0);
+  });
+
   it("schedules remaining one-shot algebra and polyhedra helpers", () => {
     const xor = createRuntime();
     const onXorStep = vi.fn();
