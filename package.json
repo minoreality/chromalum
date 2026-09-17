@@ -47,7 +47,8 @@
       "src/theory-main.tsx",
       "prototypes/hue-euler/main.tsx",
       "prototypes/hue-euler/playwright.config.ts",
-      "prototypes/hue-euler/browser.check.ts"
+      "prototypes/hue-euler/browser.check.ts",
+      "prototypes/octahedron-gray-net/net.mjs"
     ]
   },
   "dependencies": {
