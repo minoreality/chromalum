@@ -74,10 +74,17 @@ describe("StellaOctangula", () => {
     expect(diagram.querySelector('[data-stella-vertex="3"]')!.getAttribute("aria-pressed")).toBe("true");
     expect(positions()).toEqual(afterDrag);
 
-    // Once that breath has passed, a click is a click again. A drag that ends
-    // without a trailing click must not eat the reader's next one.
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    fireEvent.click(diagram.querySelector('[data-stella-vertex="5"] [data-stella-hit]')!, { detail: 1 });
+    // A drag that ends without a trailing click must not eat the reader's next
+    // one. Nothing here waits for a window to lapse: the press that begins the
+    // next gesture is what disarms the suppression.
+    fireEvent.pointerDown(diagram, { pointerId: 3, clientX: 100, clientY: 100, buttons: 1 });
+    fireEvent.pointerMove(diagram, { pointerId: 3, clientX: 150, clientY: 120, buttons: 1 });
+    fireEvent.pointerUp(diagram, { pointerId: 3, clientX: 150, clientY: 120, buttons: 1 });
+
+    const vertex5 = diagram.querySelector('[data-stella-vertex="5"] [data-stella-hit]')!;
+    fireEvent.pointerDown(vertex5, { pointerId: 4, clientX: 100, clientY: 100, buttons: 1 });
+    fireEvent.pointerUp(vertex5, { pointerId: 4, clientX: 100, clientY: 100, buttons: 1 });
+    fireEvent.click(vertex5, { detail: 1 });
     await waitFor(() => expect(diagram.querySelector('[data-stella-vertex="5"]')!.getAttribute("aria-pressed")).toBe("true"));
   });
 

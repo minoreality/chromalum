@@ -173,7 +173,10 @@ export function useStellaView(selection: K8Target | null, restoreSelection: (sel
       onClickCapture(event: MouseEvent<SVGSVGElement>) {
         const now = performance.now();
         doubleClick.current = null;
-        if (now < ignoreClickUntil.current || trackball.swallowsClick()) {
+        // Asked before the || so a drag's trailing click is always consumed,
+        // even when the touch suppression below would have caught it anyway.
+        const swallowsDragClick = trackball.swallowsClick();
+        if (now < ignoreClickUntil.current || swallowsDragClick) {
           previousClick.current = null;
           event.preventDefault();
           event.stopPropagation();

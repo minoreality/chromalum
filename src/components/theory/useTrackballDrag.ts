@@ -18,10 +18,13 @@ const MOUSE_DRAG_SLOP = 4;
 const TOUCH_DRAG_SLOP = 12;
 // Layout-free fallback, for environments that report no box (jsdom, hidden tabs).
 const FALLBACK_DRAG_SIZE = 240;
-// A finished drag is followed by a click the reader never asked for, in the same
-// breath as the release. Suppressing a window rather than "the next click" keeps
-// a drag that ends without one from eating a deliberate click later.
-const DRAG_CLICK_SUPPRESSION = 100;
+// A finished drag is followed by a click the reader never asked for, and a
+// right-button one by a context menu, both in the same breath as the release.
+// A one-shot flag catches exactly that event; the next press disarms it, so a
+// drag that ends without one does not eat a deliberate click later. A time
+// window read the same intent off the clock, which meant guessing how long
+// that breath is — a loaded main thread stretches it past any guess, and the
+// suppression then lapses before the click it was waiting for arrives.
 
 type Drag = {
   pointerId: number;
@@ -72,8 +75,8 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
   const drag = useRef<Drag | null>(null);
   const spinFrame = useRef(0);
   const spinSince = useRef(0);
-  const ignoreClickUntil = useRef(0);
-  const ignoreMenuUntil = useRef(0);
+  const swallowNextClick = useRef(false);
+  const swallowNextMenu = useRef(false);
   const [dragging, setDragging] = useState(false);
 
   const surfacePoint = (clientX: number, clientY: number, left: number, top: number, unit: number) => ({
@@ -109,10 +112,17 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
 
   return {
     dragging,
-    /** True while the click a finished drag leaves behind is still arriving. */
-    swallowsClick: () => performance.now() < ignoreClickUntil.current,
+    /** Whether this click is the one a finished drag left behind. Consumes it. */
+    swallowsClick: () => {
+      if (!swallowNextClick.current) return false;
+      swallowNextClick.current = false;
+      return true;
+    },
 
     onPointerDown(event: PointerEvent<SVGSVGElement>) {
+      // A new press means the last drag's trailing click never came.
+      swallowNextClick.current = false;
+      swallowNextMenu.current = false;
       const box = event.currentTarget.getBoundingClientRect();
       const unit = (Math.min(box.width, box.height) || FALLBACK_DRAG_SIZE) / viewBox.size;
       const { x, y } = surfacePoint(event.clientX, event.clientY, box.left, box.top, unit);
@@ -214,8 +224,8 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
       stopSpin();
       if (!current.active) return false;
       setDragging(false);
-      ignoreClickUntil.current = performance.now() + DRAG_CLICK_SUPPRESSION;
-      if (current.buttonMask === 2) ignoreMenuUntil.current = performance.now() + DRAG_CLICK_SUPPRESSION;
+      swallowNextClick.current = true;
+      if (current.buttonMask === 2) swallowNextMenu.current = true;
       try {
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch {
@@ -228,7 +238,13 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
       // Turning with the right button ends in a menu nobody asked for. A right
       // click that never became a drag still gets its menu.
       const current = drag.current;
-      if ((current?.buttonMask === 2 && current.active) || performance.now() < ignoreMenuUntil.current) event.preventDefault();
+      if (current?.buttonMask === 2 && current.active) {
+        event.preventDefault();
+        return;
+      }
+      if (!swallowNextMenu.current) return;
+      swallowNextMenu.current = false;
+      event.preventDefault();
     },
   };
 }
