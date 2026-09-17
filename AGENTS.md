@@ -29,12 +29,15 @@ isolation.
 
 ## CI
 
-`ci.yml` triggers on `pull_request` **only**: a push straight to `main` is never
-type-checked, linted, or run against e2e. Land anything touching layout, copy, or tests
-through a PR. `main` is protected — a PR plus the `validate` and `analyze
-(javascript-typescript)` checks — but `enforce_admins` is off, so a direct push succeeds with
-a bypass notice. That notice is not a failure; it means the protection was skipped.
-`deploy.yml` publishes `main` to Pages on push.
+`ci.yml` triggers on `pull_request` **only**, but a push straight to `main` is not
+unchecked: `deploy.yml` runs `typecheck:all`, `lint`, `deadcode`, `format:check` and
+`test:coverage` before it builds and publishes to Pages. That is after the fact — a failure
+stops the deploy, not the push, so `main` keeps the commit and Pages keeps serving the last
+good build. What never runs outside a PR is `test:e2e` and `test:pwa`, so land anything
+touching layout, copy, or tests through a PR. `main` is protected — a PR plus the `validate`
+and `analyze (javascript-typescript)` checks — but `enforce_admins` is off, so a direct push
+succeeds with a bypass notice. That notice is not a failure; it means the protection was
+skipped.
 
 ## Fonts, and why layout tests fail only on CI
 
