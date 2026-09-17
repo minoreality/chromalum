@@ -1,5 +1,5 @@
 import { LEVEL_MASK } from "../constants";
-import { findClosestCandidate } from "../color-engine";
+import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import { forEachBrushPixel } from "./brush-mask";
 import type { BrushMask } from "./brush-mask";
 
@@ -9,10 +9,21 @@ import type { BrushMask } from "./brush-mask";
    Geometry matches paint.ts but writes per-pixel variant.
    ═══════════════════════════════════════════ */
 
+/**
+ * The 1-indexed candidate a level takes at this hue, or 0 for a level whose
+ * fiber holds a single candidate. There is nothing to choose on K, B, Y and W,
+ * which is already what GlazeCandidateGrid shows the reader and what the hue
+ * ticks in GlazePanel skip; 0 is the same "leave this level alone" the direct
+ * LUT below uses, so a stroke across them records no override to display.
+ */
+export function glazeOverrideValue(level: number, hueAngleDeg: number): number {
+  return LEVEL_CANDIDATES[level].length > 1 ? findClosestCandidate(level, hueAngleDeg) + 1 : 0;
+}
+
 /** Pre-compute level→override value lookup for a given hue. Call once per stroke. */
 export function buildGlazeLUT(hueAngleDeg: number): Uint8Array {
   const lut = new Uint8Array(8);
-  for (let lv = 0; lv < 8; lv++) lut[lv] = findClosestCandidate(lv, hueAngleDeg) + 1;
+  for (let lv = 0; lv < 8; lv++) lut[lv] = glazeOverrideValue(lv, hueAngleDeg);
   return lut;
 }
 
@@ -143,84 +154,4 @@ export function eraseGlazeBrushLine(
     }
   }
   eraseGlazeBrush(pixelCandidateOverrideMap, x1, y1, mask, w, h);
-}
-
-/** Paint a glaze circle: for each pixel, use pre-computed LUT to assign variant. */
-export function paintGlazeCircle(
-  pixelCandidateOverrideMap: Uint8Array,
-  levelData: Uint8Array,
-  cx: number,
-  cy: number,
-  r: number,
-  w: number,
-  h: number,
-  glazeLUT: Uint8Array,
-): void {
-  const write = (x: number, y: number) => {
-    if (x >= 0 && x < w && y >= 0 && y < h) {
-      const idx = y * w + x;
-      const lv = levelData[idx] & LEVEL_MASK;
-      const overrideValue = glazeLUT[lv];
-      if (overrideValue === 0) return; // direct mode: skip non-target levels
-      pixelCandidateOverrideMap[idx] = overrideValue;
-    }
-  };
-  if (r <= 0) {
-    write(cx, cy);
-    return;
-  }
-  const fillRow = (y: number, x0: number, x1: number) => {
-    if (y < 0 || y >= h) return;
-    const lo = Math.max(0, x0),
-      hi = Math.min(w - 1, x1);
-    for (let x = lo; x <= hi; x++) write(x, y);
-  };
-  let x = 0,
-    y = r,
-    d = 1 - r;
-  while (x <= y) {
-    fillRow(cy + y, cx - x, cx + x);
-    fillRow(cy - y, cx - x, cx + x);
-    if (x !== y) {
-      fillRow(cy + x, cx - y, cx + y);
-      fillRow(cy - x, cx - y, cx + y);
-    }
-    if (d < 0) d += 2 * x + 3;
-    else {
-      d += 2 * (x - y) + 5;
-      y--;
-    }
-    x++;
-  }
-}
-
-/** Erase glaze circle: reset per-pixel overrides to 0 (default candidateIndexByLevel[]). */
-export function eraseGlazeCircle(pixelCandidateOverrideMap: Uint8Array, cx: number, cy: number, r: number, w: number, h: number): void {
-  if (r <= 0) {
-    if (cx >= 0 && cx < w && cy >= 0 && cy < h) pixelCandidateOverrideMap[cy * w + cx] = 0;
-    return;
-  }
-  const fillRow = (y: number, x0: number, x1: number) => {
-    if (y < 0 || y >= h) return;
-    const lo = Math.max(0, x0),
-      hi = Math.min(w - 1, x1);
-    for (let x = lo; x <= hi; x++) pixelCandidateOverrideMap[y * w + x] = 0;
-  };
-  let x = 0,
-    y = r,
-    d = 1 - r;
-  while (x <= y) {
-    fillRow(cy + y, cx - x, cx + x);
-    fillRow(cy - y, cx - x, cx + x);
-    if (x !== y) {
-      fillRow(cy + x, cx - y, cx + y);
-      fillRow(cy - x, cx - y, cx + y);
-    }
-    if (d < 0) d += 2 * x + 3;
-    else {
-      d += 2 * (x - y) + 5;
-      y--;
-    }
-    x++;
-  }
 }

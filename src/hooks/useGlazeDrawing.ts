@@ -1,10 +1,11 @@
 import { useRef, useCallback, useLayoutEffect } from "react";
 import { LEVEL_MASK } from "../constants";
 import type { GlazeToolId } from "../constants";
-import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
+import { LEVEL_CANDIDATES } from "../color-engine";
 import {
   buildGlazeLUT,
   buildMultiDirectLUT,
+  glazeOverrideValue,
   paintGlazeBrush,
   paintGlazeBrushLine,
   eraseGlazeBrush,
@@ -297,9 +298,14 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
         strokeRef.current = null;
         return;
       }
-      const targetPixelCandidateOverrideValue = isDirect
-        ? nextCandidateOverrides.get(seedLv)! + 1
-        : findClosestCandidate(seedLv, curHue) + 1;
+      const targetPixelCandidateOverrideValue = isDirect ? nextCandidateOverrides.get(seedLv)! + 1 : glazeOverrideValue(seedLv, curHue);
+      // A seed on K, B, Y or W has no candidate to fill with, and 0 would wipe
+      // the region's existing overrides instead — that is the eraser's job.
+      if (targetPixelCandidateOverrideValue === 0) {
+        drawingRef.current = false;
+        strokeRef.current = null;
+        return;
+      }
       const fillGeneration = fillGenerationRef.current;
       const fillStroke = strokeRef.current;
       fillPendingRef.current = true;

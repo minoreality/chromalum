@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { findClosestCandidate, LEVEL_CANDIDATES } from "../../color-engine";
 import { computeGlazeDiff, applyDiffToPixelCandidateOverrideMap, buildDiffFromGlazeFill } from "../../state/undo-diff";
 import { glazeFloodFill } from "../flood-fill";
-import { buildGlazeLUT, paintGlazeCircle, eraseGlazeCircle } from "../glaze-paint";
+import { getBrushMask } from "../brush-mask";
+import { buildGlazeLUT, paintGlazeBrush } from "../glaze-paint";
 import { buildGlazeHighlightPixels, GLAZE_HIGHLIGHT_RGBA } from "../glaze-highlight";
 import { renderCanvasBuffers } from "../render-buf";
 
@@ -127,30 +128,34 @@ describe("glazeFloodFill", () => {
 });
 
 describe("buildGlazeLUT", () => {
-  it("produces same results as findClosestCandidate for each level", () => {
+  const singleCandidateLevels = LEVEL_CANDIDATES.flatMap((cands, lv) => (cands.length <= 1 ? [lv] : []));
+
+  it("indexes a level's chosen candidate from 1", () => {
     const lut = buildGlazeLUT(120);
     for (let lv = 0; lv < 8; lv++) {
+      if (LEVEL_CANDIDATES[lv].length <= 1) continue;
       expect(lut[lv]).toBe(findClosestCandidate(lv, 120) + 1);
     }
   });
-});
 
-describe("paintGlazeCircle / eraseGlazeCircle", () => {
-  it("paints glaze values based on pixel levels", () => {
-    const levelData = new Uint8Array([3, 3, 5, 5]);
-    const pixelCandidateOverrideMap = new Uint8Array(4);
-    const lut = buildGlazeLUT(120);
-    paintGlazeCircle(pixelCandidateOverrideMap, levelData, 0, 0, 0, 2, 2, lut);
-    // Should write a non-zero value at (0,0)
-    expect(pixelCandidateOverrideMap[0]).toBeGreaterThan(0);
+  it("leaves a level whose fiber holds one candidate alone", () => {
+    // K, B, Y and W offer nothing to pick, so a glaze stroke across them must
+    // record no override for the count and the highlight overlay to report.
+    expect(singleCandidateLevels).toEqual([0, 1, 6, 7]);
+    for (const hueAngleDeg of [0, 120, 240, 359]) {
+      const lut = buildGlazeLUT(hueAngleDeg);
+      for (const lv of singleCandidateLevels) expect(lut[lv]).toBe(0);
+    }
   });
 
-  it("eraseGlazeCircle resets to 0", () => {
-    const pixelCandidateOverrideMap = new Uint8Array([5, 5, 5, 5]);
-    eraseGlazeCircle(pixelCandidateOverrideMap, 0, 0, 0, 2, 2);
-    expect(pixelCandidateOverrideMap[0]).toBe(0);
-    // Others should remain
-    expect(pixelCandidateOverrideMap[1]).toBe(5);
+  it("paints nothing where the level offers no candidate", () => {
+    // Through paintGlazeBrush, the kernel a stroke actually runs.
+    const levelData = new Uint8Array([0, 6, 3, 5]);
+    const pixelCandidateOverrideMap = new Uint8Array(4);
+    paintGlazeBrush(pixelCandidateOverrideMap, levelData, 0, 0, getBrushMask(2), 2, 2, buildGlazeLUT(120));
+    expect([...pixelCandidateOverrideMap.subarray(0, 2)]).toEqual([0, 0]);
+    expect(pixelCandidateOverrideMap[2]).toBeGreaterThan(0);
+    expect(pixelCandidateOverrideMap[3]).toBeGreaterThan(0);
   });
 });
 

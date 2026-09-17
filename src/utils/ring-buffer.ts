@@ -75,40 +75,12 @@ export class RingBuffer<T> {
     return this._buf[(this._head + index) % this.capacity];
   }
 
-  /** Clear all elements. */
-  clear(): void {
-    for (let i = 0; i < this._len; i++) {
-      this._buf[(this._head + i) % this.capacity] = undefined;
-    }
-    this._head = 0;
-    this._len = 0;
-  }
-
-  /** Convert to array (oldest first). */
-  toArray(): T[] {
-    const arr: T[] = new Array(this._len);
-    for (let i = 0; i < this._len; i++) {
-      arr[i] = this._buf[(this._head + i) % this.capacity] as T;
-    }
-    return arr;
-  }
-
   /** Create a shallow clone with same capacity and contents. */
   clone(): RingBuffer<T> {
     const rb = new RingBuffer<T>(this.capacity);
     rb._buf = this._buf.slice();
     rb._head = this._head;
     rb._len = this._len;
-    return rb;
-  }
-
-  /** Create from existing array with given capacity. */
-  static from<T>(items: T[], capacity: number): RingBuffer<T> {
-    const rb = new RingBuffer<T>(capacity);
-    const start = Math.max(0, items.length - capacity);
-    for (let i = start; i < items.length; i++) {
-      rb.push(items[i]);
-    }
     return rb;
   }
 }
