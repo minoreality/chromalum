@@ -267,4 +267,114 @@ test.describe("mobile touch", () => {
     await canvas.tap();
     await expect.poll(() => canvasPixel(canvas, 160, 160)).toEqual([255, 255, 255, 255]);
   });
+
+  /**
+   * The hue wheel under a finger. Real touch input, so the browser's own gesture
+   * arbitration decides whether the figure or the page gets the movement — the
+   * one thing a synthesized pointer event cannot tell us.
+   */
+  async function openWheel(page: Page) {
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Music" }).click();
+    const figure = page.locator(".linked-viz-root svg").first();
+    await figure.scrollIntoViewIfNeeded();
+    await expect(figure).toBeVisible();
+    await page.evaluate(() => {
+      (window as unknown as { __cancels: number }).__cancels = 0;
+      document
+        .querySelector(".linked-viz-root svg")!
+        .addEventListener("pointercancel", () => (window as unknown as { __cancels: number }).__cancels++, { capture: true });
+    });
+    return figure;
+  }
+
+  /**
+   * The wheel's own hit area: the transparent disc that is a direct child of the
+   * grabbable group. The dots carry transparent circles of their own, so a
+   * plainer selector picks one of those and every drag reads as a few pixels
+   * around the wrong centre.
+   */
+  const wheelCentre = (figure: Locator) =>
+    figure.evaluate((svg) => {
+      const box = svg.querySelector('g[style*="grab"] > circle[fill="transparent"]')!.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2, r: box.width / 2 };
+    });
+
+  const alphaReadout = async (page: Page) => Number(await page.getByRole("slider", { name: "Hue phase", exact: true }).inputValue());
+  const cancels = (page: Page) => page.evaluate(() => (window as unknown as { __cancels: number }).__cancels);
+  /** Shortest signed distance from `from` to `to` on the circle. */
+  const turnedBy = (from: number, to: number) => ((((to - from) % 360) + 540) % 360) - 180;
+  /** How far each dispatched touch moves along the rim. */
+  const STEP_DEG = 15;
+
+  test("turns the hue wheel from a touch drag instead of letting the page scroll away with it", async ({ page, context }) => {
+    const figure = await openWheel(page);
+    const wheel = await wheelCentre(figure);
+    const scrolled = await page.evaluate(() => window.scrollY);
+    const before = await alphaReadout(page);
+
+    // A quarter turn swept along the rim. Most of that travel is vertical,
+    // which is exactly the movement a scroll would claim.
+    const client = await context.newCDPSession(page);
+    const at = (deg: number) => ({
+      x: wheel.x + wheel.r * 0.8 * Math.cos((deg * Math.PI) / 180),
+      y: wheel.y + wheel.r * 0.8 * Math.sin((deg * Math.PI) / 180),
+    });
+    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at(0)] });
+    for (let deg = 15; deg <= 90; deg += 15) {
+      await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [at(deg)] });
+    }
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+    expect(Math.abs(turnedBy(before, await alphaReadout(page)))).toBeGreaterThan(80);
+    expect(await cancels(page)).toBe(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+  });
+
+  test("holds the hue wheel through three turns and through a second finger landing", async ({ page, context }) => {
+    const figure = await openWheel(page);
+    const wheel = await wheelCentre(figure);
+    const scrolled = await page.evaluate(() => window.scrollY);
+    const before = await alphaReadout(page);
+
+    const client = await context.newCDPSession(page);
+    const at = (deg: number) => ({
+      x: wheel.x + wheel.r * 0.8 * Math.cos((deg * Math.PI) / 180),
+      y: wheel.y + wheel.r * 0.8 * Math.sin((deg * Math.PI) / 180),
+      id: 0,
+    });
+    // A second finger landing on the platter must not move the turn under the
+    // first: a single drag slot let whichever pointer touched down last reset
+    // the origin, so contact alone shifted alpha and every turn after it drifted
+    // further. It has to land on the wheel, because that is the handler that
+    // takes the origin.
+    const resting = { x: wheel.x - wheel.r * 0.5, y: wheel.y + wheel.r * 0.5, id: 1 };
+    let secondDown = false;
+
+    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at(0)] });
+    const sampled: { swept: number; turned: number }[] = [];
+    for (let deg = STEP_DEG; deg <= 1080; deg += STEP_DEG) {
+      if (deg > 360 && !secondDown) {
+        await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at(deg), resting] });
+        secondDown = true;
+      }
+      const points = secondDown ? [at(deg), resting] : [at(deg)];
+      await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: points });
+      if (deg % 90 === 0) sampled.push({ swept: deg, turned: turnedBy(before, await alphaReadout(page)) });
+    }
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+    // Every quarter of every turn has to land on the finger, not merely the end
+    // of the sweep: alpha that never moved would return to its start too, and a
+    // second finger that stole the origin drifted further with every turn. The
+    // sample is read without waiting for React to commit, so it can trail the
+    // dispatch by one step and no more.
+    for (const { swept, turned } of sampled) {
+      expect(Math.abs(turnedBy(swept, turned)), `at ${swept} deg swept`).toBeLessThanOrEqual(STEP_DEG);
+    }
+    expect(sampled).toHaveLength(12);
+    await expect.poll(async () => Math.abs(turnedBy(before, await alphaReadout(page)))).toBeLessThanOrEqual(STEP_DEG);
+    expect(await cancels(page)).toBe(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+  });
 });

@@ -4223,6 +4223,18 @@ button.theory-diagram-button {
 .linked-viz-root {
   width: 90%;
 }
+/* A finger on this figure turns the hue wheel or drags a hue line, so the
+   browser must not read the same movement as a scroll and take the gesture
+   away. Measured on a 390x844 phone before this rule: every touch drag ended in
+   pointercancel, a 60 deg sweep of the wheel gave 20 deg of rotation and threw
+   the page 29px, and three continuous turns left alpha frozen. It has to sit on
+   the svg — Chrome reports touch-action on an inner <g> as none and ignores it,
+   which is why scoping the rule to the wheel alone changed nothing. */
+.linked-viz-root svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 @media (min-width: 1024px) {
   .linked-viz-root {
     width: 85%;

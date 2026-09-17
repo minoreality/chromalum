@@ -140,7 +140,19 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const hoveredDot = onHoverCandidate ? (hoveredCandidate ?? null) : localHoveredDot;
   const setHoveredDot = onHoverCandidate ?? setLocalHoveredDot;
   const svgRef = useRef<SVGSVGElement>(null);
-  const dragRef = useRef<{ type: "wheel"; startAngle: number; startAlpha: number } | { type: "hue" } | { type: "hue-bottom" } | null>(null);
+  /**
+   * The one pointer a drag belongs to. Without the id the ref was a single slot
+   * that whichever pointer touched down last would overwrite: resting a second
+   * finger on the figure while the first turned the wheel reset the drag origin
+   * under it, so alpha jumped 20 deg on contact and the next 80 deg of travel
+   * read as 100. A hand steadying the phone is enough to do it.
+   */
+  const dragRef = useRef<
+    | { pointerId: number; type: "wheel"; startAngle: number; startAlpha: number }
+    | { pointerId: number; type: "hue" }
+    | { pointerId: number; type: "hue-bottom" }
+    | null
+  >(null);
 
   const activeAlpha = mode === 0 ? alpha0 : alpha7;
   const activeRadiusFn = mode === 0 ? toneR0 : toneR7;
@@ -165,9 +177,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   // Wheel rotation drag
   const onWheelPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (dragRef.current) return;
       const pt = svgCoord(e.clientX, e.clientY);
       const angle = (Math.atan2(pt.y - CY, pt.x - CX) * 180) / Math.PI;
-      dragRef.current = { type: "wheel", startAngle: angle, startAlpha: activeAlpha };
+      dragRef.current = { pointerId: e.pointerId, type: "wheel", startAngle: angle, startAlpha: activeAlpha };
       svgRef.current?.setPointerCapture(e.pointerId);
     },
     [activeAlpha, svgCoord],
@@ -177,7 +190,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const onHuePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.stopPropagation();
-      dragRef.current = { type: "hue" };
+      if (dragRef.current) return;
+      dragRef.current = { pointerId: e.pointerId, type: "hue" };
       svgRef.current?.setPointerCapture(e.pointerId);
       // Immediately update hue
       const pt = svgCoord(e.clientX, e.clientY);
@@ -191,7 +205,8 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const onHueBottomPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.stopPropagation();
-      dragRef.current = { type: "hue-bottom" };
+      if (dragRef.current) return;
+      dragRef.current = { pointerId: e.pointerId, type: "hue-bottom" };
       svgRef.current?.setPointerCapture(e.pointerId);
       const pt = svgCoord(e.clientX, e.clientY);
       const hue = clampHueFromBottomGraphY(pt.y);
@@ -203,7 +218,7 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
       const drag = dragRef.current;
-      if (!drag) return;
+      if (!drag || drag.pointerId !== e.pointerId) return;
       const pt = svgCoord(e.clientX, e.clientY);
       if (drag.type === "wheel") {
         const angle = (Math.atan2(pt.y - CY, pt.x - CX) * 180) / Math.PI;
@@ -222,8 +237,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     [svgCoord, mode, setAlpha0, setAlpha7, onHueAngleDegChange],
   );
 
-  const onPointerUp = useCallback(() => {
-    dragRef.current = null;
+  // Only the pointer that owns the drag ends it. A second finger lifting, or
+  // leaving the figure, used to drop a turn that was still under way.
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    if (dragRef.current?.pointerId === e.pointerId) dragRef.current = null;
   }, []);
 
   // Pre-compute all sine/cosine paths so vizContent doesn't recalculate them
@@ -429,6 +446,10 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
+        // Nothing should cancel a turn now that the figure claims the gesture,
+        // but a cancel that went unhandled left the drag armed, so the next
+        // move resumed it from a stale origin.
+        onPointerCancel={onPointerUp}
       >
         <defs>
           <filter id="dot-glow" x="-50%" y="-50%" width="200%" height="200%">
