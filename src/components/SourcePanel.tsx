@@ -204,6 +204,12 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "s") return;
+      // An open dialog owns the keyboard, the same gate useKeyboardShortcuts
+      // applies. Without it Ctrl+N then Ctrl+S opened the save confirmation on
+      // top of the New Canvas dialog: two aria-modal dialogs at once, the
+      // confirmation covering the size picker, and a useFocusTrap apiece
+      // competing for Tab.
+      if (document.querySelector('[role="dialog"][aria-modal="true"]') !== null) return;
       e.preventDefault();
       handleSaveColor();
     };

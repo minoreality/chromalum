@@ -92,6 +92,23 @@ describe("App", () => {
     expect(await screen.findByText("Save color image?")).toBeTruthy();
   }, 15000);
 
+  it("leaves Ctrl+S alone while another dialog owns the keyboard", async () => {
+    renderApp();
+    fireEvent.click(await screen.findByRole("tab", { name: "Source" }));
+    await screen.findByTitle(/Save color PNG/);
+
+    const open = new KeyboardEvent("keydown", { key: "n", ctrlKey: true, bubbles: true, cancelable: true });
+    document.body.dispatchEvent(open);
+    expect(await screen.findByRole("dialog", { name: "New Canvas" })).toBeTruthy();
+
+    const save = new KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true, cancelable: true });
+    document.body.dispatchEvent(save);
+
+    expect(save.defaultPrevented).toBe(false);
+    expect(screen.queryByText("Save color image?")).toBeNull();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  }, 15000);
+
   it("does not interrupt the app with legacy service worker update notifications", async () => {
     renderApp();
 

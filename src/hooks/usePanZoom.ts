@@ -67,6 +67,18 @@ function panForCanvasFocus(point: ViewportPoint, zoom: number, focus: ViewportPo
   };
 }
 
+/**
+ * Clamp pan so the canvas never drifts fully off-screen (max ±w or ±h).
+ * setPan applies it to every update, so the bound holds for whoever calls it
+ * rather than for whoever remembers to wrap the argument.
+ */
+export function clampPan(p: { x: number; y: number }, canvasData: Pick<CanvasData, "width" | "height">): { x: number; y: number } {
+  return {
+    x: Math.max(-canvasData.width, Math.min(canvasData.width, p.x)),
+    y: Math.max(-canvasData.height, Math.min(canvasData.height, p.y)),
+  };
+}
+
 export function usePanZoom(
   canvasData: CanvasData,
   displayWidth: number,
@@ -100,11 +112,11 @@ export function usePanZoom(
   // Keep panRef ahead of React rendering so same-frame grid redraws follow active pans.
   const setPan = useCallback(
     (v: React.SetStateAction<{ x: number; y: number }>) => {
-      const next = typeof v === "function" ? v(panRef.current) : v;
+      const next = clampPan(typeof v === "function" ? v(panRef.current) : v, canvasDataRef.current);
       panRef.current = next;
       _setPanRaw((prev) => (next.x === prev.x && next.y === prev.y ? prev : next));
     },
-    [panRef],
+    [canvasDataRef, panRef],
   );
 
   // Pinch-to-zoom state
@@ -132,15 +144,6 @@ export function usePanZoom(
       if (!next) clearPanInteraction();
     },
     [clearPanInteraction, panZoomModeRef],
-  );
-
-  /** Clamp pan so canvas never drifts fully off-screen (max ±w or ±h). */
-  const clampPan = useCallback(
-    (p: { x: number; y: number }, canvasData: CanvasData) => ({
-      x: Math.max(-canvasData.width, Math.min(canvasData.width, p.x)),
-      y: Math.max(-canvasData.height, Math.min(canvasData.height, p.y)),
-    }),
-    [],
   );
 
   const endPan = useCallback(() => {
@@ -188,11 +191,10 @@ export function usePanZoom(
         dy = e.clientY - panStartRef.current.y;
       const cv = canvasDataRef.current;
       const scale = (displayWidth * zoomRef.current) / cv.width;
-      const raw = { x: panOriginRef.current.x + dx / scale, y: panOriginRef.current.y + dy / scale };
-      setPan(clampPan(raw, cv));
+      setPan({ x: panOriginRef.current.x + dx / scale, y: panOriginRef.current.y + dy / scale });
       scheduleCursorRedrawRef.current?.();
     },
-    [canvasDataRef, displayWidth, zoomRef, scheduleCursorRedrawRef, clampPan, setPan],
+    [canvasDataRef, displayWidth, zoomRef, scheduleCursorRedrawRef, setPan],
   );
 
   const onWheel = useCallback(
@@ -208,10 +210,10 @@ export function usePanZoom(
       if (!pointer) return;
       const focus = canvasFocusFromViewportPoint(pointer, curZoom, curPan, cv);
       setZoom(newZoom);
-      setPan(clampPan(panForCanvasFocus(pointer, newZoom, focus, cv), cv));
+      setPan(panForCanvasFocus(pointer, newZoom, focus, cv));
       scheduleCursorRedrawRef.current?.();
     },
-    [zoomRef, panRef, canvasDataRef, scheduleCursorRedrawRef, clampPan, setZoom, setPan],
+    [zoomRef, panRef, canvasDataRef, scheduleCursorRedrawRef, setZoom, setPan],
   );
 
   // ── Pinch-to-zoom handlers ──
@@ -269,7 +271,7 @@ export function usePanZoom(
               y: pinchStartPanRef.current.y * (newZoom / pinchStartZoomRef.current) + centerDy / ((displayWidth * newZoom) / cv.width),
             };
         setZoom(newZoom);
-        setPan(clampPan(rawPan, cv));
+        setPan(rawPan);
         scheduleCursorRedrawRef.current?.();
       } else if (pointersRef.current.size === 1 && panningRef.current) {
         // Single finger pan
@@ -277,12 +279,11 @@ export function usePanZoom(
           dy = e.clientY - panStartRef.current.y;
         const cv = canvasDataRef.current;
         const scale = (displayWidth * zoomRef.current) / cv.width;
-        const raw = { x: panOriginRef.current.x + dx / scale, y: panOriginRef.current.y + dy / scale };
-        setPan(clampPan(raw, cv));
+        setPan({ x: panOriginRef.current.x + dx / scale, y: panOriginRef.current.y + dy / scale });
         scheduleCursorRedrawRef.current?.();
       }
     },
-    [canvasDataRef, displayWidth, zoomRef, scheduleCursorRedrawRef, clampPan, setZoom, setPan],
+    [canvasDataRef, displayWidth, zoomRef, scheduleCursorRedrawRef, setZoom, setPan],
   );
 
   const onPinchUp = useCallback(

@@ -1,18 +1,13 @@
 import { describe, it, expect } from "vitest";
+import { clampPan } from "../usePanZoom";
 
 /**
- * Tests for pan clamping logic extracted from usePanZoom.
- * The clampPan function bounds pan to ±w, ±h.
+ * Bounds on the pan offset, taken from usePanZoom rather than restated here:
+ * a copy passes while the app skips the clamp entirely, which is how the
+ * arrow-key handlers walked the canvas off-screen with these tests green.
  */
-function clampPan(p: { x: number; y: number }, cv: { w: number; h: number }) {
-  return {
-    x: Math.max(-cv.w, Math.min(cv.w, p.x)),
-    y: Math.max(-cv.h, Math.min(cv.h, p.y)),
-  };
-}
-
 describe("clampPan", () => {
-  const cv = { w: 320, h: 240 };
+  const cv = { width: 320, height: 240 };
 
   it("does not change values within bounds", () => {
     expect(clampPan({ x: 100, y: -50 }, cv)).toEqual({ x: 100, y: -50 });
@@ -35,6 +30,6 @@ describe("clampPan", () => {
   });
 
   it("handles 1x1 canvas", () => {
-    expect(clampPan({ x: 5, y: -5 }, { w: 1, h: 1 })).toEqual({ x: 1, y: -1 });
+    expect(clampPan({ x: 5, y: -5 }, { width: 1, height: 1 })).toEqual({ x: 1, y: -1 });
   });
 });

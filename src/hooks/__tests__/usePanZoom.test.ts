@@ -141,6 +141,27 @@ describe("usePanZoom", () => {
     expect(result.current.pan).toEqual({ x: 6, y: 12 });
   });
 
+  it("setPan clamps every update, including a run of relative steps", () => {
+    const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+    const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+    act(() => {
+      result.current.setPan({ x: 10_000, y: -10_000 });
+    });
+    expect(result.current.pan).toEqual({ x: canvasData.width, y: -canvasData.height });
+
+    // The shape the arrow keys arrive in: Source, Color and Glaze each step the
+    // pan by 10 a press and none of them bounded the result themselves.
+    act(() => {
+      result.current.setPan({ x: 0, y: 0 });
+    });
+    act(() => {
+      for (let press = 0; press < 60; press++) result.current.setPan((p) => ({ ...p, x: p.x + 10 }));
+    });
+    expect(result.current.panRef.current.x).toBe(canvasData.width);
+    expect(result.current.pan.x).toBe(canvasData.width);
+  });
+
   it("refs are exposed and initialized", () => {
     const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
     const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
