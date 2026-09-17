@@ -29,6 +29,26 @@ interface Props {
   canRandomize: boolean;
 }
 
+/** Dot radius at rest, kept apart so an unselected candidate reads by kind. */
+const DOT_MIN_VERTEX = 12;
+const DOT_MIN_EDGE = 8;
+/**
+ * Floor for the one candidate per level that is selected. Shared by vertex and
+ * edge: levels 2 to 5 each offer three candidates, one on a vertex and two on
+ * edges, and cycling a level between them is the same level holding the same
+ * pixels. A floor that differed by kind would have moved the dot that stands
+ * for that share, by 4px at the low end where the dots are smallest.
+ */
+const DOT_MIN_ACTIVE = DOT_MIN_VERTEX;
+/**
+ * Radius of a level that fills the canvas. A regular hexagon's side equals its
+ * circumradius, so each edge is HEX_R long and carries a candidate every
+ * HEX_R / span; the widest span is 4, so HEX_R / 4 is the closest two candidate
+ * positions ever sit. A dot stops there: at its largest it reaches the nearest
+ * position another dot could occupy, and never past it.
+ */
+const DOT_MAX = HEX_R / 4;
+
 const DICE_CX = HEX_CX;
 const DICE_CY = HEX_CY + 6;
 const DICE_HIT_RADIUS = 40;
@@ -72,12 +92,14 @@ export const HexDiagram = memo(
       if (g) setHl(null);
     }, []);
     const dR = (levelIndex: number, vertex: boolean, active: boolean) => {
-      const mn = vertex ? 12 : 8;
-      if (!active) return mn;
-      const base = vertex ? 15 : 8,
-        mx = vertex ? 50 : 30;
-      const r = total > 0 ? levelHistogram[levelIndex] / total : 0;
-      return Math.min(mx, Math.max(mn, base * (0.5 + r * 10)));
+      if (!active) return vertex ? DOT_MIN_VERTEX : DOT_MIN_EDGE;
+      const share = total > 0 ? levelHistogram[levelIndex] / total : 0;
+      // A circle is read by its area, so the radius follows the square root of
+      // the share, on one scale from one floor. Where the selected candidate
+      // sits says nothing about how much of the canvas its level holds, so it
+      // must not enter the size: separate scales had the dominant level drawn
+      // smaller than a level a quarter its size.
+      return DOT_MIN_ACTIVE + (DOT_MAX - DOT_MIN_ACTIVE) * Math.sqrt(share);
     };
     const { cp } = useMemo(() => {
       const points = HEX_DOTS.filter((d) => isA(d.level, d.candidateIndex))
