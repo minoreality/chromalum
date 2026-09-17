@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { MutableRefObject } from "react";
 
 import { findMusicFanoLine } from "../music/music-panel-derived";
 import type { MusicEngineReturn } from "./useMusicEngine";
@@ -8,26 +7,17 @@ import type { useMusicFanoState, useMusicTransportState } from "./useMusicPanelS
 type MusicFanoState = ReturnType<typeof useMusicFanoState>;
 type MusicTransportState = ReturnType<typeof useMusicTransportState>;
 
-interface MusicTempoRestartOptions {
+interface MusicTempoChangeOptions {
   rhythmTempo: number;
   grayStep: number | null;
   rhythmPlaying: boolean;
   engine: MusicEngineReturn;
-  grayStepCbRef: MutableRefObject<(lv: number | null) => void>;
-  fanoBeatCbRef: MutableRefObject<(lines: number[], pos: number) => void>;
 }
 
-function useMusicTempoRestart({
-  rhythmTempo,
-  grayStep,
-  rhythmPlaying,
-  engine,
-  grayStepCbRef,
-  fanoBeatCbRef,
-}: MusicTempoRestartOptions): void {
+function useMusicTempoChange({ rhythmTempo, grayStep, rhythmPlaying, engine }: MusicTempoChangeOptions): void {
   const tempoMountedRef = useRef(false);
-  const latestRef = useRef({ grayStep, rhythmPlaying, engine, grayStepCbRef, fanoBeatCbRef });
-  latestRef.current = { grayStep, rhythmPlaying, engine, grayStepCbRef, fanoBeatCbRef };
+  const latestRef = useRef({ grayStep, rhythmPlaying, engine });
+  latestRef.current = { grayStep, rhythmPlaying, engine };
 
   useEffect(() => {
     if (!tempoMountedRef.current) {
@@ -35,15 +25,11 @@ function useMusicTempoRestart({
       return;
     }
 
+    // Re-time in place. Restarting would send the melody back to its first note
+    // and the canon back to beat 0, which a tempo change should not do.
     const latest = latestRef.current;
-    if (latest.grayStep !== null) {
-      latest.engine.stopGrayMelody();
-      latest.engine.playGrayMelody(rhythmTempo, latest.grayStepCbRef.current);
-    }
-    if (latest.rhythmPlaying) {
-      latest.engine.stopFanoRhythm();
-      latest.engine.startFanoRhythm(rhythmTempo, latest.fanoBeatCbRef.current);
-    }
+    if (latest.grayStep !== null) latest.engine.setGrayMelodyTempo(rhythmTempo);
+    if (latest.rhythmPlaying) latest.engine.setFanoRhythmTempo(rhythmTempo);
   }, [rhythmTempo]);
 }
 
@@ -116,7 +102,7 @@ export function useMusicFanoHandlers({ engine, hoveredFanoLine, setHoveredFanoLi
     setRhythmPlaying(true);
   }, [engine, rhythmPlaying, rhythmTempo, setRhythmPlaying]);
 
-  useMusicTempoRestart({ rhythmTempo, grayStep, rhythmPlaying, engine, grayStepCbRef, fanoBeatCbRef });
+  useMusicTempoChange({ rhythmTempo, grayStep, rhythmPlaying, engine });
 
   const handlePlayXor = useCallback(() => {
     if (xorA != null && xorB != null) {

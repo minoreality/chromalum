@@ -323,6 +323,86 @@ describe("useMusicEngine", () => {
     unmount();
   });
 
+  it("keeps the Gray melody's place when only the tempo changes", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderMusicEngine();
+    act(() => {
+      result.current.initAudio();
+    });
+
+    const onStep = vi.fn();
+    act(() => {
+      result.current.playGrayMelody(60, onStep);
+      vi.advanceTimersByTime(2000);
+    });
+    // FULL_GRAY_CODE is [0, 1, 3, 2, 6, 7, 5, 4].
+    expect(onStep.mock.calls.map((call) => call[0])).toEqual([0, 1]);
+
+    act(() => {
+      result.current.setGrayMelodyTempo(120);
+      vi.advanceTimersByTime(500);
+    });
+    expect(onStep.mock.calls.map((call) => call[0])).toEqual([0, 1, 3]);
+
+    // Starting over is still a fresh melody from the first note.
+    onStep.mockClear();
+    act(() => {
+      result.current.playGrayMelody(120, onStep);
+      vi.advanceTimersByTime(500);
+    });
+    expect(onStep.mock.calls.map((call) => call[0])).toEqual([0]);
+
+    unmount();
+  });
+
+  it("ignores a tempo change while nothing is playing", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderMusicEngine();
+    act(() => {
+      result.current.initAudio();
+    });
+
+    const onStep = vi.fn();
+    act(() => {
+      result.current.playGrayMelody(60, onStep);
+      result.current.stopGrayMelody();
+      result.current.setGrayMelodyTempo(120);
+      vi.advanceTimersByTime(2000);
+    });
+    expect(onStep).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  it("keeps the Fano canon's place in the seven-beat cycle when the tempo changes", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+
+    const { result, unmount } = renderMusicEngine();
+    act(() => {
+      result.current.initAudio();
+    });
+
+    const onBeat = vi.fn();
+    act(() => {
+      result.current.startFanoRhythm(60, onBeat);
+      vi.advanceTimersByTime(429);
+    });
+    expect(onBeat.mock.calls.map((call) => call[1])).toEqual([0, 1, 2]);
+
+    act(() => {
+      result.current.setFanoRhythmTempo(120);
+      vi.advanceTimersByTime(72);
+    });
+    expect(onBeat.mock.calls.map((call) => call[1])).toEqual([0, 1, 2, 3]);
+
+    unmount();
+  });
+
   it("starts, restarts, and stops the Fano rhythm interval", () => {
     vi.useFakeTimers();
     vi.stubGlobal("AudioContext", FakeAudioContext);

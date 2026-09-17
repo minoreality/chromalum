@@ -13,8 +13,10 @@ const musicEngineMock = vi.hoisted(() => {
     stopAudio: vi.fn(),
     triggerToneBurst: vi.fn(),
     playGrayMelody: vi.fn(),
+    setGrayMelodyTempo: vi.fn(),
     stopGrayMelody: vi.fn(),
     startFanoRhythm: vi.fn(),
+    setFanoRhythmTempo: vi.fn(),
     stopFanoRhythm: vi.fn(),
     analyserNode: null,
     playXorTriple: vi.fn(),
@@ -368,7 +370,7 @@ describe("MusicPanel controller integration", () => {
     expect(musicEngineMock.engine.setDroneMuted).not.toHaveBeenCalledWith(false);
   });
 
-  it("restarts active traversal playback when the tempo changes", async () => {
+  it("re-times active traversal playback when the tempo changes, without restarting it", async () => {
     musicEngineMock.engine.playGrayMelody.mockImplementation((_tempo: number, onStep: (levelIndex: number | null) => void) => onStep(1));
     musicEngineMock.engine.startFanoRhythm.mockImplementation((_tempo: number, onBeat: (lines: number[], pos: number) => void) =>
       onBeat([1], 0),
@@ -385,10 +387,23 @@ describe("MusicPanel controller integration", () => {
 
     fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "160" } });
 
-    await waitFor(() => expect(musicEngineMock.engine.playGrayMelody).toHaveBeenCalledWith(160, expect.any(Function)));
-    expect(musicEngineMock.engine.stopGrayMelody).toHaveBeenCalled();
-    expect(musicEngineMock.engine.startFanoRhythm).toHaveBeenCalledWith(160, expect.any(Function));
-    expect(musicEngineMock.engine.stopFanoRhythm).toHaveBeenCalled();
+    await waitFor(() => expect(musicEngineMock.engine.setGrayMelodyTempo).toHaveBeenCalledWith(160));
+    expect(musicEngineMock.engine.setFanoRhythmTempo).toHaveBeenCalledWith(160);
+    // A restart would send the melody back to its first note and the canon to beat 0.
+    expect(musicEngineMock.engine.stopGrayMelody).not.toHaveBeenCalled();
+    expect(musicEngineMock.engine.playGrayMelody).not.toHaveBeenCalled();
+    expect(musicEngineMock.engine.stopFanoRhythm).not.toHaveBeenCalled();
+    expect(musicEngineMock.engine.startFanoRhythm).not.toHaveBeenCalled();
+  });
+
+  it("leaves the tempo setters alone when nothing is playing", async () => {
+    renderWithLanguage(<MusicPanel />);
+
+    fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "160" } });
+
+    await waitFor(() => expect((screen.getByLabelText("BPM") as HTMLInputElement).value).toBe("160"));
+    expect(musicEngineMock.engine.setGrayMelodyTempo).not.toHaveBeenCalled();
+    expect(musicEngineMock.engine.setFanoRhythmTempo).not.toHaveBeenCalled();
   });
 
   it("routes XOR playback through selected operands", () => {

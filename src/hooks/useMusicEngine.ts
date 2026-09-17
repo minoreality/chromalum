@@ -58,8 +58,10 @@ export interface MusicEngineReturn {
   stopAudio: () => void;
   triggerToneBurst: (levelIndex: number, hueAngleDeg: number) => void;
   playGrayMelody: (tempo: number, onStep: (levelIndex: number | null) => void) => void;
+  setGrayMelodyTempo: (tempo: number) => void;
   stopGrayMelody: () => void;
   startFanoRhythm: (tempo: number, onBeat: (lines: number[], pos: number) => void) => void;
+  setFanoRhythmTempo: (tempo: number) => void;
   stopFanoRhythm: () => void;
   analyserNode: AnalyserNode | null;
   playXorTriple: (levelIndexA: number, levelIndexB: number, onStep: (levelIndex: number | null) => void) => void;
@@ -153,23 +155,44 @@ export function useMusicEngine({
   });
 
   /* ── Gray Code Melody ── */
-  const playGrayMelody = useCallback(
-    (tempo: number, onStep: (levelIndex: number | null) => void) => {
-      if (!nodesRef.current) return;
-      const intervalMs = 60000 / tempo;
-      let step = 0;
+  // The position lives in a ref rather than the interval closure, so re-timing
+  // the interval for a tempo change continues the melody from where it is.
+  const grayStepRef = useRef(0);
+  const grayOnStepRef = useRef<(levelIndex: number | null) => void>(() => {});
+
+  const runGrayInterval = useCallback(
+    (tempo: number) => {
       replaceInterval(
         grayIntervalRef,
         () => {
-          const levelIndex = FULL_GRAY_CODE[step % FULL_GRAY_CODE.length];
+          const levelIndex = FULL_GRAY_CODE[grayStepRef.current % FULL_GRAY_CODE.length];
           playPitchLevel(levelIndex);
-          onStep(levelIndex);
-          step++;
+          grayOnStepRef.current(levelIndex);
+          grayStepRef.current++;
         },
-        intervalMs,
+        60000 / tempo,
       );
     },
-    [nodesRef, playPitchLevel],
+    [playPitchLevel],
+  );
+
+  const playGrayMelody = useCallback(
+    (tempo: number, onStep: (levelIndex: number | null) => void) => {
+      if (!nodesRef.current) return;
+      grayStepRef.current = 0;
+      grayOnStepRef.current = onStep;
+      runGrayInterval(tempo);
+    },
+    [nodesRef, runGrayInterval],
+  );
+
+  /** Re-time a playing melody, keeping its place. No-op when nothing is playing. */
+  const setGrayMelodyTempo = useCallback(
+    (tempo: number) => {
+      if (grayIntervalRef.current === null || !nodesRef.current) return;
+      runGrayInterval(tempo);
+    },
+    [nodesRef, runGrayInterval],
   );
 
   const stopGrayMelody = useCallback(() => {
@@ -177,14 +200,11 @@ export function useMusicEngine({
   }, []);
 
   /* ── Fano Rhythm Canon ── */
-  const startFanoRhythm = useCallback(
-    (tempo: number, onBeat: (lines: number[], pos: number) => void) => {
-      const nodes = nodesRef.current;
-      if (!nodes) return;
+  const fanoPosRef = useRef(0);
+  const fanoOnBeatRef = useRef<(lines: number[], pos: number) => void>(() => {});
 
-      const subdivisionMs = 60000 / (tempo * 7);
-      let pos = 0;
-
+  const runFanoInterval = useCallback(
+    (tempo: number) => {
       replaceInterval(
         fanoIntervalRef,
         () => {
@@ -198,7 +218,7 @@ export function useMusicEngine({
           // the full set of audible lines in sync with the noise bursts.
           const firingLines: number[] = [];
           for (let line = 0; line < 7; line++) {
-            if (FANO_RHYTHM_PATTERNS[line].includes(pos % 7)) {
+            if (FANO_RHYTHM_PATTERNS[line].includes(fanoPosRef.current % 7)) {
               firingLines.push(line);
               // Short noise burst filtered at different frequency per line
               const bufLen = Math.floor(ctx.sampleRate * 0.05); // 50ms
@@ -223,13 +243,32 @@ export function useMusicEngine({
               source.stop(now + 0.06);
             }
           }
-          onBeat(firingLines, pos % 7);
-          pos++;
+          fanoOnBeatRef.current(firingLines, fanoPosRef.current % 7);
+          fanoPosRef.current++;
         },
-        subdivisionMs,
+        60000 / (tempo * 7),
       );
     },
     [nodesRef],
+  );
+
+  const startFanoRhythm = useCallback(
+    (tempo: number, onBeat: (lines: number[], pos: number) => void) => {
+      if (!nodesRef.current) return;
+      fanoPosRef.current = 0;
+      fanoOnBeatRef.current = onBeat;
+      runFanoInterval(tempo);
+    },
+    [nodesRef, runFanoInterval],
+  );
+
+  /** Re-time a playing canon, keeping its place in the 7-beat cycle. */
+  const setFanoRhythmTempo = useCallback(
+    (tempo: number) => {
+      if (fanoIntervalRef.current === null || !nodesRef.current) return;
+      runFanoInterval(tempo);
+    },
+    [nodesRef, runFanoInterval],
   );
 
   const stopFanoRhythm = useCallback(() => {
@@ -538,8 +577,10 @@ export function useMusicEngine({
     stopAudio,
     triggerToneBurst,
     playGrayMelody,
+    setGrayMelodyTempo,
     stopGrayMelody,
     startFanoRhythm,
+    setFanoRhythmTempo,
     stopFanoRhythm,
     analyserNode,
     playXorTriple,
