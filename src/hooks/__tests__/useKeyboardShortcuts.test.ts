@@ -425,6 +425,23 @@ describe("useKeyboardShortcuts", () => {
       expect(vi.mocked(setCursorMode)).not.toHaveBeenCalled();
     });
 
+    it("keeps the page still for as long as Space is held", () => {
+      const { deps, spaceRef, setCursorMode } = makeArgs();
+      const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
+      cleanup = unmount;
+      const first = new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true });
+      const repeat = new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true, repeat: true });
+
+      window.dispatchEvent(first);
+      window.dispatchEvent(repeat);
+
+      // An unprevented repeat is the browser scrolling mid-drag, not a no-op.
+      expect(first.defaultPrevented).toBe(true);
+      expect(repeat.defaultPrevented).toBe(true);
+      expect(spaceRef.current).toBe(true);
+      expect(vi.mocked(setCursorMode)).toHaveBeenCalledTimes(1);
+    });
+
     it("keeps F1, ?, and Escape for the help modal on Theory", () => {
       const { deps, setShowHelp } = makeArgs();
       const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId: "theory" }));
