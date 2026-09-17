@@ -120,11 +120,13 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   const pendingWorkspaceStartRef = useRef<{ startPos: Point } | null>(null);
   const floodFillWorker = useFloodFillWorker();
 
-  // Invalidate an in-flight fill when the owning canvas is replaced. The
-  // Worker itself may still finish, but its stale result is ignored.
+  // Invalidate whatever the replaced canvas still owns: an in-flight fill,
+  // whose Worker may still finish but whose stale result is ignored, and an
+  // open glaze stroke, whose override buffer was snapshotted from the canvas
+  // that is gone. Matches useCanvasDrawing so both surfaces drop a stroke on
+  // the same event.
   useLayoutEffect(() => {
     fillGenerationRef.current++;
-    if (!fillPendingRef.current) return;
     fillPendingRef.current = false;
     pendingUpRef.current = false;
     strokeRef.current = null;

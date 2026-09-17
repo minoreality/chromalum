@@ -171,6 +171,35 @@ describe("useCanvasDrawing", () => {
     expect(result.current.drawingRef.current).toBe(false);
   });
 
+  it("drops an open brush stroke when an undo replaces the canvas", () => {
+    const dispatch = vi.fn();
+    const originalCanvas = makeCvs();
+    // Same size still invalidates: the stroke's buffers were snapshotted from
+    // the image that is gone, whatever replaced it.
+    const undoneCanvas = makeCvs();
+    undoneCanvas.levelData.fill(5);
+    const { result, rerender } = renderHook(({ canvasData }) => useCanvasDrawing(makeOpts({ canvasData, dispatch })), {
+      initialProps: { canvasData: originalCanvas },
+    });
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+
+    act(() => {
+      result.current.onDown(pointerEvent({ target: canvas }));
+    });
+    expect(result.current.drawingRef.current).toBe(true);
+
+    rerender({ canvasData: undoneCanvas });
+    expect(result.current.drawingRef.current).toBe(false);
+
+    // The release must not commit pixels measured against the replaced canvas.
+    act(() => {
+      result.current.onMove(pointerEvent({ target: canvas, clientX: 180, clientY: 180 }));
+      result.current.onUp();
+    });
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   it("onUp during pan calls endPan", () => {
     const { result } = renderHook(() => useCanvasDrawing(makeOpts()));
     mockPanningRef.current = true;
