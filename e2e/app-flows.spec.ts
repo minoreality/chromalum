@@ -269,6 +269,95 @@ test.describe("mobile touch", () => {
   });
 
   /**
+   * The Hex diagram's pin, driven by real touch. A pin is placed by a long press
+   * where there is no right button, and the timer that stands in for one only
+   * runs for a pointer the browser calls a touch - so a synthesized pointer event
+   * cannot tell us whether the gesture works, and neither can a mouse.
+   */
+  async function gotoHexWithLevel2(page: Page) {
+    await gotoSource(page);
+    // A pin only holds a level the canvas uses, so level 2 has to be on it.
+    await selectLevel(page, 2, "Red");
+    await drawAtCenter(page, page.getByRole("application", { name: "Drawing canvas (grayscale)" }));
+    await page.getByRole("tab", { name: "Hex" }).click();
+    const diagram = page.getByRole("group", { name: "Pure-hue loop hexagonal diagram" });
+    await diagram.scrollIntoViewIfNeeded();
+    await expect(diagram).toBeVisible();
+    return diagram;
+  }
+
+  /** A dot's own circle is the last one in its group, after any rings. */
+  const dotCentre = (dot: Locator) =>
+    dot.evaluate((g) => {
+      const circles = [...g.querySelectorAll("circle")];
+      const box = circles[circles.length - 1].getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+
+  const selectedDot = (diagram: Locator, level: number) => diagram.locator(`g[data-lv="${level}"][aria-pressed="true"]`);
+  const looseDot = (diagram: Locator, level: number, nth = 0) => diagram.locator(`g[data-lv="${level}"][aria-pressed="false"]`).nth(nth);
+  const selectedRingDash = (diagram: Locator, level: number) =>
+    selectedDot(diagram, level).locator(".hex-dot-selected-ring").getAttribute("stroke-dasharray");
+
+  test("pins a Hex level with a long press and releases it with another", async ({ page, context }) => {
+    const diagram = await gotoHexWithLevel2(page);
+    const client = await context.newCDPSession(page);
+    const press = async (at: { x: number; y: number }, holdMs: number) => {
+      await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at] });
+      await page.waitForTimeout(holdMs);
+      await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await page.waitForTimeout(150);
+    };
+
+    const target = looseDot(diagram, 2);
+    const targetLabel = await target.getAttribute("aria-label");
+    await press(await dotCentre(target), 700);
+
+    // The press both selects the dot and holds the level there.
+    const pinned = selectedDot(diagram, 2);
+    await expect(pinned).toHaveAttribute("aria-label", targetLabel!);
+    // Pinned reads as a solid ring; merely selected keeps the dashes.
+    expect(await selectedRingDash(diagram, 2)).toBeNull();
+
+    // What the pin means: a tap on another of the level's dots does nothing.
+    const other = looseDot(diagram, 2);
+    await press(await dotCentre(other), 60);
+    await expect(selectedDot(diagram, 2)).toHaveAttribute("aria-label", targetLabel!);
+
+    // The same dot again releases it.
+    await press(await dotCentre(pinned), 700);
+    expect(await selectedRingDash(diagram, 2)).toBe("2,2");
+
+    // ...and the level answers to a tap once more.
+    const freed = looseDot(diagram, 2);
+    const freedLabel = await freed.getAttribute("aria-label");
+    await press(await dotCentre(freed), 60);
+    await expect(selectedDot(diagram, 2)).toHaveAttribute("aria-label", freedLabel!);
+  });
+
+  test("reads a press that wanders as a scroll rather than a pin", async ({ page, context }) => {
+    const diagram = await gotoHexWithLevel2(page);
+    const client = await context.newCDPSession(page);
+    const start = await dotCentre(looseDot(diagram, 2));
+
+    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [start] });
+    // Sideways, past LONG_PRESS_SLOP_PX but still inside the dot, and well
+    // before the timer is due. The other two ways a press can end would
+    // otherwise answer first and prove nothing: a downward wander is taken as a
+    // scroll and cancels the pointer, and a wander past the dot's 15.7px hit
+    // radius raises pointerleave. Between 10 and 15.7 the slop check is the
+    // only guard there is.
+    for (const dx of [4, 8, 11, 13]) {
+      await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x + dx, y: start.y }] });
+    }
+    await page.waitForTimeout(700);
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForTimeout(150);
+
+    expect(await selectedRingDash(diagram, 2)).toBe("2,2");
+  });
+
+  /**
    * The hue wheel under a finger. Real touch input, so the browser's own gesture
    * arbitration decides whether the figure or the page gets the movement — the
    * one thing a synthesized pointer event cannot tell us.
