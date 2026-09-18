@@ -87,14 +87,18 @@ describe("useAppState", () => {
       result.current.setTool("fill");
       result.current.setBrushLevel(3);
       result.current.setBrushSize(24);
-      result.current.toggleLevelLock(2);
+      // A blank canvas is level 0 throughout, so that is the one level a pin
+      // has something to hold; level 2 is not on the canvas and reads back
+      // unpinned however the flag was set.
+      result.current.setLevelLock(0, true);
+      result.current.setLevelLock(2, true);
     });
 
     expect(result.current.tool).toBe("fill");
     expect(result.current.brushLevel).toBe(3);
     expect(result.current.brushSize).toBe(24);
-    expect(result.current.lockedLevels[2]).toBe(true);
-    expect(result.current.lockedLevels[0]).toBe(false);
+    expect(result.current.lockedLevels[0]).toBe(true);
+    expect(result.current.lockedLevels[2]).toBe(false);
   });
 
   it("updates the untouched brush size when canvas dimensions change", async () => {

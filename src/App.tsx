@@ -167,9 +167,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     colorLUT,
     displayWidth,
     displayHeight,
-    toggleLevelLock,
+    setLevelLock,
     handleRandomize,
-    handleUnlockAll,
     canRandomize,
     patternInfo,
   } = app;
@@ -488,9 +487,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
               levelHistogram={levelHistogram}
               total={canvasData.width * canvasData.height}
               lockedLevels={lockedLevels}
-              toggleLevelLock={toggleLevelLock}
+              setLevelLock={setLevelLock}
               handleRandomize={handleRandomize}
-              handleUnlockAll={handleUnlockAll}
               canRandomize={canRandomize}
               patternInfo={patternInfo}
               t={t}

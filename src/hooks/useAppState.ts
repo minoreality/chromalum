@@ -350,9 +350,8 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     colorLUT: colorState.colorLUT,
     displayWidth,
     displayHeight,
-    toggleLevelLock: colorState.toggleLevelLock,
+    setLevelLock: colorState.setLevelLock,
     handleRandomize: colorState.handleRandomize,
-    handleUnlockAll: colorState.handleUnlockAll,
     canRandomize: colorState.canRandomize,
     patternInfo: colorState.patternInfo,
   };

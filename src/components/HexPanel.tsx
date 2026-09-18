@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useEffect, useState } from "react";
-import { S_BTN, S_CANVAS_STATUS_STABLE, S_PANEL_SUBTITLE } from "../styles/shared";
+import React, { useCallback, useEffect, useState } from "react";
+import { S_CANVAS_STATUS_STABLE, S_PANEL_SUBTITLE } from "../styles/shared";
 import { LEVEL_CANDIDATES } from "../color-engine";
 import { controlOwnsKey } from "../shortcuts";
 import { LEVEL_MASK } from "../constants";
@@ -23,9 +23,8 @@ interface HexPanelProps {
   levelHistogram: number[];
   total: number;
   lockedLevels: boolean[];
-  toggleLevelLock: (levelIndex: number) => void;
+  setLevelLock: (levelIndex: number, locked: boolean) => void;
   handleRandomize: () => void;
-  handleUnlockAll: () => void;
   canRandomize: boolean;
   patternInfo: { total: number; expanded: string; perLevel: number[] };
   t: TranslationFn;
@@ -33,15 +32,6 @@ interface HexPanelProps {
 }
 
 const S_FLEX_COL_CENTER: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg };
-const S_UNLOCK_ALL_BUTTON: React.CSSProperties = {
-  ...S_BTN,
-  height: 22,
-  minWidth: 72,
-  padding: `0 ${SP.xl}px`,
-  fontSize: FS.lg,
-  lineHeight: "12px",
-  whiteSpace: "nowrap",
-};
 
 export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
   const {
@@ -54,16 +44,14 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
     levelHistogram,
     total,
     lockedLevels,
-    toggleLevelLock,
+    setLevelLock,
     handleRandomize,
-    handleUnlockAll,
     canRandomize,
     patternInfo,
     t,
     onPatternClick,
   } = props;
 
-  const hasLocked = useMemo(() => lockedLevels.some(Boolean), [lockedLevels]);
   const compactStatus = useCompactStatus();
   const [hoverInfo, setHoverInfo] = useState<StatusText | null>(null);
 
@@ -98,18 +86,21 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
 
   const handleCanvasPointerLeave = useCallback(() => setHoverInfo(null), []);
 
-  // Keyboard 2-5: cycle candidate color for that level
+  // Keyboard 2-5: cycle candidate color for that level. A pinned level sits it
+  // out, the same as it does for a click on its dot and for the die; the Color
+  // tab's arrows are a visible control in a panel that shows no pin, so they
+  // are left alone.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || controlOwnsKey(e.target, e)) return;
       const k = e.key;
-      if (k >= "2" && k <= "5") {
+      if (k >= "2" && k <= "5" && !lockedLevels[+k]) {
         candidateIndexDispatch({ type: "cycle_color", levelIndex: +k, direction: 1 });
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [candidateIndexDispatch]);
+  }, [candidateIndexDispatch, lockedLevels]);
 
   return (
     <div style={S_FLEX_COL_CENTER}>
@@ -151,7 +142,7 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
             levelHistogram={levelHistogram}
             total={total}
             lockedLevels={lockedLevels}
-            onToggleLock={toggleLevelLock}
+            onSetLock={setLevelLock}
             onRandomize={handleRandomize}
             canRandomize={canRandomize}
           />
@@ -284,11 +275,6 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
                 = {t("random_patterns", patternInfo.total)}
               </span>
             </div>
-            {hasLocked && (
-              <button style={S_UNLOCK_ALL_BUTTON} onClick={handleUnlockAll}>
-                {t("btn_unlock_all")}
-              </button>
-            )}
           </div>
         </div>
       </div>
