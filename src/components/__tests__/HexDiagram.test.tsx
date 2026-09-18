@@ -162,6 +162,26 @@ describe("HexDiagram", () => {
   const selectedDot = (container: HTMLElement, level: number) => container.querySelector(`g[data-lv="${level}"][aria-pressed="true"]`)!;
   const otherDot = (container: HTMLElement, level: number) => container.querySelector(`g[data-lv="${level}"][aria-pressed="false"]`)!;
 
+  it("draws a hollow dot's level number in one neutral, and a filled one's against its fill", () => {
+    // In the candidate colour the digit ran from 2.21:1 for #0000ff to 17.72:1
+    // for #ffff00 against the panel, and a 7.2px digit needs 4.5:1. A filled dot
+    // is a different background - the candidate colour itself - so that one
+    // still picks black or white from the level.
+    const levelHistogram = [0, 0, 160, 0, 0, 0, 0, 0];
+    const { container } = render(<HexDiagram {...makeProps({ levelHistogram, total: 160 })} />);
+
+    const digitFill = (g: Element) => g.querySelector("text")!.getAttribute("fill");
+    const hollow = [...container.querySelectorAll("g[data-lv]")].filter((g) => {
+      const circles = [...g.querySelectorAll("circle")];
+      return (circles[circles.length - 1].getAttribute("fill") ?? "none") === "none";
+    });
+    expect(hollow.length).toBe(13);
+    for (const dot of hollow) expect(digitFill(dot)).toBe("#c8c8d8");
+
+    // Level 2 is the one level on the canvas, so its selected dot is filled.
+    expect(digitFill(container.querySelector('g[data-lv="2"][aria-pressed="true"]')!)).not.toBe("#c8c8d8");
+  });
+
   it("keeps the selected dot reachable, so it can be unpinned and can say it is selected", () => {
     // It used to be dropped from the tab order and given pointer-events: none,
     // which left the level's current colour the one dot that could neither be

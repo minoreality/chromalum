@@ -29,6 +29,21 @@ interface Props {
   canRandomize: boolean;
 }
 
+/**
+ * The level number inside a hollow dot. It used to be drawn in the candidate
+ * colour, which put it between 2.21:1 and 17.72:1 against the panel depending
+ * on which colour it happened to be: #0000ff read 2.21, #0040ff 2.88 and
+ * #8000ff 3.05, all under the 4.5:1 a 7.2px digit needs. One neutral puts every
+ * one of them at 11.52:1 and costs nothing, because the ring around the digit
+ * is already saying the colour.
+ *
+ * The ring itself keeps the candidate colour at whatever contrast that colour
+ * has, deliberately. It is a colour sample - the thing it has to convey is
+ * exactly which colour it is - and the dots sit at fixed, angle-labelled
+ * positions rather than having to be found.
+ */
+const HOLLOW_DIGIT = C.textPrimary;
+
 /** Dot radius at rest, kept apart so an unselected candidate reads by kind. */
 const DOT_MIN_VERTEX = 12;
 const DOT_MIN_EDGE = 8;
@@ -445,7 +460,7 @@ export const HexDiagram = memo(
                         fontSize={Math.max(FS.sm, r * 0.7)}
                         fontWeight={900}
                         fontFamily="var(--font-mono)"
-                        fill={act && used ? levelLabelColor(lv) : color}
+                        fill={act && used ? levelLabelColor(lv) : HOLLOW_DIGIT}
                       >
                         {lv}
                       </text>
@@ -495,7 +510,7 @@ export const HexDiagram = memo(
                       fontSize={Math.max(FS.xxs, r * 0.9)}
                       fontWeight={FW.bold}
                       fontFamily="var(--font-mono)"
-                      fill={act && used ? levelLabelColor(lv) : color}
+                      fill={act && used ? levelLabelColor(lv) : HOLLOW_DIGIT}
                     >
                       {lv}
                     </text>
