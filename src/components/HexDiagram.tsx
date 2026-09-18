@@ -260,7 +260,7 @@ export const HexDiagram = memo(
       // smaller than a level a quarter its size.
       return DOT_MIN_ACTIVE + (DOT_MAX - DOT_MIN_ACTIVE) * Math.sqrt(share);
     };
-    const { cp } = useMemo(() => {
+    const cp = useMemo(() => {
       // Only levels the canvas actually uses close the ring. An unused level is
       // already a factor of 1 in the pattern count, skipped by randomize and hollow
       // in the swatch row; letting it pull a corner of the outline would overstate
@@ -283,9 +283,7 @@ export const HexDiagram = memo(
         })
         .filter((p): p is NonNullable<typeof p> => p !== null)
         .sort((a, b) => a.ang - b.ang);
-      const path =
-        points.length > 2 ? points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ") + "Z" : "";
-      return { actP: points, cp: path };
+      return points.length > 2 ? points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ") + "Z" : "";
     }, [candidateIndexByLevel, levelHistogram, vp, isA]); // eslint-disable-line react-hooks/exhaustive-deps -- isA depends on candidateIndexByLevel
 
     return (
