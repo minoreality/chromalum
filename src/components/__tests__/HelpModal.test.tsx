@@ -29,6 +29,9 @@ vi.mock("../../i18n", () => ({
         help_zoom_pixel: "Pixel-perfect zoom",
         help_zoom_pixel_key: "Right-click zoom btn",
         help_theory_pin: "Pin or release the focused figure element",
+        help_hex_cycle: "Cycle the candidate color for that level",
+        help_hex_pin: "Pin or release that level's color",
+        help_hex_pin_key: "Right-click / Long press",
         help_music_play: "Play that level",
         help_switch_tab: "Switch tab",
       };
@@ -89,6 +92,18 @@ describe("HelpModal", () => {
     expect(screen.getByText("Alt+1-8")).toBeTruthy();
     expect(screen.getByText("Switch tab")).toBeTruthy();
     expect(screen.queryByText("Undo")).toBeNull();
+    expect(screen.queryByText("Select tone level")).toBeNull();
+  });
+
+  it("lists the pin gesture beside the candidate keys for the Hex tab", () => {
+    render(<HelpModal showHelp={true} activeTabId="hex" setShowHelp={() => {}} helpRef={helpRef} />);
+    expect(screen.getByText("2-5")).toBeTruthy();
+    expect(screen.getByText("Cycle the candidate color for that level")).toBeTruthy();
+    // Right-click and long press are printed nowhere on the figure, and the
+    // gold ring is the pin's whole report, so this row is the only place a
+    // reader can find the gesture at all.
+    expect(screen.getByText("Right-click / Long press")).toBeTruthy();
+    expect(screen.getByText("Pin or release that level's color")).toBeTruthy();
     expect(screen.queryByText("Select tone level")).toBeNull();
   });
 

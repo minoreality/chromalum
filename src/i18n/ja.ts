@@ -142,6 +142,8 @@ export const ja = {
   help_drop_image: "画像読み込み",
   help_drop_image_key: "ドラッグ＆ドロップ",
   help_hex_cycle: "そのレベルの候補色を切替",
+  help_hex_pin: "そのレベルの色を固定・解除",
+  help_hex_pin_key: "右クリック / 長押し",
   help_music_play: "そのレベルを鳴らす",
   help_theory_pin: "フォーカス中の図の要素を固定・解除",
   help_theory_clear: "すべての図の固定を解除",
