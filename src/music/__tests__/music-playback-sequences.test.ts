@@ -68,7 +68,12 @@ describe("music-playback-sequences", () => {
     expect(toneCrossingStep(0)).toMatchObject({ index: 0, crossing: { angleDeg: 0, semitone: 0, lv: 2 }, delayMs: 200 });
     expect(toneCrossingStep(4)).toMatchObject({ index: 4, crossing: { angleDeg: 60, semitone: 4, lv: 6 }, delayMs: 400 });
     expect(toneCrossingStep(6)).toMatchObject({ index: 6, crossing: { angleDeg: 120, semitone: 8, lv: 4 }, delayMs: 800 });
-    expect(toneCrossingStep(14)).toMatchObject({ index: 14, crossing: { angleDeg: 360, semitone: 24, lv: 2 }, delayMs: 200 });
+    // The cycle is the fourteen crossings. 300° still holds for the 300-to-360
+    // gap, 800ms, because the closing point stays in the sequence; step 14 then
+    // returns to the opening R rather than sounding 360° at semitone 24, which
+    // gave one colour two pitches.
+    expect(toneCrossingStep(13)).toMatchObject({ index: 13, crossing: { angleDeg: 300, semitone: 20, lv: 3 }, delayMs: 800 });
+    expect(toneCrossingStep(14)).toMatchObject({ index: 0, crossing: { angleDeg: 0, semitone: 0, lv: 2 }, delayMs: 200 });
     expect(pointFanoContextLines(1)).toEqual([0, 1, 3]);
 
     expect(distributiveEvents(5, 3, 6)).toEqual([

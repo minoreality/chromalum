@@ -80,7 +80,12 @@ const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
 
 const SOURCE_SHORTCUTS: readonly ShortcutEntry[] = [...DRAWING_SHORTCUTS, { key: "Ctrl+S", label: "help_save_color" }];
 
-const HEX_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "2-5", label: "help_hex_cycle" }];
+const HEX_SHORTCUTS: readonly ShortcutEntry[] = [
+  { key: "2-5", label: "help_hex_cycle" },
+  // The gold ring is the pin's whole report, and neither gesture is printed
+  // anywhere on the figure, so the panel is the only place it can be found.
+  { keyCopy: "help_hex_pin_key", label: "help_hex_pin" },
+];
 
 const MUSIC_SHORTCUTS: readonly ShortcutEntry[] = [
   { key: "1-6", label: "help_music_play" },

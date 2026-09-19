@@ -533,32 +533,39 @@ describe("MusicPanel section components", () => {
     const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
     const points = Array.from(container.querySelectorAll('circle[data-zigzag-point="vertices"]'));
     expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "+4", "-2", "+1", "-4", "+2", "-1"]));
-    expect(points).toHaveLength(7);
-    expect(points.map((point) => point.getAttribute("data-angle-deg"))).toEqual(["0", "60", "120", "180", "240", "300", "360"]);
+    // Six dots, not seven: 360° is the colour already drawn at 0°. The sixth
+    // edge still runs out to x=172 carrying its -1, so the six deltas on the
+    // figure still sum to zero and the hexagon still closes.
+    expect(points).toHaveLength(6);
+    expect(points.map((point) => point.getAttribute("data-angle-deg"))).toEqual(["0", "60", "120", "180", "240", "300"]);
     expect(points[0].getAttribute("fill")).toBe("#ff0000");
-    expect(points[6].getAttribute("fill")).toBe("#ff0000");
     expect(points[0].getAttribute("cx")).toBe("24");
-    expect(points[6].getAttribute("cx")).toBe("172");
+    expect(points.some((point) => point.getAttribute("cx") === "172")).toBe(false);
+    expect(Array.from(container.querySelectorAll("line")).some((line) => line.getAttribute("x2") === "172")).toBe(true);
     for (const staleLabel of ["0", "255", "+146", "-73", "+36", "-146", "+73"]) {
       expect(labels).not.toContain(staleLabel);
     }
   });
 
   it("renders tone crossing points as a separate zigzag graph mode", () => {
-    const { container } = renderWithLanguage(<ZigzagGraph currentStep={14} mode="crossings" />);
+    const { container } = renderWithLanguage(<ZigzagGraph currentStep={13} mode="crossings" />);
 
     const labels = Array.from(container.querySelectorAll("text")).map((node) => node.textContent);
     const circles = Array.from(container.querySelectorAll('circle[data-zigzag-point="crossings"]'));
     const lines = Array.from(container.querySelectorAll("line"));
     const terminalCircle = circles[circles.length - 1];
-    expect(circles).toHaveLength(15);
-    expect(terminalCircle.getAttribute("data-angle-deg")).toBe("360");
-    expect(terminalCircle.getAttribute("cx")).toBe("172");
+    expect(circles).toHaveLength(14);
+    expect(terminalCircle.getAttribute("data-angle-deg")).toBe("300");
+    expect(circles.some((circle) => circle.getAttribute("data-angle-deg") === "360")).toBe(false);
     expect(terminalCircle.getAttribute("r")).toBe("5.5");
+    // The closing segment survives the dot: it still runs out to x=172 under
+    // the M-to-R gradient, so the loop closes on the figure without a second
+    // dot claiming that 360° is a colour of its own.
     expect(
       lines.some((line) => line.getAttribute("stroke") === "url(#zg-crossing-terminal-grad)" && line.getAttribute("x2") === "172"),
     ).toBe(true);
-    expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "24"]));
+    expect(labels).toEqual(expect.arrayContaining(["0/7", "7/7", "20"]));
+    expect(labels).not.toContain("24");
     expect(labels).not.toContain("+4");
   });
 

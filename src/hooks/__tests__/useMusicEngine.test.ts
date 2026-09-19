@@ -581,7 +581,7 @@ describe("useMusicEngine", () => {
     unmount();
   });
 
-  it("plays zigzag vertices on the same continuous pitch mapping as tone crossings, including terminal R", () => {
+  it("plays zigzag vertices on the same continuous pitch mapping as tone crossings, closing on the opening pitch", () => {
     vi.useFakeTimers();
     vi.stubGlobal("AudioContext", FakeAudioContext);
 
@@ -611,8 +611,12 @@ describe("useMusicEngine", () => {
       vi.advanceTimersByTime(2000);
     });
 
-    expect(onStep.mock.calls.map(([stepIndex]) => stepIndex)).toEqual([0, 1, 2, 3, 4, 5, 6]);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * 4);
+    // Six notes, then R again at the pitch it opened on. 360° used to be
+    // sounded as a seventh note at PITCH_BASE_FREQ * 4, so one colour had two
+    // pitches and every cycle put an interval belonging to no hexagon edge
+    // between the two R onsets.
+    expect(onStep.mock.calls.map(([stepIndex]) => stepIndex)).toEqual([0, 1, 2, 3, 4, 5, 0]);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ);
 
     unmount();
   });
@@ -681,8 +685,11 @@ describe("useMusicEngine", () => {
       vi.advanceTimersByTime(2400);
     });
 
-    expect(onStep).toHaveBeenLastCalledWith(14);
-    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ * 4);
+    // The fourteenth crossing still holds for the 300-to-360 gap, 800ms, and
+    // the cycle then returns to R at its opening pitch rather than sounding
+    // 360° as a fifteenth note two octaves up.
+    expect(onStep).toHaveBeenLastCalledWith(0);
+    expect(ctx.oscillators[ctx.oscillators.length - 1].frequency.value).toBeCloseTo(PITCH_BASE_FREQ);
 
     onStep.mockClear();
     act(() => {

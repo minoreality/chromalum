@@ -53,7 +53,7 @@ export const en = {
 
   // ColorPanel
   label_colorized: "COLOR MAPPING PREVIEW",
-  label_diagram: "CHROMATIC DIAGRAM",
+  label_diagram: "HEXAGON DIAGRAM",
   label_color_mapping: "COLOR MAPPING",
   aria_color_preview: "Color preview (keyboard: +/- to zoom, arrow keys to pan)",
   aria_color_preview_canvas: "Color preview canvas",
@@ -142,6 +142,8 @@ export const en = {
   help_drop_image: "Load image",
   help_drop_image_key: "Drag & drop",
   help_hex_cycle: "Cycle the candidate color for that level",
+  help_hex_pin: "Pin or release that level's color",
+  help_hex_pin_key: "Right-click / Long press",
   help_music_play: "Play that level",
   help_theory_pin: "Pin or release the focused figure element",
   help_theory_clear: "Clear every figure's pinned selection",

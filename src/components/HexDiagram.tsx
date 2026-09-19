@@ -33,7 +33,7 @@ interface Props {
  * The level number inside a hollow dot. It used to be drawn in the candidate
  * colour, which put it between 2.21:1 and 17.72:1 against the panel depending
  * on which colour it happened to be: #0000ff read 2.21, #0040ff 2.88 and
- * #8000ff 3.05, all under the 4.5:1 a 7.2px digit needs. One neutral puts every
+ * #8000ff 3.05, all under the 4.5:1 a 9px digit needs. One neutral puts every
  * one of them at 11.52:1 and costs nothing, because the ring around the digit
  * is already saying the colour.
  *
@@ -44,17 +44,23 @@ interface Props {
  */
 const HOLLOW_DIGIT = C.textPrimary;
 
-/** Dot radius at rest, kept apart so an unselected candidate reads by kind. */
-const DOT_MIN_VERTEX = 12;
-const DOT_MIN_EDGE = 8;
 /**
- * Floor for the one candidate per level that is selected. Shared by vertex and
- * edge: levels 2 to 5 each offer three candidates, one on a vertex and two on
- * edges, and cycling a level between them is the same level holding the same
- * pixels. A floor that differed by kind would have moved the dot that stands
- * for that share, by 4px at the low end where the dots are smallest.
+ * Every dot's radius, at rest and as the floor the selected one grows from.
+ * The fourteen dots are the fourteen intersections of the pure-hue loop with
+ * the integer level planes, one kind of point, and a level's three candidates
+ * are representatives of the same fiber of λ — which of them the hexagon seats
+ * on a corner is a fact about the display, not about the level. A corner dot
+ * used to rest at 12 against an edge dot's 8, spending the radius on a
+ * distinction the corner position, the outer R/Y/G/C/B/M label and the RGB/CMY
+ * triangles already carry, and spending it on the channel that reports a
+ * level's share of the canvas: an unselected corner dot was drawn exactly as
+ * large as a selected dot holding none of it, while the digit inside an
+ * unselected edge dot came out at 7.2, 5.1px where the figure renders 300 wide.
+ * The digit, the stroke and the weight follow the one radius for the same
+ * reason: at 12 the old edge rule would have put a 10.8 digit inside a dot
+ * whose corner neighbour carried 9.
  */
-const DOT_MIN_ACTIVE = DOT_MIN_VERTEX;
+const DOT_MIN = 12;
 /**
  * Radius of a level that fills the canvas. A regular hexagon's side equals its
  * circumradius, so each edge is HEX_R long and carries a candidate every
@@ -265,15 +271,15 @@ export const HexDiagram = memo(
       const g = (e.target as SVGElement).closest<SVGElement>("g[data-lv]");
       if (g) setHl(null);
     }, []);
-    const dR = (levelIndex: number, vertex: boolean, active: boolean) => {
-      if (!active) return vertex ? DOT_MIN_VERTEX : DOT_MIN_EDGE;
+    const dR = (levelIndex: number, active: boolean) => {
+      if (!active) return DOT_MIN;
       const share = total > 0 ? levelHistogram[levelIndex] / total : 0;
       // A circle is read by its area, so the radius follows the square root of
       // the share, on one scale from one floor. Where the selected candidate
       // sits says nothing about how much of the canvas its level holds, so it
       // must not enter the size: separate scales had the dominant level drawn
       // smaller than a level a quarter its size.
-      return DOT_MIN_ACTIVE + (DOT_MAX - DOT_MIN_ACTIVE) * Math.sqrt(share);
+      return DOT_MIN + (DOT_MAX - DOT_MIN) * Math.sqrt(share);
     };
     const cp = useMemo(() => {
       // Only levels the canvas actually uses close the ring. An unused level is
@@ -386,7 +392,7 @@ export const HexDiagram = memo(
                   const dc = HEX_EDGE_COLORS[ei][li].hex,
                     ai = HEX_EDGE_CANDIDATE_INDICES[ei][li];
                   const act = isA(lv, ai),
-                    r = dR(lv, false, act);
+                    r = dR(lv, act);
                   allCircles.push({ key: "m" + ei + li, levelIndex: lv, ai, x, y, r, color: dc, vertex: false });
                 });
               });
@@ -395,7 +401,7 @@ export const HexDiagram = memo(
                 const p = vp[i],
                   ai = HEX_VERTEX_CANDIDATE_INDICES[i];
                 const act = isA(v.level, ai),
-                  r = dR(v.level, true, act);
+                  r = dR(v.level, act);
                 allCircles.push({ key: "v" + i, levelIndex: v.level, ai, x: p.x, y: p.y, r, color: v.rgb, vertex: true, vertexIdx: i });
               });
               // Sort: inactive first (large behind), then active on top
@@ -499,7 +505,7 @@ export const HexDiagram = memo(
                       r={r}
                       fill={act && used ? color : "none"}
                       stroke={act && used ? C.textWhite : color}
-                      strokeWidth={act ? 2.5 : 1.5}
+                      strokeWidth={act ? 3 : 1.5}
                       fillOpacity={act && used ? O.soft : 1}
                     />
                     <text
@@ -507,8 +513,8 @@ export const HexDiagram = memo(
                       y={y}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      fontSize={Math.max(FS.xxs, r * 0.9)}
-                      fontWeight={FW.bold}
+                      fontSize={Math.max(FS.sm, r * 0.7)}
+                      fontWeight={900}
                       fontFamily="var(--font-mono)"
                       fill={act && used ? levelLabelColor(lv) : HOLLOW_DIGIT}
                     >
