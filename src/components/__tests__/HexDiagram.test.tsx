@@ -117,21 +117,50 @@ describe("HexDiagram", () => {
     const levelHistogram = [0, 40, 160, 0, 15, 700, 80, 5];
     const total = levelHistogram.reduce((sum, count) => sum + count, 0);
 
-    const activeRadius = (level: number, candidateIndex: number) => {
+    const activeDot = (level: number, candidateIndex: number) => {
       const candidateIndexByLevel = [0, 0, 0, 0, 0, 0, 0, 0];
       candidateIndexByLevel[level] = candidateIndex;
       const { container, unmount } = render(<HexDiagram {...makeProps({ levelHistogram, total, candidateIndexByLevel })} />);
       const g = container.querySelector(`g[data-lv="${level}"][aria-pressed="true"]`)!;
-      const r = Number(dotBody(g).getAttribute("r"));
+      const body = dotBody(g);
+      const digit = g.querySelector("text")!;
+      const shape = {
+        r: Number(body.getAttribute("r")),
+        stroke: body.getAttribute("stroke-width"),
+        font: digit.getAttribute("font-size"),
+        weight: digit.getAttribute("font-weight"),
+      };
       unmount();
-      return r;
+      return shape;
     };
 
     for (const level of [2, 3, 4, 5]) {
-      const [first, second, third] = [0, 1, 2].map((i) => activeRadius(level, i));
-      expect(second).toBeCloseTo(first, 10);
-      expect(third).toBeCloseTo(first, 10);
+      const [first, second, third] = [0, 1, 2].map((i) => activeDot(level, i));
+      for (const other of [second, third]) {
+        expect(other.r).toBeCloseTo(first.r, 10);
+        // Not the radius alone: the digit and the stroke were written per kind,
+        // so the same circle carried a 0.9r digit and a 2.5 stroke on an edge
+        // against a corner's 0.7r and 3.
+        expect(other.stroke).toBe(first.stroke);
+        expect(other.font).toBe(first.font);
+        expect(other.weight).toBe(first.weight);
+      }
     }
+  });
+
+  it("rests every candidate at one radius, corner or edge", () => {
+    // The fourteen dots are the fourteen intersections of the pure-hue loop
+    // with the integer level planes, and which of them the hexagon seats on a
+    // corner is a fact about the display, not about the level. A corner resting
+    // at 12 against an edge dot's 8 spent the radius on that distinction, on
+    // the one channel that reports a level's share of the canvas: an unselected
+    // corner read exactly as large as a selected dot holding none of it.
+    const { container } = render(<HexDiagram {...makeProps()} />);
+    const resting = [...container.querySelectorAll('g[data-lv][aria-pressed="false"]')];
+    const corners = resting.filter((g) => g.getAttribute("aria-label")!.startsWith("hex_vertex_label"));
+    expect(corners.length).toBeGreaterThan(0);
+    expect(resting.length).toBeGreaterThan(corners.length);
+    for (const g of resting) expect(Number(dotBody(g).getAttribute("r"))).toBe(12);
   });
 
   it("leaves the selected dot of an unused level hollow, and still selectable", () => {
