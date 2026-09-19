@@ -11,6 +11,17 @@ const CROSSING_TERMINAL_POINT = TONE_CROSSING_SEQUENCE[CROSSING_TERMINAL_INDEX];
 const CROSSING_FINAL_GRAPH_POINT = CROSSING_GRAPH_POINTS[CROSSING_TERMINAL_INDEX - 1];
 // The discrete hexagon is the 60° subsequence of the same lifted traversal.
 const VERTEX_GRAPH_POINTS = TONE_CROSSING_SEQUENCE.filter(({ angleDeg }) => angleDeg % 60 === 0);
+/**
+ * The dots, which stop one short of the closing point at 360°. The hue loop is
+ * S¹, so 0° and 360° are one element of H rather than two, and the note's own
+ * mapping lists six vertex semitones (0,4,8,12,16,20) and fourteen crossing
+ * semitones — never the 24 the lifted closing point carries. Drawing a second
+ * dot there, and sounding it, claimed instead that one colour has two pitches.
+ * The point stays in the sequence because the closing edge is drawn to it, and
+ * because the 300° note's length comes from the 300→360 gap.
+ */
+const VERTEX_DOT_POINTS = VERTEX_GRAPH_POINTS.slice(0, -1);
+const CROSSING_DOT_POINTS = CROSSING_GRAPH_POINTS.slice(0, -1);
 
 const W = 180,
   H = 100;
@@ -80,7 +91,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
               />
             );
           })}
-          {CROSSING_GRAPH_POINTS.map((point, i) => {
+          {CROSSING_DOT_POINTS.map((point, i) => {
             const x = xAngle(point.angleDeg),
               y = yPos(point.lv);
             const isActive = currentStep === i;
@@ -154,7 +165,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
             );
           })}
           {/* Vertices */}
-          {VERTEX_GRAPH_POINTS.map((point, i) => {
+          {VERTEX_DOT_POINTS.map((point, i) => {
             const x = xAngle(point.angleDeg),
               y = yPos(point.lv);
             const isActive = currentStep === i;

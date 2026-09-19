@@ -148,12 +148,18 @@ function toneCrossingDelayMs(index: number): number {
   return ((next.angleDeg - current.angleDeg) / CHROMALUM_MIN_HUE_STEP_DEG) * TONE_CROSSING_BASE_INTERVAL_MS;
 }
 
+/**
+ * The fourteen crossings, cycling. The sequence carries a fifteenth entry, the
+ * closing R at 360°, which is the same colour as the opening R and is left
+ * unsounded for that reason; it still sets the length of the 300° note, whose
+ * delay is read from the 300→360 gap.
+ */
 export function toneCrossingStep(step: number): {
   index: number;
   crossing: (typeof TONE_CROSSING_SEQUENCE)[number];
   delayMs: number;
 } {
-  const index = step % TONE_CROSSING_SEQUENCE.length;
+  const index = step % (TONE_CROSSING_SEQUENCE.length - 1);
   return {
     index,
     crossing: TONE_CROSSING_SEQUENCE[index],

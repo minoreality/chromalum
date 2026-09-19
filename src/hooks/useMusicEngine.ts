@@ -458,8 +458,11 @@ export function useMusicEngine({
     (onStep: (stepIndex: number | null) => void) => {
       const nodes = nodesRef.current;
       if (!nodes) return;
-      // Sample the same continuous pitch mapping as Tone Crossings at the six hexagon vertices and terminal R.
-      const vertexSequence = TONE_CROSSING_SEQUENCE.filter(({ angleDeg }) => angleDeg % 60 === 0);
+      // Sample the same continuous pitch mapping as Tone Crossings at the six
+      // hexagon vertices. 360° is excluded because it is the same colour as 0°:
+      // sounding it played R twice a cycle, two octaves apart, and the interval
+      // between those two onsets belongs to no edge of the hexagon.
+      const vertexSequence = TONE_CROSSING_SEQUENCE.filter(({ angleDeg }) => angleDeg % 60 === 0 && angleDeg < 360);
       let step = 0;
       replaceInterval(
         zigzagIntervalRef,
