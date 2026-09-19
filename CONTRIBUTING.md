@@ -55,8 +55,10 @@ npm test
 npm run test:theory-copy
 ```
 
-The pre-push hook runs `npm run verify:prepush`, which currently delegates to
-the standard verification set above.
+The pre-push hook runs `npm run verify:prepush`, which is `typecheck:app` and
+`lint` only — about 20 seconds. It deliberately leaves the tests and the build
+to you and to CI (e3f9996), so run `npm run verify` yourself before a push worth
+trusting.
 
 For browser or PWA changes, also run the relevant Playwright checks:
 
