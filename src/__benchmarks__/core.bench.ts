@@ -1,4 +1,4 @@
-import { bench, describe } from "vitest";
+import { test } from "vitest";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL, buildColorLUT } from "../color-engine";
 import { floodFill } from "../drawing/flood-fill";
 import { renderCanvasBuffers } from "../drawing/render-buf";
@@ -15,6 +15,8 @@ import type { ImageRenderCache } from "../types";
 const BENCH_OPTIONS = {
   time: 200,
   warmupTime: 50,
+  iterations: 64,
+  warmupIterations: 16,
 };
 
 function makePattern(w: number, h: number): Uint8Array {
@@ -65,25 +67,19 @@ function makeCanvas(width: number, height: number): HTMLCanvasElement {
   } as unknown as HTMLCanvasElement;
 }
 
-describe("renderCanvasBuffers", () => {
+test("renderCanvasBuffers", async ({ bench }) => {
   const w = 320;
   const h = 320;
   const data = makePattern(w, h);
   const pixelCandidateOverrideMap = makePixelCandidateOverrideMap(data);
   const lut = buildColorLUT(DEFAULT_CANDIDATE_INDEX_BY_LEVEL);
 
-  bench(
-    "full render, source and preview",
-    () => {
+  await bench.compare(
+    bench("full render, source and preview", () => {
       const cache: ImageRenderCache = { sourceImageData: null, previewImageData: null, sourcePixels32: null, previewPixels32: null };
       renderCanvasBuffers(data, w, h, lut, makeCanvas(w, h), makeCanvas(w, h), cache);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "dirty rect render with pixel candidate overrides",
-    () => {
+    }),
+    bench("dirty rect render with pixel candidate overrides", () => {
       const cache: ImageRenderCache = { sourceImageData: null, previewImageData: null, sourcePixels32: null, previewPixels32: null };
       renderCanvasBuffers(
         data,
@@ -96,12 +92,12 @@ describe("renderCanvasBuffers", () => {
         { x: 96, y: 96, w: 96, h: 96 },
         pixelCandidateOverrideMap,
       );
-    },
+    }),
     BENCH_OPTIONS,
   );
 });
 
-describe("floodFill", () => {
+test("floodFill", async ({ bench }) => {
   const w = 256;
   const h = 256;
   const openRegion = new Uint8Array(w * h);
@@ -111,99 +107,58 @@ describe("floodFill", () => {
     }
   }
 
-  bench(
-    "scanline fill bounded region",
-    () => {
-      const data = new Uint8Array(openRegion);
-      floodFill(data, 64, 64, 5, w, h);
-    },
-    BENCH_OPTIONS,
-  );
+  await bench("scanline fill bounded region", () => {
+    const data = new Uint8Array(openRegion);
+    floodFill(data, 64, 64, 5, w, h);
+  }).run(BENCH_OPTIONS);
 });
 
-describe("pixel analysis", () => {
+test("pixel analysis", async ({ bench }) => {
   const w = 128;
   const h = 128;
   const n = w * h;
   const data = makePattern(w, h);
   const pixelCandidateOverrideMap = makePixelCandidateOverrideMap(data);
 
-  bench(
-    "neighbor isolation + level tone",
-    () => {
+  await bench.compare(
+    bench("neighbor isolation + level tone", () => {
       computeNeighborIsolationAndLevelTone(data, w, h, new Float32Array(n), new Float32Array(n), pixelCandidateOverrideMap);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "local diversity",
-    () => {
+    }),
+    bench("local diversity", () => {
       computeLocalDiversity(data, w, h, new Float32Array(n), pixelCandidateOverrideMap);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "edge depth",
-    () => {
+    }),
+    bench("edge depth", () => {
       computeBoundaryDistance(data, w, h, new Uint8Array(n), new Float32Array(n), pixelCandidateOverrideMap);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "gradient",
-    () => {
+    }),
+    bench("gradient", () => {
       computeGradient(data, w, h, new Float32Array(n), new Float32Array(n), new Float32Array(n));
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "regions",
-    () => {
+    }),
+    bench("regions", () => {
       computeRegion(data, w, h, new Int32Array(n), new Uint8Array(n), pixelCandidateOverrideMap);
-    },
+    }),
     BENCH_OPTIONS,
   );
 });
 
-describe("undo diff", () => {
+test("undo diff", async ({ bench }) => {
   const base = makePattern(320, 320);
   const changed = makeChangedPattern(base, 11);
   const diff = computeDiff(base, changed);
   const compressed = compressDiff(diff);
 
-  bench(
-    "compute sparse diff",
-    () => {
+  await bench.compare(
+    bench("compute sparse diff", () => {
       computeDiff(base, changed);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "apply sparse diff",
-    () => {
+    }),
+    bench("apply sparse diff", () => {
       applyDiff(base, diff, false);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "compress sparse diff",
-    () => {
+    }),
+    bench("compress sparse diff", () => {
       compressDiff(diff);
-    },
-    BENCH_OPTIONS,
-  );
-
-  bench(
-    "decompress sparse diff",
-    () => {
+    }),
+    bench("decompress sparse diff", () => {
       decompressDiff(compressed);
-    },
+    }),
     BENCH_OPTIONS,
   );
 });
