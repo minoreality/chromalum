@@ -9,7 +9,7 @@ The expected toolchain is pinned through Volta:
 
 ```text
 node 24.14.1
-npm 11.9.0
+npm 11.19.1
 ```
 
 Install dependencies and start the development server:

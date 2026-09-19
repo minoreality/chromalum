@@ -129,7 +129,7 @@ Volta:
 
 ```text
 node 24.14.1
-npm 11.9.0
+npm 11.19.1
 ```
 
 Install dependencies:
