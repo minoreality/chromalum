@@ -14,7 +14,7 @@ and the Volta-pinned toolchain are in `CONTRIBUTING.md` and are not restated her
 ```bash
 npm run dev                      # vite on 5173
 npm run dev:theory               # theory-dev.html — use this for Theory work
-npm run verify                   # format:check, lint, knip, typecheck:all, build, vitest
+npm run verify                   # format:check, lint, knip, typecheck:all, build, vitest — no coverage
 npm run verify:theory            # typecheck:app + Theory unit tests only
 npm run test:e2e -- --workers=2  # default worker count flakes on this machine
 npx playwright test e2e/theory.spec.ts -g "<title>"
@@ -29,7 +29,10 @@ isolation.
 
 ## CI
 
-`ci.yml` triggers on `pull_request` **only**, but a push straight to `main` is not
+`ci.yml`'s `validate` job runs `typecheck:all`, `lint`, `deadcode`, `format:check`,
+`test:coverage`, `test:e2e` and `test:pwa` — note `test:coverage`, which `npm run verify`
+does **not** run, so coverage thresholds are a PR gate you cannot reproduce with `verify`
+alone. `ci.yml` triggers on `pull_request` **only**, but a push straight to `main` is not
 unchecked: `deploy.yml` runs `typecheck:all`, `lint`, `deadcode`, `format:check` and
 `test:coverage` before it builds and publishes to Pages. That is after the fact — a failure
 stops the deploy, not the push, so `main` keeps the commit and Pages keeps serving the last
@@ -82,6 +85,36 @@ Write layout and assertions to be correct by construction:
   so the row reserves the tallest whatever the font measures
 
 When a layout check fails only on CI, suspect the font stack before the browser version.
+
+## The Windows checkout, and why a local gate can lie
+
+Two things about this machine change what a local run proves. Both are invisible to `verify`
+and to CI, so the only signal is checking directly.
+
+**`npm install` rewrites the lockfile in a way the bump did not ask for.** `volta.npm` pins
+npm 11.9.0, and that version deletes all 26 `"libc": ["glibc"|"musl"]` fields the newer npm
+that Dependabot runs writes onto the optional Linux bindings (@oxc-parser 8, @oxc-resolver 8,
+@rolldown 6, lightningcss 4). The diff is 78 lines of pure noise on top of the real change,
+and `libc` is what picks the `-gnu` against the `-musl` binding on Linux. Regenerate with
+`npx -y npm@11.19.1 install --package-lock-only` instead — its `engines.node` is
+`^20.17.0 || >=22.9.0`, which covers the node pin, and it keeps all 26. `npm@latest` (12.0.2)
+keeps them too but demands `^22.22.2 || ^24.15.0 || >=26.0.0`, the same gap that holds
+jsdom 30 back. For a Dependabot pull request, cherry-pick its commit rather than regenerate:
+its lockfile is already right. After any lockfile change, `grep -c '"libc"' package-lock.json`
+must still print 26.
+
+**`npm i --no-save --no-package-lock <pkg>` silently desyncs `node_modules`.** It re-resolves
+every caret range while it is there, so a one-package install moved knip 6.35.1 to 6.37.0 and
+oxc-parser 0.148.0 to 0.150.0 on 2026-09-19 without touching `package.json` or the lockfile. A
+`verify` run after that measures a tree CI never builds. `npm ci` puts it back.
+
+Smart App Control (`HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy` →
+`VerifiedAndReputablePolicyState = 1`) can also block an unsigned native binding with
+`An Application Control policy has blocked this file`, which stops `verify` at `deadcode`. It
+judges each file by Microsoft's cloud reputation, so it is per-binary and transient — it
+blocked `@oxc-parser/binding-win32-x64-msvc` 0.148.0 on 2026-09-18 and no longer did on
+2026-09-19. Do not turn Smart App Control off; on Windows that cannot be undone without
+reinstalling.
 
 ## Prototypes
 
