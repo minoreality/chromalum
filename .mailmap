@@ -1,0 +1,6 @@
+# Collapse this account's former username and display name onto its current
+# identity. GitHub already resolves all three to the same account (id 244164377)
+# in its own UI; this makes `git log`, `git blame` and `git shortlog` agree in a
+# clone. No commit is rewritten.
+minoreality <244164377+minoreality@users.noreply.github.com> <244164377+humannnnn1-bot@users.noreply.github.com>
+minoreality <244164377+minoreality@users.noreply.github.com> <humannnnn1-bot@users.noreply.github.com>
