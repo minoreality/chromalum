@@ -141,7 +141,7 @@ test("keeps the Hex preview canvas at the source image dimensions", async ({ pag
   await drawAtCenter(page, sourceCanvas);
   await page.getByRole("tab", { name: "Hex" }).click();
 
-  const hexPreview = page.getByRole("img", { name: "CHROMATIC DIAGRAM" });
+  const hexPreview = page.getByRole("img", { name: "Color preview canvas" });
   await expect(hexPreview).toBeVisible();
   await expect
     .poll(() =>

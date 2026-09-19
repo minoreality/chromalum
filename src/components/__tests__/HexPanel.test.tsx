@@ -101,7 +101,7 @@ describe("HexPanel", () => {
     });
     render(<HexPanel {...props} />);
 
-    const canvas = screen.getByRole("img", { name: "label_diagram" });
+    const canvas = screen.getByRole("img", { name: "aria_color_preview_canvas" });
     vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
       left: 0,
       top: 0,

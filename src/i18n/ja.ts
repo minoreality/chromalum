@@ -53,7 +53,7 @@ export const ja = {
 
   // ColorPanel
   label_colorized: "COLOR MAPPING PREVIEW",
-  label_diagram: "CHROMATIC DIAGRAM",
+  label_diagram: "HEXAGON DIAGRAM",
   label_color_mapping: "COLOR MAPPING",
   aria_color_preview: "カラープレビュー（キーボード: +/-でズーム、矢印キーでパン）",
   aria_color_preview_canvas: "カラープレビューキャンバス",

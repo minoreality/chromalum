@@ -117,10 +117,14 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
               height: displayHeight,
             }}
           >
+            {/* The panel label above names the figure now, so it can no longer
+                name this canvas too. What the canvas shows is the palette
+                applied to the drawing, which is the Color tab's preview by
+                another route, so it takes that label. */}
             <canvas
               ref={hexPreviewCanvasRef}
               role="img"
-              aria-label={t("label_diagram")}
+              aria-label={t("aria_color_preview_canvas")}
               onPointerMove={handleCanvasPointerMove}
               onPointerLeave={handleCanvasPointerLeave}
               style={{ width: displayWidth, height: displayHeight, display: "block", imageRendering: "pixelated" }}

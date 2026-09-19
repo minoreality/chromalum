@@ -53,7 +53,7 @@ export const en = {
 
   // ColorPanel
   label_colorized: "COLOR MAPPING PREVIEW",
-  label_diagram: "CHROMATIC DIAGRAM",
+  label_diagram: "HEXAGON DIAGRAM",
   label_color_mapping: "COLOR MAPPING",
   aria_color_preview: "Color preview (keyboard: +/- to zoom, arrow keys to pan)",
   aria_color_preview_canvas: "Color preview canvas",
