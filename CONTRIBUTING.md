@@ -87,7 +87,10 @@ Useful entry points:
 
 Application source code, tests, build configuration, and non-scholarly app
 assets are MIT-licensed. Scholarly and explanatory content is covered by the
-CC BY 4.0 notice in [docs/LICENSE.md](./docs/LICENSE.md).
+CC BY 4.0 notice in [docs/LICENSE.md](./docs/LICENSE.md). One asset is
+excluded from the MIT grant: `public/og-image.png` is third-party artwork used
+with permission. See
+[Third-Party Assets](./README.md#third-party-assets).
 
 When changing Theory-tab prose, rendered explanatory diagrams, research notes,
 or citation templates, check whether [docs/LICENSE.md](./docs/LICENSE.md) also

@@ -27,6 +27,10 @@ CC BY 4.0 license covers the expressive content surfaced by that
 implementation: authored prose, section labels, and the rendered diagrams
 when reused as visual artifacts (e.g., screenshots, embedded images).
 
+One application asset is excluded from that MIT grant: `public/og-image.png`
+is third-party artwork used with permission, not MIT-licensed. See
+[Third-Party Assets](../README.md#third-party-assets).
+
 Technical project documentation in this directory, such as `user-guide.md` and
 `architecture.md`, follows the repository's MIT-licensed project documentation
 unless a document states otherwise.

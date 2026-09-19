@@ -296,7 +296,7 @@ vulnerability reporting process.
 ## License
 
 - **Application source code, tests, build config, and non-scholarly app assets:**
-  [MIT License](./LICENSE)
+  [MIT License](./LICENSE), except the third-party asset noted below
 - **Scholarly/explanatory content:**
   [Creative Commons Attribution 4.0 International (CC BY 4.0)](./docs/LICENSE.md)
 
@@ -314,3 +314,12 @@ project documentation unless a document says otherwise.
 When reusing material from the CC BY 4.0 content, see the
 [citation templates](./docs/LICENSE.md#how-to-cite) for academic, blog, book,
 slide, translation, and short-form attribution formats.
+
+### Third-Party Assets
+
+`public/og-image.png`, the social preview image, is **not** covered by the MIT
+License. It was drawn for this project by another artist, who retains
+copyright in it, and is included here with permission for use as CHROMALUM's
+social card. It is not offered for redistribution, modification, or resale
+under the MIT terms that cover the rest of this repository. A fork that needs
+its own social card should replace this file.
