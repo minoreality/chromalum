@@ -91,17 +91,17 @@ When a layout check fails only on CI, suspect the font stack before the browser 
 Two things about this machine change what a local run proves. Both are invisible to `verify`
 and to CI, so the only signal is checking directly.
 
-**`npm install` rewrites the lockfile in a way the bump did not ask for.** `volta.npm` pins
-npm 11.9.0, and that version deletes all 26 `"libc": ["glibc"|"musl"]` fields the newer npm
-that Dependabot runs writes onto the optional Linux bindings (@oxc-parser 8, @oxc-resolver 8,
-@rolldown 6, lightningcss 4). The diff is 78 lines of pure noise on top of the real change,
-and `libc` is what picks the `-gnu` against the `-musl` binding on Linux. Regenerate with
-`npx -y npm@11.19.1 install --package-lock-only` instead — its `engines.node` is
-`^20.17.0 || >=22.9.0`, which covers the node pin, and it keeps all 26. `npm@latest` (12.0.2)
-keeps them too but demands `^22.22.2 || ^24.15.0 || >=26.0.0`, the same gap that holds
-jsdom 30 back. For a Dependabot pull request, cherry-pick its commit rather than regenerate:
-its lockfile is already right. After any lockfile change, `grep -c '"libc"' package-lock.json`
-must still print 26.
+**The lockfile carries 26 `"libc": ["glibc"|"musl"]` fields, and an old npm eats them.**
+`volta.npm` pins 11.19.1, which keeps them. 11.9.0, pinned from 2026-04-14 until 551bf5a,
+deleted all 26 on any install — 78 lines of noise on top of the real change, which landed
+unnoticed once in 8fec4ba (2026-06-24) and took Dependabot two months to restore. `libc` is
+what picks the `-gnu` against the `-musl` binding on Linux (@oxc-parser 8, @oxc-resolver 8,
+@rolldown 6, lightningcss 4), so nothing breaks on glibc and nothing goes red. Do not pin npm
+below 11.19.1, and do not reach for `npm@latest` (12.0.2) either: it keeps the fields but
+demands `^22.22.2 || ^24.15.0 || >=26.0.0`, the same gap that holds jsdom 30 back. For a
+Dependabot pull request, cherry-pick its commit rather than regenerate — its lockfile is
+already right. After any lockfile change, `grep -c '"libc"' package-lock.json` must still
+print 26.
 
 **`npm i --no-save --no-package-lock <pkg>` silently desyncs `node_modules`.** It re-resolves
 every caret range while it is there, so a one-package install moved knip 6.35.1 to 6.37.0 and
