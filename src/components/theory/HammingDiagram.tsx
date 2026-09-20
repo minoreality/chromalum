@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { THEORY_LEVELS } from "../../data/theory-data";
+import { THEORY_LEVELS, SUBSCRIPT_DIGITS, levelLabel } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C, FONT, FS, FW, R, SP } from "../../styles/tokens";
 import { HammingParitySets } from "./HammingParitySets";
@@ -17,7 +17,6 @@ const FLOW_ROW_COLUMNS = "var(--theory-hamming-row-columns, 24px minmax(72px, 0.
 const ZERO_ERRORS: HammingWord = [0, 0, 0, 0, 0, 0, 0];
 const EMPTY_SLOTS = CODE_POSITIONS.map(() => null);
 const INITIAL_DATA: DataWord = [0, 0, 0, 0];
-const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇";
 const FLOW_TIMELINE = {
   encoded: 360,
   transmit: 540,
@@ -190,10 +189,6 @@ function useHammingSimulation() {
 
 function bits(word: readonly Bit[]): string {
   return word.join("");
-}
-
-function levelLabel(level: number): string {
-  return `${THEORY_LEVELS[level].short}${SUBSCRIPT_DIGITS[level]}`;
 }
 
 function readableLevelColor(level: number): string {

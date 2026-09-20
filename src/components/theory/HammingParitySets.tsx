@@ -1,5 +1,5 @@
 import React, { useId, useLayoutEffect, useRef } from "react";
-import { THEORY_LEVELS } from "../../data/theory-data";
+import { THEORY_LEVELS, SUBSCRIPT_DIGITS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
 import type { Bit, HammingWord } from "./HammingDiagram";
@@ -19,8 +19,6 @@ const POSITIONS = [
   { position: 6, x: 215, y: 101 },
   { position: 7, x: 170, y: 153 },
 ] as const;
-const SUBSCRIPTS = "₀₁₂₃₄₅₆₇";
-
 function HammingLegend() {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLElement>(null);
@@ -252,7 +250,7 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                     aria-hidden="true"
                   >
                     {info.short}
-                    {SUBSCRIPTS[position]} · {info.hamming}
+                    {SUBSCRIPT_DIGITS[position]} · {info.hamming}
                   </text>
                   <circle cx={x} cy={y} r="30" fill="transparent" className="theory-hamming-node-target" />
                 </g>
@@ -270,7 +268,9 @@ export const HammingParitySets = React.memo(function HammingParitySets({
           >
             {orderedChecks.map((check) => {
               const pending = check.failed === null || received === null;
-              const terms = check.checks.map((position) => (pending ? `r${SUBSCRIPTS[position]}` : received[position - 1])).join(" ⊕ ");
+              const terms = check.checks
+                .map((position) => (pending ? `r${SUBSCRIPT_DIGITS[position]}` : received[position - 1]))
+                .join(" ⊕ ");
               const formula = pending ? terms : `${terms} = ${check.failed}`;
               const ones = pending ? null : check.checks.reduce((total, position) => total + received[position - 1], 0);
               const reason =
@@ -330,7 +330,9 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                     {check.checks.map((position, index) => (
                       <React.Fragment key={position}>
                         {index > 0 && <span className="theory-hamming-check-operator">{" ⊕ "}</span>}
-                        <span className="theory-hamming-check-term">{pending ? `r${SUBSCRIPTS[position]}` : received[position - 1]}</span>
+                        <span className="theory-hamming-check-term">
+                          {pending ? `r${SUBSCRIPT_DIGITS[position]}` : received[position - 1]}
+                        </span>
                       </React.Fragment>
                     ))}
                     <span className="theory-hamming-check-operator">{pending ? null : " = "}</span>

@@ -9,7 +9,7 @@ import {
   CHROMALUM_HUE_TOGGLE_CYCLE,
   CHROMALUM_TONE_DENOMINATOR,
 } from "../../chromalum-color-model";
-import { THEORY_LEVELS } from "../../data/theory-data";
+import { THEORY_LEVELS, levelLabel } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { S_THEORY_BTN, S_THEORY_BTN_ACTIVE } from "../../styles/shared";
 import { C, FONT, FS, FW, SP } from "../../styles/tokens";
@@ -26,12 +26,6 @@ const VB_W = ML + PW + MR;
 const LEVEL_COUNT = CHROMALUM_TONE_DENOMINATOR + 1;
 const LEVELS = Array.from({ length: LEVEL_COUNT }, (_, level) => level);
 const CHANNEL_COLORS = { G: "#00d848", R: "#ff4050", B: "#5470ff" } as const;
-const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
-
-function levelLabel(level: number): string {
-  return `${THEORY_LEVELS[level].short}${SUBSCRIPT_DIGITS[level]}`;
-}
-
 function hueColor(hueAngleDeg: number): string {
   return `hsl(${hueAngleDeg}deg 100% 50%)`;
 }

@@ -32,6 +32,13 @@ export const THEORY_LEVELS: readonly TheoryLevel[] = CHROMALUM_LEVEL_LABELS.map(
   hamming: HAMMING_POSITION_LABELS[lv],
 }));
 
+export const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇";
+
+/** `K₀` … `W₇`: a level's abbreviation with its rank as a subscript. */
+export function levelLabel(level: number): string {
+  return `${THEORY_LEVELS[level].short}${SUBSCRIPT_DIGITS[level]}`;
+}
+
 /** 7 Fano plane lines — each [a, b, c] satisfies a XOR b XOR c = 0 */
 export const FANO_LINES: readonly (readonly [number, number, number])[] = [
   [1, 2, 3], // τB·τR·τRB = id  (one-bit pair closure)
