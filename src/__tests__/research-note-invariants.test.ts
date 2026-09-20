@@ -1,11 +1,28 @@
 import { describe, expect, it } from "vitest";
 import {
   CANONICAL_CHROMATIC_LEVEL_CYCLE,
+  CHROMALUM_CHANNEL_HEX,
   CHROMALUM_COMPLEMENT_SECTION_COUNT,
+  CHROMALUM_GRB_WEIGHTS,
+  CHROMALUM_LEVEL_BITS,
+  CHROMALUM_LEVEL_HEX,
   CHROMALUM_PALETTE_SECTION_COUNT,
   CHROMALUM_TONE_DENOMINATOR,
+  type ChromalumChannel,
 } from "../chromalum-color-model";
 import { LEVEL_CANDIDATES } from "../color-engine";
+import {
+  HAMMING_DATA_POSITIONS,
+  HAMMING_PARITY_GROUPS,
+  HAMMING_POSITION_ROLES,
+  HAMMING_POSITIONS,
+  HAMMING_SYNDROME_GROUPS,
+  calculateHamming74,
+  type Bit,
+  type DataWord,
+  type HammingWord,
+} from "../data/hamming-data";
+import { hexStr } from "../utils";
 import { WR, toneR0, toneR7, wheelPoint } from "../components/linked-visualization-geometry";
 import { chromalumHueLiftToFreq } from "../data/music-frequency";
 import {
@@ -565,6 +582,52 @@ describe("research-note invariants", () => {
             : 0;
       expect(fourierCoefficient(harmonic, "cos")).toBeCloseTo(expectedCos, 11);
       expect(fourierCoefficient(harmonic, "sin")).toBeCloseTo(expectedSin, 11);
+    }
+  });
+
+  it("reads the Hamming [7,4,3] checks and syndromes as the columns of H over the binary vertices", () => {
+    // §Hamming [7,4,3]: column j of H is the binary vertex [G,R,B] of level j,
+    // so parity check P_k covers the positions whose bit k is 1 (P1 ↔ B, P2 ↔ R,
+    // P4 ↔ G), the standard-basis positions 1,2,4 carry parity and the rest
+    // data, and a single error at j has syndrome h_j. H does the correcting;
+    // L = 4s_G + 2s_R + s_B is only the reading that names that column j.
+    const channelIndex: Record<ChromalumChannel, number> = { G: 0, R: 1, B: 2 };
+    const dataPositions: readonly number[] = HAMMING_DATA_POSITIONS;
+    expect(HAMMING_PARITY_GROUPS.map((group) => group.channel)).toEqual(["B", "R", "G"]);
+    for (const group of HAMMING_PARITY_GROUPS) {
+      expect(group.parity).toBe(CHROMALUM_GRB_WEIGHTS[group.channel]);
+      const covered = HAMMING_POSITIONS.filter((position) => CHROMALUM_LEVEL_BITS[position][channelIndex[group.channel]] === 1);
+      expect([...group.checks]).toEqual(covered);
+      expect([...group.data]).toEqual(
+        covered.filter((position) => dataPositions.includes(position)).map((position) => dataPositions.indexOf(position) + 1),
+      );
+    }
+    for (const position of HAMMING_POSITIONS) {
+      const ones = CHROMALUM_LEVEL_BITS[position].reduce((count, bit) => count + bit, 0);
+      expect(HAMMING_POSITION_ROLES[position - 1].charAt(0)).toBe(ones === 1 ? "P" : "D");
+      expect(dataPositions.includes(position)).toBe(ones > 1);
+    }
+    expect(HAMMING_SYNDROME_GROUPS.map((group) => group.channel)).toEqual(["G", "R", "B"]);
+    for (let value = 0; value < 16; value++) {
+      const data = [3, 2, 1, 0].map((shift) => ((value >> shift) & 1) as Bit) as unknown as DataWord;
+      for (const position of HAMMING_POSITIONS) {
+        const errors = HAMMING_POSITIONS.map((candidate) => (candidate === position ? 1 : 0) as Bit) as unknown as HammingWord;
+        const result = calculateHamming74(data, errors);
+        expect([...result.syndromeBits]).toEqual([...CHROMALUM_LEVEL_BITS[position]]);
+        expect(result.syndrome).toBe(position);
+      }
+    }
+  });
+
+  it("derives the level and channel hex tables from the binary vertices", () => {
+    // CHROMALUM_LEVEL_HEX is the display image of each vertex at full intensity,
+    // and CHROMALUM_CHANNEL_HEX its restriction to the basis vectors B₁, R₂, G₄.
+    for (let level = 0; level < 8; level++) {
+      const [g, r, b] = CHROMALUM_LEVEL_BITS[level];
+      expect(CHROMALUM_LEVEL_HEX[level]).toBe(hexStr([r * 255, g * 255, b * 255]));
+    }
+    for (const channel of ["G", "R", "B"] as const) {
+      expect(CHROMALUM_CHANNEL_HEX[channel]).toBe(CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS[channel]]);
     }
   });
 });
