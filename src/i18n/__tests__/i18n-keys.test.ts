@@ -42,3 +42,37 @@ describe("i18n key completeness", () => {
     expect(ja.music_pitch_legend_chromalum).toBe("Chromatic 15° Grid");
   });
 });
+
+describe("i18n key usage", () => {
+  // Every source file that can reference a key, as raw text. en.ts and ja.ts are
+  // the dictionaries themselves and are skipped below.
+  const sources: Record<string, string> = {
+    ...import.meta.glob("../../**/*.{ts,tsx}", { query: "?raw", import: "default", eager: true }),
+    ...import.meta.glob("../../../e2e/**/*.ts", { query: "?raw", import: "default", eager: true }),
+  };
+  const texts = Object.entries(sources)
+    .filter(([path]) => !/\/(en|ja)\.ts$/.test(path))
+    .map(([, text]) => text);
+
+  // A key is referenced when it appears as a whole word anywhere outside the
+  // dictionaries: t("key"), a labelKey in a data table, or a test.
+  const words = new Set<string>();
+  for (const text of texts) for (const word of text.match(/[A-Za-z0-9_]+/g) ?? []) words.add(word);
+
+  // Keys built at runtime — t(`theory_generation_layer_${count}`) or t("tool_" + id) —
+  // are covered by the literal prefix in front of the interpolation.
+  const dynamicPrefixes = new Set<string>();
+  for (const text of texts) {
+    for (const m of text.matchAll(/`([a-z][a-z0-9_]*_)\$\{/g)) dynamicPrefixes.add(m[1]);
+    for (const m of text.matchAll(/"([a-z][a-z0-9_]*_)" *\+/g)) dynamicPrefixes.add(m[1]);
+  }
+  const isDynamic = (key: string) => [...dynamicPrefixes].some((prefix) => key.startsWith(prefix));
+
+  it("every key in en is referenced from src or e2e", () => {
+    const unreferenced = Object.keys(en).filter((key) => !words.has(key) && !isDynamic(key));
+    expect(
+      unreferenced,
+      `Unreferenced i18n keys — remove them from en.ts and ja.ts, or reference them:\n  ${unreferenced.join("\n  ")}`,
+    ).toEqual([]);
+  });
+});
