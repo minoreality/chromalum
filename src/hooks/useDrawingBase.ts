@@ -1,13 +1,17 @@
 /* ═══════════════════════════════════════════
    DRAWING BASE UTILITIES
-   Shared pure functions used by both useCanvasDrawing
-   and useGlazeDrawing to avoid code duplication.
+   Shared helpers used by both useCanvasDrawing and useGlazeDrawing: the
+   pointer geometry, the status readout, the pointer-capture check and the
+   one-render-per-frame queue. What a pixel holds stays in each hook.
    ═══════════════════════════════════════════ */
 
+import { useRef } from "react";
 import { LEVEL_MASK } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
-import type { CanvasData, Point } from "../types";
+import { unionBBox } from "../drawing/dirty-rect";
+import type { CanvasData, DirtyRect, Point } from "../types";
 import { applyStatusText, type StatusTextLike } from "../utils/status-display";
+import { useSyncRef } from "./useSyncRef";
 
 type CanvasRect = { left: number; top: number; width: number; height: number };
 
@@ -83,6 +87,67 @@ export function trySetPointerCapture(e: React.PointerEvent): void {
       /* ignore */
     }
   }
+}
+
+/**
+ * True when the event's current target, its target, or any of `elements`
+ * still holds capture for this pointer — the workspace is then leaving because
+ * the captured stroke crossed its edge, not because the pointer was lifted.
+ * A browser that throws on the check counts as not captured.
+ */
+export function hasPointerCapture(e: React.PointerEvent, elements: ReadonlyArray<HTMLElement | null>): boolean {
+  const candidates = [e.currentTarget as HTMLElement | null, e.target as HTMLElement | null, ...elements];
+  for (const el of candidates) {
+    if (!el || typeof el.hasPointerCapture !== "function") continue;
+    try {
+      if (el.hasPointerCapture(e.pointerId)) return true;
+    } catch (err) {
+      console.warn("CHROMALUM: pointerCapture check failed:", err);
+    }
+  }
+  return false;
+}
+
+/**
+ * One render per animation frame. `queue` keeps the latest frame and the
+ * union of every dirty rect since the last render, and the frame is drawn
+ * with that union on the next animation frame; a queue while one is pending
+ * only widens the rect. `cancel` drops a pending render so the caller can
+ * flush synchronously, and reports whether there was one to drop.
+ */
+export function usePaintFrameQueue<Frame>(render: (frame: Frame, dirty: DirtyRect) => void): {
+  queue: (frame: Frame, dirty: DirtyRect) => void;
+  cancel: () => boolean;
+} {
+  const rafRef = useRef<number | null>(null);
+  const dirtyRef = useRef<DirtyRect | null>(null);
+  const frameRef = useRef<Frame | null>(null);
+  const renderRef = useSyncRef(render);
+
+  function queue(frame: Frame, dirty: DirtyRect): void {
+    dirtyRef.current = unionBBox(dirtyRef.current, dirty);
+    frameRef.current = frame;
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const dirtySnap = dirtyRef.current;
+      const frameSnap = frameRef.current;
+      dirtyRef.current = null;
+      frameRef.current = null;
+      if (dirtySnap && frameSnap) renderRef.current(frameSnap, dirtySnap);
+    });
+  }
+
+  function cancel(): boolean {
+    if (rafRef.current === null) return false;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    dirtyRef.current = null;
+    frameRef.current = null;
+    return true;
+  }
+
+  return { queue, cancel };
 }
 
 /**

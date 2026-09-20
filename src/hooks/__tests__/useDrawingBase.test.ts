@@ -1,4 +1,6 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
+import { act, renderHook } from "@testing-library/react";
 import {
   canvasPos,
   canvasPosUnclamped,
@@ -7,6 +9,8 @@ import {
   tryStartPan,
   canvasPosFromRefs,
   updateStatusBase,
+  hasPointerCapture,
+  usePaintFrameQueue,
 } from "../useDrawingBase";
 import type { CanvasData } from "../../types";
 
@@ -271,5 +275,90 @@ describe("updateStatusBase", () => {
 
     expect(statusEl.textContent).toBe("long status text");
     expect(statusEl.title).toBe("long status text");
+  });
+});
+
+/* ── hasPointerCapture ──────────────────────────────────────── */
+describe("hasPointerCapture", () => {
+  const event = (currentTarget: unknown, target: unknown) => ({ pointerId: 7, currentTarget, target }) as unknown as React.PointerEvent;
+  const holder = (held: boolean) => ({ hasPointerCapture: vi.fn((id: number) => held && id === 7) }) as unknown as HTMLElement;
+
+  it("is true when the current target, the target, or a listed element holds the pointer", () => {
+    expect(hasPointerCapture(event(holder(true), holder(false)), [])).toBe(true);
+    expect(hasPointerCapture(event(holder(false), holder(true)), [])).toBe(true);
+    expect(hasPointerCapture(event(holder(false), holder(false)), [null, holder(true)])).toBe(true);
+  });
+
+  it("is false when nothing holds the pointer or the elements cannot be asked", () => {
+    expect(hasPointerCapture(event(holder(false), holder(false)), [null])).toBe(false);
+    expect(hasPointerCapture(event({}, null), [{} as HTMLElement])).toBe(false);
+  });
+
+  it("treats an element that throws on the check as not captured", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const throwing = {
+      hasPointerCapture: () => {
+        throw new Error("detached");
+      },
+    } as unknown as HTMLElement;
+    expect(hasPointerCapture(event(throwing, null), [holder(true)])).toBe(true);
+    expect(hasPointerCapture(event(throwing, null), [])).toBe(false);
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+});
+
+/* ── usePaintFrameQueue ─────────────────────────────────────── */
+describe("usePaintFrameQueue", () => {
+  function fakeFrames() {
+    const callbacks: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => callbacks.push(cb));
+    const caf = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
+    return {
+      callbacks,
+      caf,
+      restore: () => {
+        raf.mockRestore();
+        caf.mockRestore();
+      },
+    };
+  }
+
+  it("renders once per frame with the latest frame and the union of the dirty rects", () => {
+    const frames = fakeFrames();
+    try {
+      const render = vi.fn();
+      const { result } = renderHook(() => usePaintFrameQueue<string>(render));
+      act(() => {
+        result.current.queue("first", { x: 2, y: 2, w: 2, h: 2 });
+        result.current.queue("second", { x: 5, y: 1, w: 1, h: 1 });
+      });
+      expect(frames.callbacks).toHaveLength(1);
+      expect(render).not.toHaveBeenCalled();
+      act(() => frames.callbacks[0](0));
+      expect(render).toHaveBeenCalledTimes(1);
+      expect(render).toHaveBeenCalledWith("second", { x: 2, y: 1, w: 4, h: 3 });
+      act(() => result.current.queue("third", { x: 0, y: 0, w: 1, h: 1 }));
+      expect(frames.callbacks).toHaveLength(2);
+    } finally {
+      frames.restore();
+    }
+  });
+
+  it("cancel drops the pending render and reports whether there was one", () => {
+    const frames = fakeFrames();
+    try {
+      const render = vi.fn();
+      const { result } = renderHook(() => usePaintFrameQueue<string>(render));
+      expect(result.current.cancel()).toBe(false);
+      act(() => result.current.queue("frame", { x: 0, y: 0, w: 1, h: 1 }));
+      expect(result.current.cancel()).toBe(true);
+      expect(frames.caf).toHaveBeenCalledTimes(1);
+      act(() => frames.callbacks[0](0));
+      expect(render).not.toHaveBeenCalled();
+      expect(result.current.cancel()).toBe(false);
+    } finally {
+      frames.restore();
+    }
   });
 });

@@ -19,7 +19,15 @@ import { renderCanvasBuffers } from "../drawing/render-buf";
 import { formatGlazePixelStatus } from "../utils/pixel-status";
 import { useSyncRef, useSyncRefs } from "./useSyncRef";
 import { useCursorOverlay } from "./useCursorOverlay";
-import { trySetPointerCapture, canvasPosFromRefs, canvasPosUnclamped, isCanvasPointInBounds, updateStatusBase } from "./useDrawingBase";
+import {
+  trySetPointerCapture,
+  canvasPosFromRefs,
+  canvasPosUnclamped,
+  isCanvasPointInBounds,
+  updateStatusBase,
+  hasPointerCapture,
+  usePaintFrameQueue,
+} from "./useDrawingBase";
 import type { DrawingRefs } from "./useDrawingBase";
 import { createStrokeSmoother, smoothStrokePoint } from "../drawing/stroke-smoothing";
 import type { StrokeSmoother } from "../drawing/stroke-smoothing";
@@ -68,6 +76,18 @@ interface GlazeStroke {
   glazeLUT: Uint8Array;
 }
 
+/** What one glaze frame renders: the levels underneath, the stroke's working override map, and the surfaces. */
+interface GlazeFrame {
+  levelData: Uint8Array;
+  pixelCandidateOverrideMap: Uint8Array;
+  w: number;
+  h: number;
+  lut: [number, number, number][];
+  sourceCanvas: HTMLCanvasElement | null;
+  previewCanvas: HTMLCanvasElement | null;
+  imgCache: ImageRenderCache;
+}
+
 export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   const {
     canvasData,
@@ -103,18 +123,19 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     workingOverrideMap: null,
     size: 0,
   });
-  const paintRafRef = useRef<number | null>(null);
-  const pendingPaintDirtyRef = useRef<DirtyRect | null>(null);
-  const paintFrameRef = useRef<{
-    levelData: Uint8Array;
-    pixelCandidateOverrideMap: Uint8Array;
-    w: number;
-    h: number;
-    lut: [number, number, number][];
-    sourceCanvas: HTMLCanvasElement | null;
-    previewCanvas: HTMLCanvasElement | null;
-    imgCache: ImageRenderCache;
-  } | null>(null);
+  const paintQueue = usePaintFrameQueue<GlazeFrame>((frame, dirty) =>
+    renderCanvasBuffers(
+      frame.levelData,
+      frame.w,
+      frame.h,
+      frame.lut,
+      frame.sourceCanvas,
+      frame.previewCanvas,
+      frame.imgCache,
+      dirty,
+      frame.pixelCandidateOverrideMap,
+    ),
+  );
   const fillPendingRef = useRef(false);
   const pendingUpRef = useRef(false);
   const fillGenerationRef = useRef(0);
@@ -209,40 +230,19 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function queueGlazeRender(levelData: Uint8Array, pixelCandidateOverrideMap: Uint8Array, W: number, H: number, dirtyBB: DirtyRect) {
-    pendingPaintDirtyRef.current = unionBBox(pendingPaintDirtyRef.current, dirtyBB);
-    paintFrameRef.current = {
-      levelData,
-      pixelCandidateOverrideMap,
-      w: W,
-      h: H,
-      lut: s.current.colorLUT,
-      sourceCanvas: sourceCanvasRef.current,
-      previewCanvas: previewCanvasRef.current,
-      imgCache: imgCacheRef.current,
-    };
-
-    if (paintRafRef.current !== null) return;
-
-    paintRafRef.current = requestAnimationFrame(() => {
-      paintRafRef.current = null;
-      const dirtySnap = pendingPaintDirtyRef.current;
-      const frame = paintFrameRef.current;
-      pendingPaintDirtyRef.current = null;
-      paintFrameRef.current = null;
-      if (dirtySnap && frame) {
-        renderCanvasBuffers(
-          frame.levelData,
-          frame.w,
-          frame.h,
-          frame.lut,
-          frame.sourceCanvas,
-          frame.previewCanvas,
-          frame.imgCache,
-          dirtySnap,
-          frame.pixelCandidateOverrideMap,
-        );
-      }
-    });
+    paintQueue.queue(
+      {
+        levelData,
+        pixelCandidateOverrideMap,
+        w: W,
+        h: H,
+        lut: s.current.colorLUT,
+        sourceCanvas: sourceCanvasRef.current,
+        previewCanvas: previewCanvasRef.current,
+        imgCache: imgCacheRef.current,
+      },
+      dirtyBB,
+    );
   }
 
   function doDown(e: React.PointerEvent, buttonOverride?: 0 | 1, startPos?: Point) {
@@ -520,11 +520,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
 
   function finishGlazeStroke() {
     // Flush pending glaze render
-    if (paintRafRef.current !== null) {
-      cancelAnimationFrame(paintRafRef.current);
-      paintRafRef.current = null;
-      pendingPaintDirtyRef.current = null;
-      paintFrameRef.current = null;
+    if (paintQueue.cancel()) {
       const cv = canvasDataRef.current;
       const st2 = strokeRef.current;
       if (st2)
@@ -574,19 +570,6 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, read via .current
   }, [dispatch]);
 
-  function hasPointerCapture(e: React.PointerEvent) {
-    const candidates = [e.currentTarget as HTMLElement | null, e.target as HTMLElement | null, previewCanvasRef.current];
-    for (const el of candidates) {
-      if (!el || typeof el.hasPointerCapture !== "function") continue;
-      try {
-        if (el.hasPointerCapture(e.pointerId)) return true;
-      } catch (err) {
-        console.warn("CHROMALUM: pointerCapture check failed:", err);
-      }
-    }
-    return false;
-  }
-
   const onWorkspaceDown = useCallback((e: React.PointerEvent) => {
     doWorkspaceDown(e);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doWorkspaceDown reads from sync refs
@@ -616,12 +599,11 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
         clearCursor();
         return;
       }
-      if (drawingRef.current && hasPointerCapture(e)) return;
+      if (drawingRef.current && hasPointerCapture(e, [previewCanvasRef.current])) return;
       onUp();
       clearCursor();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hasPointerCapture reads event/current refs only
-    [onUp, clearCursor],
+    [onUp, clearCursor, previewCanvasRef],
   );
 
   /** Eyedropper: pick hue from any pixel (glazed or default). */
