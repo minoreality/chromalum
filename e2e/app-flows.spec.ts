@@ -439,7 +439,7 @@ test.describe("mobile touch", () => {
     await selectLevel(page, 2, "Red");
     await drawAtCenter(page, page.getByRole("application", { name: "Drawing canvas (grayscale)" }));
     await page.getByRole("tab", { name: "Hex" }).click();
-    const diagram = page.getByRole("group", { name: "Pure-hue loop hexagonal diagram" });
+    const diagram = page.getByRole("group", { name: "Pure-hue loop color selection" });
     await diagram.scrollIntoViewIfNeeded();
     await expect(diagram).toBeVisible();
     return diagram;

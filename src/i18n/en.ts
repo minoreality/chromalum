@@ -59,10 +59,10 @@ export const en = {
   aria_color_candidate: "Level {0} color candidate {1} {2}",
 
   // HexDiagram
-  hex_diagram_label: "Pure-hue loop hexagonal diagram",
-  hex_edge_label: "Level {0} color ({1})",
+  hex_diagram_label: "Pure-hue loop color selection",
+  hex_edge_label: "Level {0} color candidate ({1})",
   hex_vertex_label: "{0} — Level {1}",
-  btn_random_color: "Random",
+  btn_random_color: "Randomize palette",
 
   random_patterns: "{0} patterns",
   pattern_count_go_gallery: "View {0} patterns in Gallery",

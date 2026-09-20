@@ -59,10 +59,10 @@ export const ja = {
   aria_color_candidate: "Level {0} 色候補 {1} {2}",
 
   // HexDiagram
-  hex_diagram_label: "純色相環の六角形ダイアグラム",
-  hex_edge_label: "レベル{0} の色 ({1})",
+  hex_diagram_label: "純色相環の色選択",
+  hex_edge_label: "レベル{0}の候補色 ({1})",
   hex_vertex_label: "{0} — レベル{1}",
-  btn_random_color: "ランダム",
+  btn_random_color: "配色をランダムに変更",
 
   random_patterns: "{0}通り",
   pattern_count_go_gallery: "{0}通りのパターンをGalleryで見る",
