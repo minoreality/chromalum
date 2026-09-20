@@ -3,6 +3,7 @@ import React, { useRef } from "react";
 import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import { useTranslation } from "../i18n";
 import { C, R, SHADOW, SP } from "../styles/tokens";
+import { hexStr } from "../utils";
 
 export interface GlazeLevelPreview {
   levelIndex: number;
@@ -26,10 +27,6 @@ interface GlazeCandidateGridProps {
 
 interface GlazeCandidateColumnProps extends Omit<GlazeCandidateGridProps, "levelPreview"> {
   level: GlazeLevelPreview;
-}
-
-function candidateHex(rgb: readonly number[]) {
-  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
@@ -82,7 +79,7 @@ const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
 
   const makeSwatch = (candidateIndex: number, size: number) => {
     const cand = cands[candidateIndex];
-    const hex = candidateHex(cand.rgb);
+    const hex = hexStr(cand.rgb);
     const isSelected = candidateOverridesByLevel.get(level.levelIndex) === candidateIndex;
     const isHovered =
       hoveredCandidate !== null && hoveredCandidate.levelIndex === level.levelIndex && hoveredCandidate.candidateIndex === candidateIndex;
@@ -172,7 +169,7 @@ const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
 
   const mainCandidateIndex = currentCandidateIndex;
   const mainCand = cands[mainCandidateIndex];
-  const mainHex = mainCand ? candidateHex(mainCand.rgb) : "";
+  const mainHex = mainCand ? hexStr(mainCand.rgb) : "";
   const mainAngleLabel = mainCand ? `${Math.round(mainCand.hueAngleDeg)}\u00b0` : "";
   const isMainHovered =
     hoveredCandidate !== null && hoveredCandidate.levelIndex === level.levelIndex && hoveredCandidate.candidateIndex === mainCandidateIndex;

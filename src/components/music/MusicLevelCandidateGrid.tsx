@@ -4,6 +4,7 @@ import { useTranslation } from "../../i18n";
 import { resolveMusicCandidateIndices, withMusicComplementCandidate } from "../../music/music-candidate-pairs";
 import { C, R, SHADOW, SP } from "../../styles/tokens";
 import type { MusicCandidateHover, MusicLevelPreview } from "../../music/types";
+import { hexStr } from "../../utils";
 
 interface MusicLevelCandidateGridProps {
   levelPreview: MusicLevelPreview[];
@@ -20,10 +21,6 @@ interface MusicLevelCandidateGridProps {
 
 interface MusicLevelCandidateColumnProps extends Omit<MusicLevelCandidateGridProps, "levelPreview"> {
   level: MusicLevelPreview;
-}
-
-function candidateHex(rgb: readonly number[]) {
-  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
 const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn({
@@ -61,7 +58,7 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
 
   const makeSwatch = (candidateIndex: number, size: number) => {
     const cand = cands[candidateIndex];
-    const candHex = candidateHex(cand.rgb);
+    const candHex = hexStr(cand.rgb);
     const isSwatchHovered =
       hoveredCandidate !== null && hoveredCandidate.levelIndex === level.levelIndex && hoveredCandidate.candidateIndex === candidateIndex;
     const swatchClick = () => {
@@ -102,7 +99,7 @@ const MusicLevelCandidateColumn = React.memo(function MusicLevelCandidateColumn(
 
   const mainCandidateIndex = currentCandidateIndex;
   const mainCand = cands[mainCandidateIndex];
-  const mainHex = mainCand ? candidateHex(mainCand.rgb) : "";
+  const mainHex = mainCand ? hexStr(mainCand.rgb) : "";
   const isMainHovered =
     hoveredCandidate !== null && hoveredCandidate.levelIndex === level.levelIndex && hoveredCandidate.candidateIndex === mainCandidateIndex;
   const isSelected = selectedLevels.has(level.levelIndex);
