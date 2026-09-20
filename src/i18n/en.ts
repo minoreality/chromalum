@@ -256,19 +256,13 @@ export const en = {
     "The chromatic six-cycle C₆ carries both toggle adjacency and complement opposition three steps apart. Restricting L to this cycle makes each edge difference depend on the weight of the toggled primary and the direction of inclusion. Interpolating along its six edges extends these discrete relations to continuous hue and tone. The extension concerns the cycle and its rank, not the eight-state set A or its Boolean operations.",
   theory_derivation_aria: "Two paths from gapless subset sums and color order to binary rank",
   theory_derivation_root: "Primary-generation core",
-  theory_derivation_root_note:
-    "A subset S selects the primaries that are present. Union generates a state; symmetric difference later composes toggles on generated states.",
   theory_derivation_two_paths: "Two independent paths",
-  theory_derivation_two_paths_note:
-    "Mathematics fixes the unnamed gapless weights. Independently, s(G)>s(M)=s(R)+s(B) and s(R)>s(B) fix their color names.",
   theory_derivation_convergence: "Convergence at GRB binary rank",
   theory_derivation_weights: "Unnamed weights",
   theory_derivation_ranks: "Color ranks",
   theory_derivation_convergence_note:
     "Subset sums determine the unnamed weights {1,2,4}; color order determines the primary ordering B<R<G. The two independent characterizations agree on the same L.",
   theory_derivation_consequences: "Finite consequences",
-  theory_derivation_consequences_note:
-    "The same A and L yield the valuation identities, complement reversal, one-bit geometry, seven-point structures, and the complete distance partition.",
   theory_venn_title: "Venn Diagram",
   theory_venn_desc:
     "The characteristic vector (g,r,b)∈{0,1}³ of S⊆E records whether each primary belongs to S. Subsets and three-bit vectors correspond bijectively, and set inclusion agrees with coordinatewise order. States as sets and states as bits therefore carry the same inclusion order and operations.",
@@ -475,10 +469,6 @@ export const en = {
   theory_empirical_desc:
     "Two independent conditions characterize the rank of the same eight states. One requires the subset sums of three positive integers to exhaust 0–7 without repetition or gaps. The other constrains the color order of a positive additive score on the binary vertices. The first determines unnamed weights. Color order alone supplies the named rank. Relating them requires a distinction between measured score values and the rank induced by their order.",
   theory_empirical_condition: "Two comparisons determine the full order",
-  theory_empirical_order: "Brightness order is binary order",
-  theory_empirical_rank: "Counting the ranks reveals binary",
-  theory_empirical_note:
-    "M=R∨B, L(M)=L(R)+L(B)=3 · C=G∨B, L(C)=L(G)+L(B)=5 · Y=G∨R, L(Y)=L(G)+L(R)=6 · W=G∨R∨B, L(W)=L(G)+L(R)+L(B)=7 — disjoint joins agree with addition of ranks.",
   theory_valuation_title: "Rank, Mixing, and Complement",
   theory_valuation_complement: "Complement ranks sum to 7",
   theory_valuation_modular_note:
@@ -537,7 +527,6 @@ export const en = {
   theory_subset_translated: "Sums plus the new weight",
   theory_subset_rule:
     "The next weight is the current maximum plus 1. A smaller weight repeats a sum; a larger one leaves a gap. This forces the weights 1, 2, and 4.",
-  theory_subset_naming: "These are the unnamed weights {1,2,4}. The independent color-order conditions identify them as B=1, R=2, G=4.",
   theory_k8_comparison_pair: "Color pair",
   theory_k8_comparison_distance: "Bit distance",
   theory_k8_comparison_gap: "Rank gap",

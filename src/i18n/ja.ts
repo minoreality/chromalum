@@ -255,17 +255,13 @@ export const ja = {
     "有彩六閉路C₆は、反転による隣接関係と、三歩離れた補色関係を同時に持ちます。順位Lをこの閉路に制限すると、各辺の変化量は反転する原色の重みと包含の向きによって定まります。六辺の間を補間することで、この離散的な関係を連続する色相とトーンへ拡張します。拡張の対象は閉路と順位であり、八状態の集合Aやそのブール演算ではありません。",
   theory_derivation_aria: "無隙間な部分和と色の順序から二進順位へ至る二つの経路",
   theory_derivation_root: "三原色生成の核",
-  theory_derivation_root_note: "部分集合Sは存在させる原色を選びます。和は状態を生成し、対称差は生成後の状態へ作用する反転を合成します。",
   theory_derivation_two_paths: "二つの独立な経路",
-  theory_derivation_two_paths_note:
-    "数学は無名の無隙間重みを定めます。これとは独立に、s(G)>s(M)=s(R)+s(B) と s(R)>s(B) が重みの色名を定めます。",
   theory_derivation_convergence: "GRB二進順位での合流",
   theory_derivation_weights: "無名の重み",
   theory_derivation_ranks: "色の順位",
   theory_derivation_convergence_note:
     "部分和の条件は無名の{1,2,4}を、色順の条件はB<R<Gという原色の順序を与えます。独立な二つの特徴づけが同じLに一致します。",
   theory_derivation_consequences: "有限代数上の帰結",
-  theory_derivation_consequences_note: "同じAとLから、valuation恒等式、補色反転、1ビット幾何、七点構造、全二色対の距離分解が得られます。",
   theory_venn_title: "ベン図",
   theory_venn_desc:
     "部分集合 S⊆E の特性ベクトル (g,r,b)∈{0,1}³ は、各原色がSに含まれるかを1・0で記録します。部分集合と三ビットベクトルは一対一に対応し、集合包含は座標ごとの大小関係に一致します。したがって、集合としての状態とビットとしての状態は同じ包含順序と演算を持ちます。",
@@ -471,10 +467,6 @@ export const ja = {
   theory_empirical_desc:
     "同じ八状態の順位を、二つの独立な条件から特徴づけます。一つは、三つの正整数の部分和が0〜7を重複も隙間もなく尽くすという条件です。もう一つは、二値頂点上の正の加法的スコアに課す色順の条件です。前者は無名の重みを定め、後者はそれ自体で名前付き順位を定めます。両者を結ぶ際には、測定スコアの値と、その大小関係から得る順位を区別する必要があります。",
   theory_empirical_condition: "二比較が全順序を定める",
-  theory_empirical_order: "明るさ順序と二進順序",
-  theory_empirical_rank: "順位を数えると二進数になる",
-  theory_empirical_note:
-    "M=R∨B, L(M)=L(R)+L(B)=3 · C=G∨B, L(C)=L(G)+L(B)=5 · Y=G∨R, L(Y)=L(G)+L(R)=6 · W=G∨R∨B, L(W)=L(G)+L(R)+L(B)=7 — 非重複な和と順位の加法が一致します。",
   theory_valuation_title: "順位と混色・補色の関係",
   theory_valuation_complement: "補色の順位は足して7",
   theory_valuation_modular_note:
@@ -530,7 +522,6 @@ export const ja = {
   theory_subset_translated_short: "加えた和",
   theory_subset_translated: "新しい重みを加えた部分和",
   theory_subset_rule: "次の重みは、既存の最大値＋1です。小さければ和が重なり、大きければ隙間が空くため、重みは1、2、4と決まります。",
-  theory_subset_naming: "ここで決まるのは無名の重み{1,2,4}です。独立な色順の条件と合わせて、B=1、R=2、G=4と対応させます。",
   theory_k8_comparison_pair: "色の組",
   theory_k8_comparison_distance: "ビット距離",
   theory_k8_comparison_gap: "順位差",
