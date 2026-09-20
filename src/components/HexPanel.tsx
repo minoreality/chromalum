@@ -108,6 +108,10 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
       <div className={getPanelLayoutClassName(displayWidth, displayHeight)}>
         <div className={getCanvasPanelClassName(displayWidth, displayHeight)} style={getCanvasPanelStyle(displayWidth, displayHeight)}>
           <div
+            className="canvas-workspace"
+            tabIndex={0}
+            aria-label={t("aria_color_preview")}
+            aria-keyshortcuts="Control+c Meta+c"
             style={{
               border: `1px solid ${C.border}`,
               borderRadius: R.lg,

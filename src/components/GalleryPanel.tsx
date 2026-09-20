@@ -11,6 +11,7 @@ import type { CanvasData } from "../types";
 import type { ColorAction } from "../state/color-reducer";
 import { useTranslation } from "../i18n";
 import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useCanvasCopy } from "../hooks/useCanvasCopy";
 import { C, SP, FS, R, DUR, Z, HUE_GRADIENT, FONT } from "../styles/tokens";
 
 interface GalleryPanelProps {
@@ -26,8 +27,19 @@ interface GalleryPanelProps {
   onScrollDone?: () => void;
 }
 
-const ThumbCanvas = React.memo(function ThumbCanvas({ imageData, w, h }: { imageData: ImageData | null; w: number; h: number }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+const ThumbCanvas = React.memo(function ThumbCanvas({
+  imageData,
+  w,
+  h,
+  canvasRef,
+}: {
+  imageData: ImageData | null;
+  w: number;
+  h: number;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+}) {
+  const localRef = useRef<HTMLCanvasElement>(null);
+  const ref = canvasRef ?? localRef;
   useEffect(() => {
     const c = ref.current;
     if (!c || !imageData) return;
@@ -47,7 +59,7 @@ const ThumbCanvas = React.memo(function ThumbCanvas({ imageData, w, h }: { image
     const tmpCtx = tmp.getContext("2d")!;
     tmpCtx.putImageData(imageData, 0, 0);
     ctx.drawImage(tmp, 0, 0, bw, bh);
-  }, [imageData, w, h]);
+  }, [imageData, w, h, ref]);
   return <canvas ref={ref} className="gallery-thumb-canvas" style={{ width: w, height: h }} />;
 });
 
@@ -248,6 +260,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
 
   const [thumbSize, setThumbSize] = useState<ThumbSize>("M");
   const previewDialogRef = useRef<HTMLDivElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const closePreview = useCallback(() => setExpandedIndex(null), []);
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
   useEffect(() => {
@@ -277,6 +290,19 @@ export const GalleryPanel = React.memo(function GalleryPanel({
     return renderThumbnail(canvasData.levelData, canvasData.width, canvasData.height, lut, expandedRenderW, expandedRenderH);
   }, [expandedIndex, displayItems, canvasData, expandedRenderW, expandedRenderH]);
   const previewOpen = expandedImageData !== null && expandedIndex !== null && expandedIndex < displayItems.length;
+  const renderPreviewForCopy = useCallback(() => {
+    if (expandedIndex === null || !displayItems[expandedIndex]) throw new Error("No preview to copy");
+    const lut = buildColorLUT(displayItems[expandedIndex].candidateIndexByLevel);
+    const { levelData, width, height } = canvasData;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("2d context unavailable");
+    ctx.putImageData(renderThumbnail(levelData, width, height, lut, width, height), 0, 0);
+    return canvas;
+  }, [expandedIndex, displayItems, canvasData]);
+  useCanvasCopy(active && previewOpen ? previewCanvasRef : null, showToast, t, renderPreviewForCopy);
   useFocusTrap(previewDialogRef, previewOpen, closePreview);
 
   return (
@@ -491,8 +517,15 @@ export const GalleryPanel = React.memo(function GalleryPanel({
               maxHeight: "85vh",
             }}
           >
-            <div style={{ border: `2px solid ${C.accent}`, borderRadius: R.lg, overflow: "hidden" }}>
-              <ThumbCanvas imageData={expandedImageData} w={expandedDisplayW} h={expandedDisplayH} />
+            <div
+              className="canvas-workspace"
+              role="img"
+              tabIndex={0}
+              aria-label={t("gallery_preview_dialog")}
+              aria-keyshortcuts="Control+c Meta+c"
+              style={{ border: `2px solid ${C.accent}`, borderRadius: R.lg, overflow: "hidden" }}
+            >
+              <ThumbCanvas canvasRef={previewCanvasRef} imageData={expandedImageData} w={expandedDisplayW} h={expandedDisplayH} />
             </div>
             <div style={{ display: "flex", gap: SP.xl }}>
               <button

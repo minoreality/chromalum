@@ -272,6 +272,9 @@ input[type="checkbox"]:focus-visible {
 .canvas-cursor-overlay {
   opacity: 0;
 }
+.canvas-workspace:focus-visible {
+  box-shadow: 0 0 0 2px var(--c-accent-bright, #80a0ff);
+}
 .canvas-workspace:hover > .canvas-cursor-overlay {
   opacity: 1;
 }

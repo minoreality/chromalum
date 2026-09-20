@@ -11,6 +11,7 @@ import { useFileDrop } from "./hooks/useFileDrop";
 import { useImageImportCrop } from "./hooks/useImageImportCrop";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useExport } from "./hooks/useExport";
+import { useCanvasCopy } from "./hooks/useCanvasCopy";
 import { useAppState } from "./hooks/useAppState";
 import { DrawingContextProvider } from "./state/DrawingContext";
 import { GlazeContextProvider } from "./state/GlazeContext";
@@ -244,6 +245,19 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
   const redo = useCallback(() => dispatch({ type: "redo" }), [dispatch]);
 
   const { saveColor, saveColorWithLUT, saveGlaze, shareColor, shareGlaze } = useExport(canvasData, colorLUT, showToast, t);
+  useCanvasCopy(
+    activeTabId === "source"
+      ? drawing.sourceCanvasRef
+      : activeTabId === "color"
+        ? previewCanvasRef
+        : activeTabId === "glaze"
+          ? glazePreviewCanvasRef
+          : activeTabId === "hex"
+            ? hexPreviewCanvasRef
+            : null,
+    showToast,
+    t,
+  );
 
   const { lang, setLang } = useTranslation();
   const toggleLanguage = useCallback(() => setLang(lang === "ja" ? "en" : "ja"), [lang, setLang]);
