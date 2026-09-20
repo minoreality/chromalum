@@ -14,7 +14,7 @@ import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 import { usePinReset } from "./pin-reset";
 import { CubeFaceGrid } from "./CubeFaceGrid";
-import { levelLabelColor } from "../../color-engine";
+import { levelLabelColor, CHANNEL_HEX } from "../../color-engine";
 
 const DOT_R = 9;
 const HIT_R = 17;
@@ -22,8 +22,6 @@ const HIT_R = 17;
 function edgesOf(v: number): number[] {
   return CUBE_EDGES.map((e, i) => (e[0] === v || e[1] === v ? i : -1)).filter((i) => i >= 0);
 }
-
-const CHANNEL_COLORS: Record<string, string> = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
 
 // Keep the cube's horizontal positions and vertical extent in the Hasse layout.
 // Equal rank spacing changes the projection without rescaling the diagram.
@@ -293,7 +291,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
               const active = hlEdges.includes(ei);
               const dim = hasHighlight && !active;
               const ch = edgeChannel(e[0], e[1]);
-              const chColor = CHANNEL_COLORS[ch];
+              const chColor = CHANNEL_HEX[ch];
               const isEqEdge = isEquator(e[0]) && isEquator(e[1]);
               const edgeOpacity = dim ? 0.15 : active ? 0.9 : isEqEdge && equatorMode ? 0.6 : 0.55;
               return (

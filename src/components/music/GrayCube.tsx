@@ -1,4 +1,5 @@
 import React from "react";
+import { CHANNEL_HEX } from "../../color-engine";
 import { C } from "../../styles/tokens";
 import { CHROMALUM_LEVEL_HEX } from "../../chromalum-color-model";
 import type { ActiveMusicLevel } from "../../music/types";
@@ -47,7 +48,7 @@ function changedBit(a: number, b: number): number {
   return -1;
 }
 
-const BIT_COLORS = ["#0000ff", "#ff0000", "#00ff00"];
+const BIT_COLORS = [CHANNEL_HEX.B, CHANNEL_HEX.R, CHANNEL_HEX.G];
 const BIT_LABELS = ["B", "R", "G"];
 const NODE_R = 4;
 const ACTIVE_NODE_R = 5.5;

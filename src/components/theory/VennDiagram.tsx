@@ -1,7 +1,7 @@
 import React, { useCallback, useId, useState } from "react";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
-import { levelLabelColor } from "../../color-engine";
+import { levelLabelColor, CHANNEL_HEX } from "../../color-engine";
 
 const VIEWBOX = { x: 26, y: 22, width: 248, height: 196 };
 const RAD = 60;
@@ -12,9 +12,9 @@ const R_CENTER = { x: 150, y: 93 };
 const G_CENTER = { x: 182, y: 148 };
 const B_CENTER = { x: 118, y: 148 };
 const CIRCLES = [
-  { channel: "R", bit: 2, center: R_CENTER, color: "#ff0000" },
-  { channel: "G", bit: 4, center: G_CENTER, color: "#00ff00" },
-  { channel: "B", bit: 1, center: B_CENTER, color: "#0000ff" },
+  { channel: "R", bit: 2, center: R_CENTER, color: CHANNEL_HEX.R },
+  { channel: "G", bit: 4, center: G_CENTER, color: CHANNEL_HEX.G },
+  { channel: "B", bit: 1, center: B_CENTER, color: CHANNEL_HEX.B },
 ] as const;
 
 interface RegionInfo {
