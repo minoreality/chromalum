@@ -1,25 +1,21 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { levelLabelColor } from "../../color-engine";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const W = 180,
   H = 120;
 const DOT_R = 8;
 
 type Phase = "bxc" | "left" | "ab" | "ac" | "right" | "equal" | null;
 
-function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[]): string {
-  const al = activeLevels.find((level) => level.levelIndex === lv);
-  return al ? `rgb(${al.rgb.join(",")})` : LV_COLORS[lv];
-}
-
 interface Props {
   a: number;
   b: number;
   c: number;
   phase: Phase;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
 
 export const DistributiveFlow = React.memo(function DistributiveFlow({ a, b, c, phase, activeLevels }: Props) {

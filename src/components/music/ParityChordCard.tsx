@@ -3,12 +3,12 @@ import { useTranslation } from "../../i18n";
 import { C, FS, FONT } from "../../styles/tokens";
 import { ParityGrid } from "./ParityGrid";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
-import type { DecoderPhase } from "../../music/types";
+import type { ActiveMusicLevel, DecoderPhase } from "../../music/types";
 import { S_CARD_CONTROL_BTN, S_CARD_CONTROL_BTN_ACTIVE } from "./music-panel-styles";
 
 interface ParityChordCardProps {
   engine: MusicEngineReturn;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
   stopSignal: number;
   /** Syndrome-phase parity groups from ErrorCorrectionCard */
   errorPos: number;

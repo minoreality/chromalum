@@ -3,6 +3,8 @@ import { C, FS, FW } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { OCTA_EDGES } from "../../data/theory-data";
 import { levelLabelColor } from "../../color-engine";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
 /* Regular hexagon: width 92, height ≈ 92·2/√3 ≈ 106, centered at (90, 79) */
 const PTS: Record<number, [number, number]> = {
@@ -14,7 +16,6 @@ const PTS: Record<number, [number, number]> = {
   3: [44, 52.5],
 };
 
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const OUTER_HEX_EDGES: readonly (readonly [number, number])[] = [
   [2, 6],
   [6, 4],
@@ -31,19 +32,13 @@ function edgeKey(a: number, b: number): string {
 const OUTER_HEX_EDGE_KEYS = new Set(OUTER_HEX_EDGES.map(([a, b]) => edgeKey(a, b)));
 const STAR_EDGES = OCTA_EDGES.filter(([a, b]) => !OUTER_HEX_EDGE_KEYS.has(edgeKey(a, b)));
 
-function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[]): string {
-  const found = activeLevels.find((level) => level.levelIndex === lv);
-  if (found) return `rgb(${found.rgb.join(",")})`;
-  return LV_COLORS[lv] ?? "#888";
-}
-
 const textColor = levelLabelColor;
 
 interface Props {
   lvA: number | null;
   lvB: number | null;
   phase: "pair" | "result" | null;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
 
 export const OctahedronMix = React.memo(function OctahedronMix({ lvA, lvB, phase, activeLevels }: Props) {

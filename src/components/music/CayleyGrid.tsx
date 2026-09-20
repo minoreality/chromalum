@@ -1,13 +1,13 @@
 import React from "react";
 import { C } from "../../styles/tokens";
+import { CHROMALUM_LEVEL_HEX } from "../../chromalum-color-model";
+import type { ActiveMusicLevel } from "../../music/types";
 
 interface CayleyGridProps {
   row: number;
   activeCol: number;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
-
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
 const CELL = 16;
 const GAP = 1;
@@ -78,7 +78,16 @@ export const CayleyGrid = React.memo(function CayleyGrid({ row, activeCol, activ
 
           return (
             <g key={`${r}-${c}`} filter={filter}>
-              <rect x={x} y={y} width={CELL} height={CELL} rx={1} fill={LV_COLORS[xorVal]} stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect
+                x={x}
+                y={y}
+                width={CELL}
+                height={CELL}
+                rx={1}
+                fill={CHROMALUM_LEVEL_HEX[xorVal]}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+              />
             </g>
           );
         }),

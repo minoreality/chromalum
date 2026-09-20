@@ -3,11 +3,11 @@ import { C, FS, FW } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { COMPLEMENT_EDGES, CUBE_EDGES, K8_EXPLORER_POINTS, STELLA_EDGES, TETRA_T0_EDGES } from "../../data/theory-data";
 import { levelLabelColor } from "../../color-engine";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
 const COLOR_T0 = "#ffd36e";
 const COLOR_T1 = "#90c8ff";
-
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
 const LAYERS = {
   1: { edges: CUBE_EDGES, labelKey: "music_k8_d1", color: "#6ea4ff" },
@@ -15,19 +15,13 @@ const LAYERS = {
   3: { edges: COMPLEMENT_EDGES, labelKey: "music_k8_d3", color: "#ff8f8f" },
 } as const;
 
-function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[]): string {
-  const found = activeLevels.find((level) => level.levelIndex === lv);
-  if (found) return `rgb(${found.rgb.join(",")})`;
-  return LV_COLORS[lv] ?? "#888";
-}
-
 const textColor = levelLabelColor;
 
 interface Props {
   /** `null` = no layer playing → render nodes only, no edges. */
   layer: 1 | 2 | 3 | null;
   activeEdgeIndex: number;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
 
 export const K8LayerGraph = React.memo(function K8LayerGraph({ layer, activeEdgeIndex, activeLevels }: Props) {

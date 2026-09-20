@@ -3,12 +3,12 @@ import { useTranslation } from "../../i18n";
 import { C, FS, FONT } from "../../styles/tokens";
 import { SyndromeTimeline } from "./SyndromeTimeline";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
-import type { DecoderPhase } from "../../music/types";
+import type { ActiveMusicLevel, DecoderPhase } from "../../music/types";
 import { S_CARD_CONTROL_BTN, S_CARD_CONTROL_BTN_ACTIVE, S_SELECT } from "./music-panel-styles";
 
 interface ErrorCorrectionCardProps {
   engine: MusicEngineReturn;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
   stopSignal: number;
   errorPos: number;
   errorPhase: DecoderPhase;

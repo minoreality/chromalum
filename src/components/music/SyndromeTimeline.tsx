@@ -1,13 +1,13 @@
 import React from "react";
 import { C } from "../../styles/tokens";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
 interface SyndromeTimelineProps {
   phase: "original" | "corrupted" | "syndrome" | "corrected" | null;
   errorPos: number;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
-
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
 const CIRCLE_R = 10;
 const Y_CENTER = 30;
@@ -16,12 +16,6 @@ const X_STEP = 26;
 
 const PARITY_LABELS = ["P1", "P2", "P4"];
 const PARITY_COLORS = ["#0000ff", "#ff0000", "#00ff00"];
-
-function pointColor(lv: number, activeLevels: SyndromeTimelineProps["activeLevels"]): string {
-  const found = activeLevels.find((level) => level.levelIndex === lv);
-  if (found) return `rgb(${found.rgb.join(",")})`;
-  return LV_COLORS[lv] ?? "#888";
-}
 
 function circleX(pos: number): number {
   return X_START + (pos - 1) * X_STEP;

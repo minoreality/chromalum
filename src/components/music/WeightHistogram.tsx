@@ -1,5 +1,6 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
+import type { ActiveMusicLevel } from "../../music/types";
 
 type HammingMode = "743" | "844";
 
@@ -7,7 +8,7 @@ interface WeightHistogramProps {
   mode: HammingMode;
   currentWeight: number;
   currentIndex: number;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
 
 // [7,4,3]: weights 0,3,4,7 — counts [1,7,7,1]

@@ -1,12 +1,12 @@
 import React from "react";
 import { C } from "../../styles/tokens";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
 interface ParityGridProps {
   activeGroups: (0 | 1 | 2)[];
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
-
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
 const PARITY_GROUPS = [
   [1, 3, 5, 7],
@@ -24,12 +24,6 @@ const LABEL_W = 24;
 const HEADER_H = 14;
 const LEFT = LABEL_W + 4;
 const TOP = HEADER_H + 4;
-
-function pointColor(lv: number, activeLevels: ParityGridProps["activeLevels"]): string {
-  const found = activeLevels.find((level) => level.levelIndex === lv);
-  if (found) return `rgb(${found.rgb.join(",")})`;
-  return LV_COLORS[lv] ?? "#888";
-}
 
 function binaryLevelLabel(lv: number): string {
   return lv.toString(2).padStart(3, "0");

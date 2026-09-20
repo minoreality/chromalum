@@ -1,14 +1,14 @@
 import React from "react";
 import { C } from "../../styles/tokens";
 import { levelLabelColor } from "../../color-engine";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
 interface GL32ArrowsProps {
   perm: number[]; // current permutation [0,1,2,3,4,5,6,7] or permuted
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
   flash?: boolean; // true for ~500ms after a transform is applied
 }
-
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7];
 const CR = 7;
@@ -16,12 +16,6 @@ const Y_TOP = 20;
 const Y_BOT = 80;
 const X_START = 24;
 const X_GAP = 22;
-
-function lvColor(lv: number, activeLevels: GL32ArrowsProps["activeLevels"]): string {
-  const found = activeLevels.find((level) => level.levelIndex === lv);
-  if (found) return `rgb(${found.rgb.join(",")})`;
-  return LV_COLORS[lv] ?? "#888";
-}
 
 const labelColor = levelLabelColor;
 
@@ -68,7 +62,7 @@ export const GL32Arrows = React.memo(function GL32Arrows({ perm, activeLevels, f
         // Find position in bottom row where permVal landed
         const botIdx = i; // bottom row shows perm[1..7] in order
         const botX = X_START + botIdx * X_GAP;
-        const color = lvColor(lv, activeLevels);
+        const color = pointColor(lv, activeLevels);
         const moved = permVal !== lv;
         const isFlashing = flash && moved;
 
@@ -113,7 +107,7 @@ export const GL32Arrows = React.memo(function GL32Arrows({ perm, activeLevels, f
       {/* Top row: identity order */}
       {LEVELS.map((lv, i) => {
         const x = X_START + i * X_GAP;
-        const color = lvColor(lv, activeLevels);
+        const color = pointColor(lv, activeLevels);
         return (
           <g key={`t${lv}`}>
             <circle cx={x} cy={Y_TOP} r={CR} fill={color} stroke="#fff" strokeWidth={0.5} />
@@ -128,7 +122,7 @@ export const GL32Arrows = React.memo(function GL32Arrows({ perm, activeLevels, f
       {LEVELS.map((lv, i) => {
         const x = X_START + i * X_GAP;
         const val = bottomValues[i];
-        const color = lvColor(val, activeLevels);
+        const color = pointColor(val, activeLevels);
         const moved = val !== i + 1;
         const isFlashing = flash && moved;
         return (

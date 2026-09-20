@@ -1,8 +1,8 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { TONE_CROSSING_SEQUENCE, ZIGZAG_CHANNELS } from "../../data/music-data";
+import { CHROMALUM_LEVEL_HEX } from "../../chromalum-color-model";
 
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const NAMES = ["", "B", "R", "M", "G", "C", "Y"];
 const CH_COLORS: Record<string, string> = { G: "#00cc00", R: "#cc0000", B: "#4466ff" };
 const CROSSING_GRAPH_POINTS = TONE_CROSSING_SEQUENCE;
@@ -177,7 +177,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                   cx={x}
                   cy={y}
                   r={isActive ? 6 : 4}
-                  fill={LV_COLORS[point.lv]}
+                  fill={CHROMALUM_LEVEL_HEX[point.lv]}
                   fillOpacity={0.85}
                   stroke="#fff"
                   strokeWidth={isActive ? 2 : 1}
@@ -188,7 +188,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                   textAnchor="middle"
                   fontSize={FS.xxs}
                   fontFamily="var(--font-mono)"
-                  fill={LV_COLORS[point.lv]}
+                  fill={CHROMALUM_LEVEL_HEX[point.lv]}
                   opacity={0.8}
                 >
                   {NAMES[point.lv]}

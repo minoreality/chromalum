@@ -1,12 +1,12 @@
 import React from "react";
 import { C } from "../../styles/tokens";
+import { CHROMALUM_LEVEL_HEX } from "../../chromalum-color-model";
+import type { ActiveMusicLevel } from "../../music/types";
 
 interface GrayCubeProps {
   currentCode: number | null;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
-
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
 const FULL_GRAY_CODE = [0, 1, 3, 2, 6, 7, 5, 4];
 
@@ -110,7 +110,7 @@ export const GrayCube = React.memo(function GrayCube({ currentCode, activeLevels
         const [vx, vy] = VERTS[v];
         const isCurrent = currentCode === v;
         const r = isCurrent ? ACTIVE_NODE_R : NODE_R;
-        const col = LV_COLORS[v];
+        const col = CHROMALUM_LEVEL_HEX[v];
 
         return (
           <g key={v}>

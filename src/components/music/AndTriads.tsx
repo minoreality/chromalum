@@ -1,6 +1,8 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { levelLabelColor } from "../../color-engine";
+import { pointColor } from "./level-colors";
+import type { ActiveMusicLevel } from "../../music/types";
 
 const TRIADS: [number, number, number][] = [
   [3, 5, 1],
@@ -8,14 +10,7 @@ const TRIADS: [number, number, number][] = [
   [6, 3, 2],
 ];
 
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const ROW_Y = [26, 58, 90];
-
-function pointColor(lv: number, activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[]): string {
-  const found = activeLevels.find((level) => level.levelIndex === lv);
-  if (found) return `rgb(${found.rgb.join(",")})`;
-  return LV_COLORS[lv] ?? "#888";
-}
 
 const textColor = levelLabelColor;
 
@@ -25,7 +20,7 @@ function binaryLevelLabel(lv: number): string {
 
 interface Props {
   activeStep: { pairIndex: number; phase: "operands" | "result" } | null;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
 }
 
 export const AndTriads = React.memo(function AndTriads({ activeStep, activeLevels }: Props) {

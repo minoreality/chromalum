@@ -4,10 +4,11 @@ import { C } from "../../styles/tokens";
 import { K8LayerGraph } from "./K8LayerGraph";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
 import { S_CARD_CONTROL_BTN, S_CARD_CONTROL_BTN_ACTIVE } from "./music-panel-styles";
+import type { ActiveMusicLevel } from "../../music/types";
 
 interface K8ExplorerProps {
   engine: MusicEngineReturn;
-  activeLevels: { levelIndex: number; rgb: readonly [number, number, number] }[];
+  activeLevels: ActiveMusicLevel[];
   stopSignal: number;
   resetSignal: number;
 }

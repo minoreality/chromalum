@@ -1,10 +1,10 @@
 import React from "react";
 import { C, FS } from "../../styles/tokens";
 import { COMPLEMENT_PAIRS } from "../../data/music-data";
+import { CHROMALUM_LEVEL_HEX } from "../../chromalum-color-model";
 
 // Complement tone sums to 1 in normalized 4:2:1 tone units; keep colors canonical
 // (hue-invariant) so the visual matches the tone-based sonification.
-const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 const W = 180,
   H = 100;
 const CX = W / 2;
@@ -53,9 +53,9 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
         return (
           <g key={i} filter={isActive ? "url(#cp-glow)" : undefined} opacity={activePair >= 0 && !isActive ? 0.25 : 1}>
             {/* Left bar (lower tone) */}
-            <rect x={CX - wA} y={y} width={wA} height={BAR_H} rx={2} fill={LV_COLORS[a]} fillOpacity={0.8} />
+            <rect x={CX - wA} y={y} width={wA} height={BAR_H} rx={2} fill={CHROMALUM_LEVEL_HEX[a]} fillOpacity={0.8} />
             {/* Right bar (higher tone) */}
-            <rect x={CX} y={y} width={wB} height={BAR_H} rx={2} fill={LV_COLORS[b]} fillOpacity={0.8} />
+            <rect x={CX} y={y} width={wB} height={BAR_H} rx={2} fill={CHROMALUM_LEVEL_HEX[b]} fillOpacity={0.8} />
             {/* Labels */}
             <text
               x={CX - wA - 4}
@@ -64,7 +64,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
               dominantBaseline="central"
               fontSize={FS.xxs}
               fontFamily="var(--font-mono)"
-              fill={LV_COLORS[a]}
+              fill={CHROMALUM_LEVEL_HEX[a]}
             >
               {a}
             </text>
@@ -75,7 +75,7 @@ export const ComplementPairs = React.memo(function ComplementPairs({ activePair 
               dominantBaseline="central"
               fontSize={FS.xxs}
               fontFamily="var(--font-mono)"
-              fill={LV_COLORS[b]}
+              fill={CHROMALUM_LEVEL_HEX[b]}
             >
               {b}
             </text>
