@@ -14,6 +14,7 @@ const S_TOAST_BASE: CSSProperties = {
   bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
   left: "50%",
   transform: "translateX(-50%)",
+  width: "max-content",
   maxWidth: "calc(100vw - 24px)",
   boxSizing: "border-box",
   padding: `${SP.xl}px ${SP["4xl"]}px`,
@@ -109,10 +110,12 @@ function renderToastMessage(message: string): ReactNode {
     );
   }
 
-  const sentences = message.includes("。") ? splitJapaneseSentences(message) : splitEnglishSentences(message);
+  const sentences = message
+    .split("\n")
+    .flatMap((line) => (line.includes("。") ? splitJapaneseSentences(line) : splitEnglishSentences(line)));
   if (sentences.length > 1) {
     return sentences.map((sentence, index) => (
-      <span key={`${index}:${sentence}`} style={S_ONE_LINE}>
+      <span key={`${index}:${sentence}`} className="toast-sentence">
         {sentence}
       </span>
     ));
@@ -131,6 +134,7 @@ export function Toast({ message, type }: ToastProps) {
       style={{
         ...S_TOAST_BASE,
         background: bg,
+        color: type === "error" ? C.bgRoot : C.textWhite,
       }}
     >
       {renderToastMessage(message)}

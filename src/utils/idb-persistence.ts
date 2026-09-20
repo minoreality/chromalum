@@ -191,8 +191,7 @@ export async function requestPersistentStorage(): Promise<PersistentStorageResul
 }
 
 function normalizeLoadedState(val: unknown): LoadStateResult {
-  if (!val) return emptyResult();
-  if (typeof val !== "object") return invalidResult("saved state is not an object");
+  if (val === null || typeof val !== "object") return invalidResult("saved state is not an object");
 
   const saved = val as RawSavedState;
   const width = typeof saved.width === "number" ? saved.width : saved.w;
@@ -279,9 +278,10 @@ export async function loadStateWithStatus(): Promise<LoadStateResult> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
-    const req = tx.objectStore(STORE_NAME).get(KEY);
+    // A cursor distinguishes a missing key from a stored undefined/null value.
+    const req = tx.objectStore(STORE_NAME).openCursor(KEY);
     req.onsuccess = () => {
-      resolve(normalizeLoadedState(req.result));
+      resolve(req.result ? normalizeLoadedState(req.result.value) : emptyResult());
     };
     req.onerror = () => reject(req.error);
   });

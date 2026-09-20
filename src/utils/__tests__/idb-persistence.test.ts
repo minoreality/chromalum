@@ -234,6 +234,35 @@ describe("loadState validation", () => {
     expect(result.state).toBeNull();
     expect(result.reason).toContain("unsupported shape");
   });
+
+  it.each([null, undefined, false, 0, "", NaN])("preserves a stored %s value as invalid instead of treating it as empty", async (value) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("chromalum", 2);
+      request.onupgradeneeded = () => request.result.createObjectStore("state");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction("state", "readwrite");
+        tx.objectStore("state").put(value, "current");
+        tx.oncomplete = () => resolve();
+        tx.onabort = () => reject(tx.error);
+      });
+
+      await expect(loadStateWithStatus()).resolves.toMatchObject({ status: "invalid", state: null });
+
+      const stored = await new Promise<IDBCursorWithValue | null>((resolve, reject) => {
+        const request = db.transaction("state", "readonly").objectStore("state").openCursor("current");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      expect(stored).not.toBeNull();
+      expect(stored!.value).toEqual(value);
+    } finally {
+      db.close();
+    }
+  });
 });
 
 describe("checkStorageQuota", () => {

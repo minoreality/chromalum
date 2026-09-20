@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useReducer, useMemo, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useReducer, useMemo, useLayoutEffect, useCallback } from "react";
 import { DISPLAY_MIN, DISPLAY_MAX_LIMIT } from "../constants";
 import { canvasReducer, createInitialState } from "../state/canvas-reducer";
 import { SAVED_STATE_VERSION, saveState, loadStateWithStatus, requestPersistentStorage } from "../utils/idb-persistence";
@@ -7,6 +7,7 @@ import { LANDSCAPE_CANVAS_BASE_OFFSET_MAX } from "../utils/panel-layout";
 import { useToolState } from "./useToolState";
 import { useUIState } from "./useUIState";
 import { useColorState } from "./useColorState";
+import { useSyncRef } from "./useSyncRef";
 
 const STORAGE_PERSIST_REQUEST_KEY = "chromalum-storage-persist-requested-v1";
 const DESKTOP_LAYOUT_BP = 1024;
@@ -19,6 +20,12 @@ const DESKTOP_ROOT_INLINE_PADDING = 32;
 const DESKTOP_LANDSCAPE_CONTROL_RESERVE = 16;
 const MOBILE_WIDTH_RESERVE = 32;
 const MOBILE_PORTRAIT_HEIGHT_BOOST = 1.2;
+
+const PERSISTENCE_TOAST_KEYS = {
+  invalid: "toast_restore_invalid",
+  "restore-failed": "toast_restore_failed",
+  conflict: "toast_autosave_conflict",
+} as const;
 
 function clampDisplayMax(value: number): number {
   return Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX_LIMIT, value));
@@ -98,6 +105,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   const { candidateIndexByLevel, candidateIndexDispatch, lockedLevels, setLockedLevels } = colorState;
 
   const [loaded, setLoaded] = useState(false);
+  const translationRef = useSyncRef(t);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushSaveRef = useRef<(() => void) | null>(null);
@@ -119,6 +127,20 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     candidateIndexByLevel: null,
     lockedLevels: null,
   });
+
+  const blockPersistence = useCallback(
+    (reason: keyof typeof PERSISTENCE_TOAST_KEYS) => {
+      // The save block outlives the temporary notification.
+      persistenceBlockedRef.current = true;
+      flushSaveRef.current = null;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      showToast(translationRef.current(PERSISTENCE_TOAST_KEYS[reason]), "error");
+    },
+    [showToast, translationRef],
+  );
 
   const currentPersistedStateRef = useRef({
     levelData: canvasData.levelData,
@@ -168,34 +190,18 @@ export function useAppState(t: import("../i18n").TranslationFn) {
 
         if (result.status === "invalid") {
           console.warn("CHROMALUM: saved state was ignored:", result.reason ?? "unknown reason");
-          showToast(t("toast_restore_invalid"), "error");
-          lastSavedRef.current = {
-            levelData: canvasData.levelData,
-            pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
-            candidateIndexByLevel,
-            lockedLevels,
-          };
-          baselineSaveCompleteRef.current = true;
+          blockPersistence("invalid");
         }
       })
       .catch((err: unknown) => {
         // A transient read failure must never turn into permission to overwrite
         // a record that may still be intact. Keep editing available, but stop
         // autosave for this session until the page is reloaded successfully.
-        persistenceBlockedRef.current = true;
-        createErrorHandler("Restore", () => showToast(t("toast_restore_failed"), "error"))(err);
+        blockPersistence("restore-failed");
+        createErrorHandler("Restore")(err);
       })
       .finally(() => setLoaded(true));
-  }, [
-    showToast,
-    t,
-    candidateIndexDispatch,
-    setLockedLevels,
-    canvasData.levelData,
-    canvasData.pixelCandidateOverrideMap,
-    candidateIndexByLevel,
-    lockedLevels,
-  ]);
+  }, [blockPersistence, candidateIndexDispatch, setLockedLevels]);
 
   // Auto-save to IndexedDB on changes (debounced, skip if unchanged)
   useEffect(() => {
@@ -267,10 +273,8 @@ export function useAppState(t: import("../i18n").TranslationFn) {
           }
         } catch (err: unknown) {
           if (err instanceof Error && err.name === "SaveConflictError") {
-            persistenceBlockedRef.current = true;
-            flushSaveRef.current = null;
+            blockPersistence("conflict");
             console.warn("CHROMALUM: auto-save stopped because saved state changed in another tab", err);
-            showToast(t("toast_autosave_failed"), "error");
             return;
           }
           createErrorHandler("AutoSave", () => showToast(t("toast_autosave_failed"), "error"))(err);
@@ -294,7 +298,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [canvasData, candidateIndexByLevel, lockedLevels, loaded, showToast, t]);
+  }, [canvasData, candidateIndexByLevel, lockedLevels, loaded, showToast, t, blockPersistence]);
 
   // Flush pending save on tab hide / page unload to avoid data loss
   useEffect(() => {

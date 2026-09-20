@@ -134,8 +134,9 @@ export const ja = {
   help_save_color: "カラー画像を保存",
 
   // App - toast messages
-  toast_restore_failed: "保存データの復元に失敗しました",
-  toast_restore_invalid: "保存データを使えませんでした。空のキャンバスで起動しました",
+  toast_restore_invalid: "自動保存停止\n保存データが無効・未対応です。変更は未保存です。PNG で書き出してください。",
+  toast_restore_failed: "自動保存停止\n保存データを読み込めませんでした。変更は未保存です。PNG で書き出してください。",
+  toast_autosave_conflict: "自動保存停止\n別のタブで保存データが更新されました。変更は未保存です。PNG で書き出してください。",
   toast_autosave_failed: "自動保存に失敗しました",
   toast_image_gen_failed: "画像の生成に失敗しました（メモリ不足の可能性）",
   toast_save_long_press: "画像を長押しして保存してください: {0}",

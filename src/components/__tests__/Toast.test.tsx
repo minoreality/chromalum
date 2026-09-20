@@ -25,8 +25,7 @@ describe("Toast", () => {
 
     const first = screen.getByText("保存データを使えませんでした。");
     const second = screen.getByText("空のキャンバスで起動しました");
-    expect(first.style.whiteSpace).toBe("nowrap");
-    expect(second.style.whiteSpace).toBe("nowrap");
+    expect(first).not.toBe(second);
   });
 
   it("lets only the file name wrap for file-name toasts", () => {

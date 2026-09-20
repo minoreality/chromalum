@@ -165,7 +165,7 @@ describe("useAppState", () => {
     unmount();
   });
 
-  it("does not overwrite an invalid saved state with the baseline autosave", async () => {
+  it("keeps autosave blocked after an invalid restore, edits, and page-hide flushes", async () => {
     vi.useFakeTimers();
     vi.mocked(loadStateWithStatus).mockResolvedValueOnce({
       status: "invalid",
@@ -189,8 +189,8 @@ describe("useAppState", () => {
     });
 
     expect(saveStateMock).not.toHaveBeenCalled();
-    expect(result.current.toast).toEqual({ message: "toast_restore_invalid", type: "error" });
     expect(warnSpy).toHaveBeenCalledWith("CHROMALUM: saved state was ignored:", "saved state has an unsupported shape");
+    expect(result.current.toast).toEqual({ message: "toast_restore_invalid", type: "error" });
 
     act(() => {
       result.current.dispatch({ type: "new_canvas", width: 16, height: 16 });
@@ -200,7 +200,44 @@ describe("useAppState", () => {
       await Promise.resolve();
     });
 
-    expect(saveStateMock).toHaveBeenCalledTimes(1);
+    const visibilitySpy = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+      document.dispatchEvent(new Event("visibilitychange"));
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(saveStateMock).not.toHaveBeenCalled();
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
+    expect(result.current.canvasData.width).toBe(16);
+    expect(result.current.toast).toBeNull();
+    visibilitySpy.mockRestore();
+    warnSpy.mockRestore();
+    unmount();
+  });
+
+  it("keeps local edits unsaved when a pending restore reports invalid data", async () => {
+    vi.useFakeTimers();
+    let resolveRestore!: (value: Awaited<ReturnType<typeof loadStateWithStatus>>) => void;
+    vi.mocked(loadStateWithStatus).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRestore = resolve;
+        }),
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result, unmount } = renderHook(() => useAppState(t));
+
+    act(() => result.current.dispatch({ type: "new_canvas", width: 8, height: 8 }));
+    await act(async () => resolveRestore({ status: "invalid", state: null, reason: "unsupported version" }));
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+      window.dispatchEvent(new Event("pagehide"));
+    });
+
+    expect(result.current.canvasData.width).toBe(8);
+    expect(saveState).not.toHaveBeenCalled();
+    expect(result.current.toast).toEqual({ message: "toast_restore_invalid", type: "error" });
     warnSpy.mockRestore();
     unmount();
   });
@@ -264,17 +301,54 @@ describe("useAppState", () => {
       await Promise.resolve();
     });
     expect(result.current.loaded).toBe(true);
+    expect(result.current.toast).toEqual({ message: "toast_restore_failed", type: "error" });
     act(() => {
       result.current.dispatch({ type: "new_canvas", width: 8, height: 8 });
     });
     await act(async () => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(5000);
       await Promise.resolve();
     });
 
     expect(saveState).not.toHaveBeenCalled();
-    expect(result.current.toast).toEqual({ message: "toast_restore_failed", type: "error" });
+    expect(result.current.toast).toBeNull();
     errorSpy.mockRestore();
+    unmount();
+  });
+
+  it("reports a save conflict and blocks queued and future saves", async () => {
+    vi.useFakeTimers();
+    let rejectSave!: (reason: Error) => void;
+    vi.mocked(saveState).mockImplementationOnce(
+      () =>
+        new Promise<number>((_resolve, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result, unmount } = renderHook(() => useAppState(t));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => vi.advanceTimersByTime(1000));
+    act(() => result.current.dispatch({ type: "new_canvas", width: 8, height: 8 }));
+    await act(async () => vi.advanceTimersByTime(1000));
+
+    const conflict = new Error("Saved state changed in another tab");
+    conflict.name = "SaveConflictError";
+    await act(async () => rejectSave(conflict));
+    expect(result.current.toast).toEqual({ message: "toast_autosave_conflict", type: "error" });
+    act(() => result.current.dispatch({ type: "new_canvas", width: 16, height: 16 }));
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"));
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(saveState).toHaveBeenCalledTimes(1);
+    expect(result.current.toast).toBeNull();
+    expect(result.current.canvasData.width).toBe(16);
+    warnSpy.mockRestore();
     unmount();
   });
 

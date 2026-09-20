@@ -149,17 +149,19 @@ current saved-state shape.
 
 Restore treats an empty database and an invalid saved record differently. Empty
 storage starts from the default canvas. Invalid or unsupported saved data is
-reported to the UI and ignored for the session, but the first baseline autosave
-does not immediately overwrite it. A later explicit user change can then create
-a fresh valid save.
+reported to the UI and preserved in IndexedDB; autosave is disabled for the page
+session so no later edit replaces the record. Canvas editing and PNG export
+remain available, and a temporary toast explains why autosave is blocked and
+suggests exporting PNG images. Autosave remains blocked after the toast expires.
 
 Restore and autosave also defend against asynchronous and multi-tab races. If
 persisted canvas data changes locally while the initial IndexedDB read is still
 pending, the late restore is ignored and the local edit is saved against the
-loaded revision. A rejected restore disables autosave for that page session so
-a transient read error cannot overwrite an intact record with the default
-canvas. Each save compares its expected revision and writes the next revision
-inside one read-write transaction; a stale tab therefore receives a conflict
+loaded revision. An IndexedDB read failure likewise disables autosave for that
+page session and shows a toast, so the default canvas
+cannot overwrite an intact record. Each save compares its expected revision and
+writes the next revision inside one read-write transaction. A revision conflict
+blocks further autosave for the session and shows a conflict toast
 instead of replacing newer work.
 
 ## Workers

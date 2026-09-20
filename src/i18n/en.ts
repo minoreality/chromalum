@@ -134,8 +134,9 @@ export const en = {
   help_save_color: "Save color image",
 
   // App - toast messages
-  toast_restore_failed: "Failed to restore saved data",
-  toast_restore_invalid: "Saved data could not be used. Started with a blank canvas.",
+  toast_restore_invalid: "Auto-save off\nInvalid or unsupported data. Edits are unsaved. Export PNG to keep them.",
+  toast_restore_failed: "Auto-save off\nCould not read saved data. Edits are unsaved. Export PNG to keep them.",
+  toast_autosave_conflict: "Auto-save off\nSaved data changed in another tab. Edits are unsaved. Export PNG to keep them.",
   toast_autosave_failed: "Auto-save failed",
   toast_image_gen_failed: "Failed to generate image (possibly out of memory)",
   toast_save_long_press: "Long-press to save: {0}",

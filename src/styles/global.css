@@ -4184,6 +4184,12 @@ button.theory-diagram-button {
   }
 }
 
+/* Keep multi-sentence notifications readable on narrow viewports. */
+.toast-sentence {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
 /* Toast animation */
 @keyframes toast-in {
   from {
