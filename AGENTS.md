@@ -29,16 +29,19 @@ isolation.
 
 ## CI
 
-`ci.yml`'s `validate` job runs `typecheck:all`, `lint`, `deadcode`, `format:check`,
-`test:coverage`, `test:e2e` and `test:pwa` — note `test:coverage`, which `npm run verify`
-does **not** run, so coverage thresholds are a PR gate you cannot reproduce with `verify`
-alone. `ci.yml` triggers on `pull_request` **only**, but a push straight to `main` is not
+`ci.yml` runs two jobs side by side: `checks` (`typecheck:all`, `lint`, `deadcode`,
+`format:check`, `test:coverage`) and `e2e 1/3` … `e2e 3/3`, which split `test:e2e` across
+three runners with `--shard` and run `test:pwa` on the first. Measured on #135, a run's
+wall is about 3 minutes (`checks` 127 s, shards 90–165 s) against 8 on one runner; `checks`
+bounds it from below, so a fourth shard gains nothing. Note `test:coverage`, which
+`npm run verify` does **not** run, so coverage thresholds are a PR gate you cannot reproduce
+with `verify` alone. `ci.yml` triggers on `pull_request` **only**, but a push straight to `main` is not
 unchecked: `deploy.yml` runs `typecheck:all`, `lint`, `deadcode`, `format:check` and
 `test:coverage` before it builds and publishes to Pages. That is after the fact — a failure
 stops the deploy, not the push, so `main` keeps the commit and Pages keeps serving the last
 good build. What never runs outside a PR is `test:e2e` and `test:pwa`, so land anything
-touching layout, copy, or tests through a PR. `main` is protected — a PR plus the `validate`
-and `analyze (javascript-typescript)` checks — but `enforce_admins` is off, so a direct push
+touching layout, copy, or tests through a PR. `main` is protected — a PR plus the `checks`,
+`e2e 1/3`, `e2e 2/3`, `e2e 3/3` and `analyze (javascript-typescript)` checks — but `enforce_admins` is off, so a direct push
 succeeds with a bypass notice. That notice is not a failure; it means the protection was
 skipped.
 
@@ -57,7 +60,7 @@ dropped. Re-propose one only with a number that contradicts the one recorded her
   publish a development harness to Pages, which Prototypes forbids for the same reason.
 - **Cache the Playwright browser between runs.** The install step costs 37 seconds, most of
   it the `apt-get` work behind `--with-deps` that a cache hit still has to repeat.
-- **Filter `ci.yml` by path so a docs-only change skips the suite.** `validate` is a
+- **Filter `ci.yml` by path so a docs-only change skips the suite.** Every job is a
   required check: a skipped job never reports, and the pull request can then never merge.
 - **`trace: "retain-on-failure"`.** `on-first-retry` is not stale config but the counterpart
   of `retries`, which is unset on purpose: setting `retries` brings the trace with it at no
