@@ -87,7 +87,7 @@ describe("useFileDrop", () => {
     window.Image = originalImage;
   });
 
-  it("ignores unsupported image types without user-visible side effects", async () => {
+  it("reports an unsupported file without changing the canvas", async () => {
     const { result, dispatch, setZoom, setPan, showToast } = setup();
 
     await act(async () => {
@@ -97,21 +97,43 @@ describe("useFileDrop", () => {
     expect(dispatch).not.toHaveBeenCalled();
     expect(setZoom).not.toHaveBeenCalled();
     expect(setPan).not.toHaveBeenCalled();
-    expect(showToast).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledExactlyOnceWith("toast_image_format_unsupported", "error");
   });
 
-  it("does not accept SVG files as image imports", async () => {
-    const createImageBitmap = vi.fn();
-    Object.defineProperty(window, "createImageBitmap", { value: createImageBitmap, configurable: true, writable: true });
+  it.each([
+    ["image/avif", "photo.avif", "image/avif"],
+    ["image/svg+xml", "vector.svg", "image/svg+xml"],
+    ["image/jpeg", "photo.jfif", "image/jpeg"],
+    ["", "PHOTO.JFIF", "image/jpeg"],
+    ["application/octet-stream", "photo.jpe", "image/jpeg"],
+    ["", "vector.svg", "image/svg+xml"],
+    ["", "photo.avif", "image/avif"],
+  ])("imports %s / %s with a usable image MIME type", async (type, name, expectedType) => {
+    const { createImageBitmap } = installImageBitmap();
     const { result, dispatch, showToast } = setup();
 
     await act(async () => {
-      await result.current.loadImg(makeFile("image/svg+xml", 8, "vector.svg"));
+      await result.current.loadImg(makeFile(type, 8, name));
     });
 
-    expect(createImageBitmap).not.toHaveBeenCalled();
-    expect(dispatch).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: "load_image", width: 3, height: 2 }));
+    expect(createImageBitmap.mock.calls[0][0].type).toBe(expectedType);
     expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["image/heic", "photo.heic"],
+    ["image/tiff", "photo.tiff"],
+    ["", "unknown.bin"],
+    ["text/html", "page.svg"],
+  ])("rejects %s / %s before decoding", async (type, name) => {
+    const { createImageBitmap } = installImageBitmap();
+    const { result, showToast } = setup();
+    await act(async () => {
+      await result.current.loadImg(makeFile(type, 8, name));
+    });
+    expect(createImageBitmap).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledExactlyOnceWith("toast_image_format_unsupported", "error");
   });
 
   it("rejects files above the size limit before decoding", async () => {
@@ -328,5 +350,46 @@ describe("useFileDrop", () => {
     expect(ignoredPreventDefault).not.toHaveBeenCalled();
     expect(dispatch).not.toHaveBeenCalled();
     document.body.removeChild(input);
+  });
+
+  it.each([
+    ["image/avif", "photo.avif"],
+    ["image/svg+xml", "vector.svg"],
+    ["", "photo.jfif"],
+  ])("accepts %s / %s through both drop and paste", async (type, name) => {
+    installImageBitmap();
+    const { result, dispatch, showToast } = setup();
+    const file = makeFile(type, 8, name);
+    act(() => result.current.onDrop(makeDragEvent([file])));
+    await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+    const paste = makeClipboardEvent([{ type, getAsFile: () => file }]);
+    act(() => {
+      window.dispatchEvent(paste);
+    });
+    await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(2));
+    expect(paste.defaultPrevented).toBe(true);
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it("reports unsupported dropped and pasted files but leaves ordinary text paste alone", () => {
+    const { result, dispatch, showToast } = setup();
+    const file = makeFile("image/heic", 8, "photo.heic");
+    act(() => result.current.onDrop(makeDragEvent([file])));
+    expect(showToast).toHaveBeenCalledExactlyOnceWith("toast_image_format_unsupported", "error");
+    showToast.mockClear();
+    const paste = makeClipboardEvent([{ type: file.type, getAsFile: () => file }]);
+    act(() => {
+      window.dispatchEvent(paste);
+    });
+    expect(paste.defaultPrevented).toBe(true);
+    expect(showToast).toHaveBeenCalledExactlyOnceWith("toast_image_format_unsupported", "error");
+    showToast.mockClear();
+    const textPaste = makeClipboardEvent([{ type: "text/plain", getAsFile: () => null }]);
+    act(() => {
+      window.dispatchEvent(textPaste);
+    });
+    expect(textPaste.defaultPrevented).toBe(false);
+    expect(showToast).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });

@@ -154,6 +154,7 @@ export const ja = {
 
   // FileDrop
   toast_image_load_failed: "画像の読み込みに失敗しました",
+  toast_image_format_unsupported: "このファイル形式には対応していません",
   toast_image_permission_failed: "このファイルを読み取れません。Files/ダウンロードの画像を選んでください",
   toast_image_process_failed: "画像処理に失敗しました",
   toast_image_too_large: "画像が大きすぎます",

@@ -154,6 +154,7 @@ export const en = {
 
   // FileDrop
   toast_image_load_failed: "Failed to load image",
+  toast_image_format_unsupported: "This file format is not supported",
   toast_image_permission_failed: "Could not read this file. Choose an image from Files/Downloads.",
   toast_image_process_failed: "Image processing failed",
   toast_image_too_large: "Image too large",

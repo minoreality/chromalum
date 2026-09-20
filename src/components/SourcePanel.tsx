@@ -8,6 +8,7 @@ import { useTranslation } from "../i18n";
 import { C, Z, SP, FS, FW, R, O } from "../styles/tokens";
 import { ConfirmModal } from "./ConfirmModal";
 import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
+import { IMAGE_IMPORT_ACCEPT, IMAGE_IMPORT_TYPES } from "../utils/image-import";
 
 interface SourcePanelProps {
   sourceCanvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -117,7 +118,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     const openWithInput = () => {
       const input = document.createElement("input");
       input.type = "file";
-      input.accept = "image/*";
+      input.accept = IMAGE_IMPORT_ACCEPT;
       input.style.position = "fixed";
       input.style.left = "-10000px";
       input.style.top = "0";
@@ -162,13 +163,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
         types: [
           {
             description: "Images",
-            accept: {
-              "image/bmp": [".bmp"],
-              "image/gif": [".gif"],
-              "image/jpeg": [".jpg", ".jpeg"],
-              "image/png": [".png"],
-              "image/webp": [".webp"],
-            },
+            accept: IMAGE_IMPORT_TYPES,
           },
         ],
       })

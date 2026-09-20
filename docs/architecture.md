@@ -123,6 +123,13 @@ adapter; it is not an inverse color-model transform. When a new decoded image
 replaces an open crop request, the crop rectangle and drag state reset to the
 new image dimensions.
 
+The file picker, drop handler, and clipboard handler share one format list:
+PNG, JPEG (including `.jfif` and `.jpe`), WebP, GIF, BMP, AVIF, and SVG. Files
+with missing or generic MIME metadata use a recognized extension to choose
+the image MIME type, then pass through the browser decoder. SVG is rasterized
+in an image context; imported markup is never inserted into the document.
+Unsupported files show a short toast without changing the canvas.
+
 ## Persistence
 
 `useAppState` restores saved state from IndexedDB on mount and autosaves after
