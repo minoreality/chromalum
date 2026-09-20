@@ -272,6 +272,9 @@ input[type="checkbox"]:focus-visible {
 .canvas-cursor-overlay {
   opacity: 0;
 }
+.canvas-workspace:focus-visible {
+  box-shadow: 0 0 0 2px var(--c-accent-bright, #80a0ff);
+}
 .canvas-workspace:hover > .canvas-cursor-overlay {
   opacity: 1;
 }
@@ -755,13 +758,11 @@ button.theory-diagram-button {
   max-width: 320px;
   height: auto;
 }
-.theory-cube-focus-ring {
-  opacity: 0;
-}
 .theory-cube-svg [role="button"]:focus-visible {
   outline: none;
 }
 .theory-cube-svg [role="button"]:focus-visible .theory-cube-focus-ring {
+  stroke: var(--c-accent-bright, #80a0ff);
   opacity: 1;
 }
 .theory-cube-controls {
@@ -824,6 +825,9 @@ button.theory-diagram-button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(2px, 0.6cqw, 5px) 2px;
 }
+.theory-cube-faces-heading-short {
+  display: none;
+}
 .theory-cube-face {
   display: flex;
   flex-direction: column;
@@ -867,6 +871,12 @@ button.theory-diagram-button {
   height: auto;
 }
 @container cube-layout (max-width: 540px) {
+  .theory-cube-faces-heading-full {
+    display: none;
+  }
+  .theory-cube-faces-heading-short {
+    display: inline;
+  }
   .theory-cube-layout {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   }
@@ -4182,6 +4192,12 @@ button.theory-diagram-button {
     --map-status-line-max-width: calc(100vw - 32px);
     --map-status-line-width: max(var(--display-max, 0px), 500px);
   }
+}
+
+/* Keep multi-sentence notifications readable on narrow viewports. */
+.toast-sentence {
+  display: block;
+  overflow-wrap: anywhere;
 }
 
 /* Toast animation */

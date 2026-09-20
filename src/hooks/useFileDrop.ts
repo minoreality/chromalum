@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MAX_IMAGE_SIZE, MAX_FILE_BYTES, MAX_IMAGE_PIXELS, isAllowedCanvasSize } from "../constants";
 import { estimateLevelFromSrgbBytes } from "../srgb-level-estimator";
 import { useSyncRef } from "./useSyncRef";
-
-const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"]);
+import { getImageImportType } from "../utils/image-import";
 
 type DecodedImage = CanvasImageSource & { readonly width: number; readonly height: number };
 type ImageLoadSource =
@@ -49,7 +48,13 @@ export function useFileDrop(
           resolve();
         };
         const isCurrent = () => loadRequestRef.current === requestId;
-        if (!file || !ALLOWED_IMAGE_TYPES.has(file.type)) {
+        if (!file) {
+          finish();
+          return;
+        }
+        const imageType = getImageImportType(file);
+        if (!imageType) {
+          showToast(t("toast_image_format_unsupported"), "error");
           finish();
           return;
         }
@@ -230,7 +235,7 @@ export function useFileDrop(
             try {
               debug(`copying file bytes (${attempt + 1}/${delays.length})`);
               const bytes = await file.arrayBuffer();
-              return new Blob([bytes], { type: file.type || "application/octet-stream" });
+              return new Blob([bytes], { type: imageType });
             } catch (err) {
               lastError = describeError(err);
               debug(`file byte copy failed (${attempt + 1}/${delays.length}): ${lastError}`);
@@ -255,7 +260,7 @@ export function useFileDrop(
                 };
                 reader.readAsArrayBuffer(file);
               });
-              return new Blob([bytes], { type: file.type || "application/octet-stream" });
+              return new Blob([bytes], { type: imageType });
             } catch (err) {
               lastError = describeError(err);
               debug(`FileReader byte copy failed (${attempt + 1}/${delays.length}): ${lastError}`);
@@ -270,17 +275,18 @@ export function useFileDrop(
             return;
           }
           debug(`${reason}; trying direct ImageBitmap`);
+          const blob = file.type === imageType ? file : file.slice(0, file.size, imageType);
           if ("createImageBitmap" in window) {
             window
-              .createImageBitmap(file)
+              .createImageBitmap(blob)
               .then((bitmap) => processImg(bitmap, "direct ImageBitmap", () => bitmap.close()))
               .catch((err: unknown) => {
-                tryObjectUrl(file, "direct object URL", `direct ImageBitmap failed (${describeError(err)})`, (objectReason) => {
+                tryObjectUrl(blob, "direct object URL", `direct ImageBitmap failed (${describeError(err)})`, (objectReason) => {
                   failLoad(`${reason}; ${objectReason}`);
                 });
               });
           } else {
-            tryObjectUrl(file, "direct object URL", "direct ImageBitmap unavailable", (objectReason) => {
+            tryObjectUrl(blob, "direct object URL", "direct ImageBitmap unavailable", (objectReason) => {
               failLoad(`${reason}; ${objectReason}`);
             });
           }
@@ -345,15 +351,20 @@ export function useFileDrop(
       if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || (active as HTMLElement).isContentEditable)) return;
       const it = e.clipboardData ? e.clipboardData.items : null;
       if (!it) return;
+      let unsupportedFile: File | null = null;
       for (let i = 0; i < it.length; i++) {
-        if (ALLOWED_IMAGE_TYPES.has(it[i].type)) {
-          const f = it[i].getAsFile();
-          if (f) {
-            e.preventDefault();
-            void loadImgRef.current(f);
-          }
-          break;
+        const file = it[i].getAsFile();
+        if (!file) continue;
+        if (getImageImportType(file)) {
+          e.preventDefault();
+          void loadImgRef.current(file);
+          return;
         }
+        unsupportedFile ??= file;
+      }
+      if (unsupportedFile) {
+        e.preventDefault();
+        void loadImgRef.current(unsupportedFile);
       }
     };
     window.addEventListener("paste", f);
@@ -398,12 +409,8 @@ export function useFileDrop(
       setDragging(false);
       const files = e.dataTransfer.files;
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          if (ALLOWED_IMAGE_TYPES.has(files[i].type)) {
-            void loadImg(files[i]);
-            break;
-          }
-        }
+        const file = Array.from(files).find((candidate) => getImageImportType(candidate)) ?? files[0];
+        void loadImg(file);
       }
     },
     [loadImg],

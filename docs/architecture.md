@@ -123,6 +123,13 @@ adapter; it is not an inverse color-model transform. When a new decoded image
 replaces an open crop request, the crop rectangle and drag state reset to the
 new image dimensions.
 
+The file picker, drop handler, and clipboard handler share one format list:
+PNG, JPEG (including `.jfif` and `.jpe`), WebP, GIF, BMP, AVIF, and SVG. Files
+with missing or generic MIME metadata use a recognized extension to choose
+the image MIME type, then pass through the browser decoder. SVG is rasterized
+in an image context; imported markup is never inserted into the document.
+Unsupported files show a short toast without changing the canvas.
+
 ## Persistence
 
 `useAppState` restores saved state from IndexedDB on mount and autosaves after
@@ -149,17 +156,19 @@ current saved-state shape.
 
 Restore treats an empty database and an invalid saved record differently. Empty
 storage starts from the default canvas. Invalid or unsupported saved data is
-reported to the UI and ignored for the session, but the first baseline autosave
-does not immediately overwrite it. A later explicit user change can then create
-a fresh valid save.
+reported to the UI and preserved in IndexedDB; autosave is disabled for the page
+session so no later edit replaces the record. Canvas editing and PNG export
+remain available, and a temporary toast explains why autosave is blocked and
+suggests exporting PNG images. Autosave remains blocked after the toast expires.
 
 Restore and autosave also defend against asynchronous and multi-tab races. If
 persisted canvas data changes locally while the initial IndexedDB read is still
 pending, the late restore is ignored and the local edit is saved against the
-loaded revision. A rejected restore disables autosave for that page session so
-a transient read error cannot overwrite an intact record with the default
-canvas. Each save compares its expected revision and writes the next revision
-inside one read-write transaction; a stale tab therefore receives a conflict
+loaded revision. An IndexedDB read failure likewise disables autosave for that
+page session and shows a toast, so the default canvas
+cannot overwrite an intact record. Each save compares its expected revision and
+writes the next revision inside one read-write transaction. A revision conflict
+blocks further autosave for the session and shows a conflict toast
 instead of replacing newer work.
 
 ## Workers
@@ -185,10 +194,12 @@ ready, and invalidates the cache when either `levelData` or
 
 The Theory tab is driven by structured data under `src/data`, localized copy
 under `src/i18n`, and diagram components under `src/components/theory`.
-`src/chromalum-color-model.ts` constructs the chromatic six-cycle from the
-binary RGB cube, its chosen R root and R-to-Y orientation, then derives the
-`G,R,B` toggle priority, `4:2:1` valuation, hue fibers, and section counts in
-that dependency order.
+`src/chromalum-color-model.ts` constructs the one-bit chromatic six-cycle from
+the binary RGB cube. Independently, the unnamed gapless subset-sum weights
+`{1,2,4}` and the binary-vertex brightness rank establish the named
+`G=4,R=2,B=1` valuation. The chosen R root and R-to-Y direction parameterize
+hue and Music sequences; they do not derive bit priority. The model uses these
+structures to compute hue fibers and section counts.
 
 The Music tab composes presentational sections in `src/components/music` through
 `src/components/MusicPanel.tsx`. `src/hooks/useMusicPanelController.ts`
@@ -206,6 +217,17 @@ in `src/__tests__/research-note-invariants.test.ts` reconstruct the orientation
 sensitivity, automatic/manual section spaces, lifted octave relation, exact
 equitone geometry, and Tone Zigzag Fourier coefficients from the canonical
 data.
+
+The Color Cube and K₈ explorer use the same centred unit-cube vertices from
+`src/data/theory-data.ts`. They share orthographic projection, midpoint edge
+depth, and depth-order comparison in `src/utils/geometry-3d.ts`, while each
+figure retains its own orientation and interaction controls.
+The Color Cube's Hasse transition rotates about one fixed axis to place
+Boolean ranks on horizontal rows. Every frame preserves the cube's 3D edge
+lengths and angles and uses one projection scale.
+The animation interpolates the rotation angle using elapsed time, and uses the
+rotated depth coordinates to order edges. It can reverse from the current pose
+and settles immediately when reduced motion is enabled.
 
 ## Quality Gates
 

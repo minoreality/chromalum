@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { LanguageProvider } from "../i18n";
 import { loadStateWithStatus } from "../utils/idb-persistence";
@@ -13,8 +13,8 @@ vi.mock("../utils/idb-persistence", () => ({
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
-function renderApp() {
-  localStorage.setItem("chromalum_lang", "en");
+function renderApp(lang: "en" | "ja" = "en") {
+  localStorage.setItem("chromalum_lang", lang);
   return render(
     <LanguageProvider>
       <App />
@@ -23,6 +23,35 @@ function renderApp() {
 }
 
 describe("App", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    { lang: "en" as const, title: "Auto-save off", unsaved: "Edits are unsaved." },
+    { lang: "ja" as const, title: "自動保存停止", unsaved: "変更は未保存です。" },
+  ])("shows a temporary $lang autosave toast without a permanent notice", async ({ lang, title, unsaved }) => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({ status: "invalid", state: null, reason: "unsupported version" });
+    renderApp(lang);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const notice = screen.getByRole("alert", { name: new RegExp(`^${title}`) });
+    expect(notice.textContent).toContain(unsaved);
+    fireEvent.click(screen.getByRole("tab", { name: "Color" }));
+    expect(screen.getByRole("alert", { name: new RegExp(`^${title}`) })).toBe(notice);
+    await act(async () => vi.advanceTimersByTime(5000));
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: "Source" }));
+    expect(screen.queryByText(title)).toBeNull();
+    expect(screen.queryByText(/Auto-save on|自動保存オン/)).toBeNull();
+  });
+
   it("renders primary tabs and switches from Source to Theory", async () => {
     renderApp();
 

@@ -56,6 +56,8 @@ export function controlOwnsKey(target: EventTarget | null, event: Pick<KeyboardE
   return false;
 }
 
+const CANVAS_COPY_SHORTCUT: ShortcutEntry = { key: "Ctrl+C / ⌘C", label: "help_copy_canvas" };
+
 const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
   // Tool keys (B E F L R O) are printed on the tool buttons themselves.
   // Drawing parameters
@@ -70,6 +72,7 @@ const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
   { keyCopy: "help_middle_reset_key", label: "help_middle_reset" },
   { keyCopy: "help_zoom_pixel_key", label: "help_zoom_pixel" },
   // File operations
+  CANVAS_COPY_SHORTCUT,
   { key: "Ctrl+N", label: "help_new_canvas" },
   { key: "Ctrl+V", label: "help_paste" },
   { keyCopy: "help_drop_image_key", label: "help_drop_image" },
@@ -81,6 +84,7 @@ const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
 const SOURCE_SHORTCUTS: readonly ShortcutEntry[] = [...DRAWING_SHORTCUTS, { key: "Ctrl+S", label: "help_save_color" }];
 
 const HEX_SHORTCUTS: readonly ShortcutEntry[] = [
+  CANVAS_COPY_SHORTCUT,
   { key: "2-5", label: "help_hex_cycle" },
   // The gold ring is the pin's whole report, and neither gesture is printed
   // anywhere on the figure, so the panel is the only place it can be found.
@@ -108,7 +112,7 @@ const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [
 ];
 
 export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
-  const own =
+  const own: readonly ShortcutEntry[] =
     tab === "source"
       ? SOURCE_SHORTCUTS
       : hasDrawingShortcuts(tab)
@@ -117,8 +121,12 @@ export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
           ? HEX_SHORTCUTS
           : tab === "music"
             ? MUSIC_SHORTCUTS
-            : tab === "theory"
-              ? THEORY_SHORTCUTS
-              : [];
+            : tab === "map"
+              ? [CANVAS_COPY_SHORTCUT]
+              : tab === "gallery"
+                ? [{ key: "Ctrl+C / ⌘C", label: "help_copy_gallery_preview" }]
+                : tab === "theory"
+                  ? THEORY_SHORTCUTS
+                  : [];
   return [...own, ...COMMON_SHORTCUTS];
 }

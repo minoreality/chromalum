@@ -1,14 +1,5 @@
 import React, { useState, useCallback, useEffect, useId, useRef } from "react";
-import {
-  THEORY_LEVELS,
-  CUBE_EDGES,
-  CUBE_FACES,
-  CUBE_POINTS,
-  GRAY_PATH,
-  edgeChannel,
-  isBackEdge,
-  COMPLEMENT_EDGES,
-} from "../../data/theory-data";
+import { THEORY_LEVELS, CUBE_EDGES, CUBE_FACES, edgeChannel, COMPLEMENT_EDGES } from "../../data/theory-data";
 import { C, FS } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
@@ -16,30 +7,13 @@ import { usePinReset } from "./pin-reset";
 import { CubeFaceGrid } from "./CubeFaceGrid";
 import { levelLabelColor } from "../../color-engine";
 import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
+import { colorCubeView, hasseRankY } from "./color-cube-geometry";
 
 const DOT_R = 9;
 const HIT_R = 17;
 
 function edgesOf(v: number): number[] {
   return CUBE_EDGES.map((e, i) => (e[0] === v || e[1] === v ? i : -1)).filter((i) => i >= 0);
-}
-
-// Keep the cube's horizontal positions and vertical extent in the Hasse layout.
-// Equal rank spacing changes the projection without rescaling the diagram.
-const CUBE_TOP = Math.min(...Object.values(CUBE_POINTS).map(({ y }) => y));
-const CUBE_BOTTOM = Math.max(...Object.values(CUBE_POINTS).map(({ y }) => y));
-const hasseY = (rank: number) => CUBE_BOTTOM - ((CUBE_BOTTOM - CUBE_TOP) * rank) / 3;
-const HASSE_POINTS: Record<number, { x: number; y: number }> = Object.fromEntries(
-  THEORY_LEVELS.map(({ lv, bits }) => [lv, { x: CUBE_POINTS[lv].x, y: hasseY(bits[0] + bits[1] + bits[2]) }]),
-);
-
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t;
-}
-
-// Smoothstep easing for camera-rotation feel.
-function smoothstep(t: number) {
-  return t * t * (3 - 2 * t);
 }
 
 // Set notation labels shown when Hasse mode is active.
@@ -82,7 +56,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
   const [hasseMode, setHasseMode] = useState(false);
   const [animT, setAnimT] = useState(0);
   const animTRef = useRef(0);
-  const reducedMotion = useRef(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const resetSelection = useCallback((_value: null) => {
     setPinned(null);
     setSelectedFace(null);
@@ -91,25 +64,41 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
   usePinReset(resetSelection);
 
   useEffect(() => {
-    if (reducedMotion.current) {
-      const target = hasseMode ? 1 : 0;
-      animTRef.current = target;
-      setAnimT(target);
-      return;
-    }
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const from = animTRef.current;
+    const target = hasseMode ? 1 : 0;
+    const duration = 550 * Math.abs(target - from);
+    let start: number | null = null;
     let raf = 0;
-    const step = hasseMode ? 0.03 : -0.04;
-    const animate = () => {
-      const prev = animTRef.current;
-      const next = Math.max(0, Math.min(1, prev + step));
-      animTRef.current = next;
-      setAnimT(next);
-      if ((hasseMode && next < 1) || (!hasseMode && next > 0)) {
-        raf = requestAnimationFrame(animate);
-      }
+    const update = (progress: number) => {
+      animTRef.current = progress;
+      setAnimT(progress);
     };
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
+    const finish = () => {
+      cancelAnimationFrame(raf);
+      update(target);
+    };
+    const animate = (now: number) => {
+      start ??= now;
+      const elapsed = Math.max(0, Math.min(1, (now - start) / duration));
+      if (elapsed === 1) {
+        finish();
+        return;
+      }
+      const eased = elapsed * elapsed * (3 - 2 * elapsed);
+      update(from + (target - from) * eased);
+      raf = requestAnimationFrame(animate);
+    };
+    const onMotionChange = () => {
+      if (media.matches) finish();
+    };
+    if (media.matches || duration === 0) finish();
+    else raf = requestAnimationFrame(animate);
+    media.addEventListener("change", onMotionChange);
+    return () => {
+      cancelAnimationFrame(raf);
+      media.removeEventListener("change", onMotionChange);
+    };
   }, [hasseMode]);
 
   const preview = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : null;
@@ -165,36 +154,13 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
     },
     [onHover],
   );
-  const getPos = (lv: number) => {
-    const cube = CUBE_POINTS[lv];
-    if (animT <= 0) return cube;
-    const hasse = HASSE_POINTS[lv];
-    const t = smoothstep(animT);
-    return { x: lerp(cube.x, hasse.x, t), y: lerp(cube.y, hasse.y, t) };
-  };
-
-  // The current projection has x ∝ g−b and y = p(g+b)+qr.
-  // Its perpendicular depth axis is (−q, 2p, −q), oriented so K starts
-  // behind W. Recompute it during the morph and paint farther edges first.
-  const originY = getPos(0).y;
-  const p = getPos(4).y - originY;
-  const q = getPos(2).y - originY;
-  const vertexDepths = THEORY_LEVELS.map(({ bits: [g, r, b] }) => -q * (g + b) + 2 * p * r);
-  const orderedEdges = CUBE_EDGES.map((edge, index) => ({
-    edge,
-    index,
-    depth: (vertexDepths[edge[0]] + vertexDepths[edge[1]]) / 2,
-  })).sort((a, b) => (Math.abs(a.depth - b.depth) < 1e-9 ? a.index - b.index : a.depth - b.depth));
+  const { points, orderedEdges } = colorCubeView(animT);
+  const getPos = (lv: number) => points[lv];
 
   const isEquator = (lv: number) => lv !== 0 && lv !== 7;
+  // Vertex and face interaction takes precedence over the idle cycle emphasis.
+  const emphasizeEquator = equatorMode && !hasHighlight;
   const centralHitBoundary = (getPos(0).y + getPos(7).y) / 2;
-
-  // Equator path (hexagonal outline connecting the 6 chromatic vertices on the cube)
-  const equatorPath =
-    GRAY_PATH.map((lv, i) => {
-      const p = getPos(lv);
-      return (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1);
-    }).join(" ") + "Z";
 
   return (
     <div
@@ -211,7 +177,8 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
       }}
     >
       <div className="theory-cube-layout">
-        <div className="theory-cube-geometry">
+        <figure className="theory-figure theory-cube-geometry">
+          <figcaption>{t("theory_cube_title")}</figcaption>
           <svg
             className="theory-cube-svg"
             viewBox="30 35 240 195"
@@ -234,11 +201,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 <rect x={30} y={35} width={240} height={centralHitBoundary - 35} />
               </clipPath>
             </defs>
-            {/* Equator path (toggle overlay) */}
-            {equatorMode && (
-              <path d={equatorPath} fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.40)" strokeWidth={1.5} strokeDasharray="4,3" />
-            )}
-
             {/* Complement diagonals (all 4 body diagonals) */}
             {showComplements &&
               COMPLEMENT_EDGES.map(([a, b]) => {
@@ -264,7 +226,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                       stroke={grad}
                       strokeWidth={1.5}
                       strokeDasharray="6,4"
-                      opacity={0.7}
+                      opacity={emphasizeEquator && (!isEquator(a) || !isEquator(b)) ? 0.15 : 0.7}
                     />
                   </g>
                 );
@@ -285,18 +247,19 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
             )}
 
             {/* Edges */}
-            {orderedEdges.map(({ edge: e, index: ei }) => {
+            {orderedEdges.map(({ edge: e, index: ei, dashWeight }) => {
               const p0 = getPos(e[0]),
                 p1 = getPos(e[1]);
-              const back = isBackEdge(e[0], e[1]);
               const active = hlEdges.includes(ei);
-              const dim = hasHighlight && !active;
               const ch = edgeChannel(e[0], e[1]);
               const chColor = CHROMALUM_CHANNEL_HEX[ch];
               const isEqEdge = isEquator(e[0]) && isEquator(e[1]);
-              const edgeOpacity = dim ? 0.15 : active ? 0.9 : isEqEdge && equatorMode ? 0.6 : 0.55;
+              const emphasized = active || (emphasizeEquator && isEqEdge);
+              const dim = (hasHighlight && !active) || (emphasizeEquator && !isEqEdge);
+              const edgeOpacity = dim ? 0.15 : emphasized ? 0.9 : 0.55;
+              const dash = emphasized ? 0 : dashWeight;
               return (
-                <g key={"ce" + ei}>
+                <g key={"ce" + ei} opacity={edgeOpacity}>
                   <line
                     data-cube-edge={`${e[0]}-${e[1]}`}
                     data-cube-active={active}
@@ -305,10 +268,24 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                     x2={p1.x}
                     y2={p1.y}
                     stroke={chColor}
-                    strokeWidth={active ? 2 : 1}
-                    strokeDasharray={back && !active && animT < 0.5 ? "3,3" : undefined}
-                    opacity={edgeOpacity}
+                    strokeWidth={emphasized ? 2 : 1}
+                    strokeDasharray={dash > 0 ? "3,3" : undefined}
                   />
+                  {/* Keep the dash strokes unchanged and fade only their gaps.
+                      Group opacity prevents overlap from brightening the edge. */}
+                  {dash > 0 && dash < 1 && (
+                    <line
+                      className="theory-cube-edge-fill"
+                      x1={p0.x}
+                      y1={p0.y}
+                      x2={p1.x}
+                      y2={p1.y}
+                      stroke={chColor}
+                      strokeWidth={1}
+                      opacity={1 - dash}
+                      pointerEvents="none"
+                    />
+                  )}
                 </g>
               );
             })}
@@ -352,7 +329,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                     <text
                       className="theory-cube-rank-label"
                       x={42}
-                      y={hasseY(rank)}
+                      y={hasseRankY(rank)}
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={FS.xxs}
@@ -364,7 +341,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                     <text
                       className="theory-cube-pascal-label"
                       x={258}
-                      y={hasseY(rank)}
+                      y={hasseRankY(rank)}
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={FS.xxs}
@@ -384,7 +361,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 const p = getPos(lv);
                 const { dx, dy, anchor } = SET_LABEL_OFFSETS[lv];
                 const active = hlVerts.has(lv);
-                const dim = hasHighlight && !active;
+                const dim = (hasHighlight && !active) || (emphasizeEquator && !isEquator(lv));
                 const opacity = dim ? 0.3 : active ? 1 : 0.85;
                 return (
                   <text
@@ -410,8 +387,9 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
               const p = getPos(lv);
               const info = THEORY_LEVELS[lv];
               const active = hlVerts.has(lv);
-              const dim = hasHighlight && !active;
-              const fillOpacity = dim ? 0.2 : 0.85;
+              const onEquator = emphasizeEquator && isEquator(lv);
+              const dim = (hasHighlight && !active) || (emphasizeEquator && !isEquator(lv));
+              const fillOpacity = dim ? 0.2 : onEquator ? 1 : 0.85;
               const labelOpacity = dim ? 0.3 : 1;
               return (
                 <g
@@ -448,23 +426,23 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                     className="theory-cube-focus-ring"
                     cx={p.x}
                     cy={p.y}
-                    r={DOT_R + 7}
+                    r={DOT_R + 3}
                     fill="none"
-                    stroke={C.accentBright}
-                    strokeWidth={2}
+                    stroke="#fff"
+                    strokeWidth={1}
+                    strokeDasharray={pinned === lv ? undefined : "2 2"}
+                    opacity={pinned === lv || (faceVertices === null && hl === lv) ? 1 : 0}
                     pointerEvents="none"
                   />
-                  {pinned === lv && <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="none" stroke={C.accentBright} strokeWidth={1.5} />}
-                  {active && <circle cx={p.x} cy={p.y} r={DOT_R + 4} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1.5} />}
                   <circle
                     cx={p.x}
                     cy={p.y}
                     r={DOT_R}
                     fill={lv === 0 ? C.bgRoot : info.color}
                     fillOpacity={fillOpacity}
-                    stroke={dim ? (lv === 0 ? C.textDimmer : info.color) : "#fff"}
-                    strokeWidth={lv === 0 ? 1 : active ? 2.5 : 1.5}
-                    strokeOpacity={dim ? 0.3 : 0.8}
+                    stroke={lv === 0 ? "#808080" : info.color}
+                    strokeWidth={0.8}
+                    strokeOpacity={dim ? 0.3 : 0.9}
                   />
                   <text
                     x={p.x}
@@ -495,7 +473,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
               {t("theory_cube_hasse")}
             </button>
           </div>
-        </div>
+        </figure>
         <CubeFaceGrid
           activeFace={activeFace}
           selectedFace={selectedFace}

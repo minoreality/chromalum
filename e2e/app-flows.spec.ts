@@ -1,4 +1,6 @@
 import { devices, expect, test, type Locator, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { SAVED_STATE_VERSION } from "../src/utils/idb-persistence";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -65,6 +67,84 @@ async function readSavedCanvas(page: Page): Promise<{ width: number; height: num
   );
 }
 
+async function seedInvalidSavedRecord(page: Page, kind: "unsupported" | "malformed" | "null"): Promise<string> {
+  // Populate this test's database on an inert same-origin page before the app mounts.
+  await page.route("**/persistence-seed", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Seed</title>" }),
+  );
+  await page.goto("persistence-seed");
+  return page.evaluate(
+    ({ kind, version }) =>
+      new Promise<string>((resolve, reject) => {
+        const record =
+          kind === "null"
+            ? null
+            : {
+                version: kind === "unsupported" ? version + 1 : version,
+                revision: kind === "unsupported" ? 7 : 0,
+                width: kind === "malformed" ? 9 : 8,
+                height: 8,
+                levelData: new Uint8Array(64).fill(2),
+                candidateIndexByLevel: new Array<number>(8).fill(0),
+              };
+        const openRequest = indexedDB.open("chromalum", 2);
+        openRequest.onupgradeneeded = () => openRequest.result.createObjectStore("state");
+        openRequest.onerror = () => reject(openRequest.error);
+        openRequest.onsuccess = () => {
+          const db = openRequest.result;
+          const tx = db.transaction("state", "readwrite");
+          tx.objectStore("state").put(record, "current");
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error);
+          };
+          tx.oncomplete = () => {
+            db.close();
+            resolve(JSON.stringify(record));
+          };
+        };
+      }),
+    { kind, version: SAVED_STATE_VERSION },
+  );
+}
+
+async function readSavedRecord(page: Page): Promise<string> {
+  return page.evaluate(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        const openRequest = indexedDB.open("chromalum");
+        openRequest.onerror = () => reject(openRequest.error);
+        openRequest.onsuccess = () => {
+          const db = openRequest.result;
+          const tx = db.transaction("state", "readonly");
+          const getRequest = tx.objectStore("state").get("current");
+          getRequest.onerror = () => reject(getRequest.error);
+          getRequest.onsuccess = () => resolve(JSON.stringify(getRequest.result));
+          tx.oncomplete = () => db.close();
+        };
+      }),
+  );
+}
+
+async function expectReadableToast(page: Page, name: RegExp) {
+  const toast = page.getByRole("alert", { name });
+  await toast.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)));
+  const bounds = await toast.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      viewport: innerWidth,
+      clippedText: [...node.querySelectorAll("span")].some((span) => span.scrollWidth > span.clientWidth),
+    };
+  });
+  expect(bounds.left).toBeGreaterThanOrEqual(0);
+  expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
+  expect(bounds.clippedText).toBe(false);
+  const accessibility = await new AxeBuilder({ page }).include('[role="alert"]').analyze();
+  expect(accessibility.violations).toEqual([]);
+}
+
 test("draws, undoes, redoes, saves, and restores the source canvas", async ({ page }) => {
   await gotoSource(page);
 
@@ -106,10 +186,89 @@ test("rejects a stale tab save instead of rolling back newer canvas work", async
   await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 8, height: 8, revision: 2 });
 
   await createCanvas(stalePage, 16);
-  await expect(stalePage.getByText("Auto-save failed")).toBeVisible();
+  const canvas = stalePage.getByRole("application", { name: "Drawing canvas (grayscale)" });
+  const before = await canvas.boundingBox();
+  if (!before) throw new Error("Canvas is not visible");
+  await stalePage.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await stalePage.mouse.down();
+  const notice = stalePage.getByRole("alert", { name: /^Auto-save off/ });
+  await expect(notice).toContainText("Saved data changed in another tab");
+  // A delayed conflict must not move the canvas beneath an active brush stroke.
+  expect(await canvas.boundingBox()).toEqual(before);
+  await stalePage.mouse.move(before.x + before.width / 2 + 2, before.y + before.height / 2);
+  await stalePage.mouse.up();
+  await expect(notice).toHaveCount(0);
+  await createCanvas(stalePage, 32);
+  await stalePage.waitForTimeout(1300);
+  await expect(notice).toHaveCount(0);
   await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 8, height: 8, revision: 2 });
   await stalePage.close();
 });
+
+for (const kind of ["unsupported", "malformed", "null"] as const) {
+  test(`preserves ${kind} saved data while editing and exporting with autosave off`, async ({ page }) => {
+    await page.setViewportSize(kind === "malformed" ? { width: 320, height: 800 } : { width: 1280, height: 900 });
+    const savedRecord = await seedInvalidSavedRecord(page, kind);
+    await gotoSource(page);
+
+    const notice = page.getByRole("alert", { name: /^Auto-save off/ });
+    await expect(notice).toContainText("Invalid or unsupported data");
+    await expect(notice).toContainText("Edits are unsaved.");
+    await expectReadableToast(page, /^Auto-save off/);
+    await expect(notice).toHaveCount(0);
+
+    const canvas = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
+    await drawAtCenter(page, canvas);
+    await expect.poll(() => canvasPixel(canvas, 160, 160)).toEqual([255, 255, 255, 255]);
+    await page.getByRole("tab", { name: "Color" }).click();
+    await expect(notice).toHaveCount(0);
+    await page.getByRole("tab", { name: "Source" }).click();
+
+    await page.getByRole("button", { name: /Save Gray/ }).click();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("dialog", { name: "Save grayscale image?" }).getByRole("button", { name: "Yes" }).click();
+    await expect((await downloadPromise).suggestedFilename()).toMatch(/^chromalum_gray_.+\.png$/);
+
+    await page.waitForTimeout(1300);
+    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    expect(await readSavedRecord(page)).toBe(savedRecord);
+    await page.reload();
+    await expect(notice).toBeVisible();
+    expect(await readSavedRecord(page)).toBe(savedRecord);
+
+    if (kind === "malformed") {
+      await page.getByRole("button", { name: "Switch to Japanese" }).click();
+      // A fresh tab reads the selected language without this page's English init script.
+      const japanesePage = await page.context().newPage();
+      await japanesePage.setViewportSize({ width: 320, height: 800 });
+      await gotoSource(japanesePage);
+      const japaneseToast = japanesePage.getByRole("alert", { name: /^自動保存停止/ });
+      await expect(japaneseToast).toContainText("変更は未保存です。");
+      const phraseLineCounts = () =>
+        japaneseToast.evaluate((node) => {
+          return ["未対応です。", "未保存です。", "書き出してください。"].map((phrase) => {
+            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+            for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+              const start = text.textContent?.indexOf(phrase) ?? -1;
+              if (start < 0) continue;
+              const range = document.createRange();
+              range.setStart(text, start);
+              range.setEnd(text, start + phrase.length);
+              return new Set([...range.getClientRects()].map((rect) => rect.top)).size;
+            }
+            return 0;
+          });
+        });
+      expect(await phraseLineCounts()).toEqual([1, 1, 1]);
+      await japaneseToast.evaluate((node) => {
+        node.style.fontFamily = '"MS Gothic", monospace';
+      });
+      expect(await phraseLineCounts()).toEqual([1, 1, 1]);
+      await expectReadableToast(japanesePage, /^自動保存停止/);
+      await japanesePage.close();
+    }
+  });
+}
 
 test("glazes a chromatic source pixel and clears the glaze layer", async ({ page }) => {
   await gotoSource(page);
@@ -280,7 +439,7 @@ test.describe("mobile touch", () => {
     await selectLevel(page, 2, "Red");
     await drawAtCenter(page, page.getByRole("application", { name: "Drawing canvas (grayscale)" }));
     await page.getByRole("tab", { name: "Hex" }).click();
-    const diagram = page.getByRole("group", { name: "Pure-hue loop hexagonal diagram" });
+    const diagram = page.getByRole("group", { name: "Pure-hue loop color selection" });
     await diagram.scrollIntoViewIfNeeded();
     await expect(diagram).toBeVisible();
     return diagram;

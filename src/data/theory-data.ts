@@ -11,6 +11,7 @@ import {
   CHROMALUM_LEVEL_LABELS,
   CHROMALUM_LEVEL_NAMES,
 } from "../chromalum-color-model";
+import { projectOrthographic, type Point3 } from "../utils/geometry-3d";
 import { HAMMING_POSITION_ROLES } from "./hamming-data";
 
 interface TheoryLevel {
@@ -72,6 +73,9 @@ export const DICE_NET_FACES = GRAY_PATH.map((lv, index) => ({
   col: Math.floor((index + 1) / 2),
   row: Math.floor(index / 2),
 }));
+
+/** Unit-cube vertices centered at the origin, indexed by level in [G, R, B] order. */
+export const CUBE_VERTICES_3D: readonly Point3[] = THEORY_LEVELS.map(({ bits: [g, r, b] }) => [g - 0.5, r - 0.5, b - 0.5]);
 
 /** 12 edges of the 3-cube (pairs of vertices differing by 1 bit) */
 export const CUBE_EDGES: readonly (readonly [number, number])[] = [
@@ -163,33 +167,6 @@ export const FANO_LINE_ENDPOINTS: readonly (readonly [number, number])[] = [
   // line 6 = inscribed circle (no endpoints)
 ];
 
-/* ── Color Cube isometric geometry ───────── */
-
-const ISO_CX = 150,
-  ISO_CY = 140;
-const ISO_SCALE = 70;
-// Isometric axes: R=up, G=down-right, B=down-left
-// R-up matches color wheel convention (Red=0°) and produces standard hue order clockwise
-const ISO_R = { dx: 0, dy: -1.2 };
-const ISO_G = { dx: Math.cos(Math.PI / 6), dy: Math.sin(Math.PI / 6) };
-const ISO_B = { dx: -Math.cos(Math.PI / 6), dy: Math.sin(Math.PI / 6) };
-
-function buildCubePoints(): Readonly<Record<number, Point2D>> {
-  const points: Record<number, Point2D> = {};
-  for (let i = 0; i < 8; i++) {
-    const g = (i >> 2) & 1,
-      r = (i >> 1) & 1,
-      b = i & 1;
-    points[i] = {
-      x: ISO_CX + ISO_SCALE * (g * ISO_G.dx + r * ISO_R.dx + b * ISO_B.dx),
-      y: ISO_CY + ISO_SCALE * (g * ISO_G.dy + r * ISO_R.dy + b * ISO_B.dy),
-    };
-  }
-  return points;
-}
-
-export const CUBE_POINTS = buildCubePoints();
-
 /* ── Regular cube / tetrahedra in the K₈ Explorer ── */
 
 // A single rigid rotation keeps the cube regular and its two inscribed
@@ -204,8 +181,7 @@ const EXPLORER_COS_PITCH = Math.cos(EXPLORER_PITCH);
 const EXPLORER_SIN_PITCH = Math.sin(EXPLORER_PITCH);
 
 /** Centered unit-cube vertices after rotation: x right, y down, z away from the viewer. */
-export const K8_EXPLORER_VERTICES_3D: readonly (readonly [number, number, number])[] = THEORY_LEVELS.map(({ bits }) => {
-  const [g, r, b] = bits.map((bit) => bit - 0.5);
+export const K8_EXPLORER_VERTICES_3D: readonly Point3[] = CUBE_VERTICES_3D.map(([g, r, b]) => {
   return [
     EXPLORER_COS_YAW * r - EXPLORER_SIN_YAW * b,
     -EXPLORER_COS_PITCH * g - EXPLORER_SIN_PITCH * (EXPLORER_SIN_YAW * r + EXPLORER_COS_YAW * b),
@@ -217,14 +193,8 @@ const EXPLORER_SCALE = 108 / (EXPLORER_COS_YAW + EXPLORER_SIN_YAW);
 
 /** Orthographic projection with one uniform scale; no per-vertex adjustments. */
 export const K8_EXPLORER_POINTS: Readonly<Record<number, Point2D>> = Object.fromEntries(
-  K8_EXPLORER_VERTICES_3D.map(([x, y], lv) => [lv, { x: 90 + EXPLORER_SCALE * x, y: 63 + EXPLORER_SCALE * y }]),
+  K8_EXPLORER_VERTICES_3D.map((point, lv) => [lv, projectOrthographic(point, { x: 90, y: 63 }, EXPLORER_SCALE)]),
 );
-
-/** Determine if an edge is a "back edge" (behind the cube) for dashed rendering */
-export function isBackEdge(a: number, b: number): boolean {
-  // Back edges: those connecting to vertex 0 (Black, hidden corner)
-  return a === 0 || b === 0;
-}
 
 /* ── Octahedron relations used by the Music tab ──── */
 

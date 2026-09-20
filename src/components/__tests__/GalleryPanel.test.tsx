@@ -279,7 +279,7 @@ describe("GalleryPanel", () => {
     preview.focus();
     fireEvent.keyDown(preview, { key: "Enter" });
     expect(screen.getByRole("dialog", { name: "gallery_preview_dialog" })).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "gallery_apply_btn" }));
+    expect(document.activeElement).toBe(screen.getByRole("dialog", { name: "gallery_preview_dialog" }).querySelector(".canvas-workspace"));
 
     fireEvent.click(screen.getByRole("button", { name: "gallery_save_btn" }));
     expect(props.saveColorWithLUT).toHaveBeenCalledWith(

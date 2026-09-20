@@ -59,10 +59,10 @@ export const en = {
   aria_color_candidate: "Level {0} color candidate {1} {2}",
 
   // HexDiagram
-  hex_diagram_label: "Pure-hue loop hexagonal diagram",
-  hex_edge_label: "Level {0} color ({1})",
+  hex_diagram_label: "Pure-hue loop color selection",
+  hex_edge_label: "Level {0} color candidate ({1})",
   hex_vertex_label: "{0} — Level {1}",
-  btn_random_color: "Random",
+  btn_random_color: "Randomize palette",
 
   random_patterns: "{0} patterns",
   pattern_count_go_gallery: "View {0} patterns in Gallery",
@@ -102,6 +102,8 @@ export const en = {
   help_undo: "Undo",
   help_redo: "Redo",
   help_paste: "Paste image",
+  help_copy_canvas: "Copy image (canvas hovered or focused)",
+  help_copy_gallery_preview: "Copy preview (image hovered or focused)",
   help_this_help: "Shortcuts panel (also F1)",
   help_close: "Close",
   help_pan_key: "Space+Drag",
@@ -134,20 +136,25 @@ export const en = {
   help_save_color: "Save color image",
 
   // App - toast messages
-  toast_restore_failed: "Failed to restore saved data",
-  toast_restore_invalid: "Saved data could not be used. Started with a blank canvas.",
+  toast_restore_invalid: "Auto-save off\nInvalid or unsupported data. Edits are unsaved. Export PNG to keep them.",
+  toast_restore_failed: "Auto-save off\nCould not read saved data. Edits are unsaved. Export PNG to keep them.",
+  toast_autosave_conflict: "Auto-save off\nSaved data changed in another tab. Edits are unsaved. Export PNG to keep them.",
   toast_autosave_failed: "Auto-save failed",
   toast_image_gen_failed: "Failed to generate image (possibly out of memory)",
   toast_save_long_press: "Long-press to save: {0}",
   toast_saved: "Saved: {0}",
   toast_bookmark_limit: "Bookmark limit reached ({0})",
   toast_share_unsupported: "Share is not supported in this browser",
+  toast_image_copied: "Image copied",
+  toast_copy_failed: "Could not copy the image",
+  toast_copy_unsupported: "Image copy is not supported in this browser",
   toast_fill_truncated: "Fill was truncated due to memory limits",
   toast_fill_error: "Fill operation failed",
   toast_new_canvas_created: "Created new {0}×{1} canvas",
 
   // FileDrop
   toast_image_load_failed: "Failed to load image",
+  toast_image_format_unsupported: "This file format is not supported",
   toast_image_permission_failed: "Could not read this file. Choose an image from Files/Downloads.",
   toast_image_process_failed: "Image processing failed",
   toast_image_too_large: "Image too large",
@@ -421,6 +428,7 @@ export const en = {
   theory_cube_equator: "Equatorial belt",
   theory_cube_complements: "Complements",
   theory_cube_faces_title: "Six faces · one fixed bit",
+  theory_cube_faces_title_short: "Six faces",
   theory_cube_face_aria: "Face {0}={1}: {2}",
   theory_cube_hasse: "Hasse",
   theory_conn_core:

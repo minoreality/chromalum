@@ -199,9 +199,7 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
               title={t("theory_cube_cycle_title")}
               desc={[t("theory_cube_desc"), t("theory_cube_faces_desc"), t("theory_cube_desc2"), t("theory_gray_desc")]}
             >
-              <Figure title={t("theory_cube_title")}>
-                <ColorCube hlLevel={hlLevel} onHover={onHover} />
-              </Figure>
+              <ColorCube hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
             <Subsection
               id="theory-k8"

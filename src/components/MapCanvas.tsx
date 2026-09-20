@@ -6,6 +6,7 @@ import { C, SP, FS, R, FONT } from "../styles/tokens";
 import { openBlobUrlInNewTab, timestamp } from "../utils";
 import { recordDebugPerf, startDebugPerf } from "../utils/perf-debug";
 import { useTranslation } from "../i18n";
+import { useCanvasCopy } from "../hooks/useCanvasCopy";
 import { ConfirmModal } from "./ConfirmModal";
 import { S_CANVAS_STATUS_STABLE } from "../styles/shared";
 import { getFullStatusText, getVisibleStatusText, type StatusText, useCompactStatus } from "../utils/status-display";
@@ -32,6 +33,7 @@ export function MapCanvas({
 }) {
   const { t } = useTranslation();
   const ref = useRef<HTMLCanvasElement>(null);
+  useCanvasCopy(ref, showToast, t);
   const cw = canvasData.width;
   const ch = canvasData.height;
   const regionSizeCache = useMemo(
@@ -179,29 +181,31 @@ export function MapCanvas({
         width: displayWidth,
       }}
     >
-      <canvas
-        ref={ref}
-        role="img"
-        aria-label={t("map_title")}
-        width={cw || 1}
-        height={ch || 1}
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}
-        onPointerDown={onPointerDown}
-        onPointerUp={cancelLongPress}
-        onPointerCancel={cancelLongPress}
-        onPointerMove={onPointerMoveLP}
-        style={{
-          width: displayWidth,
-          height: displayHeight,
-          display: "block",
-          imageRendering: "pixelated",
-          borderRadius: R.lg,
-          border: `1px solid ${C.border}`,
-          cursor: "crosshair",
-          touchAction: "none",
-        }}
-      />
+      <div className="canvas-workspace" tabIndex={0} aria-label={t("map_title")} aria-keyshortcuts="Control+c Meta+c">
+        <canvas
+          ref={ref}
+          role="img"
+          aria-label={t("map_title")}
+          width={cw || 1}
+          height={ch || 1}
+          onMouseMove={onMouseMove}
+          onMouseLeave={onMouseLeave}
+          onPointerDown={onPointerDown}
+          onPointerUp={cancelLongPress}
+          onPointerCancel={cancelLongPress}
+          onPointerMove={onPointerMoveLP}
+          style={{
+            width: displayWidth,
+            height: displayHeight,
+            display: "block",
+            imageRendering: "pixelated",
+            borderRadius: R.lg,
+            border: `1px solid ${C.border}`,
+            cursor: "crosshair",
+            touchAction: "none",
+          }}
+        />
+      </div>
       {showSaveHint && (
         <div
           style={{

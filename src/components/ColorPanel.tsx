@@ -138,6 +138,7 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
             className="canvas-workspace"
             ref={previewCanvasWrapRef}
             tabIndex={0}
+            aria-keyshortcuts="Control+c Meta+c"
             aria-label={t("aria_color_preview")}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}

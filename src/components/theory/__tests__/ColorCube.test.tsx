@@ -14,34 +14,60 @@ function renderWithLanguage(hlLevel: number | null = null) {
 }
 
 describe("ColorCube", () => {
+  it("projects a regular cube with one uniform scale in both views", () => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const matchMedia = vi.spyOn(window, "matchMedia").mockReturnValue({ ...media, matches: true });
+    try {
+      renderWithLanguage();
+      const cube = screen.getByRole("group", { name: "Color Cube" });
+      const checkProjection = () => {
+        const points = [0, 4, 2, 1].map((level) => {
+          const circle = cube.querySelector(`[data-level="${level}"] > circle[r="9"]`)!;
+          return [Number(circle.getAttribute("cx")), Number(circle.getAttribute("cy"))];
+        });
+        const x = points.slice(1).map((point) => point[0] - points[0][0]);
+        const y = points.slice(1).map((point) => point[1] - points[0][1]);
+        // The two rows of a scaled orthographic rotation are orthogonal and
+        // have equal lengths. The old 2D interpolation violated this condition.
+        expect(Math.hypot(...y)).toBeCloseTo(Math.hypot(...x), 9);
+        expect(x.reduce((sum, value, index) => sum + value * y[index], 0)).toBeCloseTo(0, 9);
+      };
+      checkProjection();
+      fireEvent.click(screen.getByRole("button", { name: "Hasse" }));
+      checkProjection();
+    } finally {
+      matchMedia.mockRestore();
+    }
+  });
+
   it("paints the correct crossings in reduced motion without promoting highlighted rear edges", () => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const matchMedia = vi.spyOn(window, "matchMedia").mockReturnValue({ ...media, matches: true });
     try {
       renderWithLanguage(2);
+      const cube = screen.getByRole("group", { name: "Color Cube" });
+      const crossingOrder = () => {
+        const edges = [...cube.querySelectorAll("[data-cube-edge]")].map((edge) => edge.getAttribute("data-cube-edge"));
+        expect(edges).toHaveLength(12);
+        expect(edges.indexOf("2-3")).toBeLessThan(edges.indexOf("1-5"));
+        expect(edges.indexOf("2-6")).toBeLessThan(edges.indexOf("4-5"));
+        expect([...cube.querySelectorAll('[data-cube-active="true"]')].map((edge) => edge.getAttribute("data-cube-edge")).sort()).toEqual([
+          "0-2",
+          "2-3",
+          "2-6",
+        ]);
+      };
+      crossingOrder();
+      const hasse = screen.getByRole("button", { name: "Hasse" });
+      fireEvent.click(hasse);
+      expect(cube.querySelector(".theory-cube-ranks")?.getAttribute("opacity")).toBe("1");
+      crossingOrder();
+      fireEvent.click(hasse);
+      expect(cube.querySelector(".theory-cube-ranks")).toBeNull();
+      crossingOrder();
     } finally {
       matchMedia.mockRestore();
     }
-    const cube = screen.getByRole("group", { name: "Color Cube" });
-    const crossingOrder = () => {
-      const edges = [...cube.querySelectorAll("[data-cube-edge]")].map((edge) => edge.getAttribute("data-cube-edge"));
-      expect(edges).toHaveLength(12);
-      expect(edges.indexOf("2-3")).toBeLessThan(edges.indexOf("1-5"));
-      expect(edges.indexOf("2-6")).toBeLessThan(edges.indexOf("4-5"));
-      expect([...cube.querySelectorAll('[data-cube-active="true"]')].map((edge) => edge.getAttribute("data-cube-edge")).sort()).toEqual([
-        "0-2",
-        "2-3",
-        "2-6",
-      ]);
-    };
-    crossingOrder();
-    const hasse = screen.getByRole("button", { name: "Hasse" });
-    fireEvent.click(hasse);
-    expect(cube.querySelector(".theory-cube-ranks")?.getAttribute("opacity")).toBe("1");
-    crossingOrder();
-    fireEvent.click(hasse);
-    expect(cube.querySelector(".theory-cube-ranks")).toBeNull();
-    crossingOrder();
   });
 
   it("previews each complete face and retains a selected face across previews and projections", () => {

@@ -59,10 +59,10 @@ export const ja = {
   aria_color_candidate: "Level {0} 色候補 {1} {2}",
 
   // HexDiagram
-  hex_diagram_label: "純色相環の六角形ダイアグラム",
-  hex_edge_label: "レベル{0} の色 ({1})",
+  hex_diagram_label: "純色相環の色選択",
+  hex_edge_label: "レベル{0}の候補色 ({1})",
   hex_vertex_label: "{0} — レベル{1}",
-  btn_random_color: "ランダム",
+  btn_random_color: "配色をランダムに変更",
 
   random_patterns: "{0}通り",
   pattern_count_go_gallery: "{0}通りのパターンをGalleryで見る",
@@ -102,6 +102,8 @@ export const ja = {
   help_undo: "取り消し",
   help_redo: "やり直し",
   help_paste: "画像ペースト",
+  help_copy_canvas: "画像コピー（キャンバスにホバー・フォーカス時）",
+  help_copy_gallery_preview: "プレビュー画像コピー（ホバー・フォーカス時）",
   help_this_help: "ショートカット (F1も可)",
   help_close: "閉じる",
   help_pan_key: "Space+ドラッグ",
@@ -134,20 +136,25 @@ export const ja = {
   help_save_color: "カラー画像を保存",
 
   // App - toast messages
-  toast_restore_failed: "保存データの復元に失敗しました",
-  toast_restore_invalid: "保存データを使えませんでした。空のキャンバスで起動しました",
+  toast_restore_invalid: "自動保存停止\n保存データが無効・未対応です。変更は未保存です。PNG で書き出してください。",
+  toast_restore_failed: "自動保存停止\n保存データを読み込めませんでした。変更は未保存です。PNG で書き出してください。",
+  toast_autosave_conflict: "自動保存停止\n別のタブで保存データが更新されました。変更は未保存です。PNG で書き出してください。",
   toast_autosave_failed: "自動保存に失敗しました",
   toast_image_gen_failed: "画像の生成に失敗しました（メモリ不足の可能性）",
   toast_save_long_press: "画像を長押しして保存してください: {0}",
   toast_saved: "保存しました: {0}",
   toast_bookmark_limit: "ブックマークの上限（{0}件）に達しました",
   toast_share_unsupported: "このブラウザは共有に対応していません",
+  toast_image_copied: "画像をコピーしました",
+  toast_copy_failed: "画像をコピーできませんでした",
+  toast_copy_unsupported: "このブラウザは画像のコピーに対応していません",
   toast_fill_truncated: "メモリ制限により塗りつぶしが途中で打ち切られました",
   toast_fill_error: "塗りつぶし操作に失敗しました",
   toast_new_canvas_created: "{0}×{1} の新規キャンバスを作成しました",
 
   // FileDrop
   toast_image_load_failed: "画像の読み込みに失敗しました",
+  toast_image_format_unsupported: "このファイル形式には対応していません",
   toast_image_permission_failed: "このファイルを読み取れません。Files/ダウンロードの画像を選んでください",
   toast_image_process_failed: "画像処理に失敗しました",
   toast_image_too_large: "画像が大きすぎます",
@@ -419,6 +426,7 @@ export const ja = {
   theory_cube_equator: "\u8d64\u9053\u5e2f",
   theory_cube_complements: "補色対角",
   theory_cube_faces_title: "一ビットを固定した六面",
+  theory_cube_faces_title_short: "六つの面",
   theory_cube_face_aria: "{0}={1}の面：{2}",
   theory_cube_hasse: "\u30cf\u30c3\u30bb\u56f3",
   theory_conn_core: "A=𝒫(E)は生成済み状態のブール代数であり、(A,⊕)≅(𝔽₂³,+)はその反転群です。どの演算を保つかまでが構造の指定です。",

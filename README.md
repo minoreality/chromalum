@@ -65,25 +65,49 @@ undo/redo stores compact diffs, and autosave uses IndexedDB.
 
 ## Technical Highlights
 
-- **Canvas rendering:** direct pixel-buffer rendering with dirty-rect updates.
-- **Image input:** a documented lossy sRGB code-value estimator, kept separate
-  from the canonical-coordinate output adapter.
-- **Performance:** typed arrays, reusable buffers, scanline flood fill, and
-  worker-backed flood fill and pixel analysis.
-- **Undo/redo:** compressed diffs with optional glaze override deltas.
-- **Persistence:** debounced IndexedDB autosave with pagehide/visibility flush.
-- **Offline support:** production builds include a service worker that
-  pre-caches the app shell, icons, workers, and lazy-loaded Music tab chunk for
-  offline reopening.
-- **Testing:** Vitest unit tests plus Playwright end-to-end, accessibility, and
-  PWA checks covering canvas pixels, save flows, gallery previews, glaze
-  clearing, Theory rendering, offline behavior, mobile touch input, and stable
-  layouts.
-- **Documentation screenshots:** the README keeps representative Theory and
-  Music images in `docs/assets/` for visitors browsing the repository.
-- **Quality gates:** TypeScript strict mode, ESLint, Prettier, Knip dead-code
-  detection, coverage thresholds, CodeQL, Dependabot, pinned GitHub Actions, and
-  GitHub Pages deployment.
+- **Canonical pixel state:** a reducer owns L0–L7 source levels in a
+  `Uint8Array` and a separate per-pixel Glaze override buffer. Palette changes
+  update lookup tables without rewriting source levels.
+- **Incremental Canvas rendering:** drawing coalesces dirty rectangles per
+  animation frame and renders through cached `ImageData` and packed color
+  lookup tables, while reusable stroke buffers limit allocation during pointer
+  interaction.
+- **Worker-backed computation:** larger scanline flood fills and selected Map
+  computations use Web Workers with transferable buffers and synchronous fallback
+  paths. Request IDs, canvas generations and reducer validation reject stale
+  results before they can replace current pixels or analysis views.
+- **Cached derived views:** Gallery enumerates palette choices for present,
+  unlocked levels and caches thumbnails generated in cancellable chunks. Map
+  caches results by source/override buffer identity and analysis mode, then
+  preloads remaining modes after the active one.
+- **Transactional undo/redo:** bounded ring buffers store pixel diffs with
+  run-length-encoded indices. A single reducer transition applies or reverses
+  source and Glaze changes together, updating the level histogram from the
+  same diff.
+- **Persistence under concurrency:** debounced IndexedDB autosave uses
+  revision-based compare-and-swap within one transaction to reject stale-tab
+  overwrites. Restore guards preserve edits made during loading, and versioned
+  validation normalizes legacy records; invalid or unsupported records, read
+  failures, and revision conflicts disable autosave for the page session and
+  trigger a toast explaining why.
+- **Shared color algebra:** the model constructs the chromatic six-cycle from
+  the binary RGB cube and combines it with GRB rank weights to compute hue
+  fibers and palette candidates for rendering, Theory and Music. Lossy sRGB
+  import classification stays separate from exact model coordinates and their
+  display projection.
+- **Web Audio sonification:** pure algebraic playback sequences are separated
+  from audio graph and session management. The graph maps hue to pitch and
+  stereo position, complement phase to gain, and binary channel bits to
+  spectral components, connecting visual structure to sound.
+- **Browser-only offline runtime:** rendering, analysis, persistence and audio
+  run in the browser without a backend. A build-generated service worker uses
+  content-versioned caches for the app shell, workers and lazy Theory/Music
+  chunks, enabling offline reopening after initial caching.
+- **Invariant and browser verification:** Vitest checks fill/diff properties
+  and independently reconstructs mathematical invariants; Playwright checks
+  canvas pixels, persistence races, accessibility and production offline
+  behavior. CI enforces coverage thresholds, strict typing, lint, formatting
+  and dead-code checks, alongside CodeQL scanning and Dependabot updates.
 
 ## Offline and Local Data
 
