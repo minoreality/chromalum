@@ -3,6 +3,8 @@
    ═══════════════════════════════════════════ */
 export const rgbStr = (c: readonly [number, number, number]): string => `rgb(${c[0]},${c[1]},${c[2]})`;
 export const hexStr = (c: readonly [number, number, number]): string => "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+/** CSS colour for a pure hue at full saturation; the angle wraps so -30 and 330 draw the same. */
+export const hueStr = (angleDeg: number): string => `hsl(${((angleDeg % 360) + 360) % 360} 100% 50%)`;
 
 export function timestamp(): string {
   const d = new Date();

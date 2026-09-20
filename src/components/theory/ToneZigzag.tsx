@@ -15,6 +15,7 @@ import { S_THEORY_BTN, S_THEORY_BTN_ACTIVE } from "../../styles/shared";
 import { C, FONT, FS, FW, SP } from "../../styles/tokens";
 import { hueCycleDeltaLabel, hueCycleStage } from "./hue-cycle-label";
 import { usePinReset } from "./pin-reset";
+import { hueStr } from "../../utils";
 
 const ML = 69;
 const MT = 34;
@@ -26,10 +27,6 @@ const VB_W = ML + PW + MR;
 const LEVEL_COUNT = CHROMALUM_TONE_DENOMINATOR + 1;
 const LEVELS = Array.from({ length: LEVEL_COUNT }, (_, level) => level);
 const CHANNEL_COLORS = { G: "#00d848", R: "#ff4050", B: "#5470ff" } as const;
-function hueColor(hueAngleDeg: number): string {
-  return `hsl(${hueAngleDeg}deg 100% 50%)`;
-}
-
 function circularHueDistance(a: number, b: number): number {
   const difference = Math.abs(a - b);
   return Math.min(difference, 360 - difference);
@@ -72,7 +69,7 @@ export function findToneIntersections(targetTone: number): { h: number; color: s
     const unwrappedHue = edge.fromHueAngleDeg + proportion * (edge.toHueAngleDeg - edge.fromHueAngleDeg);
     const h = ((unwrappedHue % 360) + 360) % 360;
     if (!intersections.some((hit) => circularHueDistance(hit.h, h) < epsilon)) {
-      intersections.push({ h, color: hueColor(h) });
+      intersections.push({ h, color: hueStr(h) });
     }
   }
 
@@ -311,7 +308,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                 fontFamily={FONT.mono}
                 fontSize={FS.xl}
                 fontWeight={FW.bold}
-                fill={hueColor(point.hueAngleDeg)}
+                fill={hueStr(point.hueAngleDeg)}
                 stroke={C.bgRoot}
                 strokeWidth={0.8}
                 paintOrder="stroke"
@@ -470,7 +467,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   cx={xHue(point.hueAngleDeg)}
                   cy={yLevel(point.levelIndex)}
                   r={isVertex ? 4.6 : 3}
-                  fill={hueColor(point.hueAngleDeg)}
+                  fill={hueStr(point.hueAngleDeg)}
                   stroke={isVertex ? "#fff" : C.bgRoot}
                   strokeWidth={isVertex ? 1.2 : 0.9}
                 />

@@ -2,6 +2,7 @@ import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { TONE_CROSSING_SEQUENCE, ZIGZAG_CHANNELS } from "../../data/music-data";
 import { CHROMALUM_LEVEL_HEX } from "../../chromalum-color-model";
+import { hueStr } from "../../utils";
 
 const NAMES = ["", "B", "R", "M", "G", "C", "Y"];
 const CH_COLORS: Record<string, string> = { G: "#00cc00", R: "#cc0000", B: "#4466ff" };
@@ -42,11 +43,6 @@ interface Props {
   mode?: ZigzagGraphMode;
 }
 
-function hueColor(angleDeg: number): string {
-  const hue = ((angleDeg % 360) + 360) % 360;
-  return `hsl(${hue} 100% 48%)`;
-}
-
 export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode = "vertices" }: Props) {
   const isCrossingMode = mode === "crossings";
 
@@ -61,8 +57,8 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
           </feMerge>
         </filter>
         <linearGradient id="zg-crossing-terminal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={hueColor(CROSSING_FINAL_GRAPH_POINT.angleDeg)} />
-          <stop offset="100%" stopColor={hueColor(CROSSING_TERMINAL_POINT.angleDeg)} />
+          <stop offset="0%" stopColor={hueStr(CROSSING_FINAL_GRAPH_POINT.angleDeg)} />
+          <stop offset="100%" stopColor={hueStr(CROSSING_TERMINAL_POINT.angleDeg)} />
         </linearGradient>
       </defs>
       {/* Y-axis midline (1/2) */}
@@ -85,7 +81,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                 y1={y0}
                 x2={x1}
                 y2={y1}
-                stroke={isTerminalSegment ? "url(#zg-crossing-terminal-grad)" : hueColor(point.angleDeg)}
+                stroke={isTerminalSegment ? "url(#zg-crossing-terminal-grad)" : hueStr(point.angleDeg)}
                 strokeWidth={isActive ? 2.3 : 1.3}
                 opacity={isActive ? 0.9 : 0.42}
               />
@@ -103,7 +99,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                   cx={x}
                   cy={y}
                   r={isActive ? 5.5 : 3.2}
-                  fill={hueColor(point.angleDeg)}
+                  fill={hueStr(point.angleDeg)}
                   fillOpacity={0.9}
                   stroke="#fff"
                   strokeWidth={isActive ? 1.8 : 0.7}
@@ -116,7 +112,7 @@ export const ZigzagGraph = React.memo(function ZigzagGraph({ currentStep, mode =
                     fontSize={7}
                     fontFamily="var(--font-mono)"
                     fontWeight={FW.bold}
-                    fill={hueColor(point.angleDeg)}
+                    fill={hueStr(point.angleDeg)}
                   >
                     {point.semitone}
                   </text>
