@@ -19,7 +19,15 @@ import { formatColorPixelStatus, formatSourcePixelStatus } from "../utils/pixel-
 import type { BufferPool } from "./useStrokeManager";
 import { useSyncRef, useSyncRefs } from "./useSyncRef";
 import { useCursorOverlay } from "./useCursorOverlay";
-import { trySetPointerCapture, canvasPosFromRefs, canvasPosUnclamped, isCanvasPointInBounds, updateStatusBase } from "./useDrawingBase";
+import {
+  trySetPointerCapture,
+  canvasPosFromRefs,
+  canvasPosUnclamped,
+  isCanvasPointInBounds,
+  updateStatusBase,
+  hasPointerCapture,
+  usePaintFrameQueue,
+} from "./useDrawingBase";
 import type { DrawingRefs } from "./useDrawingBase";
 import { unionBBox } from "../drawing/dirty-rect";
 import { createStrokeSmoother, smoothStrokePoint } from "../drawing/stroke-smoothing";
@@ -72,6 +80,17 @@ interface CanvasDrawingOptions {
 
 type CanvasStatusMode = "source" | "color";
 
+/** What one brush frame renders: the stroke's working buffer and the surfaces it lands on. */
+interface BrushFrame {
+  levelData: Uint8Array;
+  w: number;
+  h: number;
+  lut: [number, number, number][];
+  sourceCanvas: HTMLCanvasElement | null;
+  previewCanvas: HTMLCanvasElement | null;
+  imgCache: ImageRenderCache;
+}
+
 export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResult {
   const { canvasData, dispatch, colorLUT, candidateIndexByLevel, brushLevel, brushSize, tool, previewCanvasRef, setBrushLevel } = opts;
   const ctx = useDrawingContext();
@@ -92,17 +111,9 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   const strokeSmootherRef = useRef<StrokeSmoother | null>(null);
   const forceRawNextMoveRef = useRef(false);
   const activeCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const paintRafRef = useRef<number | null>(null);
-  const pendingPaintDirtyRef = useRef<DirtyRect | null>(null);
-  const paintFrameRef = useRef<{
-    levelData: Uint8Array;
-    w: number;
-    h: number;
-    lut: [number, number, number][];
-    sourceCanvas: HTMLCanvasElement | null;
-    previewCanvas: HTMLCanvasElement | null;
-    imgCache: ImageRenderCache;
-  } | null>(null);
+  const paintQueue = usePaintFrameQueue<BrushFrame>((frame, dirty) =>
+    renderCanvasBuffers(frame.levelData, frame.w, frame.h, frame.lut, frame.sourceCanvas, frame.previewCanvas, frame.imgCache, dirty),
+  );
   const fillPendingRef = useRef(false);
   const pendingUpRef = useRef(false);
   const fillGenerationRef = useRef(0);
@@ -180,38 +191,18 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   }
 
   function queueBrushRender(levelData: Uint8Array, W: number, H: number, dirtyBB: DirtyRect) {
-    pendingPaintDirtyRef.current = unionBBox(pendingPaintDirtyRef.current, dirtyBB);
-    paintFrameRef.current = {
-      levelData,
-      w: W,
-      h: H,
-      lut: s.current.colorLUT,
-      sourceCanvas: sourceCanvasRef.current,
-      previewCanvas: previewCanvasRef.current,
-      imgCache: imgCacheRef.current,
-    };
-
-    if (paintRafRef.current !== null) return;
-
-    paintRafRef.current = requestAnimationFrame(() => {
-      paintRafRef.current = null;
-      const dirtySnap = pendingPaintDirtyRef.current;
-      const frame = paintFrameRef.current;
-      pendingPaintDirtyRef.current = null;
-      paintFrameRef.current = null;
-      if (dirtySnap && frame) {
-        renderCanvasBuffers(
-          frame.levelData,
-          frame.w,
-          frame.h,
-          frame.lut,
-          frame.sourceCanvas,
-          frame.previewCanvas,
-          frame.imgCache,
-          dirtySnap,
-        );
-      }
-    });
+    paintQueue.queue(
+      {
+        levelData,
+        w: W,
+        h: H,
+        lut: s.current.colorLUT,
+        sourceCanvas: sourceCanvasRef.current,
+        previewCanvas: previewCanvasRef.current,
+        imgCache: imgCacheRef.current,
+      },
+      dirtyBB,
+    );
   }
 
   function doDown(e: React.PointerEvent, refEl: HTMLCanvasElement | null, buttonOverride?: 0 | 1 | 2, startPos?: Point) {
@@ -525,11 +516,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   function finishStroke() {
     // Flush pending brush render
-    if (paintRafRef.current !== null) {
-      cancelAnimationFrame(paintRafRef.current);
-      paintRafRef.current = null;
-      pendingPaintDirtyRef.current = null;
-      paintFrameRef.current = null;
+    if (paintQueue.cancel()) {
       const st2 = strokeRef.current;
       if (st2)
         renderCanvasBuffers(
@@ -569,19 +556,6 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     finishStroke();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, read via .current
   }, [dispatch]);
-
-  function hasPointerCapture(e: React.PointerEvent, refs: Array<HTMLElement | null>) {
-    const candidates = [e.currentTarget as HTMLElement | null, e.target as HTMLElement | null, ...refs];
-    for (const el of candidates) {
-      if (!el || typeof el.hasPointerCapture !== "function") continue;
-      try {
-        if (el.hasPointerCapture(e.pointerId)) return true;
-      } catch (err) {
-        console.warn("CHROMALUM: pointerCapture check failed:", err);
-      }
-    }
-    return false;
-  }
 
   const onWorkspaceDown = useCallback(
     (e: React.PointerEvent) => {
