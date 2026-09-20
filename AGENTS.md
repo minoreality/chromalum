@@ -31,7 +31,9 @@ isolation.
 
 `ci.yml` runs two jobs side by side: `checks` (`typecheck:all`, `lint`, `deadcode`,
 `format:check`, `test:coverage`) and `e2e 1/3` … `e2e 3/3`, which split `test:e2e` across
-three runners with `--shard` and run `test:pwa` on the first. Note `test:coverage`, which
+three runners with `--shard` and run `test:pwa` on the first. Measured on #135, a run's
+wall is about 3 minutes (`checks` 127 s, shards 90–165 s) against 8 on one runner; `checks`
+bounds it from below, so a fourth shard gains nothing. Note `test:coverage`, which
 `npm run verify` does **not** run, so coverage thresholds are a PR gate you cannot reproduce
 with `verify` alone. `ci.yml` triggers on `pull_request` **only**, but a push straight to `main` is not
 unchecked: `deploy.yml` runs `typecheck:all`, `lint`, `deadcode`, `format:check` and
