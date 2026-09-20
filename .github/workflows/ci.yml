@@ -42,12 +42,12 @@ jobs:
           retention-days: 7
 
   e2e:
-    name: e2e ${{ matrix.shard }}/2
+    name: e2e ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -62,7 +62,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: End-to-end tests
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/2
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
 
       - name: PWA end-to-end tests
         if: matrix.shard == 1
