@@ -194,10 +194,12 @@ ready, and invalidates the cache when either `levelData` or
 
 The Theory tab is driven by structured data under `src/data`, localized copy
 under `src/i18n`, and diagram components under `src/components/theory`.
-`src/chromalum-color-model.ts` constructs the chromatic six-cycle from the
-binary RGB cube, its chosen R root and R-to-Y orientation, then derives the
-`G,R,B` toggle priority, `4:2:1` valuation, hue fibers, and section counts in
-that dependency order.
+`src/chromalum-color-model.ts` constructs the one-bit chromatic six-cycle from
+the binary RGB cube. Independently, the unnamed gapless subset-sum weights
+`{1,2,4}` and the binary-vertex brightness rank establish the named
+`G=4,R=2,B=1` valuation. The chosen R root and R-to-Y direction parameterize
+hue and Music sequences; they do not derive bit priority. The model uses these
+structures to compute hue fibers and section counts.
 
 The Music tab composes presentational sections in `src/components/music` through
 `src/components/MusicPanel.tsx`. `src/hooks/useMusicPanelController.ts`
