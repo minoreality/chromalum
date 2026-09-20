@@ -395,15 +395,24 @@ test("links all six cube faces and vertex incidence without losing the selected 
       await page.setViewportSize({ width, height: 698 });
       await cube.scrollIntoViewIfNeeded();
       const layout = await cube.evaluate((root) => {
-        const geometry = root.querySelector(".theory-cube-geometry")!.getBoundingClientRect();
-        const plot = root.querySelector(".theory-cube-svg")!.getBoundingClientRect();
+        const geometryElement = root.querySelector(".theory-cube-geometry")!;
+        const geometry = geometryElement.getBoundingClientRect();
+        const plotElement = root.querySelector<SVGSVGElement>(".theory-cube-svg")!;
+        const plot = plotElement.getBoundingClientRect();
+        const captionHeight = geometryElement.querySelector("figcaption")!.getBoundingClientRect().height;
+        const controlsHeight = root.querySelector(".theory-cube-controls")!.getBoundingClientRect().height;
+        const gap = parseFloat(getComputedStyle(geometryElement).rowGap);
+        // The existing 320px plot cap plus its caption, controls and two gaps.
+        // Text height follows the installed font rather than a fixed px budget.
+        const maxHeight =
+          (320 * plotElement.viewBox.baseVal.height) / plotElement.viewBox.baseVal.width + captionHeight + controlsHeight + 2 * gap;
         const grid = root.querySelector(".theory-cube-faces")!.getBoundingClientRect();
         const cards = [...root.querySelectorAll("[data-cube-face]")].map((el) => el.getBoundingClientRect());
         const compact = root.clientWidth <= 540;
         return {
           placement: geometry.right <= grid.left && geometry.top < grid.bottom && grid.top < geometry.bottom,
           secondary: grid.width < plot.width && grid.height <= geometry.height,
-          compactHeight: window.innerWidth < 640 || root.getBoundingClientRect().height <= 311,
+          compactHeight: window.innerWidth < 640 || root.getBoundingClientRect().height <= maxHeight + 1,
           rows: new Set(cards.map((box) => box.top)).size === (compact ? 6 : 3),
           columns: new Set(cards.map((box) => box.left)).size === (compact ? 1 : 2),
           touchTargets: cards.every((box) => box.width >= 44 && box.height >= 24),
@@ -460,7 +469,7 @@ test("links all six cube faces and vertex incidence without losing the selected 
   }
 });
 
-test("keeps the cube scale and crossing depth continuous throughout both Hasse transitions", async ({ page }, testInfo) => {
+test("keeps a regular cube at constant scale throughout both Hasse rotations", async ({ page }, testInfo) => {
   await page.addInitScript(() => localStorage.setItem("chromalum_lang", "ja"));
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("theory-dev.html");
@@ -478,7 +487,7 @@ test("keeps the cube scale and crossing depth continuous throughout both Hasse t
         return { x: dot.x + dot.width / 2 - box.x, y: dot.y + dot.height / 2 - box.y, diameter: dot.width };
       });
     });
-    const height = (vertices: { y: number }[]) => Math.max(...vertices.map(({ y }) => y)) - Math.min(...vertices.map(({ y }) => y));
+    const scale = Math.hypot(...[4, 2, 1].map((lv) => baseline[lv].x - baseline[0].x));
 
     for (const direction of ["hasse", "cube"]) {
       // Sample rendered frames with motion enabled, including the first and last
@@ -518,8 +527,25 @@ test("keeps the cube scale and crossing depth continuous throughout both Hasse t
           expect(vertex.diameter, `${width}px ${direction}, vertex ${index}`).toBeCloseTo(baseline[index].diameter, 3);
           expect(vertex.x, `${width}px ${direction}, vertex ${index}`).toBeCloseTo(baseline[index].x, 3);
         });
+        const x = [4, 2, 1].map((lv) => frame.vertices[lv].x - frame.vertices[0].x);
+        const y = [4, 2, 1].map((lv) => frame.vertices[lv].y - frame.vertices[0].y);
+        // A projected rigid rotation has two orthogonal rows of equal, fixed
+        // length. Apparent height can change with orientation without zooming.
+        expect(Math.hypot(...x) / scale).toBeCloseTo(1, 5);
+        expect(Math.hypot(...y) / scale).toBeCloseTo(1, 5);
+        expect(x.reduce((sum, value, i) => sum + value * y[i], 0) / scale ** 2).toBeCloseTo(0, 5);
       }
-      expect(height(frames.at(-1)!.vertices)).toBeCloseTo(height(baseline), 3);
+      const settled = frames.at(-1)!.vertices;
+      if (direction === "hasse") {
+        for (const levels of [
+          [1, 2, 4],
+          [3, 5, 6],
+        ]) {
+          for (const lv of levels) expect(settled[lv].y).toBeCloseTo(settled[levels[0]].y, 3);
+        }
+      } else {
+        settled.forEach((point, lv) => expect(point.y).toBeCloseTo(baseline[lv].y, 3));
+      }
       expect(frames.some((frame) => Math.abs(frame.vertices[0].y - frames[0].vertices[0].y) > 1)).toBe(true);
       const labelsFit = await plot.evaluate((svg) => {
         const box = svg.getBoundingClientRect();
@@ -533,6 +559,79 @@ test("keeps the cube scale and crossing depth continuous throughout both Hasse t
         await cube.screenshot({ path: testInfo.outputPath(`hasse-${width}.png`) });
       }
     }
+  }
+});
+
+test("reverses the cube rotation without jumping and stops when reduced motion is enabled", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("chromalum_lang", "en"));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("theory-dev.html");
+  const cube = page.locator(".theory-cube");
+  const plot = cube.locator(".theory-cube-svg");
+  const hasse = cube.getByRole("button", { name: "Hasse", exact: true });
+  await cube.scrollIntoViewIfNeeded();
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  const positions = () =>
+    plot
+      .locator('[data-level] > circle[r="9"]')
+      .evaluateAll((circles) => circles.map((circle) => [circle.getAttribute("cx"), circle.getAttribute("cy")]));
+  const initial = await positions();
+  await hasse.click();
+  await page.clock.runFor(225);
+  const midway = await positions();
+  expect(midway).not.toEqual(initial);
+  await hasse.click();
+  expect(await positions()).toEqual(midway);
+  await page.clock.runFor(600);
+  expect(await positions()).toEqual(initial);
+  await hasse.click();
+  await page.clock.runFor(150);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(plot.locator(".theory-cube-ranks")).toHaveAttribute("opacity", "1");
+  const settled = await positions();
+  await page.clock.runFor(600);
+  expect(await positions()).toEqual(settled);
+  await hasse.click();
+  // Wait for React's endpoint update while keeping the animation clock frozen.
+  await expect.poll(positions).toEqual(initial);
+});
+
+test("crossfades hidden cube edges during both Hasse rotations", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("chromalum_lang", "en"));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("theory-dev.html");
+  const cube = page.locator(".theory-cube");
+  await cube.scrollIntoViewIfNeeded();
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  const readDashes = () =>
+    cube.locator("[data-cube-edge]").evaluateAll((edges) =>
+      Object.fromEntries(
+        edges.map((edge) => {
+          const fill = edge.parentElement!.querySelector(".theory-cube-edge-fill");
+          // Dash strokes stay opaque; this extra stroke gradually fills their gaps.
+          const weight = edge.hasAttribute("stroke-dasharray") ? 1 - Number(fill?.getAttribute("opacity") ?? 0) : 0;
+          return [edge.getAttribute("data-cube-edge")!, weight];
+        }),
+      ),
+    );
+  for (const direction of ["hasse", "cube"]) {
+    const frames = [await readDashes()];
+    await cube.getByRole("button", { name: "Hasse", exact: true }).click();
+    for (let step = 0; step < 38; step++) {
+      await page.clock.runFor(16);
+      frames.push(await readDashes());
+    }
+    for (const key of ["0-1", "2-3"]) {
+      expect(
+        frames.some((frame) => frame[key] > 0 && frame[key] < 1),
+        `${direction} ${key}: gradual change`,
+      ).toBe(true);
+      for (let i = 1; i < frames.length; i++) expect(Math.abs(frames[i][key] - frames[i - 1][key])).toBeLessThan(0.3);
+    }
+    expect(frames.at(-1)!["0-1"]).toBe(direction === "cube" ? 1 : 0);
+    expect(frames.at(-1)!["2-3"]).toBe(0);
   }
 });
 

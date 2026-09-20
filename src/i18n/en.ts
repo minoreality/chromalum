@@ -428,6 +428,7 @@ export const en = {
   theory_cube_equator: "Equatorial belt",
   theory_cube_complements: "Complements",
   theory_cube_faces_title: "Six faces · one fixed bit",
+  theory_cube_faces_title_short: "Six faces",
   theory_cube_face_aria: "Face {0}={1}: {2}",
   theory_cube_hasse: "Hasse",
   theory_conn_core:

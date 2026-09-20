@@ -7,8 +7,9 @@ import {
   K8_EXPLORER_VERTICES_3D,
   hammingDist,
 } from "../../data/theory-data";
+import { compareDepth, edgeDepth, projectOrthographic, type Point3 } from "../../utils/geometry-3d";
 
-export type Point3 = readonly [number, number, number];
+export type { Point3 } from "../../utils/geometry-3d";
 export type StellaOrientation = readonly [number, number, number, number];
 const point3 = (valueAt: (axis: number) => number): Point3 => [valueAt(0), valueAt(1), valueAt(2)];
 const quaternion = (valueAt: (axis: number) => number): StellaOrientation => [valueAt(0), valueAt(1), valueAt(2), valueAt(3)];
@@ -246,12 +247,10 @@ export function stellaView(orientation: StellaOrientation) {
       });
   const points = original
     ? K8_EXPLORER_POINTS
-    : Object.fromEntries(vertices.map(([x, y], level) => [level, { x: STELLA_CENTRE.x + scale * x, y: STELLA_CENTRE.y + scale * y }]));
+    : Object.fromEntries(vertices.map((point, level) => [level, projectOrthographic(point, STELLA_CENTRE, scale)]));
   // Filter only after sorting, so changing distance layers or emphasis
   // cannot promote a rear edge.
-  const orderedEdges = edges
-    .map((edge) => ({ ...edge, depth: (vertices[edge.a][2] + vertices[edge.b][2]) / 2 }))
-    .sort((a, b) => (Math.abs(a.depth - b.depth) < 1e-9 ? a.index - b.index : b.depth - a.depth));
+  const orderedEdges = edges.map((edge) => ({ ...edge, depth: edgeDepth(vertices[edge.a], vertices[edge.b]) })).sort(compareDepth);
   const orderedLevels = original ? THEORY_LEVELS : [...THEORY_LEVELS].sort((a, b) => vertices[b.lv][2] - vertices[a.lv][2] || a.lv - b.lv);
   return { points, vertices, orderedEdges, orderedLevels };
 }

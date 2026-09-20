@@ -24,7 +24,10 @@ export const CubeFaceGrid = React.memo(function CubeFaceGrid({ activeFace, selec
   const { t } = useTranslation();
   return (
     <div className="theory-cube-faces" role="group" aria-label={t("theory_cube_faces_title")}>
-      <div className="theory-cube-faces-heading">{t("theory_cube_faces_title")}</div>
+      <div className="theory-cube-faces-heading">
+        <span className="theory-cube-faces-heading-full">{t("theory_cube_faces_title")}</span>
+        <span className="theory-cube-faces-heading-short">{t("theory_cube_faces_title_short")}</span>
+      </div>
       <div className="theory-cube-face-grid">
         {CUBE_FACES.map((face, faceIndex) => {
           const highlighted = activeFace === faceIndex || (vertex !== null && face.vertices.includes(vertex));

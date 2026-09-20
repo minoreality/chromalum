@@ -426,6 +426,7 @@ export const ja = {
   theory_cube_equator: "\u8d64\u9053\u5e2f",
   theory_cube_complements: "補色対角",
   theory_cube_faces_title: "一ビットを固定した六面",
+  theory_cube_faces_title_short: "六つの面",
   theory_cube_face_aria: "{0}={1}の面：{2}",
   theory_cube_hasse: "\u30cf\u30c3\u30bb\u56f3",
   theory_conn_core: "A=𝒫(E)は生成済み状態のブール代数であり、(A,⊕)≅(𝔽₂³,+)はその反転群です。どの演算を保つかまでが構造の指定です。",

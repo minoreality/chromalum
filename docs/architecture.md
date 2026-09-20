@@ -216,6 +216,17 @@ sensitivity, automatic/manual section spaces, lifted octave relation, exact
 equitone geometry, and Tone Zigzag Fourier coefficients from the canonical
 data.
 
+The Color Cube and K₈ explorer use the same centred unit-cube vertices from
+`src/data/theory-data.ts`. They share orthographic projection, midpoint edge
+depth, and depth-order comparison in `src/utils/geometry-3d.ts`, while each
+figure retains its own orientation and interaction controls.
+The Color Cube's Hasse transition rotates about one fixed axis to place
+Boolean ranks on horizontal rows. Every frame preserves the cube's 3D edge
+lengths and angles and uses one projection scale.
+The animation interpolates the rotation angle using elapsed time, and uses the
+rotated depth coordinates to order edges. It can reverse from the current pose
+and settles immediately when reduced motion is enabled.
+
 ## Quality Gates
 
 The main local checks are:
