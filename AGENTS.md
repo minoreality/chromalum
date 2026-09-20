@@ -67,6 +67,17 @@ dropped. Re-propose one only with a number that contradicts the one recorded her
   cost, while `retain-on-failure` instruments every test on every run. Whether to set
   `retries` is held open until a86016b has had time to show whether it moved a flake rate
   measured at one run in 46 days.
+- **`isolate: false` for vitest.** Every coverage run, including the CI `checks` job, ends
+  with vitest's own hint that the suite would be about 20 s faster without per-file
+  workers (107 spawned at about 2.27 s each). Measured 2026-09-20:
+  `vitest run --isolate=false` fails 69 of 1,129 tests, because one file's DOM survives
+  into the next (`AppTabBar` then finds two `tab` elements named "Source"). The 20 s is
+  vitest's estimate, not a measurement — no passing run exists to time.
+- **`noUncheckedIndexedAccess`.** `tsconfig.json` already has `strict` and
+  `exactOptionalPropertyTypes`, so this is the one strictness flag an audit will report as
+  missing. Turning it on produces 1,827 errors (2026-09-20): 304 in three Theory test files,
+  58 each in `ColorCube.tsx` and `HexDiagram.tsx`, the rest spread over lookup-table and
+  typed-array indexing.
 
 ## Fonts, and why layout tests fail only on CI
 
