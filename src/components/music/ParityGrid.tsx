@@ -1,5 +1,5 @@
 import React from "react";
-import { CHANNEL_HEX } from "../../color-engine";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
 import { HAMMING_PARITY_GROUPS, HAMMING_POSITIONS, positionBits } from "../../data/hamming-data";
 import { C } from "../../styles/tokens";
 import { pointColor } from "./level-colors";
@@ -12,7 +12,7 @@ interface ParityGridProps {
 
 const PARITY_GROUPS: readonly (readonly number[])[] = HAMMING_PARITY_GROUPS.map((group) => group.checks);
 const ROW_LABELS = HAMMING_PARITY_GROUPS.map((group) => `P${group.parity}`);
-const ROW_COLORS = HAMMING_PARITY_GROUPS.map((group) => CHANNEL_HEX[group.channel]);
+const ROW_COLORS = HAMMING_PARITY_GROUPS.map((group) => CHROMALUM_CHANNEL_HEX[group.channel]);
 const COLUMNS = HAMMING_POSITIONS;
 
 const CELL = 20;

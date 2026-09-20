@@ -1,6 +1,6 @@
 import React from "react";
 import { CUBE_FACES, THEORY_LEVELS, edgeChannel } from "../../data/theory-data";
-import { CHANNEL_HEX } from "../../color-engine";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
 
@@ -66,7 +66,7 @@ export const CubeFaceGrid = React.memo(function CubeFaceGrid({ activeFace, selec
                       y1={from.y}
                       x2={to.x}
                       y2={to.y}
-                      stroke={CHANNEL_HEX[edgeChannel(level, face.vertices[next])]}
+                      stroke={CHROMALUM_CHANNEL_HEX[edgeChannel(level, face.vertices[next])]}
                       strokeWidth={highlighted ? 2.3 : 1.5}
                       opacity={dim ? 0.3 : highlighted ? 1 : 0.75}
                     />

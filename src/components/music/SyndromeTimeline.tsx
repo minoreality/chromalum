@@ -1,5 +1,5 @@
 import React from "react";
-import { CHANNEL_HEX } from "../../color-engine";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
 import { HAMMING_PARITY_GROUPS } from "../../data/hamming-data";
 import { C } from "../../styles/tokens";
 import { pointColor } from "./level-colors";
@@ -17,7 +17,7 @@ const X_START = 20;
 const X_STEP = 26;
 
 const PARITY_LABELS = HAMMING_PARITY_GROUPS.map((group) => `P${group.parity}`);
-const PARITY_COLORS = HAMMING_PARITY_GROUPS.map((group) => CHANNEL_HEX[group.channel]);
+const PARITY_COLORS = HAMMING_PARITY_GROUPS.map((group) => CHROMALUM_CHANNEL_HEX[group.channel]);
 
 function circleX(pos: number): number {
   return X_START + (pos - 1) * X_STEP;

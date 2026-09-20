@@ -98,6 +98,16 @@ export type ChromalumGrb = readonly [g: number, r: number, b: number];
 export const CHROMALUM_LEVEL_LABELS = ["K", "B", "R", "M", "G", "C", "Y", "W"] as const;
 export const CHROMALUM_LEVEL_NAMES = ["Black", "Blue", "Red", "Magenta", "Green", "Cyan", "Yellow", "White"] as const;
 export const CHROMALUM_LEVEL_HEX = ["#000000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#ffffff"] as const;
+/**
+ * Display hex of each primary channel: the level that carries that channel's
+ * bit alone (B₁, R₂, G₄), read from CHROMALUM_LEVEL_HEX. Figures that colour
+ * an axis, a bit or a parity check read this one table.
+ */
+export const CHROMALUM_CHANNEL_HEX: Readonly<Record<ChromalumChannel, string>> = {
+  G: CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS.G],
+  R: CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS.R],
+  B: CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS.B],
+};
 export const CHROMALUM_LEVEL_BITS: readonly ChromalumGrb[] = Array.from({ length: 8 }, (_, level) => {
   const bits = BINARY_GRB_VERTICES.find(
     ([g, r, b]) => CHROMALUM_GRB_WEIGHTS.G * g + CHROMALUM_GRB_WEIGHTS.R * r + CHROMALUM_GRB_WEIGHTS.B * b === level,

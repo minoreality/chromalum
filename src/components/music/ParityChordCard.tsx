@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CHANNEL_HEX } from "../../color-engine";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
 import { HAMMING_PARITY_GROUPS, positionBits } from "../../data/hamming-data";
 import { useTranslation } from "../../i18n";
 import { C, FS, FONT } from "../../styles/tokens";
@@ -34,7 +34,7 @@ const PARITY_ROWS = HAMMING_PARITY_GROUPS.map((group, index) => ({
   name: `P${group.parity}`,
   bit: index,
   set: `{${group.checks.map(positionBits).join(",")}}`,
-  color: CHANNEL_HEX[group.channel],
+  color: CHROMALUM_CHANNEL_HEX[group.channel],
   group: index as 0 | 1 | 2,
 }));
 

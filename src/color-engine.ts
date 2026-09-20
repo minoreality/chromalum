@@ -3,10 +3,8 @@ import {
   CANONICAL_VERTEX_HUE_BY_LEVEL,
   CHROMALUM_CHANNEL_MAX,
   CHROMALUM_GRB_WEIGHTS,
-  CHROMALUM_LEVEL_HEX,
   CHROMALUM_TONE_DENOMINATOR,
   hueToChromalumGrb,
-  type ChromalumChannel,
   type ChromalumGrb,
 } from "./chromalum-color-model";
 
@@ -51,17 +49,6 @@ export const LEVEL_INFO: readonly LevelInfo[] = ["Black", "Blue", "Red", "Magent
 export function levelLabelColor(level: number): string {
   return level >= CHROMALUM_GRB_WEIGHTS.G ? "#000" : "#fff";
 }
-
-/**
- * Display hex of each primary channel: the colour of the level that carries
- * that channel's bit alone (B₁, R₂, G₄). Every figure that colours a channel
- * reads this one table.
- */
-export const CHANNEL_HEX: Readonly<Record<ChromalumChannel, string>> = {
-  G: CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS.G],
-  R: CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS.R],
-  B: CHROMALUM_LEVEL_HEX[CHROMALUM_GRB_WEIGHTS.B],
-};
 
 /** Canvas/PNG adapter. Device bytes are not used to recover model coordinates. */
 export function chromalumGrbToRgb8([g, r, b]: ChromalumGrb): [number, number, number] {

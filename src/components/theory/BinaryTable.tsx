@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { CHANNEL_HEX } from "../../color-engine";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
 import { C } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
 import { usePinReset } from "./pin-reset";
@@ -20,7 +20,7 @@ const COL = {
   hamming: "77%",
   tone: "89.5%",
 };
-const CHANNEL_COLORS = [CHANNEL_HEX.G, CHANNEL_HEX.R, CHANNEL_HEX.B];
+const CHANNEL_COLORS = [CHROMALUM_CHANNEL_HEX.G, CHROMALUM_CHANNEL_HEX.R, CHROMALUM_CHANNEL_HEX.B];
 const yPercent = (value: number) => `${(value / 224) * 100}%`;
 
 function setNotation(bits: readonly number[]): string {
