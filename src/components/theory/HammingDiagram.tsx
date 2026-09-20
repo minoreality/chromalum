@@ -1,21 +1,33 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { THEORY_LEVELS, SUBSCRIPT_DIGITS, levelLabel } from "../../data/theory-data";
+import {
+  HAMMING_DATA_POSITIONS,
+  HAMMING_PARITY_GROUPS,
+  HAMMING_POSITION_ROLES,
+  HAMMING_POSITIONS,
+  HAMMING_SYNDROME_GROUPS,
+  calculateHamming74,
+  checkParity,
+  correctWord,
+  encodeHamming74,
+  extractData,
+  positionBits,
+  syndromePosition,
+  transmitWord,
+  type Bit,
+  type DataWord,
+  type HammingComputation,
+  type HammingWord,
+} from "../../data/hamming-data";
 import { useTranslation } from "../../i18n";
 import { C, FONT, FS, FW, R, SP } from "../../styles/tokens";
 import { HammingParitySets } from "./HammingParitySets";
 import { usePinReset } from "./pin-reset";
 
-export type Bit = 0 | 1;
-export type DataWord = readonly [Bit, Bit, Bit, Bit];
-export type HammingWord = readonly [Bit, Bit, Bit, Bit, Bit, Bit, Bit];
-
-const DATA_POSITIONS = [3, 5, 6, 7] as const;
-const CODE_POSITIONS = [1, 2, 3, 4, 5, 6, 7] as const;
-const CODE_POSITION_ROLES = ["P1", "P2", "D1", "P4", "D2", "D3", "D4"] as const;
-const HAMMING_COLUMN_BITS = ["001", "010", "011", "100", "101", "110", "111"] as const;
+const HAMMING_COLUMN_BITS = HAMMING_POSITIONS.map(positionBits);
 const FLOW_ROW_COLUMNS = "var(--theory-hamming-row-columns, 24px minmax(72px, 0.4fr) minmax(0, 1fr))";
 const ZERO_ERRORS: HammingWord = [0, 0, 0, 0, 0, 0, 0];
-const EMPTY_SLOTS = CODE_POSITIONS.map(() => null);
+const EMPTY_SLOTS = HAMMING_POSITIONS.map(() => null);
 const INITIAL_DATA: DataWord = [0, 0, 0, 0];
 const FLOW_TIMELINE = {
   encoded: 360,
@@ -31,61 +43,6 @@ const READABLE_CHECK_COLORS: Readonly<Record<number, string>> = {
   2: "#ff5666",
   4: "#20dc58",
 };
-
-const PARITY_GROUPS = [
-  { parity: 1, channel: "B", checks: [1, 3, 5, 7] as const, data: [1, 2, 4] as const },
-  { parity: 2, channel: "R", checks: [2, 3, 6, 7] as const, data: [1, 3, 4] as const },
-  { parity: 4, channel: "G", checks: [4, 5, 6, 7] as const, data: [2, 3, 4] as const },
-] as const;
-const SYNDROME_GROUPS = [PARITY_GROUPS[2], PARITY_GROUPS[1], PARITY_GROUPS[0]] as const;
-
-interface HammingComputation {
-  readonly encoded: HammingWord;
-  readonly received: HammingWord;
-  readonly syndromeBits: readonly [Bit, Bit, Bit];
-  readonly syndrome: number;
-  readonly corrected: HammingWord;
-  readonly output: DataWord;
-}
-
-/** Encode D1,D2,D3,D4 into positions (P1,P2,D1,P4,D2,D3,D4) using even parity. */
-export function encodeHamming74([d1, d2, d3, d4]: DataWord): HammingWord {
-  const p1 = (d1 ^ d2 ^ d4) as Bit;
-  const p2 = (d1 ^ d3 ^ d4) as Bit;
-  const p4 = (d2 ^ d3 ^ d4) as Bit;
-  return [p1, p2, d1, p4, d2, d3, d4];
-}
-
-/** Run the complete Hamming(7,4) encode, channel, syndrome, and correction pipeline. */
-export function calculateHamming74(data: DataWord, errors: HammingWord): HammingComputation {
-  const encoded = encodeHamming74(data);
-  const received = transmitWord(encoded, errors);
-  const syndromeBits = SYNDROME_GROUPS.map((group) => checkParity(received, group.checks)) as unknown as readonly [Bit, Bit, Bit];
-  const syndrome = syndromePosition(syndromeBits);
-  const corrected = correctWord(received, syndrome);
-  const output = extractData(corrected);
-  return { encoded, received, syndromeBits, syndrome, corrected, output };
-}
-
-function transmitWord(encoded: HammingWord, errors: HammingWord): HammingWord {
-  return encoded.map((bit, index) => (bit ^ errors[index]) as Bit) as unknown as HammingWord;
-}
-
-function checkParity(received: HammingWord, positions: readonly number[]): Bit {
-  return positions.reduce<Bit>((parity, position) => (parity ^ received[position - 1]) as Bit, 0);
-}
-
-function syndromePosition([s4, s2, s1]: readonly [Bit, Bit, Bit]): number {
-  return 4 * s4 + 2 * s2 + s1;
-}
-
-function correctWord(received: HammingWord, syndrome: number): HammingWord {
-  return received.map((bit, index) => (bit ^ (syndrome === index + 1 ? 1 : 0)) as Bit) as unknown as HammingWord;
-}
-
-function extractData(corrected: HammingWord): DataWord {
-  return [corrected[2], corrected[4], corrected[5], corrected[6]];
-}
 
 type HammingProgress = { readonly [Key in keyof HammingComputation]: HammingComputation[Key] | null } & {
   readonly checkBits: readonly [Bit | null, Bit | null, Bit | null];
@@ -137,7 +94,7 @@ function useHammingSimulation() {
       received = transmitWord(encoded, errors);
       publish({ received });
     });
-    SYNDROME_GROUPS.forEach((group, index) => {
+    HAMMING_SYNDROME_GROUPS.forEach((group, index) => {
       schedule(FLOW_TIMELINE.checkRows[index], () => {
         if (received === null) return;
         const next = [...checkBits] as [Bit | null, Bit | null, Bit | null];
@@ -241,14 +198,14 @@ function BitRail({
       {slots.map((bit, index) => {
         const position = index + 1;
         const emphasized = emphasizedPositions.includes(position);
-        const dataIndex = DATA_POSITIONS.findIndex((entry) => entry === position);
+        const dataIndex = HAMMING_DATA_POSITIONS.findIndex((entry) => entry === position);
         const interactive = !!onToggle && (control === "error" || dataIndex >= 0);
         const Slot = interactive ? "button" : "span";
         return (
           <Slot
             key={`bit-slot-${position}`}
             data-code-position={position}
-            data-bit-role={CODE_POSITION_ROLES[index]}
+            data-bit-role={HAMMING_POSITION_ROLES[index]}
             data-empty={bit === null ? "true" : "false"}
             data-flow-emphasis={emphasized ? emphasisTone : undefined}
             data-parity-member={checkPositions ? checkPositions.includes(position) : undefined}
@@ -468,7 +425,7 @@ function BitRailHeader({ label }: { label: string }) {
       <span />
       <span>{label}</span>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: SP.xs }}>
-        {CODE_POSITION_ROLES.map((role, index) => (
+        {HAMMING_POSITION_ROLES.map((role, index) => (
           <span
             key={role}
             data-code-position={index + 1}
@@ -607,8 +564,8 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
   const outputMatches = result.output?.every((bit, index) => bit === data[index]) ?? false;
   const pending = result.output === null;
 
-  const parityResults = PARITY_GROUPS.map((group) => {
-    const failed = result.checkBits[SYNDROME_GROUPS.findIndex((check) => check.parity === group.parity)];
+  const parityResults = HAMMING_PARITY_GROUPS.map((group) => {
+    const failed = result.checkBits[HAMMING_SYNDROME_GROUPS.findIndex((check) => check.parity === group.parity)];
     const generated = result.encoded?.[group.parity - 1] ?? null;
     return { ...group, failed, generated };
   });

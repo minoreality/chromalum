@@ -1,5 +1,6 @@
 import React from "react";
 import { CUBE_FACES, THEORY_LEVELS, edgeChannel } from "../../data/theory-data";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
 
@@ -9,7 +10,6 @@ const POINTS = [
   { x: 98, y: 18 },
   { x: 98, y: 70 },
 ] as const;
-const CHANNEL_COLORS = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
 
 interface Props {
   activeFace: number | null;
@@ -66,7 +66,7 @@ export const CubeFaceGrid = React.memo(function CubeFaceGrid({ activeFace, selec
                       y1={from.y}
                       x2={to.x}
                       y2={to.y}
-                      stroke={CHANNEL_COLORS[edgeChannel(level, face.vertices[next])]}
+                      stroke={CHROMALUM_CHANNEL_HEX[edgeChannel(level, face.vertices[next])]}
                       strokeWidth={highlighted ? 2.3 : 1.5}
                       opacity={dim ? 0.3 : highlighted ? 1 : 0.75}
                     />

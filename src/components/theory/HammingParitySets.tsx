@@ -2,7 +2,7 @@ import React, { useId, useLayoutEffect, useRef } from "react";
 import { THEORY_LEVELS, SUBSCRIPT_DIGITS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
-import type { Bit, HammingWord } from "./HammingDiagram";
+import type { Bit, HammingWord } from "../../data/hamming-data";
 import { levelLabelColor } from "../../color-engine";
 
 const CIRCLES = [

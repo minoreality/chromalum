@@ -11,6 +11,7 @@ import {
   CHROMALUM_LEVEL_LABELS,
   CHROMALUM_LEVEL_NAMES,
 } from "../chromalum-color-model";
+import { HAMMING_POSITION_ROLES } from "./hamming-data";
 
 interface TheoryLevel {
   readonly lv: number;
@@ -21,7 +22,7 @@ interface TheoryLevel {
   readonly hamming: string; // P1/P2/P4 for parity, D1-D4 for data, "—" for 0/7
 }
 
-const HAMMING_POSITION_LABELS = ["—", "P1", "P2", "D1", "P4", "D2", "D3", "D4"] as const;
+const HAMMING_POSITION_LABELS = ["—", ...HAMMING_POSITION_ROLES] as const;
 
 export const THEORY_LEVELS: readonly TheoryLevel[] = CHROMALUM_LEVEL_LABELS.map((short, lv) => ({
   lv,

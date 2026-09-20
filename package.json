@@ -20,7 +20,7 @@
     "test:e2e": "playwright test",
     "test:pwa": "playwright test -c playwright.pwa.config.ts",
     "test:theory-copy": "vitest run src/i18n/__tests__/theory-copy.test.ts --testTimeout=15000",
-    "test:theory": "vitest run src/components/__tests__/TheoryPanel.test.tsx src/components/theory src/data/__tests__/theory-data.test.ts src/data/__tests__/boolean-color-algebra.test.ts src/i18n/__tests__/theory-copy.test.ts src/i18n/__tests__/i18n-keys.test.ts src/__tests__/chromalum-color-model.test.ts src/__tests__/research-note-invariants.test.ts --testTimeout=15000",
+    "test:theory": "vitest run src/components/__tests__/TheoryPanel.test.tsx src/components/theory src/data/__tests__/theory-data.test.ts src/data/__tests__/hamming-data.test.ts src/data/__tests__/boolean-color-algebra.test.ts src/i18n/__tests__/theory-copy.test.ts src/i18n/__tests__/i18n-keys.test.ts src/__tests__/chromalum-color-model.test.ts src/__tests__/research-note-invariants.test.ts --testTimeout=15000",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage --testTimeout=15000",

@@ -1,4 +1,6 @@
 import React from "react";
+import { CHROMALUM_CHANNEL_HEX } from "../../chromalum-color-model";
+import { HAMMING_PARITY_GROUPS } from "../../data/hamming-data";
 import { C } from "../../styles/tokens";
 import { pointColor } from "./level-colors";
 import type { ActiveMusicLevel } from "../../music/types";
@@ -14,8 +16,8 @@ const Y_CENTER = 30;
 const X_START = 20;
 const X_STEP = 26;
 
-const PARITY_LABELS = ["P1", "P2", "P4"];
-const PARITY_COLORS = ["#0000ff", "#ff0000", "#00ff00"];
+const PARITY_LABELS = HAMMING_PARITY_GROUPS.map((group) => `P${group.parity}`);
+const PARITY_COLORS = HAMMING_PARITY_GROUPS.map((group) => CHROMALUM_CHANNEL_HEX[group.channel]);
 
 function circleX(pos: number): number {
   return X_START + (pos - 1) * X_STEP;
