@@ -1,4 +1,6 @@
 import React from "react";
+import { CHANNEL_HEX } from "../../color-engine";
+import { HAMMING_PARITY_GROUPS, HAMMING_POSITIONS, positionBits } from "../../data/hamming-data";
 import { C } from "../../styles/tokens";
 import { pointColor } from "./level-colors";
 import type { ActiveMusicLevel } from "../../music/types";
@@ -8,15 +10,10 @@ interface ParityGridProps {
   activeLevels: ActiveMusicLevel[];
 }
 
-const PARITY_GROUPS = [
-  [1, 3, 5, 7],
-  [2, 3, 6, 7],
-  [4, 5, 6, 7],
-];
-
-const ROW_LABELS = ["P1", "P2", "P4"];
-const ROW_COLORS = ["#0000ff", "#ff0000", "#00ff00"];
-const COLUMNS = [1, 2, 3, 4, 5, 6, 7] as const;
+const PARITY_GROUPS: readonly (readonly number[])[] = HAMMING_PARITY_GROUPS.map((group) => group.checks);
+const ROW_LABELS = HAMMING_PARITY_GROUPS.map((group) => `P${group.parity}`);
+const ROW_COLORS = HAMMING_PARITY_GROUPS.map((group) => CHANNEL_HEX[group.channel]);
+const COLUMNS = HAMMING_POSITIONS;
 
 const CELL = 20;
 const GAP = 2;
@@ -24,10 +21,6 @@ const LABEL_W = 24;
 const HEADER_H = 14;
 const LEFT = LABEL_W + 4;
 const TOP = HEADER_H + 4;
-
-function binaryLevelLabel(lv: number): string {
-  return lv.toString(2).padStart(3, "0");
-}
 
 export const ParityGrid = React.memo(function ParityGrid({ activeGroups, activeLevels }: ParityGridProps) {
   return (
@@ -54,7 +47,7 @@ export const ParityGrid = React.memo(function ParityGrid({ activeGroups, activeL
       {/* Column headers */}
       {COLUMNS.map((col) => (
         <text key={col} x={LEFT + (col - 1) * (CELL + GAP) + CELL / 2} y={HEADER_H} fontSize={8} fill={C.textDimmer} textAnchor="middle">
-          {binaryLevelLabel(col)}
+          {positionBits(col)}
         </text>
       ))}
 

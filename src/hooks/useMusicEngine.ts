@@ -2,13 +2,8 @@ import { useRef, useCallback, useMemo } from "react";
 import { FANO_RHYTHM_PATTERNS, TONE_CROSSING_SEQUENCE } from "../data/music-data";
 import { type PitchMappingMode } from "../data/music-frequency";
 import { triggerSemitoneBurst, type SonificationLevel } from "../music/music-audio-graph";
-import {
-  composeGl32Permutation,
-  FULL_GRAY_CODE,
-  GL32_IDENTITY_PERMUTATION,
-  GRAY_VOICE_FREQS,
-  PARITY_GROUPS,
-} from "../music/music-engine-core";
+import { composeGl32Permutation, FULL_GRAY_CODE, GL32_IDENTITY_PERMUTATION, GRAY_VOICE_FREQS } from "../music/music-engine-core";
+import { HAMMING_PARITY_GROUPS } from "../data/hamming-data";
 import { TONE_CROSSING_BASE_INTERVAL_MS, complementOfLine, k8LayerStep, toneCrossingStep } from "../music/music-playback-sequences";
 import {
   scheduleAndTriads,
@@ -316,7 +311,7 @@ export function useMusicEngine({
   const playParityChord = useCallback(
     (parityBit: 0 | 1 | 2) => {
       if (!nodesRef.current) return;
-      const group = PARITY_GROUPS[parityBit];
+      const group = HAMMING_PARITY_GROUPS[parityBit].checks;
       for (const lv of group) {
         playBitVectorLevel(lv);
       }

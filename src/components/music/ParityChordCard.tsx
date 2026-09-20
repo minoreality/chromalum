@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { CHANNEL_HEX } from "../../color-engine";
+import { HAMMING_PARITY_GROUPS, positionBits } from "../../data/hamming-data";
 import { useTranslation } from "../../i18n";
 import { C, FS, FONT } from "../../styles/tokens";
 import { ParityGrid } from "./ParityGrid";
@@ -27,6 +29,14 @@ function parityGroupsFor(errorPos: number, errorPhase: DecoderPhase, activeParit
   }
   return activeParityGroup !== null ? [activeParityGroup] : [];
 }
+
+const PARITY_ROWS = HAMMING_PARITY_GROUPS.map((group, index) => ({
+  name: `P${group.parity}`,
+  bit: index,
+  set: `{${group.checks.map(positionBits).join(",")}}`,
+  color: CHANNEL_HEX[group.channel],
+  group: index as 0 | 1 | 2,
+}));
 
 export const ParityChordCard = React.memo(function ParityChordCard({
   engine,
@@ -58,12 +68,6 @@ export const ParityChordCard = React.memo(function ParityChordCard({
     },
     [engine],
   );
-
-  const PARITY_ROWS: { name: string; bit: number; set: string; color: string; group: 0 | 1 | 2 }[] = [
-    { name: "P1", bit: 0, set: "{001,011,101,111}", color: "#0000ff", group: 0 },
-    { name: "P2", bit: 1, set: "{010,011,110,111}", color: "#ff0000", group: 1 },
-    { name: "P4", bit: 2, set: "{100,101,110,111}", color: "#00ff00", group: 2 },
-  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--music-card-gap, 4px)", width: "100%", flex: 1 }}>
