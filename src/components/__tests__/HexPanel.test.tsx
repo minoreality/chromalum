@@ -87,6 +87,38 @@ describe("HexPanel", () => {
     expect(props.candidateIndexDispatch).toHaveBeenCalledWith({ type: "cycle_color", levelIndex: 5, direction: 1 });
   });
 
+  it("leaves the palette unchanged while a modal dialog owns the keyboard", () => {
+    const props = makeProps();
+    const view = render(
+      <>
+        <HexPanel {...props} />
+        <div role="dialog" aria-modal="true">
+          <button>Close help</button>
+        </div>
+      </>,
+    );
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Close help" }), { key: "2" });
+
+    expect(props.candidateIndexDispatch).not.toHaveBeenCalled();
+
+    view.rerender(<HexPanel {...props} />);
+    fireEvent.keyDown(document, { key: "2" });
+
+    expect(props.candidateIndexDispatch).toHaveBeenCalledWith({ type: "cycle_color", levelIndex: 2, direction: 1 });
+  });
+
+  it("leaves a digit already handled by a focused control alone", () => {
+    const props = makeProps();
+    render(<HexPanel {...props} />);
+    const event = new KeyboardEvent("keydown", { key: "2", bubbles: true, cancelable: true });
+    event.preventDefault();
+
+    fireEvent(document, event);
+
+    expect(props.candidateIndexDispatch).not.toHaveBeenCalled();
+  });
+
   it("does not expose the pattern-count row as a button without a gallery callback", () => {
     render(<HexPanel {...makeProps()} />);
 

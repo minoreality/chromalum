@@ -48,6 +48,8 @@ interface MusicEngineParams {
   originMode: 0 | 7;
 }
 
+type AlgebraPlayback = "oneShot" | "gray3" | "cayley" | "zigzag" | "toneCrossing" | "k8";
+
 export interface MusicEngineReturn {
   initAudio: () => void;
   stopAudio: () => void;
@@ -72,7 +74,12 @@ export interface MusicEngineReturn {
   setToneMode: (mode: "symmetric" | "grbTone") => void;
   stopAlgebra: () => void;
   setDroneMuted: (muted: boolean) => void;
-  playComplementCanon: (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse?: boolean, loop?: boolean) => void;
+  playComplementCanon: (
+    onStep: (pairIndex: number, phase: "playing" | null) => void,
+    reverse?: boolean,
+    loop?: boolean,
+    onStop?: () => void,
+  ) => void;
   playZigzagMelody: (onStep: (stepIndex: number | null) => void) => void;
   stopZigzagMelody: () => void;
   playToneCrossingMelody: (onStep: (stepIndex: number | null) => void) => void;
@@ -113,11 +120,37 @@ export function useMusicEngine({
   const toneCrossingTimeoutRef = useRef<TimeoutHandle | null>(null);
   const cayleyIntervalRef = useRef<IntervalHandle | null>(null);
   const k8IntervalRef = useRef<IntervalHandle | null>(null);
-  const clearPlayback = useCallback(() => {
-    clearIntervalSlots(grayIntervalRef, fanoIntervalRef, zigzagIntervalRef, gray3IntervalRef, cayleyIntervalRef, k8IntervalRef);
+  const playbackStopsRef = useRef<Partial<Record<AlgebraPlayback, () => void>>>({});
+
+  const finishPlayback = useCallback((playback: AlgebraPlayback) => {
+    const onStop = playbackStopsRef.current[playback];
+    delete playbackStopsRef.current[playback];
+    onStop?.();
+  }, []);
+
+  const registerPlaybackStop = useCallback(
+    (playback: AlgebraPlayback, onStop: () => void) => {
+      finishPlayback(playback);
+      playbackStopsRef.current[playback] = onStop;
+    },
+    [finishPlayback],
+  );
+
+  const stopAlgebra = useCallback(() => {
+    clearIntervalSlots(zigzagIntervalRef, gray3IntervalRef, cayleyIntervalRef, k8IntervalRef);
     clearTimeoutSlot(toneCrossingTimeoutRef);
     clearTimeoutList(algebraTimersRef);
+    const stops = Object.values(playbackStopsRef.current);
+    playbackStopsRef.current = {};
+    // Notify the cancelled owners before a caller starts replacement playback.
+    // An effect-driven reset would also erase that replacement's new UI state.
+    for (const onStop of stops) onStop();
   }, []);
+
+  const clearPlayback = useCallback(() => {
+    clearIntervalSlots(grayIntervalRef, fanoIntervalRef);
+    stopAlgebra();
+  }, [stopAlgebra]);
 
   const {
     nodesRef,
@@ -273,7 +306,8 @@ export function useMusicEngine({
   /* ── Helper: clear all algebra timers ── */
   const clearAlgebraTimers = useCallback(() => {
     clearTimeoutList(algebraTimersRef);
-  }, []);
+    finishPlayback("oneShot");
+  }, [finishPlayback]);
 
   /* ── Helper: schedule a timeout and track it ── */
   const scheduleAlgebra = useCallback((fn: () => void, ms: number) => {
@@ -282,7 +316,12 @@ export function useMusicEngine({
 
   const oneShotPlayback = useMemo<MusicPlaybackRuntime>(
     () => ({
-      clear: clearAlgebraTimers,
+      start: (onStop) => {
+        clearAlgebraTimers();
+        playbackStopsRef.current.oneShot = onStop;
+      },
+      finish: clearAlgebraTimers,
+      clear: () => clearTimeoutList(algebraTimersRef),
       schedule: scheduleAlgebra,
       playBitVectorLevel,
       triggerToneValueBurst,
@@ -290,13 +329,6 @@ export function useMusicEngine({
     }),
     [clearAlgebraTimers, playBitVectorLevel, scheduleAlgebra, triggerErrorMarker, triggerToneValueBurst],
   );
-
-  /* ── stopAlgebra ── */
-  const stopAlgebra = useCallback(() => {
-    clearAlgebraTimers();
-    clearIntervalSlots(gray3IntervalRef, cayleyIntervalRef, zigzagIntervalRef, k8IntervalRef);
-    clearTimeoutSlot(toneCrossingTimeoutRef);
-  }, [clearAlgebraTimers]);
 
   /* ── 1. playXorTriple ── */
   const playXorTriple = useCallback(
@@ -354,6 +386,7 @@ export function useMusicEngine({
   const playGray3Voice = useCallback(
     (onStep: (levelIndex: number | null) => void) => {
       if (!nodesRef.current) return;
+      registerPlaybackStop("gray3", () => onStep(null));
 
       let step = 0;
       replaceInterval(
@@ -388,7 +421,7 @@ export function useMusicEngine({
         400,
       );
     },
-    [nodesRef],
+    [nodesRef, registerPlaybackStop],
   );
 
   /* ── 7. playWeightSpectrum ── */
@@ -404,6 +437,7 @@ export function useMusicEngine({
   const playCayleyRow = useCallback(
     (row: number, onStep: (col: number, value: number) => void) => {
       if (!nodesRef.current) return;
+      registerPlaybackStop("cayley", () => onStep(-1, 0));
       let step = 0;
       replaceInterval(
         cayleyIntervalRef,
@@ -418,7 +452,7 @@ export function useMusicEngine({
         300,
       );
     },
-    [nodesRef, playBitVectorLevel],
+    [nodesRef, playBitVectorLevel, registerPlaybackStop],
   );
 
   /* ── 9. applyGL32Transform ── */
@@ -441,9 +475,9 @@ export function useMusicEngine({
 
   /* ── 12. playComplementCanon ── */
   const playComplementCanon = useCallback(
-    (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse = false, loop = false) => {
+    (onStep: (pairIndex: number, phase: "playing" | null) => void, reverse = false, loop = false, onStop?: () => void) => {
       if (!nodesRef.current) return;
-      scheduleComplementCanon(onStep, reverse, oneShotPlayback, loop);
+      scheduleComplementCanon(onStep, reverse, oneShotPlayback, loop, onStop);
     },
     [nodesRef, oneShotPlayback],
   );
@@ -453,6 +487,7 @@ export function useMusicEngine({
     (onStep: (stepIndex: number | null) => void) => {
       const nodes = nodesRef.current;
       if (!nodes) return;
+      registerPlaybackStop("zigzag", () => onStep(null));
       // Sample the same continuous pitch mapping as Tone Crossings at the six
       // hexagon vertices. 360° is excluded because it is the same colour as 0°:
       // sounding it played R twice a cycle, two octaves apart, and the interval
@@ -472,17 +507,19 @@ export function useMusicEngine({
         400,
       );
     },
-    [nodesRef],
+    [nodesRef, registerPlaybackStop],
   );
 
   const stopZigzagMelody = useCallback(() => {
     clearIntervalSlot(zigzagIntervalRef);
-  }, []);
+    finishPlayback("zigzag");
+  }, [finishPlayback]);
 
   const playToneCrossingMelody = useCallback(
     (onStep: (stepIndex: number | null) => void) => {
       const nodes = nodesRef.current;
       if (!nodes) return;
+      registerPlaybackStop("toneCrossing", () => onStep(null));
       let step = 0;
       clearTimeoutSlot(toneCrossingTimeoutRef);
 
@@ -498,12 +535,13 @@ export function useMusicEngine({
 
       replaceTimeout(toneCrossingTimeoutRef, playNext, TONE_CROSSING_BASE_INTERVAL_MS);
     },
-    [nodesRef],
+    [nodesRef, registerPlaybackStop],
   );
 
   const stopToneCrossingMelody = useCallback(() => {
     clearTimeoutSlot(toneCrossingTimeoutRef);
-  }, []);
+    finishPlayback("toneCrossing");
+  }, [finishPlayback]);
 
   /* ── 14. playPointFanoContext ── */
   const playPointFanoContext = useCallback(
@@ -551,6 +589,7 @@ export function useMusicEngine({
   const playK8Layer = useCallback(
     (layer: 1 | 2 | 3, onStep: (edgeIndex: number, pair: [number, number] | null) => void) => {
       if (!nodesRef.current) return;
+      registerPlaybackStop("k8", () => onStep(-1, null));
       let step = 0;
       const { intervalMs } = k8LayerStep(layer, step);
       replaceInterval(
@@ -567,7 +606,7 @@ export function useMusicEngine({
         intervalMs,
       );
     },
-    [nodesRef, playBitVectorLevel],
+    [nodesRef, playBitVectorLevel, registerPlaybackStop],
   );
 
   return {

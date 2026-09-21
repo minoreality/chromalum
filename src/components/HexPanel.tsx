@@ -92,7 +92,8 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
   // are left alone.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || controlOwnsKey(e.target, e)) return;
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || controlOwnsKey(e.target, e)) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]') !== null) return;
       const k = e.key;
       if (k >= "2" && k <= "5" && !lockedLevels[+k]) {
         candidateIndexDispatch({ type: "cycle_color", levelIndex: +k, direction: 1 });

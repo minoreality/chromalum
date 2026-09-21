@@ -16,6 +16,8 @@ import {
 } from "./music-playback-sequences";
 
 export interface MusicPlaybackRuntime {
+  start: (onStop: () => void) => void;
+  finish: () => void;
   clear: () => void;
   schedule: (fn: () => void, ms: number) => void;
   playBitVectorLevel: (lv: number) => void;
@@ -31,7 +33,7 @@ type AndTriadStep = { pairIndex: number; phase: "operands" | "result" } | null;
 type OctahedronMixPhase = "pair" | "result" | null;
 
 export function scheduleXorTriple(lvA: number, lvB: number, onStep: (lv: number | null) => void, runtime: MusicPlaybackRuntime) {
-  runtime.clear();
+  runtime.start(() => onStep(null));
   const steps = [lvA, lvB, lvA ^ lvB];
   for (let i = 0; i < steps.length; i++) {
     runtime.schedule(() => {
@@ -40,14 +42,14 @@ export function scheduleXorTriple(lvA: number, lvB: number, onStep: (lv: number 
       onStep(lv);
     }, i * 300);
   }
-  runtime.schedule(() => onStep(null), 900);
+  runtime.schedule(runtime.finish, 900);
 }
 
 export function scheduleLineAndComplement(lineIndex: number, onStep: (phase: LineComplementPhase) => void, runtime: MusicPlaybackRuntime) {
   const sequence = lineAndComplement(lineIndex);
   if (!sequence) return false;
 
-  runtime.clear();
+  runtime.start(() => onStep(null));
   runtime.schedule(() => {
     onStep("line");
     sequence.line.forEach((lv) => runtime.playBitVectorLevel(lv));
@@ -56,7 +58,7 @@ export function scheduleLineAndComplement(lineIndex: number, onStep: (phase: Lin
     onStep("complement");
     sequence.complement.forEach((lv) => runtime.playBitVectorLevel(lv));
   }, 500);
-  runtime.schedule(() => onStep(null), 1000);
+  runtime.schedule(runtime.finish, 1000);
   return true;
 }
 
@@ -64,11 +66,12 @@ export function scheduleSyndromeDemo(errorPos: number, onPhase: (phase: Syndrome
   const events = syndromeDemoEvents(errorPos);
   if (events.length === 0) return false;
 
-  runtime.clear();
+  runtime.start(() => onPhase(null));
   for (const event of events) {
     runtime.schedule(() => {
       if (event.type === "phase") {
-        onPhase(event.phase);
+        if (event.phase === null) runtime.finish();
+        else onPhase(event.phase);
       } else if (event.type === "tone") {
         runtime.playBitVectorLevel(event.lv);
         if (event.errorMarker) {
@@ -84,15 +87,15 @@ export function scheduleSyndromeDemo(errorPos: number, onPhase: (phase: Syndrome
 }
 
 export function scheduleWeightSpectrum(onStep: SpectrumStepHandler, runtime: MusicPlaybackRuntime) {
-  runtime.clear();
   const events = weightSpectrumTimeline();
+  runtime.start(() => onStep([], -1, events.length));
   for (const event of events) {
     runtime.schedule(() => {
       onStep(event.positions, event.weight, event.index);
       event.positions.forEach((lv) => runtime.playBitVectorLevel(lv));
     }, event.at);
   }
-  runtime.schedule(() => onStep([], -1, events.length), timedCodewordEnd(events, 7));
+  runtime.schedule(runtime.finish, timedCodewordEnd(events, 7));
 }
 
 /** One turn of the canon, and the rest it closes on. */
@@ -108,8 +111,11 @@ function runComplementCanonCycle(onStep: ComplementCanonStepHandler, reverse: bo
     }, event.at);
   }
   runtime.schedule(() => {
+    if (!loop) {
+      runtime.finish();
+      return;
+    }
     onStep(-1, null);
-    if (!loop) return;
     // Every step of this turn has fired, so clearing drops their spent handles
     // rather than a live one, and the list does not grow for as long as the
     // canon repeats.
@@ -125,8 +131,17 @@ function runComplementCanonCycle(onStep: ComplementCanonStepHandler, reverse: bo
  * interval outside the list went on calling clear() underneath whichever demo
  * had started in the meantime, cutting that one short.
  */
-export function scheduleComplementCanon(onStep: ComplementCanonStepHandler, reverse: boolean, runtime: MusicPlaybackRuntime, loop = false) {
-  runtime.clear();
+export function scheduleComplementCanon(
+  onStep: ComplementCanonStepHandler,
+  reverse: boolean,
+  runtime: MusicPlaybackRuntime,
+  loop = false,
+  onStop?: () => void,
+) {
+  runtime.start(() => {
+    onStep(-1, null);
+    onStop?.();
+  });
   runComplementCanonCycle(onStep, reverse, runtime, loop);
 }
 
@@ -134,20 +149,20 @@ export function schedulePointFanoContext(point: number, onStep: (lineIdx: number
   const lines = pointFanoContextLines(point);
   if (lines.length === 0) return false;
 
-  runtime.clear();
+  runtime.start(() => onStep(null));
   for (let i = 0; i < lines.length; i++) {
     runtime.schedule(() => {
       onStep(lines[i]);
       FANO_LINES[lines[i]].forEach((lv) => runtime.playBitVectorLevel(lv));
     }, i * 600);
   }
-  runtime.schedule(() => onStep(null), lines.length * 600);
+  runtime.schedule(runtime.finish, lines.length * 600);
   return true;
 }
 
 export function scheduleExtendedHamming(onStep: SpectrumStepHandler, runtime: MusicPlaybackRuntime) {
-  runtime.clear();
   const events = extendedHammingTimeline();
+  runtime.start(() => onStep([], -1, events.length));
   for (const event of events) {
     runtime.schedule(() => {
       onStep(event.positions, event.weight, event.index);
@@ -160,24 +175,26 @@ export function scheduleExtendedHamming(onStep: SpectrumStepHandler, runtime: Mu
       }
     }, event.at);
   }
-  runtime.schedule(() => onStep([], -1, events.length), timedCodewordEnd(events, 8));
+  runtime.schedule(runtime.finish, timedCodewordEnd(events, 8));
 }
 
 export function scheduleDistributiveLaw(a: number, b: number, c: number, onStep: DistributiveStepHandler, runtime: MusicPlaybackRuntime) {
-  runtime.clear();
+  runtime.start(() => onStep(null, -1));
   for (const event of distributiveEvents(a, b, c)) {
     runtime.schedule(() => {
-      onStep(event.phase, event.value);
+      if (event.phase === null) runtime.finish();
+      else onStep(event.phase, event.value);
       event.play.forEach((lv) => runtime.playBitVectorLevel(lv));
     }, event.at);
   }
 }
 
 export function scheduleAndTriads(onStep: (step: AndTriadStep) => void, runtime: MusicPlaybackRuntime) {
-  runtime.clear();
+  runtime.start(() => onStep(null));
   for (const event of andTriadEvents()) {
     runtime.schedule(() => {
-      onStep(event.step);
+      if (event.step === null) runtime.finish();
+      else onStep(event.step);
       event.play.forEach((lv) => runtime.playBitVectorLevel(lv));
     }, event.at);
   }
@@ -192,10 +209,11 @@ export function scheduleOctahedronMix(
   const sequence = octahedronMixSequence(lvA, lvB);
   if (!sequence) return false;
 
-  runtime.clear();
+  runtime.start(() => onStep(null));
   for (const event of sequence.events) {
     runtime.schedule(() => {
-      onStep(event.phase);
+      if (event.phase === null) runtime.finish();
+      else onStep(event.phase);
       event.play.forEach((lv) => runtime.playBitVectorLevel(lv));
     }, event.at);
   }

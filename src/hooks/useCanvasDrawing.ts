@@ -111,7 +111,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   const strokeSmootherRef = useRef<StrokeSmoother | null>(null);
   const forceRawNextMoveRef = useRef(false);
   const activeCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const paintQueue = usePaintFrameQueue<BrushFrame>((frame, dirty) =>
+  const { queue: queuePaint, cancel: cancelPaint } = usePaintFrameQueue<BrushFrame>((frame, dirty) =>
     renderCanvasBuffers(frame.levelData, frame.w, frame.h, frame.lut, frame.sourceCanvas, frame.previewCanvas, frame.imgCache, dirty),
   );
   const fillPendingRef = useRef(false);
@@ -142,7 +142,11 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     pendingUpRef.current = false;
     strokeRef.current = null;
     drawingRef.current = false;
-  }, [canvasData]);
+    // Cancel before a replacement redraw, and when this canvas unmounts.
+    return () => {
+      cancelPaint();
+    };
+  }, [canvasData, cancelPaint]);
 
   // Refs needed by useCursorOverlay (individual for interface compatibility)
   const brushSizeRef = useSyncRef(brushSize);
@@ -191,7 +195,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   }
 
   function queueBrushRender(levelData: Uint8Array, W: number, H: number, dirtyBB: DirtyRect) {
-    paintQueue.queue(
+    queuePaint(
       {
         levelData,
         w: W,
@@ -516,7 +520,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   function finishStroke() {
     // Flush pending brush render
-    if (paintQueue.cancel()) {
+    if (cancelPaint()) {
       const st2 = strokeRef.current;
       if (st2)
         renderCanvasBuffers(

@@ -160,6 +160,8 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     ];
 
     const down = (e: KeyboardEvent) => {
+      // A panel or focused control may already have handled this bubbling key.
+      if (e.defaultPrevented) return;
       // Global chords work from any focus: Alt+1..8 switch tabs in tab-bar
       // order and Alt+L switches the language. Matched on e.code because
       // Option+digit types a symbol on macOS.

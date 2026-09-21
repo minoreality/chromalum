@@ -49,6 +49,9 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey) return;
+      const isZoomKey = e.key === "+" || e.key === "=" || e.key === "-";
+      if ((e.ctrlKey || e.metaKey) && !isZoomKey) return;
       if (e.key === "+" || e.key === "=") {
         e.preventDefault();
         panZoom.setZoom((z) => Math.min(ZOOM_MAX, z * ZOOM_STEP));
@@ -72,11 +75,6 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         panZoom.setPan((p) => ({ ...p, y: p.y - 10 }));
-        panZoom.scheduleCursorRedrawRef.current?.();
-      } else if (e.key === "0") {
-        e.preventDefault();
-        panZoom.setZoom(1);
-        panZoom.setPan({ x: 0, y: 0 });
         panZoom.scheduleCursorRedrawRef.current?.();
       }
     },

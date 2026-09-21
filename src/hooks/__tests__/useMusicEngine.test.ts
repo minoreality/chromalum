@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { angleToFreq, PITCH_BASE_FREQ } from "../../data/music-frequency";
 import { useMusicEngine } from "../useMusicEngine";
+import { useMusicPanelController } from "../useMusicPanelController";
 
 class FakeAudioParam {
   private current = 0;
@@ -50,9 +51,12 @@ class FakeGainNode extends FakeAudioNode {
 class FakeOscillatorNode extends FakeAudioNode {
   type: OscillatorType = "sine";
   readonly frequency = new FakeAudioParam();
+  stopped = false;
 
   start(_when?: number) {}
-  stop(_when?: number) {}
+  stop(_when?: number) {
+    this.stopped = true;
+  }
 }
 
 class FakeStereoPannerNode extends FakeAudioNode {
@@ -184,26 +188,59 @@ const DEFAULT_LEVELS: MusicEngineParams["levels"] = [
 ];
 
 function renderMusicEngine(overrides: Partial<MusicEngineParams> = {}) {
-  return renderHook(() =>
-    useMusicEngine({
-      enabled: true,
-      levels: DEFAULT_LEVELS,
-      hoveredLevelIndex: null,
-      alpha0: 0,
-      alpha7: 180,
-      volume: 0.7,
-      pitchMappingMode: "chromalum",
-      fmEnabled: false,
-      panEnabled: true,
-      hoveredFanoLine: null,
-      toneMode: "symmetric",
-      originMode: 0,
-      ...overrides,
-    }),
+  return renderHook(
+    (params: Partial<MusicEngineParams>) =>
+      useMusicEngine({
+        enabled: true,
+        levels: DEFAULT_LEVELS,
+        hoveredLevelIndex: null,
+        alpha0: 0,
+        alpha7: 180,
+        volume: 0.7,
+        pitchMappingMode: "chromalum",
+        fmEnabled: false,
+        panEnabled: true,
+        hoveredFanoLine: null,
+        toneMode: "symmetric",
+        originMode: 0,
+        ...params,
+      }),
+    { initialProps: overrides },
   );
 }
 
 describe("useMusicEngine", () => {
+  it("ramps existing FM modulators across hue and pitch changes without restarting them", () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, rerender, unmount } = renderMusicEngine({ fmEnabled: true });
+    act(() => result.current.initAudio());
+    const ctx = FakeAudioContext.instances[0];
+    const modulators = ctx.oscillators.slice(-3);
+    const depths = ctx.gains.slice(-3);
+    const oscillatorCount = ctx.oscillators.length;
+    const initialFrequencies = modulators.map((osc) => osc.frequency.value);
+    const initialDepths = depths.map((gain) => gain.gain.value);
+
+    rerender({
+      fmEnabled: true,
+      levels: DEFAULT_LEVELS.map((level) => ({ ...level, hueAngleDeg: level.hueAngleDeg + 15, toneNorm: level.toneNorm / 2 })),
+      pitchMappingMode: "wholeTone",
+    });
+
+    expect(ctx.oscillators).toHaveLength(oscillatorCount);
+    expect(modulators.every((osc) => !osc.stopped)).toBe(true);
+    expect(modulators.map((osc) => osc.frequency.value)).not.toEqual(initialFrequencies);
+    expect(modulators.every((osc) => osc.frequency.targetValues.length > 1)).toBe(true);
+    depths.forEach((gain, index) => expect(last(gain.gain.targetValues)).toBeCloseTo(initialDepths[index] / 2));
+
+    rerender({ fmEnabled: false });
+    expect(modulators.every((osc) => osc.stopped)).toBe(true);
+    rerender({ fmEnabled: true });
+    expect(ctx.oscillators).toHaveLength(oscillatorCount + 3);
+    expect(ctx.oscillators.slice(-3).every((osc) => !osc.stopped)).toBe(true);
+    unmount();
+  });
+
   it("starts the persistent L7 noise source muted", () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
 
@@ -452,7 +489,7 @@ describe("useMusicEngine", () => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(onPhase).not.toHaveBeenCalled();
+    expect(onPhase.mock.calls).toEqual([[null]]);
 
     unmount();
   });
@@ -574,10 +611,114 @@ describe("useMusicEngine", () => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(onGray3).not.toHaveBeenCalled();
-    expect(onCayley).not.toHaveBeenCalled();
-    expect(onK8).not.toHaveBeenCalled();
+    expect(onGray3.mock.calls).toEqual([[null]]);
+    expect(onCayley.mock.calls).toEqual([[-1, 0]]);
+    expect(onK8.mock.calls).toEqual([[-1, null]]);
 
+    unmount();
+  });
+
+  it("notifies a preempted one-shot before the replacement starts, without cancelling independent loops", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, unmount } = renderMusicEngine();
+    const xor = vi.fn();
+    const partition = vi.fn();
+    const gray = vi.fn();
+    act(() => {
+      result.current.initAudio();
+      result.current.playGray3Voice(gray);
+      result.current.playXorTriple(1, 2, xor);
+      vi.advanceTimersByTime(300);
+    });
+    expect(xor).toHaveBeenLastCalledWith(2);
+
+    act(() => result.current.playLineAndComplement(0, partition));
+    expect(xor).toHaveBeenLastCalledWith(null);
+    expect(partition).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(xor.mock.calls).toEqual([[1], [2], [null]]);
+    expect(partition.mock.calls).toEqual([["line"], ["complement"], [null]]);
+    expect(gray).toHaveBeenLastCalledWith(3);
+
+    // A finished demo no longer owns a cancellation callback.
+    act(() => result.current.stopAlgebra());
+    expect(partition.mock.calls).toEqual([["line"], ["complement"], [null]]);
+    expect(gray).toHaveBeenLastCalledWith(null);
+    unmount();
+  });
+
+  it("clears zigzag and crossing highlights when algebra or their own controls stop them", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, unmount } = renderMusicEngine();
+    const zigzag = vi.fn();
+    const crossings = vi.fn();
+    act(() => {
+      result.current.initAudio();
+      result.current.playZigzagMelody(zigzag);
+      result.current.playToneCrossingMelody(crossings);
+      vi.advanceTimersByTime(400);
+      result.current.stopAlgebra();
+    });
+    expect(zigzag).toHaveBeenLastCalledWith(null);
+    expect(crossings).toHaveBeenLastCalledWith(null);
+    zigzag.mockClear();
+    crossings.mockClear();
+    act(() => {
+      result.current.playZigzagMelody(zigzag);
+      result.current.playToneCrossingMelody(crossings);
+      result.current.stopZigzagMelody();
+      result.current.stopToneCrossingMelody();
+      vi.advanceTimersByTime(1000);
+    });
+    expect(zigzag.mock.calls).toEqual([[null]]);
+    expect(crossings.mock.calls).toEqual([[null]]);
+    unmount();
+  });
+
+  it("keeps a repeating canon active through its rest and ends it once when another demo takes its timers", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, unmount } = renderMusicEngine();
+    const canon = vi.fn();
+    const stopped = vi.fn();
+    const xor = vi.fn();
+    act(() => {
+      result.current.initAudio();
+      result.current.playComplementCanon(canon, false, true, stopped);
+      vi.advanceTimersByTime(1800);
+    });
+    expect(canon).toHaveBeenCalledWith(-1, null);
+    expect(stopped).not.toHaveBeenCalled();
+    act(() => result.current.playXorTriple(1, 2, xor));
+    expect(stopped).toHaveBeenCalledOnce();
+    const canonCalls = canon.mock.calls.length;
+    act(() => vi.advanceTimersByTime(3600));
+    expect(canon).toHaveBeenCalledTimes(canonCalls);
+    expect(xor.mock.calls).toEqual([[1], [2], [3], [null]]);
+    act(() => result.current.stopAlgebra());
+    expect(stopped).toHaveBeenCalledOnce();
+    expect(xor).toHaveBeenCalledTimes(4);
+    unmount();
+  });
+
+  it("keeps the replacement XOR line selected when the previous XOR is cancelled", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, unmount } = renderHook(() => useMusicPanelController());
+    act(() => {
+      result.current.setXorA(1);
+      result.current.setXorB(2);
+    });
+    act(() => result.current.handlePlayXor());
+    act(() => vi.advanceTimersByTime(1));
+    expect(result.current.hoveredFanoLine).toBe(0);
+    act(() => result.current.setXorB(4));
+    act(() => result.current.handlePlayXor());
+    act(() => vi.advanceTimersByTime(1));
+    expect(result.current.hoveredFanoLine).toBe(1);
+    expect(result.current.xorStep).toBe(1);
     unmount();
   });
 
@@ -697,7 +838,7 @@ describe("useMusicEngine", () => {
       vi.advanceTimersByTime(720);
     });
 
-    expect(onStep).not.toHaveBeenCalled();
+    expect(onStep.mock.calls).toEqual([[null]]);
 
     unmount();
   });

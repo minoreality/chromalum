@@ -140,6 +140,15 @@ export const ja = {
   toast_restore_failed: "自動保存停止\n保存データを読み込めませんでした。変更は未保存です。PNG で書き出してください。",
   toast_autosave_conflict: "自動保存停止\n別のタブで保存データが更新されました。変更は未保存です。PNG で書き出してください。",
   toast_autosave_failed: "自動保存に失敗しました",
+  toast_autosave_resumed: "自動保存を再開しました。現在のキャンバスを保存しました。",
+  persistence_off: "自動保存停止",
+  persistence_recovery_description:
+    "読み込めない保存データをこのブラウザ内に別途退避し、現在のキャンバスを保存して、自動保存を再開します。",
+  persistence_reload_description: "未保存の作品を PNG で書き出してから、ページを再読み込みして保存データを読み直してください。",
+  persistence_recover: "元データを退避して保存を再開",
+  persistence_recovering: "再開中…",
+  persistence_recovery_failed:
+    "保存を再開できませんでした。元データは変更していません。変更を PNG で書き出してから、もう一度お試しください。",
   toast_image_gen_failed: "画像の生成に失敗しました（メモリ不足の可能性）",
   toast_save_long_press: "画像を長押しして保存してください: {0}",
   toast_saved: "保存しました: {0}",

@@ -84,6 +84,80 @@ svg text {
   user-select: none;
 }
 
+/* Autosave status stays outside document flow so failures never move a stroke. */
+.persistence-notice-trigger {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 900;
+  max-width: calc(100vw - 24px);
+  padding: 6px 10px;
+  border: 1px solid var(--c-warning);
+  border-radius: 6px;
+  background: var(--c-bg-panel);
+  color: var(--c-warning);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.persistence-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.persistence-dialog {
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding: 20px;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 10px;
+  background: var(--c-bg-panel);
+  color: var(--c-text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.persistence-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.persistence-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.persistence-actions button {
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 4px;
+  background: var(--c-bg-surface);
+  color: var(--c-text-primary);
+  cursor: pointer;
+}
+
+.persistence-actions button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.persistence-notice-trigger:focus-visible,
+.persistence-actions button:focus-visible {
+  outline: 2px solid var(--c-accent-bright);
+  outline-offset: 2px;
+}
+
 /* Header action links (About / Shortcuts / language switcher) */
 .header-action-link:hover,
 .header-action-link:focus-visible {

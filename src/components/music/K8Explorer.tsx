@@ -49,7 +49,10 @@ export const K8Explorer = React.memo(function K8Explorer({ engine, activeLevels,
       engine.initAudio();
       setActiveLayer(targetLayer);
       setEdgeIndex(-1);
-      engine.playK8Layer?.(targetLayer, (ei) => setEdgeIndex(ei));
+      engine.playK8Layer?.(targetLayer, (ei, pair) => {
+        setEdgeIndex(ei);
+        if (pair === null) setActiveLayer(null);
+      });
     },
     [engine, activeLayer],
   );

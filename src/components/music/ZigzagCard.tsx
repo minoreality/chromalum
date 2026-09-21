@@ -73,10 +73,14 @@ export const ZigzagCard = React.memo(function ZigzagCard({ engine, stopSignal }:
       setZigzagStep(null);
       engine.initAudio();
       setActiveMode(mode);
+      const onStep = (step: number | null) => {
+        setZigzagStep(step);
+        if (step === null) setActiveMode(null);
+      };
       if (mode === "vertices") {
-        engine.playZigzagMelody?.((step) => setZigzagStep(step));
+        engine.playZigzagMelody?.(onStep);
       } else {
-        engine.playToneCrossingMelody?.((step) => setZigzagStep(step));
+        engine.playToneCrossingMelody?.(onStep);
       }
     },
     [activeMode, engine, stopPlayback],

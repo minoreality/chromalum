@@ -74,6 +74,7 @@ interface GlazeStroke {
   beforeOverrideMap: Uint8Array;
   fillChangedIndices: Uint32Array | null;
   glazeLUT: Uint8Array;
+  params: { tool: GlazeToolId; brushSize: number };
 }
 
 /** What one glaze frame renders: the levels underneath, the stroke's working override map, and the surfaces. */
@@ -123,7 +124,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     workingOverrideMap: null,
     size: 0,
   });
-  const paintQueue = usePaintFrameQueue<GlazeFrame>((frame, dirty) =>
+  const { queue: queuePaint, cancel: cancelPaint } = usePaintFrameQueue<GlazeFrame>((frame, dirty) =>
     renderCanvasBuffers(
       frame.levelData,
       frame.w,
@@ -153,7 +154,11 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     pendingUpRef.current = false;
     strokeRef.current = null;
     drawingRef.current = false;
-  }, [canvasData]);
+    // Cancel before a replacement redraw, and when this canvas unmounts.
+    return () => {
+      cancelPaint();
+    };
+  }, [canvasData, cancelPaint]);
 
   // Refs needed by useCursorOverlay (individual for interface compatibility)
   const brushSizeRef = useSyncRef(brushSize);
@@ -230,7 +235,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function queueGlazeRender(levelData: Uint8Array, pixelCandidateOverrideMap: Uint8Array, W: number, H: number, dirtyBB: DirtyRect) {
-    paintQueue.queue(
+    queuePaint(
       {
         levelData,
         pixelCandidateOverrideMap,
@@ -281,11 +286,12 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     const isDirect = nextCandidateOverrides.size > 0;
     const curHue = s.current.hueAngleDeg;
     const glazeLUT = isDirect ? buildMultiDirectLUT(nextCandidateOverrides) : buildGlazeLUT(curHue);
-    strokeRef.current = { workingOverrideMap, beforeOverrideMap, fillChangedIndices: null, glazeLUT };
-    const curTool = s.current.glazeTool;
+    const params = { tool: s.current.glazeTool, brushSize: brushSizeRef.current };
+    strokeRef.current = { workingOverrideMap, beforeOverrideMap, fillChangedIndices: null, glazeLUT, params };
+    const curTool = params.tool;
     strokeSmootherRef.current = curTool === "glaze_fill" ? null : createStrokeSmoother(pos);
     forceRawNextMoveRef.current = startPos !== undefined && !isCanvasPointInBounds(startPos, canvasDataRef.current);
-    const mask = getBrushMask(pressureAdjustedBrushSize(brushSizeRef.current, e.nativeEvent));
+    const mask = getBrushMask(pressureAdjustedBrushSize(params.brushSize, e.nativeEvent));
     const W = cv.width,
       H = cv.height;
 
@@ -447,13 +453,13 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     }
     if (!drawingRef.current) return;
     const st = strokeRef.current;
-    if (!st || s.current.glazeTool === "glaze_fill") return;
+    if (!st || st.params.tool === "glaze_fill") return;
     e.preventDefault();
     const workingOverrideMap = st.workingOverrideMap;
     const cv = canvasDataRef.current;
     const W = cv.width,
       H = cv.height;
-    const curTool = s.current.glazeTool;
+    const curTool = st.params.tool;
 
     // Brush / eraser: keep true canvas-space positions, including samples
     // outside the canvas. Glaze paint functions clip writes to the color map,
@@ -476,7 +482,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
         strokeSmootherRef.current.x = raw.x;
         strokeSmootherRef.current.y = raw.y;
       }
-      const mask = getBrushMask(pressureAdjustedBrushSize(brushSizeRef.current, ev));
+      const mask = getBrushMask(pressureAdjustedBrushSize(st.params.brushSize, ev));
       if (curTool === "glaze_eraser") {
         if (last) eraseGlazeBrushLine(workingOverrideMap, last.x, last.y, p.x, p.y, mask, W, H);
         else eraseGlazeBrush(workingOverrideMap, p.x, p.y, mask, W, H);
@@ -520,7 +526,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
 
   function finishGlazeStroke() {
     // Flush pending glaze render
-    if (paintQueue.cancel()) {
+    if (cancelPaint()) {
       const cv = canvasDataRef.current;
       const st2 = strokeRef.current;
       if (st2)

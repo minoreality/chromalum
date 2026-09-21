@@ -8,11 +8,12 @@ vi.mock("../../utils/idb-persistence", () => ({
   loadState: vi.fn(() => Promise.resolve(null)),
   loadStateWithStatus: vi.fn(() => Promise.resolve({ status: "empty", state: null })),
   saveState: vi.fn(() => Promise.resolve(1)),
+  recoverInvalidState: vi.fn(() => Promise.resolve(8)),
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
 import { getCanvasDisplaySize, useAppState } from "../useAppState";
-import { loadStateWithStatus, requestPersistentStorage, saveState } from "../../utils/idb-persistence";
+import { loadStateWithStatus, recoverInvalidState, requestPersistentStorage, saveState } from "../../utils/idb-persistence";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../../constants";
 
 // Minimal translation stub
@@ -27,6 +28,7 @@ describe("useAppState", () => {
     localStorage.clear();
     vi.mocked(loadStateWithStatus).mockResolvedValue({ status: "empty", state: null });
     vi.mocked(saveState).mockResolvedValue(1);
+    vi.mocked(recoverInvalidState).mockResolvedValue(8);
   });
 
   afterEach(() => {
@@ -239,6 +241,97 @@ describe("useAppState", () => {
     expect(saveState).not.toHaveBeenCalled();
     expect(result.current.toast).toEqual({ message: "toast_restore_invalid", type: "error" });
     warnSpy.mockRestore();
+    unmount();
+  });
+
+  it("resumes autosave at the recovered revision and saves edits made during recovery", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({ status: "invalid", state: null });
+    let finishRecovery!: (revision: number) => void;
+    vi.mocked(recoverInvalidState).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishRecovery = resolve;
+        }),
+    );
+    const { result, unmount } = renderHook(() => useAppState(t));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.persistenceIssue).toBe("invalid");
+    act(() => result.current.dispatch({ type: "new_canvas", width: 8, height: 8 }));
+    let recovery!: Promise<boolean>;
+    await act(async () => {
+      recovery = result.current.recoverPersistence();
+    });
+    expect(result.current.recoveringPersistence).toBe(true);
+    expect(recoverInvalidState).toHaveBeenCalledWith(expect.objectContaining({ width: 8, height: 8 }));
+    await act(async () => {
+      await result.current.recoverPersistence();
+    });
+    expect(recoverInvalidState).toHaveBeenCalledTimes(1);
+    act(() => result.current.dispatch({ type: "new_canvas", width: 16, height: 16 }));
+    await act(async () => {
+      finishRecovery(8);
+      await recovery;
+    });
+    expect(result.current.persistenceIssue).toBeNull();
+    expect(result.current.recoveringPersistence).toBe(false);
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(saveState).toHaveBeenCalledWith(expect.objectContaining({ width: 16, height: 16, revision: 8 }), { expectedRevision: 8 });
+    unmount();
+  });
+
+  it("keeps autosave blocked when recovery fails and permits an explicit retry", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({ status: "invalid", state: null });
+    vi.mocked(recoverInvalidState).mockRejectedValueOnce(new Error("quota"));
+    const { result, unmount } = renderHook(() => useAppState(t));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      expect(await result.current.recoverPersistence()).toBe(false);
+    });
+    expect(result.current.persistenceIssue).toBe("invalid");
+    expect(result.current.persistenceRecoveryFailed).toBe(true);
+    act(() => result.current.dispatch({ type: "new_canvas", width: 8, height: 8 }));
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(saveState).not.toHaveBeenCalled();
+    await act(async () => {
+      expect(await result.current.recoverPersistence()).toBe(true);
+    });
+    expect(result.current.persistenceIssue).toBeNull();
+    expect(result.current.persistenceRecoveryFailed).toBe(false);
+    unmount();
+  });
+
+  it("keeps a recovery conflict blocked instead of retrying over another tab's work", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({ status: "invalid", state: null });
+    const conflict = new Error("Saved state changed");
+    conflict.name = "SaveConflictError";
+    vi.mocked(recoverInvalidState).mockRejectedValueOnce(conflict);
+    const { result, unmount } = renderHook(() => useAppState(t));
+    await waitForLoaded(result);
+    await act(async () => {
+      expect(await result.current.recoverPersistence()).toBe(false);
+    });
+    expect(result.current.persistenceIssue).toBe("conflict");
+    await act(async () => {
+      expect(await result.current.recoverPersistence()).toBe(false);
+    });
+    expect(recoverInvalidState).toHaveBeenCalledTimes(1);
     unmount();
   });
 

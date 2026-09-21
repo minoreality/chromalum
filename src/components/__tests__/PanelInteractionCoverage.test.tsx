@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, renderHook, screen, within } from "@testing-library/react";
 import { MAX_UNDO } from "../../constants";
 import type { AnalysisPixelMaps, AppState, CanvasData, CompressedDiff, MapMode, PanZoomHandlers } from "../../types";
 import { RingBuffer } from "../../utils/ring-buffer";
 import { GlazeContextProvider, type GlazeContextValue } from "../../state/GlazeContext";
 import type { GlazeDrawingResult } from "../../hooks/useGlazeDrawing";
+import { useKeyboardShortcuts, type KeyboardShortcutDeps } from "../../hooks/useKeyboardShortcuts";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../../color-engine";
 import { SourcePanel } from "../SourcePanel";
 import { ColorPanel } from "../ColorPanel";
@@ -82,6 +83,33 @@ function makePanZoom(overrides?: Partial<PanZoomHandlers>): PanZoomHandlers {
     endPan: vi.fn(),
     ...overrides,
   };
+}
+
+function renderCanvasShortcuts(overrides: Partial<KeyboardShortcutDeps>) {
+  const deps: KeyboardShortcutDeps = {
+    setTool: vi.fn(),
+    setBrushLevel: vi.fn(),
+    setBrushSize: vi.fn(),
+    dispatch: vi.fn(),
+    announce: vi.fn(),
+    endPan: vi.fn(),
+    showHelp: false,
+    setShowHelp: vi.fn(),
+    isStrokeActive: () => false,
+    setCursorMode: vi.fn(),
+    spaceRef: { current: false },
+    panningRef: { current: false },
+    brushSizeRef: { current: 12 },
+    setShowNewCanvas: vi.fn(),
+    t: (key) => key,
+    setZoom: vi.fn(),
+    activeTabId: "color",
+    setActiveTabId: vi.fn(),
+    toggleLanguage: vi.fn(),
+    ...overrides,
+  };
+  renderHook(() => useKeyboardShortcuts(deps));
+  return deps;
 }
 
 function makeGlazeDrawing(overrides?: Partial<GlazeDrawingResult>): GlazeDrawingResult {
@@ -359,7 +387,7 @@ describe("ColorPanel interactions", () => {
     vi.restoreAllMocks();
   });
 
-  it("routes keyboard pan/zoom and pointer drawing paths", () => {
+  function renderColor() {
     const setZoom = vi.fn();
     const panZoom = makePanZoom({ setZoom });
     const drawing = {
@@ -370,7 +398,7 @@ describe("ColorPanel interactions", () => {
       trackPreviewCursor: vi.fn(),
       clearPreviewCursor: vi.fn(),
     };
-    render(
+    const view = render(
       <ColorPanel
         previewCanvasRef={React.createRef<HTMLCanvasElement>()}
         previewCursorRef={React.createRef<HTMLCanvasElement>()}
@@ -389,6 +417,11 @@ describe("ColorPanel interactions", () => {
         drawing={drawing}
       />,
     );
+    return { ...view, drawing, panZoom, setZoom };
+  }
+
+  it("routes keyboard pan/zoom and pointer drawing paths", () => {
+    const { drawing, panZoom, setZoom } = renderColor();
 
     const canvas = screen.getByRole("img", { name: "aria_color_preview_canvas" });
     fireEvent.pointerDown(canvas, { button: 0 });
@@ -407,6 +440,43 @@ describe("ColorPanel interactions", () => {
     fireEvent.keyDown(wrap, { key: "+" });
     expect(setZoom).toHaveBeenCalledWith(expect.any(Function));
     expect((setZoom.mock.calls[0][0] as (value: number) => number)(1)).toBeCloseTo(1.15);
+  });
+
+  it("selects level zero without resetting the Color viewport", () => {
+    const { panZoom } = renderColor();
+    const { setBrushLevel } = renderCanvasShortcuts({ setZoom: panZoom.setZoom });
+
+    fireEvent.keyDown(screen.getByLabelText("aria_color_preview"), { key: "0" });
+
+    expect(setBrushLevel).toHaveBeenCalledWith(0);
+    expect(panZoom.setZoom).not.toHaveBeenCalled();
+    expect(panZoom.setPan).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { key: "=", ctrlKey: true },
+    { key: "+", ctrlKey: true, shiftKey: true },
+    { key: "-", metaKey: true },
+  ])("zooms once for a modified $key chord on the Color workspace", (init) => {
+    const { panZoom } = renderColor();
+    renderCanvasShortcuts({ setZoom: panZoom.setZoom });
+
+    fireEvent.keyDown(screen.getByLabelText("aria_color_preview"), init);
+
+    expect(panZoom.setZoom).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { key: "ArrowLeft", altKey: true },
+    { key: "ArrowRight", ctrlKey: true },
+  ])("leaves modified $key navigation out of Color pan shortcuts", (init) => {
+    const { panZoom } = renderColor();
+    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+
+    fireEvent(screen.getByLabelText("aria_color_preview"), event);
+
+    expect(panZoom.setPan).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
   });
 });
 
@@ -507,6 +577,71 @@ describe("GlazePanel interactions", () => {
     expect(screen.getByText("4")).toBeTruthy();
   });
 
+  it("selects level zero without resetting the Glaze viewport", () => {
+    const { panZoom } = renderGlaze();
+    const { setBrushLevel } = renderCanvasShortcuts({ activeTabId: "glaze", setZoom: panZoom.setZoom });
+
+    fireEvent.keyDown(screen.getByRole("img", { name: "label_glaze" }).parentElement!, { key: "0" });
+
+    expect(setBrushLevel).toHaveBeenCalledWith(0);
+    expect(panZoom.setZoom).not.toHaveBeenCalled();
+    expect(panZoom.setPan).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["[", 11],
+    ["]", 13],
+  ])("changes Glaze brush size once for %s", (key, expectedSize) => {
+    const { setBrushSize } = renderGlaze({ context: { brushSize: 12 } });
+    renderCanvasShortcuts({ activeTabId: "glaze", setBrushSize });
+
+    fireEvent.keyDown(screen.getByRole("img", { name: "label_glaze" }).parentElement!, { key });
+
+    expect(setBrushSize).toHaveBeenCalledTimes(1);
+    expect((setBrushSize.mock.calls[0][0] as (value: number) => number)(12)).toBe(expectedSize);
+  });
+
+  it.each([
+    ["e", "glaze_eraser"],
+    ["f", "glaze_fill"],
+  ])("keeps the Glaze %s shortcut from changing the Source tool", (key, expectedTool) => {
+    const { setGlazeTool } = renderGlaze();
+    const { setTool } = renderCanvasShortcuts({ activeTabId: "glaze" });
+
+    fireEvent.keyDown(screen.getByRole("img", { name: "label_glaze" }).parentElement!, { key });
+
+    expect(setGlazeTool).toHaveBeenCalledWith(expectedTool);
+    expect(setTool).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { key: "f", ctrlKey: true },
+    { key: "e", metaKey: true },
+    { key: "b", altKey: true },
+    { key: "]", ctrlKey: true },
+  ])("leaves modified $key chords out of Glaze tool and size shortcuts", (init) => {
+    const { setGlazeTool, setBrushSize } = renderGlaze();
+    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+
+    fireEvent(screen.getByRole("img", { name: "label_glaze" }).parentElement!, event);
+
+    expect(setGlazeTool).not.toHaveBeenCalled();
+    expect(setBrushSize).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("keeps Alt tab and language shortcuts available from the Glaze workspace", () => {
+    renderGlaze();
+    const { setActiveTabId, toggleLanguage } = renderCanvasShortcuts({ activeTabId: "glaze" });
+    const workspace = screen.getByRole("img", { name: "label_glaze" }).parentElement!;
+
+    fireEvent.keyDown(workspace, { key: "3", code: "Digit3", altKey: true });
+    fireEvent.keyDown(workspace, { key: "l", code: "KeyL", altKey: true });
+
+    expect(setActiveTabId).toHaveBeenCalledWith("source");
+    expect(toggleLanguage).toHaveBeenCalledTimes(1);
+  });
+
   it("lets direct candidate swatches opt a level into and out of manual selection", () => {
     const { setCandidateOverridesByLevel } = renderGlaze({ context: { candidateOverridesByLevel: new Map() } });
     const candidateButtons = screen.getAllByRole("button").filter((button) => button.getAttribute("title")?.startsWith("#"));
@@ -536,7 +671,7 @@ describe("GlazePanel interactions", () => {
     expect(setGlazeTool).toHaveBeenCalledWith("glaze_eraser");
     expect(props.announce).toHaveBeenCalledWith("announce_glaze_eraser");
 
-    fireEvent.keyDown(wrap, { key: "0" });
+    fireEvent.click(screen.getByRole("button", { name: "aria_zoom_reset(100)" }));
     expect(setZoom).toHaveBeenCalledWith(1);
     expect(setPan).toHaveBeenCalledWith({ x: 0, y: 0 });
     expect(scheduleCursorRedraw).toHaveBeenCalled();
@@ -604,6 +739,35 @@ describe("CropModal interactions", () => {
     fireEvent.click(screen.getByRole("button", { name: "btn_ok" }));
 
     expect(onConfirm).toHaveBeenCalledWith(1, 1, 63, 63);
+  });
+
+  it.each(["Tab", "Escape", "Enter", "a"])("leaves %s to the dialog when the crop move control has focus", (key) => {
+    render(<CropModal img={document.createElement("img")} imgW={64} imgH={64} onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+
+    fireEvent(screen.getByRole("group", { name: "crop_move_aria" }), event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it.each([
+    { handle: "w", dx: 2, dy: 0, crop: [3, 0, 997, 400] },
+    { handle: "n", dx: 0, dy: 2, crop: [0, 3, 1000, 397] },
+    { handle: "nw", dx: 2, dy: 2, crop: [3, 3, 997, 397] },
+  ])("keeps rounded $handle resize boundaries inside a scaled image", ({ handle, dx, dy, crop }) => {
+    vi.spyOn(window, "innerWidth", "get").mockReturnValue(1280);
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(900);
+    const onConfirm = vi.fn();
+    render(<CropModal img={document.createElement("img")} imgW={1000} imgH={400} onConfirm={onConfirm} onCancel={vi.fn()} />);
+    const control = screen.getByRole("group", { name: `crop_resize_${handle}_aria` });
+
+    // At 0.8 display scale, two screen pixels are 2.5 image pixels.
+    fireEvent.pointerDown(control, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(control, { clientX: dx, clientY: dy, pointerId: 1 });
+    fireEvent.pointerUp(control, { pointerId: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "btn_ok" }));
+
+    expect(onConfirm).toHaveBeenCalledWith(...crop);
   });
 });
 

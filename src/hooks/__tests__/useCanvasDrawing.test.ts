@@ -210,6 +210,31 @@ describe("useCanvasDrawing", () => {
     mockPanningRef.current = false;
   });
 
+  it.each(["replacement", "unmount"] as const)("discards a queued brush render on canvas %s", (change) => {
+    vi.useFakeTimers();
+    try {
+      const { result, rerender, unmount } = renderHook(({ canvasData }) => useCanvasDrawing(makeOpts({ canvasData })), {
+        initialProps: { canvasData: makeCvs() },
+      });
+      const canvas = result.current.cursorCanvasRef.current!;
+      mockCanvasRect(canvas);
+      act(() => {
+        result.current.onDown(pointerEvent({ target: canvas }));
+        result.current.onMove(pointerEvent({ target: canvas, clientX: 224 }));
+      });
+      vi.mocked(renderCanvasBuffers).mockClear();
+
+      if (change === "replacement") rerender({ canvasData: makeCvs() });
+      else unmount();
+      act(() => vi.advanceTimersByTime(32));
+
+      expect(renderCanvasBuffers).not.toHaveBeenCalled();
+      unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("paints a brush dot and dispatches the completed stroke", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useCanvasDrawing(makeOpts({ dispatch, brushLevel: 3, brushSize: 1 })));

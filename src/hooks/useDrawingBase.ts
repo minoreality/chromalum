@@ -5,7 +5,7 @@
    one-render-per-frame queue. What a pixel holds stays in each hook.
    ═══════════════════════════════════════════ */
 
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { LEVEL_MASK } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
 import { unionBBox } from "../drawing/dirty-rect";
@@ -138,14 +138,14 @@ export function usePaintFrameQueue<Frame>(render: (frame: Frame, dirty: DirtyRec
     });
   }
 
-  function cancel(): boolean {
+  const cancel = useCallback((): boolean => {
     if (rafRef.current === null) return false;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     dirtyRef.current = null;
     frameRef.current = null;
     return true;
-  }
+  }, []);
 
   return { queue, cancel };
 }

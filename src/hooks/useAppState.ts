@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect, useReducer, useMemo, useLayoutEffect, useCallback } from "react";
 import { DISPLAY_MIN, DISPLAY_MAX_LIMIT } from "../constants";
 import { canvasReducer, createInitialState } from "../state/canvas-reducer";
-import { SAVED_STATE_VERSION, saveState, loadStateWithStatus, requestPersistentStorage } from "../utils/idb-persistence";
+import {
+  SAVED_STATE_VERSION,
+  saveState,
+  loadStateWithStatus,
+  recoverInvalidState,
+  requestPersistentStorage,
+} from "../utils/idb-persistence";
 import { createErrorHandler } from "../utils/error-handler";
 import { LANDSCAPE_CANVAS_BASE_OFFSET_MAX } from "../utils/panel-layout";
 import { useToolState } from "./useToolState";
@@ -115,6 +121,10 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   const skipNextAutosaveRef = useRef(false);
   const persistenceRevisionRef = useRef(0);
   const persistenceBlockedRef = useRef(false);
+  const [persistenceIssue, setPersistenceIssue] = useState<keyof typeof PERSISTENCE_TOAST_KEYS | null>(null);
+  const [recoveringPersistence, setRecoveringPersistence] = useState(false);
+  const [persistenceRecoveryFailed, setPersistenceRecoveryFailed] = useState(false);
+  const recoveryInFlightRef = useRef(false);
   const persistentStorageRequestInFlightRef = useRef(false);
   const lastSavedRef = useRef<{
     levelData: Uint8Array | null;
@@ -132,6 +142,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     (reason: keyof typeof PERSISTENCE_TOAST_KEYS) => {
       // The save block outlives the temporary notification.
       persistenceBlockedRef.current = true;
+      setPersistenceIssue(reason);
       flushSaveRef.current = null;
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
@@ -143,6 +154,8 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   );
 
   const currentPersistedStateRef = useRef({
+    width: canvasData.width,
+    height: canvasData.height,
     levelData: canvasData.levelData,
     pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
     candidateIndexByLevel,
@@ -150,12 +163,60 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   });
   useLayoutEffect(() => {
     currentPersistedStateRef.current = {
+      width: canvasData.width,
+      height: canvasData.height,
       levelData: canvasData.levelData,
       pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
       candidateIndexByLevel,
       lockedLevels,
     };
-  }, [canvasData.levelData, canvasData.pixelCandidateOverrideMap, candidateIndexByLevel, lockedLevels]);
+  }, [
+    canvasData.width,
+    canvasData.height,
+    canvasData.levelData,
+    canvasData.pixelCandidateOverrideMap,
+    candidateIndexByLevel,
+    lockedLevels,
+  ]);
+
+  const recoverPersistence = useCallback(async (): Promise<boolean> => {
+    if (persistenceIssue !== "invalid" || !persistenceBlockedRef.current || recoveryInFlightRef.current) return false;
+    recoveryInFlightRef.current = true;
+    setRecoveringPersistence(true);
+    setPersistenceRecoveryFailed(false);
+    try {
+      await saveQueueRef.current;
+      const current = currentPersistedStateRef.current;
+      const revision = await recoverInvalidState({
+        width: current.width,
+        height: current.height,
+        levelData: new Uint8Array(current.levelData),
+        pixelCandidateOverrideMap: new Uint8Array(current.pixelCandidateOverrideMap),
+        candidateIndexByLevel: [...current.candidateIndexByLevel],
+        lockedLevels: [...current.lockedLevels],
+        version: SAVED_STATE_VERSION,
+        revision: persistenceRevisionRef.current,
+      });
+      persistenceRevisionRef.current = revision;
+      lastSavedRef.current = current;
+      baselineSaveCompleteRef.current = true;
+      persistenceBlockedRef.current = false;
+      setPersistenceIssue(null);
+      showToast(translationRef.current("toast_autosave_resumed"), "success");
+      return true;
+    } catch (error) {
+      if (error instanceof Error && error.name === "SaveConflictError") {
+        blockPersistence("conflict");
+      } else {
+        setPersistenceRecoveryFailed(true);
+        createErrorHandler("Recovery")(error);
+      }
+      return false;
+    } finally {
+      recoveryInFlightRef.current = false;
+      setRecoveringPersistence(false);
+    }
+  }, [persistenceIssue, blockPersistence, showToast, translationRef]);
 
   // Restore state from IndexedDB on mount
   const loadedOnceRef = useRef(false);
@@ -298,7 +359,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [canvasData, candidateIndexByLevel, lockedLevels, loaded, showToast, t, blockPersistence]);
+  }, [canvasData, candidateIndexByLevel, lockedLevels, loaded, persistenceIssue, showToast, t, blockPersistence]);
 
   // Flush pending save on tab hide / page unload to avoid data loss
   useEffect(() => {
@@ -349,6 +410,10 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     ...toolState,
     ...uiState,
     loaded,
+    persistenceIssue,
+    recoverPersistence,
+    recoveringPersistence,
+    persistenceRecoveryFailed,
     lockedLevels,
     setLockedLevels,
     colorLUT: colorState.colorLUT,

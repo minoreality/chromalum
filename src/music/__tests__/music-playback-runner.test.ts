@@ -15,6 +15,7 @@ import {
 
 function createRuntime() {
   const scheduled: Array<{ fn: () => void; ms: number }> = [];
+  let onStop: (() => void) | null = null;
   const clear = vi.fn();
   const schedule = vi.fn((fn: () => void, ms: number) => {
     scheduled.push({ fn, ms });
@@ -23,6 +24,16 @@ function createRuntime() {
   const triggerToneValueBurst = vi.fn();
   const triggerErrorMarker = vi.fn();
   const runtime: MusicPlaybackRuntime = {
+    start: (callback) => {
+      runtime.finish();
+      onStop = callback;
+    },
+    finish: () => {
+      clear();
+      const callback = onStop;
+      onStop = null;
+      callback?.();
+    },
     clear,
     schedule,
     playBitVectorLevel,
@@ -96,7 +107,18 @@ describe("music-playback-runner", () => {
     // Unlike createRuntime's spy, this clear() empties the pending list the way
     // the engine's shared algebra timers do, so preemption can be modelled.
     let pending: Array<{ fn: () => void; ms: number }> = [];
+    let onStop: (() => void) | null = null;
     const runtime: MusicPlaybackRuntime = {
+      start: (callback) => {
+        runtime.finish();
+        onStop = callback;
+      },
+      finish: () => {
+        runtime.clear();
+        const callback = onStop;
+        onStop = null;
+        callback?.();
+      },
       clear: () => {
         pending = [];
       },

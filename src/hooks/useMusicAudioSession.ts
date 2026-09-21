@@ -175,11 +175,11 @@ export function useMusicAudioSession({
     if (!enabled || !nodesRef.current) return;
     if (fmEnabled) {
       const p = paramsRef.current;
-      buildFM(nodesRef.current, levels, pitchMappingMode, p.originMode === 0 ? p.alpha0 : p.alpha7, levelPermutationRef.current);
+      buildFM(nodesRef.current, p.levels, p.pitchMappingMode, p.originMode === 0 ? p.alpha0 : p.alpha7, levelPermutationRef.current);
     } else {
       teardownFM(nodesRef.current);
     }
-  }, [enabled, fmEnabled, pitchMappingMode, levels]);
+  }, [enabled, fmEnabled]);
 
   useEffect(() => {
     if (!enabled || !nodesRef.current) return;

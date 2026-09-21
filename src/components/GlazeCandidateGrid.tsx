@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
 import { useTranslation } from "../i18n";
@@ -40,6 +40,7 @@ const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
   onHoveredCandidateChange,
 }: GlazeCandidateColumnProps) {
   const { t } = useTranslation();
+  const columnRef = useRef<HTMLDivElement>(null);
   const swipeStartRef = useRef(0);
   const cands = LEVEL_CANDIDATES[level.levelIndex];
   const hasCands = cands.length > 1;
@@ -66,16 +67,38 @@ const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
     onHoveredCandidateChange(null);
   };
 
-  const cycleCandidate = (dir: number) => {
-    const cur = candidateOverridesByLevel.has(level.levelIndex) ? candidateOverridesByLevel.get(level.levelIndex)! : autoCandidateIndex;
-    const newIdx = (((cur + dir) % cands.length) + cands.length) % cands.length;
-    onCandidateOverridesByLevelChange((prev) => {
-      const next = new Map(prev);
-      next.set(level.levelIndex, newIdx);
-      return next;
-    });
-    onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex: newIdx });
-  };
+  const cycleCandidate = useCallback(
+    (dir: number) => {
+      const cur = candidateOverridesByLevel.has(level.levelIndex) ? candidateOverridesByLevel.get(level.levelIndex)! : autoCandidateIndex;
+      const newIdx = (((cur + dir) % cands.length) + cands.length) % cands.length;
+      onCandidateOverridesByLevelChange((prev) => {
+        const next = new Map(prev);
+        next.set(level.levelIndex, newIdx);
+        return next;
+      });
+      onHoveredCandidateChange({ levelIndex: level.levelIndex, candidateIndex: newIdx });
+    },
+    [
+      candidateOverridesByLevel,
+      autoCandidateIndex,
+      cands.length,
+      level.levelIndex,
+      onCandidateOverridesByLevelChange,
+      onHoveredCandidateChange,
+    ],
+  );
+
+  useEffect(() => {
+    const column = columnRef.current;
+    if (!column || !hasCands) return;
+    // React's passive wheel listener cannot suppress the page scroll.
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      cycleCandidate(event.deltaY > 0 ? 1 : -1);
+    };
+    column.addEventListener("wheel", handleWheel, { passive: false });
+    return () => column.removeEventListener("wheel", handleWheel);
+  }, [hasCands, cycleCandidate]);
 
   const makeSwatch = (candidateIndex: number, size: number) => {
     const cand = cands[candidateIndex];
@@ -147,13 +170,6 @@ const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
     }
   };
 
-  const handleWheel = hasCands
-    ? (e: React.WheelEvent) => {
-        e.preventDefault();
-        cycleCandidate(e.deltaY > 0 ? 1 : -1);
-      }
-    : undefined;
-
   const handleTouchStart = hasCands
     ? (e: React.TouchEvent) => {
         swipeStartRef.current = e.touches[0].clientY;
@@ -177,7 +193,7 @@ const GlazeCandidateColumn = React.memo(function GlazeCandidateColumn({
 
   return (
     <div
-      onWheel={handleWheel}
+      ref={columnRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       style={{

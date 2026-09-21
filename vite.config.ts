@@ -73,24 +73,19 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(request));
+    event.respondWith(precachedNavigation(request));
     return;
   }
 
   event.respondWith(cacheFirst(request));
 });
 
-async function networkFirstNavigation(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      await cache.put("./", response.clone());
-    }
-    return response;
-  } catch {
-    return (await caches.match("./")) || (await caches.match("./index.html")) || Response.error();
-  }
+async function precachedNavigation(request) {
+  // Keep the HTML and lazy chunks on the active worker's version until the
+  // next fully installed worker activates after all existing clients close.
+  const cache = await caches.open(PRECACHE_CACHE);
+  return (await cache.match(request, { ignoreSearch: true, ignoreVary: true })) ||
+    (await cache.match("./")) || (await cache.match("./index.html")) || Response.error();
 }
 
 async function cacheFirst(request) {

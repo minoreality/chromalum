@@ -1,4 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { readFile, readdir } from "node:fs/promises";
+import { createServer, type ServerResponse } from "node:http";
+import { extname } from "node:path";
+import { expect, test, type Page } from "@playwright/test";
 
 interface AppManifestResponse {
   errors?: unknown[];
@@ -123,4 +126,231 @@ test("pre-caches the production app shell and works offline", async ({ page, con
 
   await page.getByRole("tab", { name: "Music" }).click();
   await expect(page.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+});
+
+type UpdateMode = "complete" | "failed" | "held";
+
+async function readBuildFiles(dir: URL, prefix = ""): Promise<Array<[string, Buffer]>> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = await Promise.all(
+    entries.map(async (entry): Promise<Array<[string, Buffer]>> => {
+      const name = `${prefix}${entry.name}`;
+      if (entry.isDirectory()) return readBuildFiles(new URL(`${entry.name}/`, dir), `${name}/`);
+      return [[name, await readFile(new URL(entry.name, dir))]];
+    }),
+  );
+  return files.flat();
+}
+
+async function startUpdateServer() {
+  const files = await readBuildFiles(new URL("../dist/", import.meta.url));
+  const builds = new Map<string, Map<string, Buffer>>();
+  // Exercise the generated worker unchanged, with two disjoint sets of asset
+  // URLs. Changing only the HTML would let v2 reuse v1's lazy chunks and hide
+  // the update bug. No extra production build or checked-in hashes are needed.
+  for (const version of ["v1", "v2"]) {
+    const assetNames = files
+      .filter(([name]) => name.startsWith("assets/"))
+      .map(([name]) => {
+        const oldName = name.slice("assets/".length);
+        const extension = extname(oldName);
+        return [oldName, `${oldName.slice(0, -extension.length)}-${version}${extension}`] as const;
+      });
+    const build = new Map<string, Buffer>();
+    for (const [name, bytes] of files) {
+      let path = name;
+      let body = bytes;
+      if ([".js", ".css", ".html", ".json", ".webmanifest", ".svg"].includes(extname(name))) {
+        let source = bytes.toString("utf8");
+        for (const [oldName, newName] of assetNames) source = source.replaceAll(oldName, newName);
+        if (name === "sw.js") {
+          source = source.replace(/(\$\{CACHE_PREFIX\}-(?:precache|runtime)-)[^`]+/g, `$1fixture-${version}`);
+        }
+        if (name === "index.html") source = source.replace("<html", `<html data-build-version="${version}"`);
+        body = Buffer.from(source);
+      }
+      for (const [oldName, newName] of assetNames) path = path.replaceAll(oldName, newName);
+      build.set(`/chromalum/${path}`, body);
+    }
+    build.set("/chromalum/", build.get("/chromalum/index.html")!);
+    builds.set(version, build);
+  }
+
+  let version = "v1";
+  let mode: UpdateMode = "complete";
+  let offline = false;
+  const heldResponses = new Set<ServerResponse>();
+  const contentTypes: Record<string, string> = {
+    ".html": "text/html",
+    ".js": "text/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".webmanifest": "application/manifest+json",
+  };
+  const server = createServer((request, response) => {
+    if (offline) {
+      request.socket.destroy();
+      return;
+    }
+    const pathname = new URL(request.url!, "http://localhost").pathname;
+    response.setHeader("Cache-Control", "no-store");
+    if (pathname === "/observer.html") {
+      response.writeHead(200, { "Content-Type": "text/html" });
+      response.end("<!doctype html><title>Outside the app scope</title>");
+      return;
+    }
+    if (version === "v2" && /\/MusicPanel-.*-v2\.js$/.test(pathname)) {
+      if (mode === "failed") {
+        response.writeHead(503);
+        response.end("Interrupted update");
+        return;
+      }
+      if (mode === "held") {
+        heldResponses.add(response);
+        response.on("close", () => heldResponses.delete(response));
+        return;
+      }
+    }
+    const body = builds.get(version)!.get(pathname);
+    response.writeHead(body ? 200 : 404, {
+      "Content-Type": contentTypes[extname(pathname) || ".html"] ?? "application/octet-stream",
+    });
+    response.end(body);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Expected an ephemeral HTTP port");
+  const origin = `http://127.0.0.1:${address.port}`;
+
+  return {
+    origin,
+    url: `${origin}/chromalum/`,
+    publishUpdate(nextMode: UpdateMode) {
+      version = "v2";
+      mode = nextMode;
+    },
+    heldRequestCount: () => heldResponses.size,
+    setOffline(value: boolean) {
+      offline = value;
+      if (value) for (const response of heldResponses) response.destroy();
+    },
+    async close() {
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+    },
+  };
+}
+
+async function openControlledBuild(page: Page, url: string) {
+  await page.goto(url);
+  await page.waitForFunction(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    return !!navigator.serviceWorker.controller && registration?.active?.state === "activated";
+  });
+  await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
+}
+
+async function requestUpdate(page: Page, expectedState: ServiceWorkerState) {
+  await page.evaluate(async (state) => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) throw new Error("The initial build must be registered");
+    const reachedState = new Promise<void>((resolve) => {
+      registration.addEventListener(
+        "updatefound",
+        () => {
+          const worker = registration.installing!;
+          const check = () => {
+            if (worker.state === state) resolve();
+          };
+          worker.addEventListener("statechange", check);
+          check();
+        },
+        { once: true },
+      );
+    });
+    await registration.update();
+    await reachedState;
+  }, expectedState);
+}
+
+async function expectMusicNotLoaded(page: Page) {
+  expect(await page.evaluate(() => performance.getEntriesByType("resource").some((entry) => /\/MusicPanel-/.test(entry.name)))).toBe(false);
+}
+
+for (const mode of ["failed", "held"] as const) {
+  test(`keeps the active app usable offline when the next precache is ${mode}`, async ({ page, context }) => {
+    const server = await startUpdateServer();
+    try {
+      await openControlledBuild(page, server.url);
+      await expectMusicNotLoaded(page);
+      server.publishUpdate(mode);
+      await requestUpdate(page, mode === "failed" ? "redundant" : "installing");
+      if (mode === "held") await expect.poll(server.heldRequestCount).toBeGreaterThan(0);
+
+      await page.reload();
+      await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
+      await expectMusicNotLoaded(page);
+      server.setOffline(true);
+      await context.setOffline(true);
+      await page.getByRole("tab", { name: "Music", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+
+      // An uncached navigation with a query string must use the same shell,
+      // including when no network fallback is possible.
+      const response = await page.goto(`${server.url}offline-route?update=interrupted`);
+      expect(response?.status()).toBe(200);
+      await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
+      await page.getByRole("tab", { name: "Music", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+    } finally {
+      await server.close();
+    }
+  });
+}
+
+test("uses a completed update only after every previous app client closes", async ({ page, context }) => {
+  const server = await startUpdateServer();
+  try {
+    await openControlledBuild(page, server.url);
+    const otherClient = await context.newPage();
+    await openControlledBuild(otherClient, server.url);
+    server.publishUpdate("complete");
+    await requestUpdate(page, "installed");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
+    await expectMusicNotLoaded(page);
+
+    server.setOffline(true);
+    await context.setOffline(true);
+    await page.getByRole("tab", { name: "Music", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+
+    server.setOffline(false);
+    await context.setOffline(false);
+    const observer = await context.newPage();
+    await observer.goto(`${server.origin}/observer.html`);
+    await page.close();
+    expect(await observer.evaluate(async () => (await navigator.serviceWorker.getRegistration("/chromalum/"))?.waiting?.state)).toBe(
+      "installed",
+    );
+    await otherClient.close();
+    await observer.waitForFunction(async () => {
+      const registration = await navigator.serviceWorker.getRegistration("/chromalum/");
+      return registration?.active?.state === "activated" && !registration.waiting;
+    });
+
+    const nextVisit = await context.newPage();
+    await nextVisit.goto(`${server.url}#source`);
+    await expect(nextVisit.locator("html")).toHaveAttribute("data-build-version", "v2");
+    await expectMusicNotLoaded(nextVisit);
+    server.setOffline(true);
+    await context.setOffline(true);
+    await nextVisit.reload();
+    await expect(nextVisit.locator("html")).toHaveAttribute("data-build-version", "v2");
+    await nextVisit.getByRole("tab", { name: "Music", exact: true }).click();
+    await expect(nextVisit.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+  } finally {
+    await server.close();
+  }
 });

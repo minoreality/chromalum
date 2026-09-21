@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useCallback, useMemo, useState } from "react";
+import { PersistenceNotice } from "./components/PersistenceNotice";
 
 import { isShapeTool } from "./constants";
 import { useSyncRef } from "./hooks/useSyncRef";
@@ -400,6 +401,12 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
       <div ref={ariaLiveRef} role="status" aria-live="polite" aria-atomic="true" style={S_SR_ONLY} />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
+      <PersistenceNotice
+        issue={app.persistenceIssue}
+        recovering={app.recoveringPersistence}
+        recoveryFailed={app.persistenceRecoveryFailed}
+        onRecover={app.recoverPersistence}
+      />
 
       <NewCanvasModal open={showNewCanvas} onConfirm={handleNewCanvasConfirm} onCancel={handleNewCanvasCancel} />
       {cropImage && (
