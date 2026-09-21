@@ -108,11 +108,11 @@ export function useMusicFanoHandlers({ engine, hoveredFanoLine, setHoveredFanoLi
     if (xorA != null && xorB != null) {
       engine.initAudio();
       const fanoIdx = findMusicFanoLine(xorA, xorB);
-      if (fanoIdx >= 0) setHoveredFanoLine(fanoIdx);
       engine.playXorTriple?.(xorA, xorB, (lv) => {
         setXorStep(lv);
         if (lv === null && fanoIdx >= 0) setHoveredFanoLine(null);
       });
+      if (fanoIdx >= 0) setHoveredFanoLine(fanoIdx);
     }
   }, [engine, setHoveredFanoLine, setXorStep, xorA, xorB]);
 

@@ -63,6 +63,7 @@ export const ComplementPairsCard = React.memo(function ComplementPairsCard({ eng
         },
         reverse,
         true,
+        () => setPlaying(null),
       );
       setPlaying(dir);
     },

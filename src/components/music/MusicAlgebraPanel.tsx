@@ -494,6 +494,7 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
                   engine.initAudio();
                   engine.playGray3Voice?.((levelIndex: number | null) => {
                     onGray3CodeChange(levelIndex);
+                    if (levelIndex === null) onGray3PlayingChange(false);
                   });
                   onGray3PlayingChange(true);
                 }
