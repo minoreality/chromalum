@@ -203,6 +203,9 @@ export const GalleryPanel = React.memo(function GalleryPanel({
   const [filter, setFilter] = useState<GalleryFilter>("all");
   const [sortMode, setSortMode] = useState<GallerySortMode>("default");
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  useEffect(() => {
+    if (active === false) setExpandedIndex(null);
+  }, [active]);
   const panelRef = useRef<HTMLDivElement>(null);
   const currentItemRef = useRef<HTMLDivElement>(null);
 
@@ -289,7 +292,7 @@ export const GalleryPanel = React.memo(function GalleryPanel({
     const lut = buildColorLUT(item.candidateIndexByLevel);
     return renderThumbnail(canvasData.levelData, canvasData.width, canvasData.height, lut, expandedRenderW, expandedRenderH);
   }, [expandedIndex, displayItems, canvasData, expandedRenderW, expandedRenderH]);
-  const previewOpen = expandedImageData !== null && expandedIndex !== null && expandedIndex < displayItems.length;
+  const previewOpen = active !== false && expandedImageData !== null && expandedIndex !== null && expandedIndex < displayItems.length;
   const renderPreviewForCopy = useCallback(() => {
     if (expandedIndex === null || !displayItems[expandedIndex]) throw new Error("No preview to copy");
     const lut = buildColorLUT(displayItems[expandedIndex].candidateIndexByLevel);

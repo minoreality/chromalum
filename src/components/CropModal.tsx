@@ -65,6 +65,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
 
   // Drag state
   const dragRef = useRef<{
+    pointerId: number;
     mode: DragMode;
     startX: number;
     startY: number;
@@ -101,6 +102,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
     (e: React.KeyboardEvent, mode: Exclude<DragMode, null>) => {
       const horizontal = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
       const vertical = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+      if (horizontal === 0 && vertical === 0) return;
       const relevant =
         mode === "move" ||
         (horizontal !== 0 && (mode.includes("w") || mode.includes("e"))) ||
@@ -135,11 +137,13 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, mode: DragMode) => {
+      if (dragRef.current) return;
       e.preventDefault();
       e.stopPropagation();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      e.currentTarget.setPointerCapture(e.pointerId);
       setActiveMode(mode);
       dragRef.current = {
+        pointerId: e.pointerId,
         mode,
         startX: e.clientX,
         startY: e.clientY,
@@ -155,7 +159,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       const d = dragRef.current;
-      if (!d || !d.mode) return;
+      if (!d || d.pointerId !== e.pointerId || !d.mode) return;
       const dx = (e.clientX - d.startX) / displayScale;
       const dy = (e.clientY - d.startY) / displayScale;
 
@@ -195,15 +199,20 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
       }
 
       const c = clamp(nx, ny, nw, nh);
-      setCx(Math.round(c.nx));
-      setCy(Math.round(c.ny));
-      setCw(Math.round(c.nw));
-      setCh(Math.round(c.nh));
+      // Round the boundaries together: rounding position and size separately can
+      // put their sum one pixel beyond the image when both end in half a pixel.
+      const left = Math.round(c.nx);
+      const top = Math.round(c.ny);
+      setCx(left);
+      setCy(top);
+      setCw(Math.round(c.nx + c.nw) - left);
+      setCh(Math.round(c.ny + c.nh) - top);
     },
     [displayScale, clamp],
   );
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerEnd = useCallback((e: React.PointerEvent) => {
+    if (dragRef.current?.pointerId !== e.pointerId) return;
     dragRef.current = null;
     setActiveMode(null);
   }, []);
@@ -308,7 +317,9 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
             touchAction: "none",
           }}
           onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onLostPointerCapture={handlePointerEnd}
         >
           {/* Image canvas */}
           <canvas ref={canvasRef} style={{ display: "block", borderRadius: R.md }} />

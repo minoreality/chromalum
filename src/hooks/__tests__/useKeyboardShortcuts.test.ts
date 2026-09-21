@@ -86,6 +86,36 @@ describe("useKeyboardShortcuts", () => {
     cleanup = unmount;
   });
 
+  it.each([
+    { key: "e" },
+    { key: "]" },
+    { key: "0" },
+    { key: "=", ctrlKey: true },
+    { key: "z", ctrlKey: true },
+    { key: " ", code: "Space" },
+    { key: "F1" },
+    { key: "2", code: "Digit2", altKey: true },
+    { key: "l", code: "KeyL", altKey: true },
+  ])("leaves an already-handled $key event with its local owner", (init) => {
+    const args = makeArgs();
+    const { unmount } = renderHook(() => useKeyboardShortcuts(args.deps));
+    cleanup = unmount;
+    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+    event.preventDefault();
+
+    window.dispatchEvent(event);
+
+    expect(vi.mocked(args.setTool)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.setBrushSize)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.setBrushLevel)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.setZoom)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.dispatch)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.setShowHelp)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.setActiveTabId)).not.toHaveBeenCalled();
+    expect(vi.mocked(args.toggleLanguage)).not.toHaveBeenCalled();
+    expect(args.spaceRef.current).toBe(false);
+  });
+
   describe("tool switching shortcuts", () => {
     const toolKeys: [string, ToolId][] = [
       ["b", "brush"],

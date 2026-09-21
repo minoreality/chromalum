@@ -30,10 +30,8 @@ type Drag = {
   pointerId: number;
   x: number;
   y: number;
-  /** Screen pixels per unit of the drawing surface. */
-  unit: number;
-  left: number;
-  top: number;
+  /** Maps client coordinates into the SVG's drawing units at the press. */
+  surfacePoint: (clientX: number, clientY: number) => { x: number; y: number };
   /** The point of the ball the press took hold of, and how far its hold reaches. */
   grabbed: Point3;
   grip: StellaGrip;
@@ -50,7 +48,7 @@ type Drag = {
 };
 
 export interface TrackballOptions {
-  /** The svg's own viewBox, so a client point can be read in drawing units. */
+  /** Drawing bounds for the fallback when the SVG has no screen matrix. */
   viewBox: { readonly x: number; readonly y: number; readonly size: number };
   /** The sphere the figure is drawn on, in those same units. */
   ball: StellaBall;
@@ -78,11 +76,6 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
   const swallowNextClick = useRef(false);
   const swallowNextMenu = useRef(false);
   const [dragging, setDragging] = useState(false);
-
-  const surfacePoint = (clientX: number, clientY: number, left: number, top: number, unit: number) => ({
-    x: viewBox.x + (clientX - left) / unit,
-    y: viewBox.y + (clientY - top) / unit,
-  });
 
   const stopSpin = () => {
     cancelAnimationFrame(spinFrame.current);
@@ -125,7 +118,19 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
       swallowNextMenu.current = false;
       const box = event.currentTarget.getBoundingClientRect();
       const unit = (Math.min(box.width, box.height) || FALLBACK_DRAG_SIZE) / viewBox.size;
-      const { x, y } = surfacePoint(event.clientX, event.clientY, box.left, box.top, unit);
+      // The SVG matrix includes non-square viewBoxes and preserveAspectRatio
+      // padding. A square estimate is only for layout-free environments.
+      const matrix = event.currentTarget.getScreenCTM?.()?.inverse();
+      const surfacePoint: Drag["surfacePoint"] = matrix
+        ? (clientX, clientY) => ({
+            x: matrix.a * clientX + matrix.c * clientY + matrix.e,
+            y: matrix.b * clientX + matrix.d * clientY + matrix.f,
+          })
+        : (clientX, clientY) => ({
+            x: viewBox.x + (clientX - box.left) / unit,
+            y: viewBox.y + (clientY - box.top) / unit,
+          });
+      const { x, y } = surfacePoint(event.clientX, event.clientY);
       // The press takes hold of the face of the ball at that spot, never of
       // whatever the figure draws there, so the same place always turns the same
       // way whether a near vertex, a far one, or nothing sits under it.
@@ -144,9 +149,7 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
         pointerId: event.pointerId,
         x: event.clientX,
         y: event.clientY,
-        unit,
-        left: box.left,
-        top: box.top,
+        surfacePoint,
         grabbed: stellaBallDirection(x, y, grip === "sheet" ? "sheet" : "sphere", ball),
         grip,
         fromX: x,
@@ -183,7 +186,7 @@ export function useTrackballDrag({ viewBox, ball, orientation, onTurn, onDragSta
           /* capture is an optimisation; the drag still works without it */
         }
       }
-      const { x, y } = surfacePoint(event.clientX, event.clientY, current.left, current.top, current.unit);
+      const { x, y } = current.surfacePoint(event.clientX, event.clientY);
       if (current.grip === "linear") {
         onTurn(() => linearStellaOrientation(current.base, current.fromX, current.fromY, x, y, ball));
         return true;

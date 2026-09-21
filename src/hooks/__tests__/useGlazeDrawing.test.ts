@@ -186,6 +186,62 @@ describe("useGlazeDrawing", () => {
     mockPanningRef.current = false;
   });
 
+  it.each(["replacement", "unmount"] as const)("discards a queued glaze render on canvas %s", (change) => {
+    vi.useFakeTimers();
+    try {
+      const canvasData = makeCvs();
+      canvasData.levelData.fill(2);
+      const { result, rerender, unmount } = renderHook(({ canvasData }) => useGlazeDrawing(makeOpts({ canvasData })), {
+        initialProps: { canvasData },
+      });
+      const canvas = result.current.cursorCanvasRef.current!;
+      mockCanvasRect(canvas);
+      act(() => {
+        result.current.onDown(pointerEvent({ target: canvas }));
+        result.current.onMove(pointerEvent({ target: canvas, clientX: 224 }));
+      });
+      vi.mocked(renderCanvasBuffers).mockClear();
+
+      if (change === "replacement") rerender({ canvasData: makeCvs() });
+      else unmount();
+      act(() => vi.advanceTimersByTime(32));
+
+      expect(renderCanvasBuffers).not.toHaveBeenCalled();
+      unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    { glazeTool: "glaze_eraser" as const, brushSize: 1 },
+    { glazeTool: "glaze_fill" as const, brushSize: 1 },
+    { glazeTool: "glaze_brush" as const, brushSize: 5 },
+  ])("keeps the active stroke parameters when controls change to $glazeTool at size $brushSize", (nextParams) => {
+    const canvasData = makeCvs();
+    canvasData.levelData.fill(2);
+    const dispatch = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ glazeTool, brushSize }: { glazeTool: GlazeToolId; brushSize: number }) =>
+        useGlazeDrawing(makeOpts({ canvasData, dispatch, glazeTool, brushSize })),
+      { initialProps: { glazeTool: "glaze_brush" as GlazeToolId, brushSize: 1 } },
+    );
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    rerender(nextParams);
+    act(() => {
+      result.current.onMove(pointerEvent({ target: canvas, clientX: 224 }));
+      result.current.onUp();
+    });
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    const overrides = dispatch.mock.calls[0][0].finalPixelCandidateOverrideMap as Uint8Array;
+    expect(overrides[5 * 10 + 5]).toBeGreaterThan(0);
+    expect(overrides[5 * 10 + 6]).toBeGreaterThan(0);
+    expect(overrides[6 * 10 + 6]).toBe(0);
+  });
+
   it("paints a glaze override and dispatches a color-map diff", () => {
     const canvasData = makeCvs(10, 10);
     const centerIndex = 5 * 10 + 5;

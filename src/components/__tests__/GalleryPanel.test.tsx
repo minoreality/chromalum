@@ -305,6 +305,23 @@ describe("GalleryPanel", () => {
     expect(screen.queryByRole("dialog", { name: "gallery_preview_dialog" })).toBeNull();
   });
 
+  it("closes the preview and releases the focus trap when the panel becomes inactive", () => {
+    galleryMock.items = [makeItem()];
+    const { rerender, props } = renderGallery();
+    fireEvent.click(screen.getByRole("button", { name: /gallery_preview/ }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    rerender(<GalleryPanel {...props} active={false} />);
+
+    expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
+    const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    fireEvent(document.body, event);
+    expect(event.defaultPrevented).toBe(false);
+
+    rerender(<GalleryPanel {...props} active />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("scrolls to the current item only when requested on an active panel", () => {
     galleryMock.items = [makeItem(DEFAULT_CANDIDATE_INDEX_BY_LEVEL), makeItem(withLevel(2, 1))];
     const rafCallbacks: FrameRequestCallback[] = [];
