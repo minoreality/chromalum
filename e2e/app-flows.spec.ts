@@ -145,6 +145,35 @@ async function expectReadableToast(page: Page, name: RegExp) {
   expect(accessibility.violations).toEqual([]);
 }
 
+async function readRecoveryArchives(page: Page): Promise<string[]> {
+  return page.evaluate(
+    () =>
+      new Promise<string[]>((resolve, reject) => {
+        const request = indexedDB.open("chromalum");
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction("state", "readonly");
+          const cursor = tx.objectStore("state").openCursor();
+          const archives: string[] = [];
+          cursor.onsuccess = () => {
+            if (!cursor.result) return;
+            if (String(cursor.result.key).startsWith("recovery:")) archives.push(JSON.stringify(cursor.result.value.value));
+            cursor.result.continue();
+          };
+          tx.oncomplete = () => {
+            db.close();
+            resolve(archives);
+          };
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      }),
+  );
+}
+
 test("draws, undoes, redoes, saves, and restores the source canvas", async ({ page }) => {
   await gotoSource(page);
 
@@ -206,6 +235,58 @@ test("rejects a stale tab save instead of rolling back newer canvas work", async
 });
 
 for (const kind of ["unsupported", "malformed", "null"] as const) {
+  test(`recovers autosave by archiving ${kind} data and keeping the current canvas`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    const original = await seedInvalidSavedRecord(page, kind);
+    await gotoSource(page);
+    const status = page.getByRole("button", { name: "Auto-save off", exact: true });
+    await expect(status).toBeVisible();
+    await createCanvas(page, 8);
+    const canvas = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
+    await drawAtCenter(page, canvas);
+    await expect.poll(() => canvasPixel(canvas, 4, 4)).toEqual([255, 255, 255, 255]);
+    await status.click();
+    const dialog = page.getByRole("dialog", { name: "Auto-save off", exact: true });
+    await expect(dialog).toContainText("Keep the unreadable saved data separately in this browser");
+    await page.keyboard.press("Escape");
+    await expect(status).toBeFocused();
+    expect(await readSavedRecord(page)).toBe(original);
+    expect(await readRecoveryArchives(page)).toEqual([]);
+    await status.click();
+
+    if (kind === "malformed") {
+      // Fail the backup write once, then verify both preservation and an explicit retry.
+      await page.evaluate(() => {
+        const originalAdd = IDBObjectStore.prototype.add;
+        IDBObjectStore.prototype.add = function (value: unknown, key?: IDBValidKey) {
+          if (typeof key === "string" && key.startsWith("recovery:")) {
+            IDBObjectStore.prototype.add = originalAdd;
+            throw new DOMException("Synthetic quota exhaustion", "QuotaExceededError");
+          }
+          return originalAdd.call(this, value, key);
+        };
+      });
+      await dialog.getByRole("button", { name: "Archive original and resume saving" }).click();
+      await expect(dialog.getByRole("alert")).toContainText("Could not resume saving");
+      expect(await readSavedRecord(page)).toBe(original);
+      expect(await readRecoveryArchives(page)).toEqual([]);
+      await expect(status).toBeVisible();
+    }
+
+    await dialog.getByRole("button", { name: "Archive original and resume saving" }).click();
+    await expect(status).toHaveCount(0);
+    await expect(dialog).toHaveCount(0);
+    await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 8, height: 8, revision: kind === "unsupported" ? 8 : 1 });
+    expect(await readRecoveryArchives(page)).toEqual([original]);
+    await page.reload();
+    await expect(canvas).toBeVisible();
+    await expect.poll(() => canvasPixel(canvas, 4, 4)).toEqual([255, 255, 255, 255]);
+    await expect(status).toHaveCount(0);
+    await createCanvas(page, 16);
+    await expect.poll(() => readSavedCanvas(page)).toMatchObject({ width: 16, height: 16, revision: kind === "unsupported" ? 9 : 2 });
+    expect(await readRecoveryArchives(page)).toEqual([original]);
+  });
+
   test(`preserves ${kind} saved data while editing and exporting with autosave off`, async ({ page }) => {
     await page.setViewportSize(kind === "malformed" ? { width: 320, height: 800 } : { width: 1280, height: 900 });
     const savedRecord = await seedInvalidSavedRecord(page, kind);

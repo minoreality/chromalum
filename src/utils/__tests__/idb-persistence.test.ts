@@ -9,6 +9,7 @@ import {
   requestPersistentStorage,
   resetPersistenceConnectionForTests,
   SaveConflictError,
+  recoverInvalidState,
 } from "../idb-persistence";
 import type { SavedState } from "../idb-persistence";
 
@@ -124,6 +125,95 @@ describe("saveState / loadState roundtrip", () => {
       expectedRevision: firstRevision,
     });
     expect(secondRevision).toBe(2);
+  });
+});
+
+describe("recoverInvalidState", () => {
+  async function openRecords() {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("chromalum", 2);
+      request.onupgradeneeded = () => request.result.createObjectStore("state");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function seedRecord(db: IDBDatabase, value: unknown) {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction("state", "readwrite");
+      tx.objectStore("state").put(value, "current");
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async function records(db: IDBDatabase) {
+    return new Promise<unknown[]>((resolve, reject) => {
+      const request = db.transaction("state", "readonly").objectStore("state").getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  it.each([
+    {
+      label: "unsupported",
+      raw: {
+        version: SAVED_STATE_VERSION + 1,
+        width: 1,
+        height: 1,
+        levelData: new Uint8Array([5]),
+        candidateIndexByLevel: new Array(8).fill(0),
+        extra: "keep me",
+      },
+    },
+    { label: "malformed", raw: { width: 9, height: 8, revision: 7, levelData: new Uint8Array([2]) } },
+    { label: "null", raw: null },
+    { label: "undefined", raw: undefined },
+  ])("archives the exact $label record and saves current work atomically", async ({ raw }) => {
+    const db = await openRecords();
+    try {
+      await seedRecord(db, raw);
+      const state = makeState({ levelData: new Uint8Array(16).fill(3) });
+      const revision = await recoverInvalidState(state);
+      expect(revision).toBe(raw && "revision" in raw ? 8 : 1);
+      expect(await loadState()).toMatchObject({ ...state, revision });
+      const stored = await records(db);
+      expect(stored).toHaveLength(2);
+      expect(stored).toContainEqual({ value: raw, archivedAt: expect.any(Number) });
+      await saveState(makeState({ levelData: new Uint8Array(16).fill(6) }), { expectedRevision: revision });
+      expect((await loadState())?.levelData[0]).toBe(6);
+      expect(await records(db)).toContainEqual({ value: raw, archivedAt: expect.any(Number) });
+    } finally {
+      db.close();
+    }
+  });
+
+  it("refuses recovery after another tab replaces the invalid record with valid work", async () => {
+    const db = await openRecords();
+    try {
+      await seedRecord(db, null);
+      await saveState(makeState({ levelData: new Uint8Array(16).fill(5) }));
+      await expect(recoverInvalidState(makeState())).rejects.toHaveProperty("name", "SaveConflictError");
+      expect((await loadState())?.levelData[0]).toBe(5);
+      expect(await records(db)).toHaveLength(1);
+    } finally {
+      db.close();
+    }
+  });
+
+  it("leaves the original record intact if writing the replacement aborts", async () => {
+    const db = await openRecords();
+    try {
+      const raw = { unsupported: "original" };
+      await seedRecord(db, raw);
+      // An uncloneable replacement makes the real IDB transaction fail after the archive is queued.
+      const uncloneable = { ...makeState(), extra: () => {} };
+      await expect(recoverInvalidState(uncloneable)).rejects.toBeTruthy();
+      expect(await records(db)).toEqual([raw]);
+    } finally {
+      db.close();
+    }
   });
 });
 

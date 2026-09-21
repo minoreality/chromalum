@@ -156,10 +156,20 @@ current saved-state shape.
 
 Restore treats an empty database and an invalid saved record differently. Empty
 storage starts from the default canvas. Invalid or unsupported saved data is
-reported to the UI and preserved in IndexedDB; autosave is disabled for the page
-session so no later edit replaces the record. Canvas editing and PNG export
-remain available, and a temporary toast explains why autosave is blocked and
-suggests exporting PNG images. Autosave remains blocked after the toast expires.
+reported to the UI and preserved in IndexedDB; autosave stays disabled until
+explicit recovery so no later edit replaces the record automatically. Canvas
+editing and PNG export remain available. A temporary toast explains the problem,
+and a fixed-position "Auto-save off" button keeps the status and recovery action
+available without moving the canvas.
+
+Explicit recovery archives the exact unreadable value under a unique
+`recovery:<uuid>` key in the existing `state` store, then saves the current canvas
+under `current`, within one read-write transaction. The archive contains `value`
+and `archivedAt`; it stays in this browser and is not an external backup. A failed
+transaction preserves the original record and keeps autosave blocked. Recovery
+rechecks that `current` is still invalid before writing, so a different tab's
+valid replacement is never overwritten. Successful recovery resumes revision-based
+autosave, including edits made while recovery was pending.
 
 Restore and autosave also defend against asynchronous and multi-tab races. If
 persisted canvas data changes locally while the initial IndexedDB read is still
@@ -169,7 +179,18 @@ page session and shows a toast, so the default canvas
 cannot overwrite an intact record. Each save compares its expected revision and
 writes the next revision inside one read-write transaction. A revision conflict
 blocks further autosave for the session and shows a conflict toast
-instead of replacing newer work.
+instead of replacing newer work. These failures keep the same persistent status
+button, with guidance to export unsaved work before reloading; invalid-record
+recovery is not offered for read failures or revision conflicts.
+
+## Offline Updates
+
+The generated service worker precaches the app shell, workers, and lazy chunks
+under one content-derived version. Controlled navigation serves HTML from that
+active worker's own precache, keeping HTML and assets on the same version even if
+a newer worker's installation fails or is interrupted. New workers activate
+naturally after all controlled clients close; no automatic `skipWaiting` forces
+already-open pages onto a different asset version.
 
 ## Workers
 

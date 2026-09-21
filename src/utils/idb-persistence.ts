@@ -220,8 +220,6 @@ function normalizeLoadedState(val: unknown): LoadStateResult {
     return invalidResult("saved state version is invalid");
   }
 
-  saved.revision = storedRevision(saved);
-
   if (saved.version > SAVED_STATE_VERSION) {
     return invalidResult(`saved state version ${saved.version} is newer than supported version ${SAVED_STATE_VERSION}`);
   }
@@ -238,6 +236,7 @@ function normalizeLoadedState(val: unknown): LoadStateResult {
     return invalidResult("saved state canvas dimensions are invalid");
   }
 
+  saved.revision = storedRevision(saved);
   saved.width = width;
   saved.height = height;
   saved.levelData = levelData;
@@ -289,6 +288,37 @@ export async function loadStateWithStatus(): Promise<LoadStateResult> {
 
 export async function loadState(): Promise<SavedState | null> {
   return (await loadStateWithStatus()).state;
+}
+
+/** Explicit recovery only: preserve the unreadable record before saving current work. */
+export async function recoverInvalidState(state: SavedState): Promise<number> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.openCursor(KEY);
+    let nextRevision = 0;
+    let recoveryError: unknown;
+    request.onsuccess = () => {
+      try {
+        const cursor = request.result;
+        if (!cursor || normalizeLoadedState(cursor.value).status !== "invalid") {
+          // Another tab may have repaired/replaced the record since this page loaded.
+          recoveryError = new SaveConflictError(state.revision, storedRevision(cursor?.value));
+          tx.abort();
+          return;
+        }
+        nextRevision = storedRevision(cursor.value) + 1;
+        store.add({ value: cursor.value, archivedAt: Date.now() }, `recovery:${crypto.randomUUID()}`);
+        store.put({ ...state, revision: nextRevision }, KEY);
+      } catch (error) {
+        recoveryError = error;
+        tx.abort();
+      }
+    };
+    tx.oncomplete = () => resolve(nextRevision);
+    tx.onabort = () => reject(recoveryError ?? tx.error ?? new Error("Recovery transaction aborted"));
+  });
 }
 
 export function resetPersistenceConnectionForTests(): void {

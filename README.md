@@ -88,8 +88,8 @@ undo/redo stores compact diffs, and autosave uses IndexedDB.
   revision-based compare-and-swap within one transaction to reject stale-tab
   overwrites. Restore guards preserve edits made during loading, and versioned
   validation normalizes legacy records; invalid or unsupported records, read
-  failures, and revision conflicts disable autosave for the page session and
-  trigger a toast explaining why.
+  failures, and revision conflicts stop autosave with a persistent status.
+  Explicit recovery archives unreadable data and saves current work atomically.
 - **Shared color algebra:** the model constructs the chromatic six-cycle from
   the binary RGB cube and combines it with GRB rank weights to compute hue
   fibers and palette candidates for rendering, Theory and Music. Lossy sRGB

@@ -3,13 +3,14 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { LanguageProvider } from "../i18n";
-import { loadStateWithStatus } from "../utils/idb-persistence";
+import { loadStateWithStatus, recoverInvalidState } from "../utils/idb-persistence";
 
 vi.mock("../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
   loadState: vi.fn(() => Promise.resolve(null)),
   loadStateWithStatus: vi.fn(() => Promise.resolve({ status: "empty", state: null })),
   saveState: vi.fn(() => Promise.resolve(1)),
+  recoverInvalidState: vi.fn(() => Promise.resolve(8)),
   requestPersistentStorage: vi.fn(() => Promise.resolve({ supported: true, persisted: true, requested: true })),
 }));
 
@@ -31,7 +32,7 @@ describe("App", () => {
   it.each([
     { lang: "en" as const, title: "Auto-save off", unsaved: "Edits are unsaved." },
     { lang: "ja" as const, title: "自動保存停止", unsaved: "変更は未保存です。" },
-  ])("shows a temporary $lang autosave toast without a permanent notice", async ({ lang, title, unsaved }) => {
+  ])("keeps $lang autosave status and recovery available after the toast expires", async ({ lang, title, unsaved }) => {
     vi.useFakeTimers();
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.mocked(loadStateWithStatus).mockResolvedValueOnce({ status: "invalid", state: null, reason: "unsupported version" });
@@ -48,8 +49,38 @@ describe("App", () => {
     await act(async () => vi.advanceTimersByTime(5000));
     expect(screen.queryByRole("alert")).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: "Source" }));
-    expect(screen.queryByText(title)).toBeNull();
+    const status = screen.getByRole("button", { name: title });
+    status.focus();
+    fireEvent.click(status);
+    const dialog = screen.getByRole("dialog", { name: title });
+    expect(dialog.textContent).toContain(unsaved);
+    expect(
+      screen.getByRole("button", { name: lang === "en" ? "Archive original and resume saving" : "元データを退避して保存を再開" }),
+    ).toBeTruthy();
+    expect(recoverInvalidState).not.toHaveBeenCalled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: title })).toBeNull();
+    expect(document.activeElement).toBe(status);
     expect(screen.queryByText(/Auto-save on|自動保存オン/)).toBeNull();
+  });
+
+  it("only recovers saved data after the recovery action is chosen", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(loadStateWithStatus).mockResolvedValueOnce({ status: "invalid", state: null });
+    renderApp();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Auto-save off" }));
+    expect(screen.getByRole("dialog", { name: "Auto-save off" })).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Archive original and resume saving" }));
+    });
+    expect(screen.queryByRole("dialog", { name: "Auto-save off" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Auto-save off" })).toBeNull();
+    expect(screen.getByRole("alert", { name: /Auto-save resumed/ })).toBeTruthy();
   });
 
   it("renders primary tabs and switches from Source to Theory", async () => {
