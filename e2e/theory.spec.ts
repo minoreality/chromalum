@@ -131,7 +131,8 @@ for (const language of ["ja", "en"]) {
             left: element.getBoundingClientRect().left,
             right: element.getBoundingClientRect().right,
           }));
-        const paths = [...document.querySelectorAll(".theory-derivation-paths > figure")].map((element) => element.getBoundingClientRect());
+        const order = document.querySelector(".theory-derivation-order")!.getBoundingClientRect();
+        const rank = document.querySelector(".theory-derivation-conclusion")!.getBoundingClientRect();
         const cycle = document.querySelector(".theory-hue-cycle")!.getBoundingClientRect();
         const captionElement = document.querySelector(".theory-hue-caption")!;
         const caption = captionElement.getBoundingClientRect();
@@ -170,7 +171,7 @@ for (const language of ["ja", "en"]) {
         const levels = [...plot.querySelectorAll("[data-tone-level] > line")].map((line) => line.getBoundingClientRect().y);
         return {
           overflow,
-          sideBySide: Math.abs(paths[0].top - paths[1].top) < 1,
+          derivationInOrder: order.bottom <= rank.top,
           cycleLeftOfTable: cycle.right <= table.left && cycle.top < table.bottom && table.top < cycle.bottom,
           desktopOverviewHeight: window.innerWidth < 1186 || overview.height - captionArea <= 270,
           middleOverviewHeight: window.innerWidth < 480 || window.innerWidth > 867 || overview.height - captionArea <= 240,
@@ -252,7 +253,7 @@ for (const language of ["ja", "en"]) {
         };
       });
       expect(layout.overflow, `${language}, ${width}px`).toEqual([]);
-      expect(layout.sideBySide).toBe(true);
+      expect(layout.derivationInOrder).toBe(true);
       expect(layout.cycleLeftOfTable).toBe(true);
       expect(layout.desktopOverviewHeight).toBe(true);
       expect(layout.middleOverviewHeight, `${language}, ${width}px`).toBe(true);
@@ -635,13 +636,16 @@ test("crossfades hidden cube edges during both Hasse rotations", async ({ page }
   }
 });
 
-test("shows gapless sums and compares K8 distance and rank in a compact responsive panel", async ({ page }) => {
+test("derives primary ranks with a prose supplement and compares K8 distance in a compact responsive panel", async ({ page }) => {
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");
-    const subset = page.getByTestId("subset-sum-derivation");
-    await expect(subset.locator('[data-subset-weight="4"] [data-subset-value]')).toHaveText(["0", "1", "2", "3", "4", "5", "6", "7"]);
-    await expect(subset.locator('[data-subset-weight="4"] [data-subset-translated="true"]')).toHaveText(["4", "5", "6", "7"]);
+    const derivation = page.locator(".theory-derivation");
+    await expect(derivation.locator(".theory-derivation-comparisons code")).toHaveText(["wB > 0", "wR > wB", "wG > wR + wB"]);
+    await expect(derivation.locator(".theory-derivation-named-ranks span")).toHaveText(["B=1", "R=2", "G=4"]);
+    await expect(derivation.locator(".theory-derivation-supplement")).toContainText(
+      language === "ja" ? "0〜7を重複も隙間もなく埋めます" : "0–7 without repetition or gaps",
+    );
     const graph = page.locator("#theory-stella-view");
     const positions = () =>
       graph
@@ -716,6 +720,19 @@ test("shows gapless sums and compares K8 distance and rank in a compact responsi
 
     for (const width of [320, 362, 395, 547, 640, 715, 761, 870, 1039]) {
       await page.setViewportSize({ width, height: 900 });
+      // Also exercise the wider system-font fallback used by layout checks.
+      await derivation.evaluate((root) => {
+        root.style.setProperty("--font-mono", '"MS Gothic", monospace');
+      });
+      expect(
+        await derivation.evaluate((root) => {
+          const order = root.querySelector(".theory-derivation-order")!.getBoundingClientRect();
+          const conclusion = root.querySelector(".theory-derivation-conclusion")!.getBoundingClientRect();
+          const formula = root.querySelector(".theory-derivation-conclusion > code:last-of-type")!.getBoundingClientRect();
+          const supplement = root.querySelector(".theory-derivation-supplement")!.getBoundingClientRect();
+          return { rankFollowsOrder: conclusion.top >= order.bottom, supplementFollowsFormula: supplement.top >= formula.bottom };
+        }),
+      ).toEqual({ rankFollowsOrder: true, supplementFollowsFormula: true });
       await page.locator(".theory-k8-controls").scrollIntoViewIfNeeded();
       const layout = await page.evaluate(() => {
         const graphic = document.querySelector("#theory-stella-view")!.getBoundingClientRect();
@@ -737,7 +754,7 @@ test("shows gapless sums and compares K8 distance and rank in a compact responsi
           }),
           fits: [
             ...document.querySelectorAll(
-              ".theory-subset, .theory-subset-values, .theory-subset p, .theory-k8-controls, .theory-k8-display-modes, .theory-k8-display-modes button, .theory-k8-summary, .theory-k8-summary > div, .theory-k8-summary code, .theory-k8-edge-legend, .theory-k8-comparison, .theory-k8-comparison-metrics > div, .theory-k8-comparison-metrics dt, .theory-k8-comparison code, .theory-k8-comparison p, .theory-k8-comparison-status",
+              ".theory-derivation, .theory-derivation code, .theory-derivation p, .theory-derivation-order, .theory-derivation-named-ranks, .theory-k8-controls, .theory-k8-display-modes, .theory-k8-display-modes button, .theory-k8-summary, .theory-k8-summary > div, .theory-k8-summary code, .theory-k8-edge-legend, .theory-k8-comparison, .theory-k8-comparison-metrics > div, .theory-k8-comparison-metrics dt, .theory-k8-comparison code, .theory-k8-comparison p, .theory-k8-comparison-status",
             ),
           ].every((node) => {
             const box = node.getBoundingClientRect();

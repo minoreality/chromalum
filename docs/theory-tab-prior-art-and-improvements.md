@@ -47,7 +47,7 @@ A = P({G,R,B})
 | Chapter | Content | Role |
 | --- | --- | --- |
 | 生成 | `A=P({G,R,B})`, Venn, `Γ` | 三原子から `1+3+3+1` の8状態を生成する |
-| 二経路の収束 | 無名の `{1,2,4}`、色の順序、8色表 | `L(g,r,b)=4g+2r+b` を二つの独立な特徴づけから得る |
+| 全順序からの順位導出 | 加法的スコアの三条件、8状態の全順序、原子の順位 | 前にある状態を数えて `B=1,R=2,G=4` を得る。無隙間部分和は帰結 |
 | valuation と補色 | modular identity、XOR補正式、`L(¬a)=7-L(a)` | `L` が単なる番号表ではないことを示す |
 | 反転作用 | `τ_m(x)=x⊕m`, `Q3`, 有彩 `C6`、符号付き順位差 | 生成と状態遷移を分け、差分の符号から包含方向、絶対値から切替チャネルを読む |
 | 有限幾何と符号 | 七つの非零マスク、Fano、Hamming `[7,4,3]` demo | 七つの色ベクトルを `H` の列として読み、`ker H` と syndrome に同じ七点構造が現れることを示す |
@@ -67,7 +67,7 @@ Theory はこの順序で有限代数を `K8` まで完結させ、その後に�
 | Boolean lattice | JSSD CMY color cube II | `B3`、Hasse、補元、join/meet、RGB-CMY 双対 | `B3` を GRB Binary Tone 順、Fano/Hamming、dice に接続する |
 | `Z2^3` color addition | Taylor 2013 | 8 色の XOR 群、Fano plane coloring | RGB display primaries、GRB Binary Tone、Hamming labels、K8 分解へ接続する |
 | Fano/Hamming | Hamming 1950 / Lavrauw / Error Correction Zoo | Hamming code、Fano 平面と Hamming `[7,4,3]` の対応 | 七つの色ベクトルを `H` の列とし、Fano triples、`ker H`、syndrome / coordinate labels を一つの UI で結ぶ |
-| GRB 4:2:1 color code | NEC 1981 / Vickers 1982 | `0=K,1=B,2=R,3=M,4=G,5=C,6=Y,7=W` と Green-Red-Blue bit order | 無名の `{1,2,4}` と色の明るさ順位が同じ名前付き重みへ収束することを示す |
+| GRB 4:2:1 color code | NEC 1981 / Vickers 1982 | `0=K,1=B,2=R,3=M,4=G,5=C,6=Y,7=W` と Green-Red-Blue bit order | 三条件から全順序と名前付き順位を導き、部分和の無隙間性を帰結として示す |
 | Tone | historical color code / CHROMALUM model definition | `level = 4G + 2R + B` | 明るさ順位を表す level を `tone = level / 7` として正規化する |
 | Pure-hue representatives | Smith 1978 / CHROMALUM model definition | RGB cube の最大彩度 6 辺、HSV 型では `S=V=1` の hue loop | `λ` の整数 level ファイバーを有限候補として示し、代数ラベルと表示代表元を分離する |
 | Cube nets / stella | MathWorld Cube / Tetrahedron 2-Compound | 11 cube nets、2 tetrahedra compound | complement-dice、hue path、K8 Hamming-distance color atlas に統合する |
@@ -79,7 +79,7 @@ Theory はこの順序で有限代数を `K8` まで完結させ、その後に�
 | `色彩理論` が一般色彩科学に見える | High | `離散代数的色彩理論` / `8色代数モデル` として範囲を限定する |
 | 二値頂点の明るさ順位を一般色覚全体へ拡張したと読める表現 | High | 加法 RGB の二値8頂点における順序と明記する |
 | 順位としての brightness と連続的な測定量の混同 | High | Binary節では順序・順位を中心にし、規格係数の詳細は証拠節に分離する |
-| `4G+2R+B` 色番号を新規発見と読まれる | High | NEC 1981 / Vickers 1982 を引用し、独自候補を数学／色順序の収束・正規化・統合に限定する |
+| `4G+2R+B` 色番号を新規発見と読まれる | High | NEC 1981 / Vickers 1982 を引用し、初等的な順位導出を新規性の根拠とせず、独自候補を正規化した順位と他の構造との統合に限定する |
 | `A` の8ラベルと `H` 上の中間候補の混同 | High | `λ` のファイバーと表示代表元を明記し、XOR を `A` に限定する |
 | Boolean lattice の既知性 | High | JSSD を引用し、Hasse 図自体は新規主張しない |
 | XOR/OR と AND/XNOR の限定的一致を演算の同一性と誤読される | Medium | 専用のGRB・YCM混色節では `[G,R,B]` ビットと一致条件を示し、演算自体は区別する。二値加法 RGB での対応は明記し、一般の連続色や顔料へは拡張しない |
@@ -90,7 +90,7 @@ Theory はこの順序で有限代数を `K8` まで完結させ、その後に�
 
 ### Integrated Theory interactions (2026-09-06)
 
-The rank chapter places gapless subset sums and conditional color order in one panel, with a shared conclusion below. The integer-weight argument determines unnamed `{1,2,4}`; the color-order argument independently determines the named ranks. The former four-step overview and separate order card are no longer repeated.
+The rank chapter follows one derivation: three conditions on an additive score determine the total order; counting preceding states gives the primary ranks `B=1,R=2,G=4` and `L(g,r,b)=4g+2r+b`. A short prose supplement explains gapless subset sums as a consequence. The research note retains uniqueness of unnamed gapless weights as a supplementary characterization. Score weights `w_G,w_R,w_B` are kept distinct from binary state coordinates `g,r,b` and integer ranks.
 
 The cube shows all eight vertices and twelve edges by default. Selecting a vertex highlights its three incident edges; selecting it again or clicking the page background clears the selection. Switching to Hasse preserves the selected vertex. The standalone toggle panel, G/R/B action buttons, and persistent transition readout are removed. State transitions and signed `ΔL` are explored in the linked six-cycle and zigzag, while the complete `K8` display stays in the distance chapter.
 
@@ -104,7 +104,7 @@ Hamming DATA and error controls live in their respective flow stages. Parity-gen
 
 1. Theory タイトルを `離散代数的色彩理論` にする。
 2. Color detail の表示値は `トーン` / `Tone` にする。
-3. Binary-level copy は、無名の `{1,2,4}` と明るさ順位 `K<B<R<M<G<C<Y<W` が名前付き GRB rank へ収束する説明を中心にする。測定係数や luma 式は持ち込まない。
+3. Binary-level copy は、加法性と三条件から全順序 `K<B<R<M<G<C<Y<W` を導き、0始まりの順位として `B=1,R=2,G=4` を直接得る説明を中心にする。無隙間部分和は帰結へ置き、測定係数や luma 式は持ち込まない。
 4. `XOR 混色` ではなく `XOR 演算` と呼ぶ。
 5. 一つのブール代数 `A = P({G,R,B})` と、その加法群・ベクトル空間としての `(F2^3,+)`、Boolean 環としての `F2 x F2 x F2` を区別する。
 6. Color Die は六有彩色を立方体の六面に対応させ、補色対 R/C、Y/B、G/M を対面へ置くモデルとする。その上で R→Y→G→C→B→M の五つの面接続を残して開くと、六つの正方形の内部が重ならない2-2-2展開図が得られる。閉路を閉じる M–R 接続は切り離され、折り戻すと再びつながる。面番号は既存の順位 L とし、L(κc)=7−L(c) から対面の番号和7を読む。色相順を保つ展開・補色対面・標準ダイスの番号条件の対応を中心に説明する。符号から格子方向を定める構成は用いず、ΔL と切替チャネルは Tone Zigzag の表で扱う。
@@ -118,7 +118,7 @@ Hamming DATA and error controls live in their respective flow stages. Parity-gen
 ```text
 Known: RGB cube / hue hexagon
 Known: historical GRB 4:2:1 color numbering
-CHROMALUM candidate contribution: mathematical/color-order convergence + normalization + integration
+CHROMALUM candidate contribution: order-derived rank as a shared coordinate + normalization + integration
 ```
 
 出典、新規性、外部色空間、規格係数は専用文書から参照できる。Theory タブには References drawer も設けず、理論本文を導出に集中させる。
@@ -127,7 +127,7 @@ CHROMALUM candidate contribution: mathematical/color-order convergence + normali
 
 カードは境界を持つこと自体に意味がある中心定理と対話操作に限る。文章の各段階を小カードへ分割せず、表を小カードへ入れない。主要主張のうちカード化する価値があるのは次に限る。
 
-1. `GRB` Binary Tone convergence: the unnamed minimal weights `{1,2,4}` and brightness order `K<B<R<M<G<C<Y<W` give `rank_sigma(c)=4G+2R+B` and `T(c)=rank_sigma(c)/7`.
+1. `GRB` Binary Tone derivation: three additive-score conditions determine `K<B<R<M<G<C<Y<W`; its zero-based rank gives `B=1,R=2,G=4`, `L(g,r,b)=4g+2r+b`, and `T=L/7`. Gapless subset sums follow from this rank.
 2. Complement tone theorem: `T(c) + T(c xor 7) = 1`.
 3. `L(a∨b)+L(a∧b)=L(a)+L(b)` と XOR 補正式。
 4. Complement theorem: `L(κa)=7-L(a)`.
@@ -141,7 +141,7 @@ Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`
 | Structure | Known | CHROMALUM synthesis candidate |
 | --- | --- | --- |
 | RGB cube | Standard color geometry | pure-hue representatives and level fibers in the same atlas |
-| GRB 4:2:1 code | NEC / ZX Spectrum manuals | convergence of unnamed subset-sum weights and named color rank; normalized tone coordinate |
+| GRB 4:2:1 code | NEC / ZX Spectrum manuals | rank derived from the conditional total order; normalized tone as a shared coordinate |
 | Boolean algebra / Boolean ring | standard term-equivalent presentations | linked to `GF(2)^3` / Fano / dice in one UI |
 | `Z2^3` color addition | Taylor prior art | RGB display primaries and Hamming labels |
 | Fano/Hamming | standard finite geometry | color-syndrome educational mapping |
@@ -196,7 +196,7 @@ Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`
 
 ```text
 A = one Boolean algebra P({G,R,B})
-+ unnamed gapless valuation {1,2,4} and the independently ranked named map L=4G+2R+B
++ three score conditions -> total order -> named rank L=4G+2R+B -> gapless subset sums
 + modular valuation, complement reversal, toggle action, Q3/C6
 + seven nonzero masks read as Fano incidence and Hamming syndromes
 + K8 distance geometry with the T0/T1 tetrahedra

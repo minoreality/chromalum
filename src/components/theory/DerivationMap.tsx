@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "../../i18n";
 import { C } from "../../styles/tokens";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { SubsetSumDerivation } from "./SubsetSumDerivation";
 import { levelLabelColor } from "../../color-engine";
 
 export const DerivationMap = React.memo(function DerivationMap() {
@@ -10,37 +9,19 @@ export const DerivationMap = React.memo(function DerivationMap() {
 
   return (
     <div className="theory-derivation" role="group" aria-label={t("theory_derivation_aria")}>
-      <div className="theory-derivation-paths">
-        <SubsetSumDerivation />
-        <EmpiricalResonance />
-      </div>
+      <OrderDerivation />
       <div className="theory-derivation-conclusion">
-        <div className="theory-diagram-label">{t("theory_derivation_convergence")}</div>
+        <div className="theory-diagram-label">{t("theory_derivation_rank_title")}</div>
+        <code>L(S)=#&#123;T∈A | σ(T)&lt;σ(S)&#125;</code>
         <code>L(g,r,b)=4g+2r+b · T=L/7</code>
-        <p>{t("theory_derivation_convergence_note")}</p>
-      </div>
-      <div className="theory-derivation-notes">
-        <p>
-          <strong>{t("theory_derivation_weights")}</strong>
-          {t("theory_subset_rule")}
-        </p>
-        <div>
-          <p>
-            <strong>{t("theory_derivation_ranks")}</strong>
-            {t("theory_empirical_rank_note")}
-          </p>
-          <div className="theory-derivation-definitions">
-            <code>s(g,r,b)=w_Gg+w_Rr+w_Bb</code>
-            <code>w_G&gt;w_R+w_B · w_R&gt;w_B&gt;0</code>
-            <code>rank_s(c)=#&#123;x∈A | s(x)&lt;s(c)&#125;</code>
-          </div>
-        </div>
+        <p>{t("theory_derivation_rank_note")}</p>
+        <p className="theory-derivation-supplement">{t("theory_derivation_supplement")}</p>
       </div>
     </div>
   );
 });
 
-const EmpiricalResonance = React.memo(function EmpiricalResonance() {
+const OrderDerivation = React.memo(function OrderDerivation() {
   const { t } = useTranslation();
 
   return (
@@ -52,9 +33,19 @@ const EmpiricalResonance = React.memo(function EmpiricalResonance() {
         <p>{t("theory_empirical_order_intro")}</p>
       </figcaption>
       <div className="theory-derivation-order-visual">
+        <code className="theory-derivation-score">
+          σ(g,r,b) = w<sub>G</sub>g + w<sub>R</sub>r + w<sub>B</sub>b
+        </code>
         <div className="theory-derivation-comparisons">
-          <code>s(R)&gt;s(B)</code>
-          <code>s(G)&gt;s(M)</code>
+          <code>
+            w<sub>B</sub> &gt; 0
+          </code>
+          <code>
+            w<sub>R</sub> &gt; w<sub>B</sub>
+          </code>
+          <code>
+            w<sub>G</sub> &gt; w<sub>R</sub> + w<sub>B</sub>
+          </code>
         </div>
         <span className="theory-derivation-arrow" aria-hidden="true">
           ↓
@@ -71,7 +62,9 @@ const EmpiricalResonance = React.memo(function EmpiricalResonance() {
       <div className="theory-derivation-result">
         <span>{t("theory_derivation_ranks")}</span>
         <strong className="theory-derivation-named-ranks">
-          <span>B &lt; R &lt; G</span>
+          <span>B=1</span>
+          <span>R=2</span>
+          <span>G=4</span>
         </strong>
       </div>
     </figure>

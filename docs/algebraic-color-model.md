@@ -17,13 +17,13 @@
 
 この代数核と番号配列は既知である。RGB 色立方体、`Z2 x Z2 x Z2`、Fano 平面、Hamming `[7,4,3]` の関係は既存文献に現れ、`0=Black, 1=Blue, 2=Red, 3=Magenta, 4=Green, 5=Cyan, 6=Yellow, 7=White`、すなわち `4G+2R+B` と同じ配列も NEC（1981）と Sinclair Research（1982）の一次資料に記録されている。本ノートはこれら個別構造や番号配列の新規性を主張しない。
 
-CHROMALUM のプロジェクト固有の統合候補は、純粋数学が与える無名の最小部分和重み `{1,2,4}` の色名を、二値 RGB 頂点の明るさ順 `G>M`, `R>B` が一意に定めること（数学が数を、色彩が名前を決める）、そして同じ明るさ順だけから数えた順位も同じ名前付き GRB 二進順位へ収束することを明示する点にある。さらに、その順位を補色トーン、純色相環の level ファイバー、Fano/Hamming、多面体、K8 の Hamming 距離分解と結び、単一の 8 ラベルの代数アトラスとして整理する。音響への写像はこの基礎理論には含めず、別ノートで扱う。
+CHROMALUM のプロジェクト固有の統合候補は、加法的スコアの三条件 `w_B>0`, `w_R>w_B`, `w_G>w_R+w_B` から8状態の全順序を導き、その0始まりの順位として名前付き GRB 二進順位 `B=1,R=2,G=4` を直接得る構成を、後続の構造へ接続する点にある。順位は原子の順位の和となり、無隙間な部分和 `{0,...,7}` はその帰結である。さらに、この順位を補色トーン、純色相環の level ファイバー、Fano/Hamming、多面体、K8 の Hamming 距離分解と結び、単一の8ラベルの代数アトラスとして整理する。三条件からの順位導出自体や既知の番号配列の新規性を主張するものではない。音響への写像はこの基礎理論には含めず、別ノートで扱う。
 
 研究の優先順位は、`A` 上の演算、順序、補色、距離、自己同型、表現、生成原理と、加法 RGB の二値頂点に現れる明るさ順との対応を、ともに定理化することである。理想的な加法光では、互いに素な原色支持の join `M=R∨B`, `C=G∨B`, `Y=G∨R` に対してスコアの加法が成り立ち、明るさ順位と二進順位の対応を支える。一方、一般の連続色、顔料、色順応、主観的明るさまで同じ演算を拡張することは別の課題として区別する。
 
 ## Minimal Generating Principle
 
-### A0--A2 と追加実現: 生成データ、順序、表示層
+### A0--A1 と追加実現: 生成データ、順序、表示層
 
 どの帰結が純粋数学、色の順序、色相座標のどれに依存するかを追跡できるよう、生成データと対応を次の五項へ圧縮する。
 
@@ -48,9 +48,7 @@ tau_m(x) = x △ m                                  (state transition)
 
 OR・AND・NOTによるブール代数表示と、対称差XOR・ANDによる項同値なブール環表示、Hamming 距離は `A` から得る標準構成であり、別の色彩公理として加えない。特に XOR は `Gamma` の代わりとなる一般混色則ではなく、反転作用の合成と相殺を簡潔に記述する演算として用いる。
 
-**A1 — 無名の最小無隙間 valuation。** 三つの原子へ正整数重みを与え、8部分和が重複なく、隙間のない `{0,...,7}` を作る加法的 valuation を考える。この条件は、色名への割当を行う前に無順序の重み集合 `{1,2,4}` を一意に与える。これは任意に比を選ぶ追加公理ではなく、無隙間条件による特徴づけである。
-
-**A2 — 色の明るさ順と名前付き順位。** `M=R∨B` とし、加法 RGB の二値8頂点に対する正の加法的明るさスコアで、`sigma(G)>sigma(M)=sigma(R)+sigma(B)` と `sigma(R)>sigma(B)` が成り立つ順序を取る。この二比較は `K<B<R<M<G<C<Y<W` と必要十分である。各色より暗い二値頂点の個数を `rank_sigma` とすると、`(rank_sigma(B),rank_sigma(R),rank_sigma(G))=(1,2,4)` となる。集合状態を表す `S` と明るさスコアを混同しないため、後者には一貫して `sigma` を用いる。A2 は単独で名前付き順位 `4G+2R+B` を定め、A1 は同じ数値が色名を忘れた最小無隙間 valuation としても特徴づけられることを示す。
+**A1 — 加法的スコアと三つの順序条件。** `E={G,R,B}`, `A=P(E)` とし、各原色の実数評価値を `w_G,w_R,w_B` とする。`sigma(S)=sum_{c in S} w_c` に `w_B>0`, `w_R>w_B`, `w_G>w_R+w_B` を課す。後の二条件は `sigma(R)>sigma(B)` と `sigma(G)>sigma(M)`（`M=R∨B`）である。この三条件は、`sigma` による全順序 `K<B<R<M<G<C<Y<W` と必要十分であり、前にある状態の個数を数える0始まりの順位から `L(B)=1,L(R)=2,L(G)=4` が直接得られる。整数性・最小化・無隙間性を別途仮定せず、各集合の順位が原子の順位の和になることと、8部分和が `{0,...,7}` を埋めることを導く。集合状態は `S`、実数スコアは `sigma`、順位は `L` と書く。実数重み `w_G,w_R,w_B` と、原色の有無を表す0/1変数 `g,r,b` は区別する。
 
 **D1 — A0 から導く有彩6-cycle。** `A` から `K,W` を除き、Hamming 距離1の辺を残すと、各辺で1チャンネルだけが反転する無根・無向の有彩 `C6` が得られる。閉路である理由は二重にある。
 
@@ -68,44 +66,42 @@ e_G ⊕ e_R ⊕ e_B ⊕ e_G ⊕ e_R ⊕ e_B = 000    (F2^3)
 
 各チャンネルは向かい合う2辺で反転する。これは A0 からの標準構成であり、追加公理ではない。
 
-**A3 — D1 の標準アフィン連続実現。** `A` の特性ベクトルを単位立方体 `[0,1]^3` の頂点へ埋め込み、D1 の `C6` の各辺を同じアフィンパラメータで補間した像を最大彩度色相環 `H`（純色相環）とする。これは離散 `C6` に追加する表示上の選択である。ただし、拡張するかどうかは選択でも、拡張の仕方には選択の余地がない。`C6` の各辺は1チャンネルだけを反転するので、他の2チャンネルを `0` または `1` に固定したまま `[0,1]^3` の中で両端を結ぶ経路は立方体の辺そのものであり、`H` は `[0,1]^3` の12辺のうち `K,W` に接しない6辺の和集合、すなわち `min=0, max=1` の純色集合に一致する。level 側も、`λ(g,r,b)=4g+2r+b` は基底 `e_G,e_R,e_B` 上の値で定まる唯一の線形汎関数として `L` を延長する。したがって辺 `R→Y` では、`R` を保ったまま `G` だけを `0` から `1` へ動かす経路 `(t,1,0)` が連続遷移になる。
+**A2 — D1 の標準アフィン連続実現。** `A` の特性ベクトルを単位立方体 `[0,1]^3` の頂点へ埋め込み、D1 の `C6` の各辺を同じアフィンパラメータで補間した像を最大彩度色相環 `H`（純色相環）とする。これは離散 `C6` に追加する表示上の選択である。ただし、拡張するかどうかは選択でも、拡張の仕方には選択の余地がない。`C6` の各辺は1チャンネルだけを反転するので、他の2チャンネルを `0` または `1` に固定したまま `[0,1]^3` の中で両端を結ぶ経路は立方体の辺そのものであり、`H` は `[0,1]^3` の12辺のうち `K,W` に接しない6辺の和集合、すなわち `min=0, max=1` の純色集合に一致する。level 側も、`λ(g,r,b)=4g+2r+b` は基底 `e_G,e_R,e_B` 上の値で定まる唯一の線形汎関数として `L` を延長する。したがって辺 `R→Y` では、`R` を保ったまま `G` だけを `0` から `1` へ動かす経路 `(t,1,0)` が連続遷移になる。
 
-**E1 — ユークリッド計量と座標代表。** 長さ、角度、直交、円を述べる箇所でのみ、標準ユークリッド内積を追加する。向き付き色相角が必要な表示では Red を `0`、`R -> Y` を正とする一つの座標代表を選ぶ。E1 は A1--A2 の順位導出にも D1 の反転構造にも関与しない。
+**E1 — ユークリッド計量と座標代表。** 長さ、角度、直交、円を述べる箇所でのみ、標準ユークリッド内積を追加する。向き付き色相角が必要な表示では Red を `0`、`R -> Y` を正とする一つの座標代表を選ぶ。E1 は A1 の順位導出にも D1 の反転構造にも関与しない。
 
-音響への写像は A0--A3 の一部ではない。色相から音程・周波数への追加写像、位相、音色、リズムは [Music-Linked Visualization](./music-linked-visualization.md) で扱う。
+音響への写像は A0--A2 の一部ではない。色相から音程・周波数への追加写像、位相、音色、リズムは [Music-Linked Visualization](./music-linked-visualization.md) で扱う。
 
-### 二経路の収束と感度
+### 全順序からの順位導出と感度
 
-本ノートで重視するのは二点である。第一に、数学が値集合 `{1,2,4}` を決め、色の順序条件 A2 がその名前を決めるという相補的な一意決定（Corollary 0.1）。第二に、A2 の全順序だけから数えた明るさ順位が、その符号化と独立に一致するという収束（Theorem 1）。この二点から、複数の規則が個別の色彩公理を足さずに得られる。D1 は A0 から導かれ、A3 はその離散閉路へ連続表示を追加し、E1 はさらに計量を追加する。
+本ノートの順位導出は、`加法性と三条件 -> 全順序 -> 原子の順位 B=1,R=2,G=4` という一続きの構成である。全順序が決まれば0始まりの順位は定義だけで一意に決まり、その順位が原子の順位の和になることから無隙間な部分和が従う（Theorem 1）。無名の無隙間部分和重みが `{1,2,4}` に限られるという定理は、導出した評価の別の特徴づけとして主定理の後に置く。D1 は A0 から導かれ、A2 はその離散閉路へ連続表示を追加し、E1 はさらに計量を追加する。
 
 | assumptions | consequences |
 | :--- | :--- |
 | A0 | Boolean algebra `B3` とその項同値な Boolean ring `F2 x F2 x F2`、加法群 `GF(2)^3`、Hamming cube `Q3`、補集合、無根・無向の有彩 `C6`、Fano/Hamming/K8 構成 |
-| A0 + A1 | 無名の重み集合 `{1,2,4}`、levels `0..7` を作る一意な最小部分和 valuation |
-| A0 + A1 + A2 の順序条件 `G>M`, `R>B` | 名前付き符号化 `L=4G+2R+B` の一意決定（Corollary 0.1） |
-| A0 + A2 | 名前付き順位 `(G,R,B)=(4,2,1)`、明るさ順位と二進順位の一致、補色 rank 反転 |
-| A0 + A1 + A2 | 名前付き順位が最小無隙間 valuation とも一致する二経路の収束 |
-| A0 + A2 + A3 | 純色相環、連続 Tone Zigzag、整数 level の14交点、ファイバー数、section 数 |
-| A0 + A2 + A3 + E1 | 交点の15度座標表示、等トーン図形、直角、長さ、円、選択した座標代表における Fourier 係数 |
+| A0 + A1 | 全順序 `K<B<R<M<G<C<Y<W`、原子の順位 `(B,R,G)=(1,2,4)`、順位評価 `L` の加法性と無隙間な8部分和、補色 rank 反転 |
+| A0 + A2 | 純色相環 `H` と有彩 `C6` の辺ごとのアフィン実現 |
+| A0 + A1 + A2 | 連続 Tone Zigzag、整数 level の14交点、ファイバー数、section 数 |
+| A0 + A1 + A2 + E1 | 交点の15度座標表示、等トーン図形、直角、長さ、円、選択した座標代表における Fourier 係数 |
 
-感度は次の通りである。A1 を外しても A2 から名前付き順位 `4G+2R+B` は得られるが、それが色名を忘れた最小無隙間 valuation と一致するという独立な特徴づけを失う。A2 を外すと A1 は無名の `{1,2,4}` を与えるだけで、B、R、G への割当には原子置換の `S3` 対称性が残る。A2 を重みの順序条件 `G>M`, `R>B` としてだけ使えば A1 の値の命名は一意に定まる（Corollary 0.1）が、順序条件だけでは数値は定まらない。D1 の有彩 `C6` は A2 に先立つ無根・無向の構造であり、開始点と巡回方向を変えても、各辺の1チャンネル反転と向かい合う同ラベル辺は変わらない。A3 と E1 は離散定理を変更せず、A3 を一般のアフィン実現へ緩めればアフィン不変量だけが、E1 を加えれば直角・円・絶対長が意味を持つ。
+感度は次の通りである。A1 を外すと Boolean 構造や有彩 `C6` は残るが、この名前付き全順序と順位は定まらない。A1 の三条件を保つ限り、実数重みを変えても全順序と順位 `L` は変わらない。元のスコアの値・比率は三条件から一意には定まらず、順位の `1,2,4` と混同しない。無隙間部分和は順位の帰結なので、その性質を独立した出発条件に置く必要はない。D1 は順位導出に先立つ無根・無向の構造であり、開始点と巡回方向を変えても、各辺の1チャンネル反転と向かい合う同ラベル辺は変わらない。A2 と E1 は離散定理を変更せず、A2 を一般のアフィン実現へ緩めればアフィン不変量だけが、E1 を加えれば直角・円・絶対長が意味を持つ。
 
-したがって、A1 の無名の重み集合に A2 が名前を与えて `G=4,R=2,B=1` が一意に決まり、A2 だけから数えた順位もその符号化に収束することが本モデルの中心である。詳細な導出は Theorem 0--2、有限構成は Derived Finite-Geometric Representations、連続表示の帰結は Theorem 3--5 に一元化する。
+詳細な順位導出は Theorem 1 とその部分和の補足、補色は Theorem 2、有限構成は Derived Finite-Geometric Representations、連続表示の帰結は Theorem 3--5 に一元化する。
 
 有彩閉路から Tone Zigzag までの依存順序を一列に書くと次のようになる。
 
 ```text
 {0,1}^3
   -> K,W を除外し d_H=1 で隣接           -> 有彩 C6               (D1: 導出)
-  -> {0,1} を [0,1] へ広げ各辺を線分に     -> 純色相環 H ≅ S^1      (A3: 実現)
-  -> λ = 4g+2r+b を H へ制限               -> Tone Zigzag、14交点   (A2 + A3)
+  -> {0,1} を [0,1] へ広げ各辺を線分に     -> 純色相環 H ≅ S^1      (A2: 実現)
+  -> λ = 4g+2r+b を H へ制限               -> Tone Zigzag、14交点   (A1 + A2)
 ```
 
 閉路化は離散構造だけからの導出であり、連続化はその閉路に後から与える実現である。連続性を先に仮定して閉路を作るのではない。
 
 ### Continuous Representation Boundary
 
-以下は研究ノート上で依存関係を管理するための連続表示境界であり、離散代数の中核定理の前提ではない。A3 では、有彩 `C6` の頂点を標準単位立方体へ置き、各隣接対を一つの規則
+以下は研究ノート上で依存関係を管理するための連続表示境界であり、離散代数の中核定理の前提ではない。A2 では、有彩 `C6` の頂点を標準単位立方体へ置き、各隣接対を一つの規則
 
 ```text
 c_i(t) = (1-t)v_i + t v_(i+1),  0<=t<=1
@@ -121,11 +117,11 @@ H = {c in [0,1]^3 | min(c)=0 and max(c)=1}
 
 ## Minimal Choices and Derived Definitions
 
-有限な代数層では、名前付き生成元 `{G,R,B}`、無名の最小部分和 valuation、二値頂点の明るさ順、無根・無向の有彩6-cycleを区別する。以下はそれらから用いる派生定義である。
+有限な代数層では、名前付き生成元 `{G,R,B}` と加法的スコアの三条件を出発点とし、そこから得る全順序・順位評価と、Boolean 構造だけから得る無根・無向の有彩6-cycleを区別する。以下はそれらから用いる派生定義である。
 
 1. 代数ラベルは `A=P({G,R,B})` の8元であり、明るさ順位が選ぶ名前付き桁順 `[G,R,B]` で特性ベクトルを書く。
 2. 対称差をXOR、包含をBoolean order、対称差の濃度をHamming距離として読む。
-3. 最小部分和評価が無名の `{1,2,4}` を与え、明るさ順位が独立に `level = 4G + 2R + B` を与える。両者を比較すると、無名の重みが B、R、G に対応する。
+3. 三条件が全順序 `K<B<R<M<G<C<Y<W` を一意に定め、その0始まりの順位から `L(B)=1,L(R)=2,L(G)=4` と `level = 4g+2r+b` が得られる。原子の順位を足すと各状態の順位になり、8部分和が0〜7を埋める。
 4. 補色は集合補集合であり、ビット表現では `c' = c xor 7` になる。
 5. トーン指標は、派生したlevelを正規化した GRB Binary Tone
 
@@ -137,7 +133,7 @@ H = {c in [0,1]^3 | min(c)=0 and max(c)=1}
 6. 連続表示層は `A` の標準立方体実現 `X=[0,1]^3` から純色相環 `H` を取り、`lambda=L|H` のファイバーを候補集合とする。
 7. 向き付き色相角が必要な場合だけ、表示上の代表として Red を0、`R -> Y` を正に選ぶ。この代表選択は離散順位と反転ラベル型を変えない。
 
-具体的な測光・映像係数を整数重みとして置き換えるのではなく、二値8頂点に共通して現れる明るさの順序だけを A2 に用いる。個別係数との比較は本ノートの数学から分離する。
+具体的な測光・映像係数を整数重みとして置き換えるのではなく、二値8頂点に共通して現れる明るさの順序だけを A1 に用いる。個別係数との比較は本ノートの数学から分離する。
 
 ### Algebraic Layer, Pure-Hue Loop, and Level Projection
 
@@ -197,9 +193,51 @@ estimated level = round(7 S_code)
 
 以下を本ノートの中核定理の正本とする。後続節は、これらの定理を既知構造、有限幾何、連続表示へ移した派生である。
 
-### Theorem 0: Unique unnamed gapless subset-sum valuation
+### Theorem 1: Three conditions determine the total order and GRB rank
 
-三つの正整数重み `a<=b<=c` の8部分和が、重複なく連続整数 `{0,...,7}` を埋めるなら、
+`E={G,R,B}`, `A=P(E)` とし、原色の実数評価値 `w_G,w_R,w_B` から加法的スコアを
+
+```text
+sigma(S) = sum_{c in S} w_c
+         = w_G g + w_R r + w_B b,    (g,r,b) in {0,1}^3
+```
+
+と定める。ここで `g,r,b` は `S` の特性ベクトル、`M={R,B}` である。このとき次は同値である。
+
+1. `w_B>0`, `w_R>w_B`, `w_G>w_R+w_B`。
+2. `sigma` が `A` 上に全順序 `K<B<R<M<G<C<Y<W` を与える。
+
+この全順序に対して、前にある状態を数える0始まりの順位を
+
+```text
+L(S) = rank_sigma(S) = #{T in A | sigma(T)<sigma(S)}
+```
+
+と定義すれば、一意に
+
+```text
+L(K,B,R,M,G,C,Y,W) = (0,1,2,3,4,5,6,7)
+L(B)=1,  L(R)=2,  L(G)=4
+L(S) = 4g + 2r + b = sum_{c in S} L({c})
+```
+
+が得られる。順位は全順序から定義されるので、整数性・最小化・無隙間性を別の前提として加える必要はない。
+
+**Proof.** 三条件から
+
+```text
+0 < w_B < w_R < w_R+w_B < w_G < w_G+w_B < w_G+w_R < w_G+w_R+w_B
+```
+
+が従う。8部分和は相異なり、三条件を満たす実数重みの具体値に関わらず同じ全順序を与える。逆に、この全順序から `K<B`, `B<R`, `M<G` を取り出すと三条件が戻る。前にある状態は B で `{K}`、R で `{K,B}`、G で `{K,B,R,M}` なので、その順位はそれぞれ1、2、4である。残る状態の順位も原子の順位の和に一致し、8状態すべてで `L(S)=4g+2r+b` が成立する。QED.
+
+**帰結 — 無隙間な部分和。** 一般の全順序の順位が原子の順位に加法的とは限らないが、この三条件による順序では `L(S)=sum_{c in S}L({c})` が成立する。したがって非交和に対して `L(S∪T)=L(S)+L(T)` であり、原子の順位 `{1,2,4}` の8部分和は重複なく `{0,...,7}` を埋める。この無隙間性は主定理の帰結である。
+
+元の実数スコアの重みは一意ではない。例えば `(w_B,w_R,w_G)=(1,2,4)` と `(1,3,5)` は同じ全順序と同じ順位 `L` を与えるが、後者のスコア値は `{0,1,3,4,5,6,8,9}` である。順位の `1,2,4` は実数評価値の比率を指定せず、測光的・知覚的な等間隔性も主張しない。
+
+### Supplement: Unique unnamed gapless subset-sum valuation
+
+導出した順位評価を、原色名を使わない条件によっても特徴づけられる。三つの正整数重み `a<=b<=c` の8部分和が、重複なく連続整数 `{0,...,7}` を埋めるなら、
 
 ```text
 {a,b,c} = {1,2,4}.
@@ -207,50 +245,7 @@ estimated level = round(7 S_code)
 
 **Proof.** 部分和に1が必要なので `a=1`。`0,1` の次に隙間も衝突も作らないため `b=2`、`0,1,2,3` の次を埋めるため `c=4` である。逆に `{1,2,4}` の8部分和はちょうど `{0,...,7}` になる。QED.
 
-この定理は色名を使わないため、三つの重みを G、R、B のどれへ割り当てるかという Boolean 原子置換の `S3` 対称性を残す。
-
-### Corollary 0.1: 相補的な二条件による名前付き二進順位の一意決定
-
-八状態を `0..7` へ重複なく無隙間に表す加法的整数符号化は、Theorem 0 により三原色の重み集合を `{1,2,4}` に一意に定めるが、その色名への割り当ては定めず、原子置換の `S3` 対称性が残る。一方、A2 の明るさ順 `G>M` と `R>B` を整数表現にも保存するという要請は、整数重み `q_G,q_R,q_B` に `q_G>q_R+q_B` と `q_R>q_B` を定めるが、その具体値は定めない。順序だけなら `(q_B,q_R,q_G)=(1,3,5)` のように部分和に隙間が空く重みも許される。ここで `G>M` は原色どうしの大小ではなく、単色 `G` と二原色の和 `M=R∨B` との比較であり、整数側では特定の部分和に対する優越 `q_G>q_R+q_B` である。A1 が部分和の無隙間性を、A2 が特定の部分和の優越を与える点で、二条件は同じ部分和構造の上で噛み合う。
-
-両条件を同時に課すと割り当ては一つに決まる。A1 が残す命名の自由度 `S3`（六通り）は、どの重みを `G` にするか（三通り）と、残る二つの重みの順序（二通り）の積に分解できる。`G>M` は前者を決める。`{1,2,4}` のうち他の二つの和を超えるのは `4>2+1` の `4` だけなので `q_G=4`、すなわち最上位ビットが定まる。`R>B` は後者を決める。残る `{1,2}` の大きい方が `R`、小さい方が `B` なので `q_R=2, q_B=1` である。`G>M` だけでは `R,B` の入れ替えが、`R>B` だけでは `G` の選び方が残り、それぞれの残余をもう一方がちょうど解消する。二つの条件に適用の順序はなく、六通りのうち残る唯一の割り当てから
-
-```text
-L(g,r,b) = 4g + 2r + b
-```
-
-が得られる。数学的な条件と色の順序条件は、それぞれに残る不定性を相手が解消することで、一つの表現を共同で決定する。数学が数を決め、色彩が数の名前を決める、と要約できる。ここで A2 は独立した順位導出の経路としてではなく、A1 が残した原子置換の自由度を解消する条件として使う。A2 だけから順位を数える独立の経路と、その結果がこの符号化と一致することは、次の Theorem 1 で扱う。
-
-### Theorem 1: Brightness order and the named GRB binary rank
-
-二値 RGB 頂点上の正の加法的スコアを
-
-```text
-sigma(G,R,B) = w_G G + w_R R + w_B B
-```
-
-とし、色状態として `M=R∨B` と置く。このとき次は同値である。
-
-1. `sigma(G)>sigma(M)=sigma(R)+sigma(B)` かつ `sigma(R)>sigma(B)`。
-2. `w_G>w_R+w_B` かつ `w_R>w_B>0`。
-3. `K<B<R<M<G<C<Y<W`。
-
-この全順序に対して `rank_sigma(c)=#{x in A | sigma(x)<sigma(c)}` と定めると、
-
-```text
-rank_sigma(K,B,R,M,G,C,Y,W) = (0,1,2,3,4,5,6,7)
-rank_sigma(c) = 4G + 2R + B,  where c=(G,R,B).
-```
-
-**Proof.** 加法性から `sigma(M)=w_R+w_B` なので最初の比較は `w_G>w_R+w_B`、二つ目は `w_R>w_B` である。この二不等式と正性により
-
-```text
-0 < w_B < w_R < w_R+w_B < w_G < w_G+w_B < w_G+w_R < w_G+w_R+w_B
-```
-
-が従う。逆に全順序は `G>M` と `R>B` を含む。順位を0から数えれば B、R、G は1、2、4番となり、各二値頂点の順位は `4G+2R+B` である。QED.
-
-Theorem 1 は A2 の順序だけから名前付き順位を与える。Theorem 0 は独立に無名の `{1,2,4}` を与える。両者を比較すると、無名の重みが `B=1,R=2,G=4` と名付けられ、同じ valuation へ収束する。Corollary 0.1 が A1 と A2 の順序条件から定めた符号化 `L` と、Theorem 1 が A2 の全順序から数えた `rank_sigma` は同じ関数である。相補的決定が符号化の一意性を、収束がその符号化と経験的順位の一致を与える。
+この補足だけでは原子の名前を置換する `S3` の自由度が残る。主定理ではすでに名前付き全順序から `L(B)=1,L(R)=2,L(G)=4` を得ているため、命名を決めるためにこの補足を前提へ戻す必要はない。
 
 ### Proposition 1.1: Boolean valuation, carry, and order extension
 
@@ -274,11 +269,11 @@ L(a∧b) = bitand(L(a),L(b))
 
 ### Corollary 1.2: Cube-edge rank difference and hue-cycle closure
 
-任意の状態 `x in A` とチャンネル `c in {G,R,B}` に対し、
+原子の順位を `q_c=L({c})`、すなわち `(q_G,q_R,q_B)=(4,2,1)` と置く。任意の状態 `x in A` とチャンネル `c in {G,R,B}` に対し、
 
 ```text
-Delta_c L(x) = L(tau_c(x)) - L(x) = (1-2x_c)w_c
-|Delta_c L(x)| = w_c
+Delta_c L(x) = L(tau_c(x)) - L(x) = (1-2x_c)q_c
+|Delta_c L(x)| = q_c
 ```
 
 が成り立つ。有彩 `C6` の一代表を level 付きで書くと
@@ -323,7 +318,7 @@ m_i = c_i⊕c_(i+1) in {G,R,B}
 TV_C6(L) = 2(4+2+1) = 14.
 ```
 
-**補足: 順位は辺のコストから定まる離散ポテンシャルである。** 上では `L` を先に定め、辺の順位差 `Delta_c L` をそこから導いた。逆向きも成り立つ。`Q3` の各辺に反転コスト `delta(u,v)=±w_c`（`c` を加えれば `+w_c`、除けば `-w_c`）だけを割り当てると、任意の閉路で `delta` の総和は 0 になる。`Q3` の閉路空間は六つの正方形面で張られ、各面は二つのチャネルを反対符号で二度ずつ反転するからである。グラフ上の標準的な補題により、閉路和がすべて 0 の辺関数は頂点関数の差 `delta(u,v)=L(v)-L(u)` として定数を除いて一意に書け、`L(K)=0` と置けば A1/A2 の `L` に戻る。したがって二色間の総順位変化は経路に依らず始点と終点だけで決まり、順位は反転コストの離散ポテンシャルである。正方形面 `{S, S∨c, S∨d, S∨c∨d}` の閉路和 0 は Proposition 1.1 の modular 等式 `L(a∨b)+L(a∧b)=L(a)+L(b)` と同じ式であり、付録の Invariants 節の経路独立性はこの帰結である。
+**補足: 順位は辺のコストから定まる離散ポテンシャルである。** 上では `L` を先に定め、辺の順位差 `Delta_c L` をそこから導いた。逆向きも成り立つ。`Q3` の各辺に反転コスト `delta(u,v)=±q_c`（`c` を加えれば `+q_c`、除けば `-q_c`）だけを割り当てると、任意の閉路で `delta` の総和は 0 になる。`Q3` の閉路空間は六つの正方形面で張られ、各面は二つのチャネルを反対符号で二度ずつ反転するからである。グラフ上の標準的な補題により、閉路和がすべて 0 の辺関数は頂点関数の差 `delta(u,v)=L(v)-L(u)` として定数を除いて一意に書け、`L(K)=0` と置けば Theorem 1 の `L` に戻る。したがって二色間の総順位変化は経路に依らず始点と終点だけで決まり、順位は反転コストの離散ポテンシャルである。正方形面 `{S, S∨c, S∨d, S∨c∨d}` の閉路和 0 は Proposition 1.1 の modular 等式 `L(a∨b)+L(a∧b)=L(a)+L(b)` と同じ式であり、付録の Invariants 節の経路独立性はこの帰結である。
 
 ### Theorem 2: General normalized linear complement identity
 
@@ -623,7 +618,7 @@ code = 4G + 2R + B
 
 である。ZX Spectrum の同章は、たとえば Magenta の code `3` が Blue `1` と Red `2` の和であることも説明している。したがって GRB の桁順、`0..7` の番号、RGB/CMY 色名との対応は既知であり、その発明を新規性として主張できない。
 
-CHROMALUM がここで加えるのは、純数学の最小部分和 valuation と、独立な色の明るさ順が同じ既知配列へ収束することを明示し、その順位を正規化 tone、補色 rank、純色相環ファイバー、section、有限幾何へ統合することである。色相角が必要な場合だけ、有彩 `C6` の一つの座標代表を後から選ぶ。歴史的な先後については「遅くとも1981年には一次資料に存在する」とだけ結論し、これら二資料より前の起源までは本ノートでは確定しない。
+CHROMALUM がここで加えるのは、加法的スコアの三条件から全順序と既知の GRB 番号を順位として導く構成を明示し、その順位を正規化 tone、補色 rank、純色相環ファイバー、section、有限幾何へ統合することである。色相角が必要な場合だけ、有彩 `C6` の一つの座標代表を後から選ぶ。歴史的な先後については「遅くとも1981年には一次資料に存在する」とだけ結論し、これら二資料より前の起源までは本ノートでは確定しない。
 
 ### Hue Hexagon / Chromatic C6 with Gray-Type Steps
 
@@ -673,7 +668,7 @@ T = L / 7
 
 ## Appendix Layer: Derived Euclidean Geometry and Periodic Analysis
 
-以下は A3 の標準アフィン実現に E1 のユークリッド計量、特定の座標代表、さらに明示した補助作図を加えた派生層である。これらの結果は計算上の研究成果として保存するが、A0--A2、Theorem 0--2、Fano/Hamming、K8 距離分解の証明には用いない。アフィン不変量、ユークリッド不変量、座標代表に依存する Fourier 係数を区別する。
+以下は A2 の標準アフィン実現に E1 のユークリッド計量、特定の座標代表、さらに明示した補助作図を加えた派生層である。これらの結果は計算上の研究成果として保存するが、A0--A1、Theorem 1--2、Fano/Hamming、K8 距離分解の証明には用いない。アフィン不変量、ユークリッド不変量、座標代表に依存する Fourier 係数を区別する。
 
 ### GRB Decomposition and Hue Coordinates
 
@@ -1506,7 +1501,7 @@ total variation = 14 = 2(4+2+1)
 
 | layer | structures and invariants |
 | --- | --- |
-| ordered discrete algebra | A1 と A2 が収束した名前付き GRB `4:2:1`、XOR、Gray-type chromatic `C6`、`L -> 7-L` |
+| ordered discrete algebra | A1 の三条件から全順序を経て得る名前付き GRB `4:2:1`、XOR、Gray-type chromatic `C6`、`L -> 7-L` |
 | affine | midpoint, concurrency, parallelism, line ratio, equitone planes, area ratios |
 | Euclidean | norm, inner product, outer product, right angle, `60deg`, circle, chord, absolute area |
 | periodic representation | Fourier spectrum and harmonic decomposition under the chosen hue parameter |
@@ -1524,7 +1519,7 @@ sum_path Delta L = L(end) - L(start)
 sum_closed_loop Delta L = 0
 ```
 
-を満たす。これは経路独立な代数的不変量である。逆に、辺のコスト `±w_c` から `L` が定数を除いて一意に定まることは Corollary 1.2 の補足に置く。
+を満たす。これは経路独立な代数的不変量である。逆に、辺のコスト `±q_c` から `L` が定数を除いて一意に定まることは Corollary 1.2 の補足に置く。
 
 対称性も対象ごとに異なる。
 
@@ -1554,7 +1549,7 @@ lambda(kappa(c)) = tau(lambda(c)),  tau(L)=7-L
 
 ## Model Integration and Derived Representations
 
-本節は新規性の一覧ではなく、中核定理からどの統合関係と派生表示が得られるかを階層化する。RGB cube、3-bit GRB palette code、Boolean/F2^3、Fano/Hamming、一般の正規化線形補色恒等式は既知または初等的な構造である。ここで評価するのは個々の構造の発明ではなく、二経路の収束を共通座標として用いた接続である。
+本節は新規性の一覧ではなく、中核定理からどの統合関係と派生表示が得られるかを階層化する。RGB cube、3-bit GRB palette code、Boolean/F2^3、Fano/Hamming、三条件からの二進順位導出、一般の正規化線形補色恒等式は既知または初等的な構造である。ここで評価するのは、全順序から得た順位を共通座標として用いた構造間の接続である。
 
 ### Integration 1: Two-Route Recovery of the Named GRB Rank
 
@@ -1565,9 +1560,9 @@ level = 4G + 2R + B
 T = level / 7
 ```
 
-と定義する。この名前付き式は、無名の最小部分和重み `{1,2,4}` と、明るさ順位 `K<B<R<M<G<C<Y<W` を0..7で数える順位写像という二経路から得られる。したがって、3 ビット番号 `4G + 2R + B` は、8 つの RGB 頂点の明るさ順位と tone 順の両方に一致する。
+と定義する。この名前付き式は、加法的スコアの三条件が定める全順序 `K<B<R<M<G<C<Y<W` の0始まりの順位として得られる。原子の順位は直接 `B=1,R=2,G=4` となり、各集合の順位はそれらの和になる。したがって、3ビット番号 `4G+2R+B` は8つの二値頂点の明るさ順位を記録し、無隙間な部分和表現も与える。
 
-この番号付けは NEC 1981 と ZX Spectrum 1982 の一次資料に完全一致するため、番号配列の発明ではない。本モデルの統合点は、数学が無名の重みを与え、色の順序が独立に名前付き順位を与える収束を定理化し、この番号を後続する tone、ファイバー、有限幾何の共通座標として用いることにある。
+この番号付けは NEC 1981 と ZX Spectrum 1982 の一次資料に完全一致するため、番号配列の発明ではない。本モデルの統合点は、三条件から全順序と名前付き順位を導く前提・帰結を明示し、この順位を後続する tone、ファイバー、有限幾何の共通座標として使うことにある。
 
 ### Organizing Relation 2: Complement Identity
 
@@ -1782,7 +1777,7 @@ round 2   G-Y  R-G  R-Y  M-Y  R-M  B-R
 
 ### Theorem 3: Pure-hue integer fibers and the 14 intersections
 
-A0、A2、A3 のもとで、「Algebraic Layer, Pure-Hue Loop, and Level Projection」の純色相環 `H`、射影 `lambda = L|H`、ファイバー `C_L`（`L=1,...,6`）を取る。このとき整数 level ファイバーは
+A0、A1、A2 のもとで、「Algebraic Layer, Pure-Hue Loop, and Level Projection」の純色相環 `H`、射影 `lambda = L|H`、ファイバー `C_L`（`L=1,...,6`）を取る。このとき整数 level ファイバーは
 
 | `L` | points of `C_L` in `[0,1]^3`, `(g,r,b)` | canonical hue parameters | `|C_L|` |
 | ---: | :--- | :--- | ---: |
@@ -1917,7 +1912,7 @@ L(c) + L(c') = 7.
 
 純色相環 `H` は `A` の標準立方体実現へ加えた連続表示層である。同じ level の複数候補は `lambda` のファイバーに属する表示代表であり、`A` の新しい元でも XOR の被演算子でもない。GRB Binary Tone は二値頂点の明るさ順位と部分和構造を記録する順位座標であり、一般の色知覚全体を記述する尺度ではない。
 
-Fano/Hamming、RGB cube、歴史的なGRB番号列は既知構造である。本ノートの中心は、無名の最小無隙間 valuation と独立な色順序が同じ名前付き順位 `4G+2R+B` へ収束し、その順位を補色、純色相環ファイバー、有限幾何の共通座標として使えることにある。色相の原点と向きは表示座標を決めるが、重みの割当には関与しない。
+Fano/Hamming、RGB cube、歴史的なGRB番号列は既知構造である。本ノートの中心は、加法的スコアの三条件から全順序と名前付き順位 `4G+2R+B` を導き、その順位を補色、純色相環ファイバー、有限幾何の共通座標として使えることにある。無隙間な部分和はこの順位の帰結であり、無名の重みの一意性は補足の特徴づけである。色相の原点と向きは表示座標を決めるが、順位の導出には関与しない。
 
 未解決なのは、付録層の M/G 長方形が、許される補助作図と同値関係を先に定義した探索空間で一意かどうかである。現状は具体的構成の存在と正確な座標だけを主張する。
 
@@ -1944,9 +1939,9 @@ src/__tests__/research-note-invariants.test.ts
 
 Important invariants currently tested include:
 
-1. The unique unnamed positive subset-sum weights filling `0..7` are `{1,2,4}`.
-2. The binary-vertex brightness order `K<B<R<M<G<C<Y<W` independently gives `level=4G+2R+B`; comparison with the unnamed subset-sum theorem identifies the same weights as `B=1,R=2,G=4`. For disjoint primary joins, `L(M)=3,L(C)=5,L(Y)=6,L(W)=7`.
-3. On all 12 edges of `Q3`, toggling channel `c` satisfies `Delta L=(1-2x_c)w_c` and `|Delta L|=w_c`. Independently of rank encoding, the raw binary vertices other than `000` and `111` induce a connected `C6` with one channel flip per edge and two opposite edges per channel. Re-rooting rotates the color path and toggle phase together; reversal reverses both. The resulting label class contains all six channel permutations, so the cycle does not choose bit priority. In the displayed representative, `R_2->Y_6->G_4->C_5->B_1->M_3->R_2` has signed differences `(+4,-2,+1,-4,+2,-1)`: the alternating signs record `R⊂Y⊃G⊂C⊃B⊂M⊃R`, while absolute values identify toggles `G,R,B,G,R,B`. The toggles and signed differences both close, and the circuit has total variation 14. The non-backtracking one-bit walk from every chromatic vertex in either direction returns after six steps with the period-three toggle word, as `research-note-invariants.test.ts` checks.
+1. The three score conditions determine `K<B<R<M<G<C<Y<W`; counting preceding states gives the named primary ranks `B=1,R=2,G=4` and `L(g,r,b)=4g+2r+b`.
+2. Rank is additive on disjoint primary joins: `L(M)=3,L(C)=5,L(Y)=6,L(W)=7`, so its eight subset sums fill `0..7` without gaps or duplicates. The supplementary uniqueness characterization recovers the unnamed weights `{1,2,4}`.
+3. On all 12 edges of `Q3`, toggling channel `c` satisfies `Delta L=(1-2x_c)q_c` and `|Delta L|=q_c`, where `q_c=L({c})`. Independently of rank encoding, the raw binary vertices other than `000` and `111` induce a connected `C6` with one channel flip per edge and two opposite edges per channel. Re-rooting rotates the color path and toggle phase together; reversal reverses both. The resulting label class contains all six channel permutations, so the cycle does not choose bit priority. In the displayed representative, `R_2->Y_6->G_4->C_5->B_1->M_3->R_2` has signed differences `(+4,-2,+1,-4,+2,-1)`: the alternating signs record `R⊂Y⊃G⊂C⊃B⊂M⊃R`, while absolute values identify toggles `G,R,B,G,R,B`. The toggles and signed differences both close, and the circuit has total variation 14. The non-backtracking one-bit walk from every chromatic vertex in either direction returns after six steps with the period-three toggle word, as `research-note-invariants.test.ts` checks.
 4. The three primary involutions generate exactly seven nonidentity toggle patterns in layers `3+3+1`; Fano lines form a Steiner triple system whose three corresponding toggles compose to `id_A`.
 5. Complementation `lv xor 7` reverses the six chromatic tone ranks. Placing complementary colors on opposite cube faces and numbering each face by `L` makes every opposite pair sum to 7, matching the standard-die rule up to cube symmetry and handedness. The eight local three-face views exhaust the cube vertices; their OR/XOR and AND/XNOR coincidences retain the premises `a∧b=K` and `a∨b=W`, respectively.
 6. CMY line is treated as an even-parity tetrahedron rather than a literal Euclidean plane slice.

@@ -38,12 +38,25 @@ describe("TheoryPanel", () => {
     expect(container.querySelector("#theory-algebra")?.textContent).toContain("e_c∧e_d=K");
   });
 
-  it("groups the two derivations, toggle cube, hue traversal, and Hamming checks without repeated panels", () => {
+  it("derives named ranks with a prose subset-sum supplement and keeps the other panels distinct", () => {
     const { container } = renderWithLanguage();
     const derivation = container.querySelector(".theory-derivation")!;
-    expect(derivation.querySelectorAll("figure")).toHaveLength(2);
-    expect(container.querySelectorAll('[data-testid="subset-sum-derivation"]')).toHaveLength(1);
-    expect(derivation.textContent).toContain("rank_s(c)=#{x∈A | s(x)<s(c)}");
+    expect(derivation.querySelectorAll("figure")).toHaveLength(1);
+    expect(Array.from(derivation.querySelectorAll(".theory-derivation-comparisons code"), (node) => node.textContent)).toEqual([
+      "wB > 0",
+      "wR > wB",
+      "wG > wR + wB",
+    ]);
+    expect(Array.from(derivation.querySelectorAll(".theory-derivation-named-ranks span"), (node) => node.textContent)).toEqual([
+      "B=1",
+      "R=2",
+      "G=4",
+    ]);
+    const order = derivation.querySelector(".theory-derivation-order")!;
+    const conclusion = derivation.querySelector(".theory-derivation-conclusion")!;
+    expect(order.compareDocumentPosition(conclusion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(conclusion.querySelector("p.theory-derivation-supplement")?.textContent).toContain("0–7 without repetition or gaps");
+    expect(derivation.textContent).toContain("L(S)=#{T∈A | σ(T)<σ(S)}");
     expect(derivation.querySelector(".theory-derivation-conclusion")?.textContent).toContain("L(g,r,b)=4g+2r+b");
     const cube = screen.getByRole("group", { name: "Color Cube" });
     expect(cube.closest(".theory-chapter")?.id).toBe("theory-cube-cycle");
@@ -98,8 +111,8 @@ describe("TheoryPanel", () => {
     expect(text).toContain("A=𝒫(E)");
     expect(text).toContain("(A,⊕)≅(𝔽₂³,+)");
     expect(text).toContain("Γ(S)=∨");
-    expect(text).toContain("unnamed weights {1,2,4}");
-    expect(text).toContain("w_G>w_R+w_B · w_R>w_B>0");
+    expect(text).toContain("derived primary ranks");
+    expect(text).toContain("w_G>w_R+w_B");
     expect(text).toContain("L(g,r,b)=4g+2r+b");
     expect(text).toContain("L(a∨b)+L(a∧b)=L(a)+L(b)");
     expect(text).toContain("L(a⊕b)=L(a)+L(b)−2L(a∧b)");

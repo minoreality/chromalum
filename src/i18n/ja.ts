@@ -196,9 +196,7 @@ export const ja = {
   // Theory panel — scholarly content (label_theory + theory_* keys below) is
   // CC BY 4.0 (Doctor Chromaticus); see docs/LICENSE.md.
   label_theory: "ALGEBRAIC COLOR THEORY",
-  theory_empirical_order_intro: "正の加法的スコアについて、GがMより、RがBより大きいと仮定します。",
-  theory_empirical_rank_note:
-    "各色よりスコアの小さい状態を数えると、上の0〜7の順位になります。測定スコアそのものを1・2・4とする主張ではありません。",
+  theory_empirical_order_intro: "加法的スコアに w_B>0、w_R>w_B、w_G>w_R+w_B を仮定します。後の二条件は、RとB、GとM=R∨Bの比較です。",
   theory_hue_counterclockwise: "反時計回り",
   theory_hue_clockwise: "時計回り",
   theory_hue_choose_start: "{0}を出発点にする",
@@ -211,7 +209,7 @@ export const ja = {
   theory_hamming_error_input_hint: "受信位置を押して誤りを追加・解除。赤枠は誤り、下線は選択中の検査対象です。",
   theory_title: "離散代数的色彩理論",
   theory_intro:
-    "二値の三原色からなる八状態を対象に、混色、補色、反転、色の順位を一つの代数的構成として捉えます。中心となる問いは、状態を生成する演算と、その状態を順序づける数値が、どのような条件の下で結びつくかということです。\n\n部分和と色順による二つの独立な特徴づけから二進順位を定め、反転の距離構造、非零ベクトルの幾何と符号、多面体の対応を展開します。そのうえで有彩六閉路を連続的に拡張し、有限の八状態から導かれる性質と、追加した表現の成立範囲を明確にします。",
+    "二値の三原色からなる八状態を対象に、混色、補色、反転、色の順位を一つの代数的構成として捉えます。中心となる問いは、状態を生成する演算と、その状態を順序づける数値が、どのような条件の下で結びつくかということです。\n\n加法的スコアの三条件から全順序を定め、その0始まりの順位として名前付き二進重みを導きます。無隙間な部分和はこの順位から得られます。さらに、反転の距離構造、非零ベクトルの幾何と符号、多面体の対応を展開します。そのうえで有彩六閉路を連続的に拡張し、有限の八状態から導かれる性質と、追加した表現の成立範囲を明確にします。",
   theory_algebra_definition:
     "E={G,R,B} とします。二値RGBの各状態は部分集合 S⊆E であり、八状態全体は A=𝒫(E) です。S∨T=S∪T はチャンネルの和、S∧T=S∩T は共通部分、¬S=E∖S は補集合、S⊕T=S△T は一方だけに属するチャンネルからなる対称差です。したがってAは、join・meet・補元を持つブール代数です。",
   theory_algebra_structures:
@@ -226,12 +224,12 @@ export const ja = {
   theory_hue_extension_title: "有彩六閉路の連続拡張",
   theory_hue_extension_desc:
     "有彩六閉路C₆は、反転による隣接関係と、三歩離れた補色関係を同時に持ちます。順位Lをこの閉路に制限すると、各辺の変化量は反転する原色の重みと包含の向きによって定まります。六辺の間を補間することで、この離散的な関係を連続する色相とトーンへ拡張します。拡張の対象は閉路と順位であり、八状態の集合Aやそのブール演算ではありません。",
-  theory_derivation_aria: "無隙間な部分和と色の順序から二進順位へ至る二つの経路",
-  theory_derivation_convergence: "GRB二進順位での合流",
-  theory_derivation_weights: "無名の重み",
-  theory_derivation_ranks: "色の順位",
-  theory_derivation_convergence_note:
-    "部分和の条件は無名の{1,2,4}を、色順の条件はB<R<Gという原色の順序を与えます。独立な二つの特徴づけが同じLに一致します。",
+  theory_derivation_aria: "スコアの三条件から全順序と原子の順位を導く",
+  theory_derivation_rank_title: "全順序から順位が定まる",
+  theory_derivation_ranks: "原子の順位",
+  theory_derivation_rank_note: "前にある状態を数えると、B=1,R=2,G=4が得られます。各状態の順位は、含まれる原子の順位の和になります。",
+  theory_derivation_supplement:
+    "導出した原子の順位1・2・4の部分和は、0〜7を重複も隙間もなく埋めます。これは全順序から得た順位の帰結であり、元のスコアの重みが1・2・4に決まるわけではありません。",
   theory_venn_title: "ベン図",
   theory_venn_desc:
     "部分集合 S⊆E の特性ベクトル (g,r,b)∈{0,1}³ は、各原色がSに含まれるかを1・0で記録します。部分集合と三ビットベクトルは一対一に対応し、集合包含は座標ごとの大小関係に一致します。したがって、集合としての状態とビットとしての状態は同じ包含順序と演算を持ちます。",
@@ -261,7 +259,7 @@ export const ja = {
   theory_toggle_transition_aria: "現在状態と一原色ビット反転",
   theory_binary_title: "八状態の対応表",
   theory_binary_desc:
-    "部分集合の要素数であるブール階数 |S| は、特性ベクトル中の1の個数であるHamming重み wt(g,r,b) と一致します。その偶奇は π=wt mod 2=g⊕r⊕b であり、偶数を0、奇数を1とします。これは明るさ順位Lの偶奇とは異なります。ブール階数は原色がいくつ含まれるかを、Lはどの原色が含まれるかを重み付きで評価するためです。\n\n二経路の結論 L(g,r,b)=4g+2r+b は、八状態に0〜7の順位を与え、T=L/7がその正規化となります。0〜3のブール階数と0〜7の明るさ順位を区別することで、同じ生成階層に属する状態にも異なる順位を与えられます。さらにLがブール演算に対して満たす関係は、チャンネルの重なりと補集合から導かれます。",
+    "部分集合の要素数であるブール階数 |S| は、特性ベクトル中の1の個数であるHamming重み wt(g,r,b) と一致します。その偶奇は π=wt mod 2=g⊕r⊕b であり、偶数を0、奇数を1とします。これは明るさ順位Lの偶奇とは異なります。ブール階数は原色がいくつ含まれるかを、Lはどの原色が含まれるかを重み付きで評価するためです。\n\n全順序から得る順位 L(g,r,b)=4g+2r+b は、八状態に0〜7の順位を与え、T=L/7がその正規化となります。0〜3のブール階数と0〜7の明るさ順位を区別することで、同じ生成階層に属する状態にも異なる順位を与えられます。さらにLがブール演算に対して満たす関係は、チャンネルの重なりと補集合から導かれます。",
   theory_binary_color: "色",
   theory_binary_name: "名",
   theory_binary_hamming_roles: "H(7,4)：P＝パリティ位置 · D＝データ位置",
@@ -421,8 +419,8 @@ export const ja = {
     "八状態の集合Aには、混色を表すブール演算、状態間を移動する反転作用、色順の条件から得る順位Lが対応します。これらの関係から、順位と演算の恒等式、距離による全二状態対の分類、非零ベクトルの線形依存とパリティ検査の対応が得られます。\n\n色相順と補色を保つ面配置、その双対八面体、有彩六閉路の連続補間は、それぞれ有限の関係を保つ構成です。これらの対応によってAの演算が変わることはありません。とくに連続補間の中間点はAの新しい元ではなく、Lのアフィン延長λで評価される点です。",
   theory_empirical_title: "色順と二進順位",
   theory_empirical_desc:
-    "同じ八状態の順位を、二つの独立な条件から特徴づけます。一つは、三つの正整数の部分和が0〜7を重複も隙間もなく尽くすという条件です。もう一つは、二値頂点上の正の加法的スコアに課す色順の条件です。前者は無名の重みを定め、後者はそれ自体で名前付き順位を定めます。両者を結ぶ際には、測定スコアの値と、その大小関係から得る順位を区別する必要があります。",
-  theory_empirical_condition: "二比較が全順序を定める",
+    "加法的スコアが w_B>0、w_R>w_B、w_G>w_R+w_B を満たすと、八状態の全順序 K<B<R<M<G<C<Y<W が一意に定まります。前にある状態の個数を数える0始まりの順位から、B=1,R=2,G=4が直接得られます。各状態の順位は原子の順位の和となるため、8部分和は0〜7を重複も隙間もなく尽くします。無隙間性は導出した順位の帰結であり、元のスコアの実数重みと整数の順位は区別します。",
+  theory_empirical_condition: "三条件が全順序を定める",
   theory_valuation_title: "順位と混色・補色の関係",
   theory_valuation_complement: "補色の順位は足して7",
   theory_valuation_modular_note:
@@ -439,7 +437,8 @@ export const ja = {
   theory_cube_face_aria: "{0}={1}の面：{2}",
   theory_cube_hasse: "\u30cf\u30c3\u30bb\u56f3",
   theory_conn_core: "A=𝒫(E)は生成済み状態のブール代数であり、(A,⊕)≅(𝔽₂³,+)はその反転群です。どの演算を保つかまでが構造の指定です。",
-  theory_conn_order: "無名の部分和定理と名前付き明るさ順は L(g,r,b)=4g+2r+b で合流し、valuationと補色がその順位の帰結になります。",
+  theory_conn_order:
+    "加法的スコアの三条件が全順序を定め、その順位として L(g,r,b)=4g+2r+b が得られます。無隙間な部分和、valuation、補色の恒等式はこの順位の帰結です。",
   theory_conn_structures:
     "Hamming距離は全二状態対を分類します。d=1はQ₃、有彩頂点はC₆、d=2は偶奇別の二つのテトラ、d=3は四つの補色対を与えます。同じ非零ベクトルの線形依存がFano平面とHamming符号を結びます。色相順と補色を保つ面配置はカラーダイスと双対八面体を、C₆とLの辺ごとのアフィン延長はトーンジグザグを与えます。",
   theory_conn_limit_vertices:
@@ -467,14 +466,6 @@ export const ja = {
   theory_fano_show_complement: "補色ペア",
   theory_fano_show_secondary: "CMY",
 
-  theory_subset_title: "部分和を隙間なく広げる",
-  theory_subset_intro: "三つの正整数重みの8部分和で、0〜7を重複も隙間もなく埋めます。",
-  theory_subset_start: "開始",
-  theory_subset_existing: "既存の部分和",
-  theory_subset_existing_short: "既存の和",
-  theory_subset_translated_short: "加えた和",
-  theory_subset_translated: "新しい重みを加えた部分和",
-  theory_subset_rule: "次の重みは、既存の最大値＋1です。小さければ和が重なり、大きければ隙間が空くため、重みは1、2、4と決まります。",
   theory_k8_comparison_distance: "ビット距離",
   theory_k8_comparison_gap: "順位差",
   theory_k8_title: "K₈の辺の距離分解",

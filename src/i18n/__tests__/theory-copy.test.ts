@@ -23,21 +23,25 @@ describe("Theory copy", () => {
     expect(ja.theory_algebra_structures).toContain("e_c∧e_d=K");
   });
 
-  it("keeps mathematical weights and conditional color rank distinct in the combined panel", () => {
-    expect(en.theory_subset_intro).toContain("positive integer weights");
-    expect(en.theory_subset_rule).toContain("current maximum plus 1");
-    expect(en.theory_empirical_desc).toContain("Color order alone supplies the named rank");
-    expect(en.theory_empirical_order_intro).toContain("assume G exceeds M and R exceeds B");
-    expect(en.theory_empirical_rank_note).toContain("does not assign the measured scores");
-    expect(en.theory_derivation_convergence_note).toContain("unnamed weights {1,2,4}");
-    expect(en.theory_derivation_convergence_note).toContain("primary ordering B<R<G");
-    expect(ja.theory_subset_intro).toContain("正整数重み");
-    expect(ja.theory_subset_rule).toContain("既存の最大値＋1");
-    expect(ja.theory_empirical_desc).toContain("それ自体で名前付き順位");
-    expect(ja.theory_empirical_order_intro).toContain("仮定します");
-    expect(ja.theory_empirical_rank_note).toContain("測定スコアそのものを1・2・4とする主張ではありません");
-    expect(ja.theory_derivation_convergence_note).toContain("無名の{1,2,4}");
-    expect(ja.theory_derivation_convergence_note).toContain("B<R<Gという原色の順序");
+  it("derives primary ranks from three order conditions and treats gapless sums as a consequence", () => {
+    for (const copy of [en, ja]) {
+      for (const condition of ["w_B>0", "w_R>w_B", "w_G>w_R+w_B"]) {
+        expect(copy.theory_empirical_order_intro).toContain(condition);
+      }
+      expect(copy.theory_empirical_desc).toContain("K<B<R<M<G<C<Y<W");
+      expect(copy.theory_empirical_desc).toContain("B=1,R=2,G=4");
+      expect(`${copy.theory_intro} ${copy.theory_empirical_desc} ${copy.theory_conn_order}`).not.toMatch(
+        /two independent|two-path|converg|二経路|二つの独立|合流/i,
+      );
+    }
+    expect(en.theory_empirical_desc).toContain("zero-based rank");
+    expect(en.theory_derivation_supplement).toContain("derived primary ranks 1,2,4");
+    expect(en.theory_derivation_supplement).toContain("consequence");
+    expect(en.theory_derivation_supplement).toContain("original score weights are not fixed at 1,2,4");
+    expect(ja.theory_empirical_desc).toContain("0始まりの順位");
+    expect(ja.theory_derivation_supplement).toContain("導出した原子の順位1・2・4の部分和");
+    expect(ja.theory_derivation_supplement).toContain("帰結");
+    expect(ja.theory_derivation_supplement).toContain("元のスコアの重みが1・2・4に決まるわけではありません");
   });
 
   it("explains rank correction and complement beside the binary table", () => {
