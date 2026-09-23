@@ -27,6 +27,7 @@ import {
   updateStatusBase,
   hasPointerCapture,
   usePaintFrameQueue,
+  useStrokePointerEnd,
 } from "./useDrawingBase";
 import type { DrawingRefs } from "./useDrawingBase";
 import { unionBBox } from "../drawing/dirty-rect";
@@ -51,7 +52,7 @@ export interface CanvasDrawingResult {
   cursorPosRef: React.MutableRefObject<{ dx: number; dy: number } | null>;
   onDown: (e: React.PointerEvent) => void;
   onMove: (e: React.PointerEvent) => void;
-  onUp: () => void;
+  onUp: (event?: Pick<PointerEvent, "pointerId">) => void;
   onWorkspaceDown: (e: React.PointerEvent) => void;
   onWorkspaceMove: (e: React.PointerEvent) => void;
   onWorkspaceLeave: (e: React.PointerEvent) => void;
@@ -105,6 +106,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   });
   const strokeRef = useRef<StrokeState | null>(null);
   const drawingRef = useRef(false);
+  const pointerIdRef = useRef<number | null>(null);
   // Buffer pool: reuse before/working allocations across strokes
   const strokeBufferPoolRef = useRef<BufferPool>({ beforeData: null, workingData: null, size: 0 });
   const lastRef = useRef<{ x: number; y: number } | null>(null);
@@ -142,6 +144,8 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     pendingUpRef.current = false;
     strokeRef.current = null;
     drawingRef.current = false;
+    pointerIdRef.current = null;
+    pendingWorkspaceStartRef.current = null;
     // Cancel before a replacement redraw, and when this canvas unmounts.
     return () => {
       cancelPaint();
@@ -210,6 +214,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   }
 
   function doDown(e: React.PointerEvent, refEl: HTMLCanvasElement | null, buttonOverride?: 0 | 1 | 2, startPos?: Point) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const button = buttonOverride ?? e.button;
     if (button !== 0 && button !== 1 && button !== 2) return;
     e.preventDefault();
@@ -231,6 +236,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       return;
     }
     trySetPointerCapture(e);
+    pointerIdRef.current = e.pointerId;
     drawingRef.current = true;
     const curTool = toolRef.current,
       curBL = s.current.brushLevel,
@@ -337,6 +343,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     clearCursor: () => void,
     statusMode: CanvasStatusMode,
   ) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     pendingWorkspaceStartRef.current = null;
     if (e.button === 1 || spaceRef.current || isInCanvasBounds(e, refEl)) {
       doDown(e, refEl);
@@ -351,6 +358,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     updateStatus(e, refEl, statusMode);
     if (!canArmWorkspaceStart(e)) return;
     trySetPointerCapture(e);
+    pointerIdRef.current = e.pointerId;
     pendingWorkspaceStartRef.current = {
       refEl,
       cursorTrack,
@@ -366,6 +374,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     clearCursor: () => void,
     statusMode: CanvasStatusMode,
   ) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const pending = pendingWorkspaceStartRef.current;
     if (pending) {
       e.preventDefault();
@@ -377,6 +386,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
         pending.clearCursor();
       }
       if ((e.buttons & 1) !== 1) {
+        pointerIdRef.current = null;
         pendingWorkspaceStartRef.current = null;
         clearCursor();
         return;
@@ -406,6 +416,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     clearCursor: () => void,
     statusMode: CanvasStatusMode,
   ) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const canvasEl = refEl ?? activeCanvasRef.current ?? cursor.cursorCanvasRef.current;
     if (isInWorkspaceBounds(e, canvasEl) || drawingRef.current) {
       cursorTrack(e);
@@ -418,6 +429,10 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       return;
     }
     if (!drawingRef.current) return;
+    if (e.buttons === 0) {
+      onUp(e);
+      return;
+    }
     const st = strokeRef.current;
     if (!st || st.params.tool === "fill") return;
     e.preventDefault();
@@ -540,6 +555,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       dispatch({ type: "stroke_end", finalLevelData: finalData, diff });
     }
     drawingRef.current = false;
+    pointerIdRef.current = null;
     lastRef.current = null;
     strokeSmootherRef.current = null;
     forceRawNextMoveRef.current = false;
@@ -547,19 +563,25 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     activeCanvasRef.current = null;
   }
 
-  const onUp = useCallback(() => {
-    pendingWorkspaceStartRef.current = null;
-    if (panningRef.current) {
-      s.current.endPan();
-      return;
-    }
-    if (fillPendingRef.current) {
-      pendingUpRef.current = true;
-      return;
-    }
-    finishStroke();
+  const onUp = useCallback(
+    (event?: Pick<PointerEvent, "pointerId">) => {
+      if (event && pointerIdRef.current !== null && pointerIdRef.current !== event.pointerId) return;
+      pointerIdRef.current = null;
+      pendingWorkspaceStartRef.current = null;
+      if (panningRef.current) {
+        s.current.endPan();
+      }
+      if (fillPendingRef.current) {
+        pendingUpRef.current = true;
+        return;
+      }
+      finishStroke();
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, read via .current
-  }, [dispatch]);
+    [dispatch],
+  );
+
+  useStrokePointerEnd(pointerIdRef, onUp);
 
   const onWorkspaceDown = useCallback(
     (e: React.PointerEvent) => {
@@ -600,13 +622,15 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   const onWorkspaceLeave = useCallback(
     (e: React.PointerEvent) => {
+      if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
       if (pendingWorkspaceStartRef.current) {
         pendingWorkspaceStartRef.current = null;
+        pointerIdRef.current = null;
         clearCursor();
         return;
       }
       if (drawingRef.current && hasPointerCapture(e, [sourceCanvasRef.current])) return;
-      onUp();
+      onUp(e);
       clearCursor();
     },
     [onUp, clearCursor],
@@ -630,13 +654,15 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   const onWorkspaceLeavePrv = useCallback(
     (e: React.PointerEvent) => {
+      if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
       if (pendingWorkspaceStartRef.current) {
         pendingWorkspaceStartRef.current = null;
+        pointerIdRef.current = null;
         clearPreviewCursor();
         return;
       }
       if (drawingRef.current && hasPointerCapture(e, [previewCanvasRef.current])) return;
-      onUp();
+      onUp(e);
       clearPreviewCursor();
     },
     [onUp, clearPreviewCursor, previewCanvasRef],

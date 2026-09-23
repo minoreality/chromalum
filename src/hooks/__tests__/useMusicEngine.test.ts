@@ -843,3 +843,47 @@ describe("useMusicEngine", () => {
     unmount();
   });
 });
+
+// Stop must silence a selected line without discarding the selection, and a new
+// line interaction must still be able to audition it.
+describe("Music interaction lifecycle", () => {
+  it.each(["Stop All", "Escape"])("silences selected Fano audition on %s until another selection", (stop) => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, unmount } = renderHook(() => useMusicPanelController());
+    act(() => result.current.engine.initAudio());
+    act(() => result.current.setHoveredFanoLine(0));
+    const gains = FakeAudioContext.instances[0].gains.slice(1, 7);
+    expect(gains.some((node) => node.gain.value > 0)).toBe(true);
+    act(() => {
+      if (stop === "Escape") document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      else result.current.handleStopAll();
+    });
+    expect(result.current.hoveredFanoLine).toBe(0);
+    expect(gains.every((node) => node.gain.value === 0)).toBe(true);
+    act(() => result.current.setPitchMappingMode("wholeTone"));
+    expect(gains.every((node) => node.gain.value === 0)).toBe(true);
+    act(() => result.current.setHoveredFanoLine(0));
+    expect(gains.some((node) => node.gain.value > 0)).toBe(true);
+    unmount();
+  });
+
+  it.each([0, 300])("stops the old Cayley row when selection changes after %d ms", (elapsed) => {
+    vi.useFakeTimers();
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { result, unmount } = renderHook(() => useMusicPanelController());
+    act(() => result.current.engine.initAudio());
+    act(() => result.current.engine.playCayleyRow(1, (col) => result.current.setCayleyCol(col)));
+    act(() => vi.advanceTimersByTime(elapsed));
+    act(() => result.current.setCayleyRow(2));
+    const oscillatorCount = FakeAudioContext.instances[0].oscillators.length;
+    act(() => vi.advanceTimersByTime(2400));
+    expect(result.current.cayleyRow).toBe(2);
+    expect(result.current.cayleyCol).toBe(-1);
+    expect(FakeAudioContext.instances[0].oscillators).toHaveLength(oscillatorCount);
+    act(() => result.current.engine.playCayleyRow(2, (col) => result.current.setCayleyCol(col)));
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.cayleyCol).toBe(0);
+    expect(FakeAudioContext.instances[0].oscillators.length).toBeGreaterThan(oscillatorCount);
+    unmount();
+  });
+});

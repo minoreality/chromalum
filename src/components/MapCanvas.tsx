@@ -15,6 +15,7 @@ const EMPTY_REGION_SIZE_BY_ID = new Map<number, number>();
 
 /* ── Map canvas component ── */
 export function MapCanvas({
+  active = true,
   mode,
   pixelMaps,
   candidateIndexByLevel,
@@ -23,6 +24,7 @@ export function MapCanvas({
   displayHeight,
   showToast,
 }: {
+  active?: boolean;
   mode: MapMode;
   pixelMaps: AnalysisPixelMaps;
   candidateIndexByLevel: readonly number[];
@@ -100,6 +102,11 @@ export function MapCanvas({
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showSaveHint, setShowSaveHint] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  // This transient state belongs to the active tab, even though Map is cached.
+  if (!active && (confirmSaveOpen || showSaveHint)) {
+    setConfirmSaveOpen(false);
+    setShowSaveHint(false);
+  }
 
   const saveMap = useCallback(() => {
     const c = ref.current;
@@ -141,16 +148,6 @@ export function MapCanvas({
 
   const longPressOrigin = useRef<{ x: number; y: number } | null>(null);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.pointerType !== "touch") return;
-    longPressOrigin.current = { x: e.clientX, y: e.clientY };
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null;
-      longPressOrigin.current = null;
-      setConfirmSaveOpen(true);
-    }, 1000);
-  }, []);
-
   const cancelLongPress = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
@@ -158,6 +155,25 @@ export function MapCanvas({
     }
     longPressOrigin.current = null;
   }, []);
+
+  useEffect(() => {
+    if (!active) cancelLongPress();
+    return cancelLongPress;
+  }, [active, cancelLongPress]);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!active || e.pointerType !== "touch") return;
+      cancelLongPress();
+      longPressOrigin.current = { x: e.clientX, y: e.clientY };
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        longPressOrigin.current = null;
+        setConfirmSaveOpen(true);
+      }, 1000);
+    },
+    [active, cancelLongPress],
+  );
 
   const onPointerMoveLP = useCallback(
     (e: React.PointerEvent) => {
@@ -238,7 +254,7 @@ export function MapCanvas({
         {hoverInfo ? getVisibleStatusText(hoverInfo, compactStatus) : "\u2014"}
       </div>
       <ConfirmModal
-        open={confirmSaveOpen}
+        open={active && confirmSaveOpen}
         message={t("confirm_save_map")}
         onConfirm={() => {
           setConfirmSaveOpen(false);

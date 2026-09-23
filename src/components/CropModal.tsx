@@ -172,29 +172,22 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
         nx = d.origCx + dx;
         ny = d.origCy + dy;
       } else {
-        // Resize
+        // Clamp each moving edge independently so the opposite edge stays fixed.
+        const minW = Math.min(MIN_CROP, imgW);
+        const minH = Math.min(MIN_CROP, imgH);
         if (d.mode.includes("w")) {
-          nx = d.origCx + dx;
-          nw = d.origCw - dx;
+          nx = Math.max(0, Math.min(d.origCx + d.origCw - minW, d.origCx + dx));
+          nw = d.origCx + d.origCw - nx;
         }
         if (d.mode.includes("e")) {
-          nw = d.origCw + dx;
+          nw = Math.max(minW, Math.min(imgW - nx, d.origCw + dx));
         }
         if (d.mode.includes("n")) {
-          ny = d.origCy + dy;
-          nh = d.origCh - dy;
+          ny = Math.max(0, Math.min(d.origCy + d.origCh - minH, d.origCy + dy));
+          nh = d.origCy + d.origCh - ny;
         }
         if (d.mode.includes("s")) {
-          nh = d.origCh + dy;
-        }
-        // Prevent negative size
-        if (nw < MIN_CROP) {
-          if (d.mode.includes("w")) nx = d.origCx + d.origCw - MIN_CROP;
-          nw = MIN_CROP;
-        }
-        if (nh < MIN_CROP) {
-          if (d.mode.includes("n")) ny = d.origCy + d.origCh - MIN_CROP;
-          nh = MIN_CROP;
+          nh = Math.max(minH, Math.min(imgH - ny, d.origCh + dy));
         }
       }
 
@@ -208,7 +201,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
       setCw(Math.round(c.nx + c.nw) - left);
       setCh(Math.round(c.ny + c.nh) - top);
     },
-    [displayScale, clamp],
+    [displayScale, clamp, imgW, imgH],
   );
 
   const handlePointerEnd = useCallback((e: React.PointerEvent) => {
@@ -290,6 +283,7 @@ export const CropModal = React.memo(function CropModal({ img, imgW, imgH, onConf
       <div
         ref={modalRef}
         role="dialog"
+        data-modal-owner="crop"
         aria-modal="true"
         aria-label={t("crop_image_title")}
         tabIndex={-1}

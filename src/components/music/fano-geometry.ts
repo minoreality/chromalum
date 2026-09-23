@@ -38,7 +38,7 @@ function fanoCirclePath(): string {
   const [x5, y5] = FANO_POINT_POSITIONS[5];
   const [x6, y6] = FANO_POINT_POSITIONS[6];
   const { r } = FANO_INSCRIBED_CIRCLE;
-  return `M${x3},${y3} A${r},${r} 0 1,0 ${x5},${y5} A${r},${r} 0 0,0 ${x6},${y6} A${r},${r} 0 0,0 ${x3},${y3}`;
+  return `M${x3},${y3} A${r},${r} 0 0,0 ${x5},${y5} A${r},${r} 0 0,0 ${x6},${y6} A${r},${r} 0 0,0 ${x3},${y3}`;
 }
 
 export function fanoLineSvgPath(lineIndex: number): string {

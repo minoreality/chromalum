@@ -108,13 +108,16 @@ export const ColorPanel = React.memo(function ColorPanel(props: ColorPanelProps)
     [panZoom, drawing],
   );
 
-  const handlePointerUp = useCallback(() => {
-    if (panZoom.panningRef.current) {
-      panZoom.endPan();
-      return;
-    }
-    drawing.onUp();
-  }, [panZoom, drawing]);
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (panZoom.panningRef.current) {
+        panZoom.endPan();
+        return;
+      }
+      drawing.onUp(e);
+    },
+    [panZoom, drawing],
+  );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => e.preventDefault(), []);
 

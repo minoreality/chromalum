@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { BRUSH_MIN, BRUSH_MAX, BRUSH_STEP, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from "../constants";
-import type { ToolId } from "../constants";
+import type { GlazeToolId, ToolId } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
 import type { CanvasAction } from "../types";
 import type { TranslationFn } from "../i18n";
@@ -9,6 +9,7 @@ import { controlOwnsKey, hasDrawingShortcuts } from "../shortcuts";
 
 export interface KeyboardShortcutDeps {
   setTool: React.Dispatch<React.SetStateAction<ToolId>>;
+  setGlazeTool: React.Dispatch<React.SetStateAction<GlazeToolId>>;
   setBrushLevel: React.Dispatch<React.SetStateAction<number>>;
   setBrushSize: React.Dispatch<React.SetStateAction<number>>;
   dispatch: React.Dispatch<CanvasAction>;
@@ -40,6 +41,7 @@ interface KeyCommand {
 export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
   const {
     setTool,
+    setGlazeTool,
     setBrushLevel,
     setBrushSize,
     dispatch,
@@ -95,45 +97,27 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
         },
       },
       {
-        key: "=",
-        ctrl: true,
-        action: () => {
-          setZoom((z) => Math.min(ZOOM_MAX, z * ZOOM_STEP));
-        },
-      },
-      {
-        key: "+",
-        ctrl: true,
-        action: () => {
-          setZoom((z) => Math.min(ZOOM_MAX, z * ZOOM_STEP));
-        },
-      },
-      {
-        key: "-",
-        ctrl: true,
-        action: () => {
-          setZoom((z) => Math.max(ZOOM_MIN, z / ZOOM_STEP));
-        },
-      },
-      {
         key: "b",
         action: () => {
-          setTool("brush");
-          announce(t("announce_brush"));
+          if (activeTabId === "glaze") setGlazeTool("glaze_brush");
+          else setTool("brush");
+          announce(t(activeTabId === "glaze" ? "announce_glaze_brush" : "announce_brush"));
         },
       },
       {
         key: "e",
         action: () => {
-          setTool("eraser");
-          announce(t("announce_eraser"));
+          if (activeTabId === "glaze") setGlazeTool("glaze_eraser");
+          else setTool("eraser");
+          announce(t(activeTabId === "glaze" ? "announce_glaze_eraser" : "announce_eraser"));
         },
       },
       {
         key: "f",
         action: () => {
-          setTool("fill");
-          announce(t("announce_fill"));
+          if (activeTabId === "glaze") setGlazeTool("glaze_fill");
+          else setTool("fill");
+          announce(t(activeTabId === "glaze" ? "announce_glaze_fill" : "announce_fill"));
         },
       },
       {
@@ -213,6 +197,23 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       // Only the drawing tabs own the canvas shortcuts. Elsewhere Space scrolls,
       // digits stay with Hex and Music, and history cannot change a hidden canvas.
       if (!hasDrawingShortcuts(activeTabId)) return;
+      if (e.altKey) return;
+
+      // Match the produced character: Shift creates '+' on both US and JIS
+      // layouts. Local canvas handlers preventDefault before this bubbles here.
+      if (key === "+" || (!isShift && key === "=")) {
+        e.preventDefault();
+        setZoom((z) => Math.min(ZOOM_MAX, z * ZOOM_STEP));
+        return;
+      }
+      if (!isShift && key === "-") {
+        e.preventDefault();
+        setZoom((z) => Math.max(ZOOM_MIN, z / ZOOM_STEP));
+        return;
+      }
+
+      // Glaze has no shape tools; never change the hidden Source selection.
+      if (activeTabId === "glaze" && (key === "l" || key === "r" || key === "o")) return;
 
       // Space key for pan (stateful, handle separately). The repeats a held key
       // sends have to be prevented too: holding Space is the gesture, and letting
@@ -281,6 +282,7 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- spaceRef, panningRef, brushSizeRef are stable refs
   }, [
     setTool,
+    setGlazeTool,
     setBrushLevel,
     setBrushSize,
     dispatch,

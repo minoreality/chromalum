@@ -73,6 +73,7 @@ export const AnalyzePanel = React.memo(
             style={getCanvasPanelStyle(displayWidth, displayHeight)}
           >
             <MapCanvas
+              active={active}
               mode={mapMode}
               pixelMaps={pixelMaps}
               candidateIndexByLevel={candidateIndexByLevel}
