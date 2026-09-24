@@ -48,6 +48,12 @@
       "prototypes/hue-euler/main.tsx",
       "prototypes/hue-euler/playwright.config.ts",
       "prototypes/hue-euler/browser.check.ts",
+      "prototypes/de-morgan/main.ts",
+      "prototypes/de-morgan/playwright.config.ts",
+      "prototypes/de-morgan/browser.check.ts",
+      "prototypes/de-morgan-circuit/main.ts",
+      "prototypes/de-morgan-circuit/playwright.config.ts",
+      "prototypes/de-morgan-circuit/browser.check.ts",
       "prototypes/octahedron-gray-net/net.mjs"
     ]
   },
