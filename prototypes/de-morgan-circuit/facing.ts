@@ -1,13 +1,17 @@
 import { COLORS, MODES, bits, name, evaluate, type Operation, type SignalInput } from "./model";
 
-export type Layout = "outputs" | "inputs" | "parallel";
-type Point = [number, number];
+export type Layout = "outputs" | "inputs" | "ring";
+export type Point = [number, number];
+// A route's own coordinates: u runs along the signal, v across it. `mirror` reflects v.
+type Frame = { origin: Point; vertical: boolean; direction: 1 | -1; mirror: 1 | -1 };
 
-const text = (x: number, y: number, value: string, className = "gate-name") =>
+export const text = (x: number, y: number, value: string, className = "gate-name") =>
   `<text class="${className}" x="${x}" y="${y}">${value}</text>`;
-const wire = (points: Point[]) => `<path class="wire" d="${points.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ")}" />`;
+export const wire = (points: Point[]) => `<path class="wire" d="${points.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ")}" />`;
+export const lanesFor = (count: number) =>
+  count === 3 ? { lanes: [-80, 0, 80], ports: [-14, 0, 14] } : { lanes: [-60, 60], ports: [-14, 14] };
 
-function state(point: Point, level: number, vertical: boolean, cross = 0, attributes = "", label = "") {
+export function state(point: Point, level: number, vertical: boolean, cross = 0, attributes = "", label = "") {
   const x = point[0] + (vertical ? (cross < 0 ? -36 : 36) : 0);
   const y = point[1] + (vertical ? 0 : -26);
   const color = COLORS[level];
@@ -20,11 +24,80 @@ function state(point: Point, level: number, vertical: boolean, cross = 0, attrib
   </g>`;
 }
 
-export function facingCircuit(operation: Operation, inputs: readonly SignalInput[], width: number, layout: Exclude<Layout, "parallel">) {
+function frameTools({ origin, vertical, direction, mirror }: Frame) {
+  // Only geometry is reflected/rotated. Labels are placed in screen coordinates.
+  const point = (u: number, v: number): Point =>
+    vertical ? [origin[0] + mirror * v, origin[1] + direction * u] : [origin[0] + direction * u, origin[1] + mirror * v];
+  const line = (...points: Point[]) => wire(points.map(([u, v]) => point(u, v)));
+  const matrix = (u: number, v: number) => {
+    const [x, y] = point(u, v);
+    return vertical ? `matrix(0 ${direction} ${mirror} 0 ${x} ${y})` : `matrix(${direction} 0 0 ${mirror} ${x} ${y})`;
+  };
+  function gate(operator: "AND" | "OR" | "NOT", u: number, v: number) {
+    const outline =
+      operator === "NOT"
+        ? "M0 -17 L28 0 L0 17 Z"
+        : operator === "AND"
+          ? "M0 -28 H22 A28 28 0 0 1 22 28 H0 Z"
+          : "M0 -28 Q30 -28 50 0 Q30 28 0 28 Q16 0 0 -28 Z";
+    const p = point(u + (operator === "NOT" ? 15 : 22), v);
+    const labelX = p[0] + (vertical && operator === "NOT" ? (mirror * v > 0 ? 34 : -34) : 0);
+    const labelY = p[1] + (!vertical && operator === "NOT" ? 34 : 4);
+    return `<g data-gate="${operator}"><g transform="${matrix(u, v)}">
+        <path class="gate" d="${outline}" />${operator === "NOT" ? '<circle class="gate" cx="32" cy="0" r="4" />' : ""}
+      </g>${text(labelX, labelY, operator)}</g>`;
+  }
+  return { point, line, gate };
+}
+
+// The gates of one route, from its lanes at u = 0 to its output at u = end. `first` and
+// `second` are where its two gate stages start.
+export function branch(
+  which: "left" | "right",
+  operation: Operation,
+  inputs: readonly SignalInput[],
+  frame: Frame,
+  first: number,
+  second: number,
+  end: number,
+) {
   const mode = MODES[operation];
-  const { combined, complements, ...results } = evaluate(operation, inputs);
-  const lanes = inputs.length === 3 ? [-80, 0, 80] : [-60, 60];
-  const ports = inputs.length === 3 ? [-14, 0, 14] : [-14, 14];
+  const { combined, complements } = evaluate(operation, inputs);
+  const { lanes, ports } = lanesFor(inputs.length);
+  const { point, line, gate } = frameTools(frame);
+  let drawing = "";
+  if (which === "left") {
+    lanes.forEach((v, i) => {
+      const port = first + (mode.operator === "OR" ? (ports[i] === 0 ? 8 : 6) : 0);
+      drawing += line([0, v], [first - 16, v], [first - 16, ports[i]], [port, ports[i]]);
+    });
+    drawing += line([first + 50, 0], [second, 0]) + line([second + 36, 0], [end, 0]);
+    drawing += gate(mode.operator, first, 0) + gate("NOT", second, 0);
+    drawing += state(point((first + 50 + second) / 2, 0), combined, frame.vertical, 0, "data-combined");
+  } else {
+    const bend = second - 12;
+    lanes.forEach((v, i) => {
+      const port = second + (mode.dual === "OR" ? (ports[i] === 0 ? 8 : 6) : 0);
+      drawing += line([0, v], [first, v]);
+      drawing += line([first + 36, v], [bend, v], [bend, ports[i]], [port, ports[i]]);
+      drawing += gate("NOT", first, v);
+      drawing += state(
+        point((first + 36 + bend) / 2, v),
+        complements[i],
+        frame.vertical,
+        frame.mirror * v,
+        `data-complement-${inputs[i].label}`,
+      );
+    });
+    drawing += line([second + 50, 0], [end, 0]) + gate(mode.dual, second, 0);
+  }
+  return drawing;
+}
+
+export function facingCircuit(operation: Operation, inputs: readonly SignalInput[], width: number, layout: Exclude<Layout, "ring">) {
+  const mode = MODES[operation];
+  const results = evaluate(operation, inputs);
+  const { lanes } = lanesFor(inputs.length);
   const vertical = width <= 640;
   const center: Point = [width / 2, vertical ? 364 : 160];
   const length = vertical ? 280 : width / 2 - 26;
@@ -34,52 +107,11 @@ export function facingCircuit(operation: Operation, inputs: readonly SignalInput
     const direction = (layout === "outputs" ? which === "left" : which === "right") ? 1 : -1;
     const origin: Point =
       layout === "inputs" ? center : vertical ? [center[0], center[1] - direction * length] : [center[0] - direction * length, center[1]];
-    // Only geometry is reflected/rotated. Labels are placed in screen coordinates.
-    const point = (u: number, v: number): Point =>
-      vertical ? [origin[0] + v, origin[1] + direction * u] : [origin[0] + direction * u, origin[1] + v];
-    const line = (...points: Point[]) => wire(points.map(([u, v]) => point(u, v)));
-    const matrix = (u: number, v: number) => {
-      const [x, y] = point(u, v);
-      return vertical ? `matrix(0 ${direction} 1 0 ${x} ${y})` : `matrix(${direction} 0 0 1 ${x} ${y})`;
-    };
-    function gate(operator: "AND" | "OR" | "NOT", u: number, v: number) {
-      const outline =
-        operator === "NOT"
-          ? "M0 -17 L28 0 L0 17 Z"
-          : operator === "AND"
-            ? "M0 -28 H22 A28 28 0 0 1 22 28 H0 Z"
-            : "M0 -28 Q30 -28 50 0 Q30 28 0 28 Q16 0 0 -28 Z";
-      const p = point(u + (operator === "NOT" ? 15 : 22), v);
-      const labelX = p[0] + (vertical && operator === "NOT" ? (v > 0 ? 34 : -34) : 0);
-      const labelY = p[1] + (!vertical && operator === "NOT" ? 34 : 4);
-      return `<g data-gate="${operator}"><g transform="${matrix(u, v)}">
-        <path class="gate" d="${outline}" />${operator === "NOT" ? '<circle class="gate" cx="32" cy="0" r="4" />' : ""}
-      </g>${text(labelX, labelY, operator)}</g>`;
-    }
+    const frame: Frame = { origin, vertical, direction, mirror: 1 };
+    const { point, line } = frameTools(frame);
     const arrow = (u: number, v: number) => line([u - 5, v - 4], [u, v], [u - 5, v + 4]);
     const first = length * 0.28;
-    let drawing = "";
-    if (which === "left") {
-      const inverter = length - 72;
-      lanes.forEach((v, i) => {
-        const port = first + (mode.operator === "OR" ? (ports[i] === 0 ? 8 : 6) : 0);
-        drawing += line([0, v], [first - 16, v], [first - 16, ports[i]], [port, ports[i]]);
-      });
-      drawing += line([first + 50, 0], [inverter, 0]) + line([inverter + 36, 0], [length, 0]);
-      drawing += gate(mode.operator, first, 0) + gate("NOT", inverter, 0);
-      drawing += state(point((first + 50 + inverter) / 2, 0), combined, vertical, 0, "data-combined");
-    } else {
-      const finalGate = length - 90;
-      const bend = finalGate - 12;
-      lanes.forEach((v, i) => {
-        const port = finalGate + (mode.dual === "OR" ? (ports[i] === 0 ? 8 : 6) : 0);
-        drawing += line([0, v], [first, v]);
-        drawing += line([first + 36, v], [bend, v], [bend, ports[i]], [port, ports[i]]);
-        drawing += gate("NOT", first, v);
-        drawing += state(point((first + 36 + bend) / 2, v), complements[i], vertical, v, `data-complement-${inputs[i].label}`);
-      });
-      drawing += line([finalGate + 50, 0], [length, 0]) + gate(mode.dual, finalGate, 0);
-    }
+    let drawing = branch(which, operation, inputs, frame, first, which === "left" ? length - 72 : length - 90, length);
     for (const v of lanes) {
       const mark = point(38, v);
       drawing += line([35, v + 5], [41, v - 5]);

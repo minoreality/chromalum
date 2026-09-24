@@ -250,43 +250,6 @@ legend {
   background: var(--swatch);
   box-shadow: inset 0 0 0 1px #ffffff38;
 }
-.law-diagrams {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  margin-top: 26px;
-}
-.circuit {
-  min-width: 0;
-  width: 100%;
-  margin: 0;
-}
-.circuit figcaption {
-  text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  color: #c8d2f0;
-}
-.circuit-frame {
-  width: 100%;
-  max-width: 440px;
-  height: var(--circuit-height, 220px);
-  margin: 8px auto 0;
-}
-.circuit-svg {
-  display: block;
-  width: 100%;
-  height: var(--circuit-height, 220px);
-  overflow: visible;
-}
-.law[data-arity="3"] {
-  --circuit-height: 310px;
-}
-.law[data-arity="3"] .equivalence {
-  padding-top: 178px;
-}
-.circuit-svg text,
 .joined-svg text {
   font-family: var(--mono);
   text-anchor: middle;
@@ -353,18 +316,8 @@ legend {
   font-size: 13px;
   fill: var(--accent);
 }
-.bus-mark text {
-  font-size: 11px;
-  fill: var(--muted);
-}
 .terminal {
   fill: #bec9e5;
-}
-.equivalence {
-  color: var(--accent);
-  font: 26px var(--mono);
-  text-align: center;
-  padding-top: 132px;
 }
 .calculation {
   margin: 4px 0 0;
@@ -402,15 +355,6 @@ footer {
   .inputs {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
-  }
-  .law-diagrams {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-  .equivalence,
-  .law[data-arity="3"] .equivalence {
-    padding: 0;
-    line-height: 1;
   }
   .identity {
     font-size: clamp(15px, 4.7cqw, 18px);
