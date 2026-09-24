@@ -48,6 +48,9 @@
       "prototypes/hue-euler/main.tsx",
       "prototypes/hue-euler/playwright.config.ts",
       "prototypes/hue-euler/browser.check.ts",
+      "prototypes/weight-chambers/main.ts",
+      "prototypes/weight-chambers/playwright.config.ts",
+      "prototypes/weight-chambers/browser.check.ts",
       "prototypes/octahedron-gray-net/net.mjs"
     ]
   },
