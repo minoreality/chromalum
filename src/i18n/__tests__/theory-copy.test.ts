@@ -4,9 +4,30 @@ import { ja } from "../ja";
 
 describe("Theory copy", () => {
   it("states the exact structures carried by the same eight-state set", () => {
+    for (const copy of [en, ja]) {
+      expect(copy.theory_generation_title).not.toMatch(/Boolean|ブール/);
+      expect(copy.theory_states_desc).toContain("A=𝒫(E)");
+      expect(copy.theory_states_desc).not.toMatch(/Boolean|ブール|⊕|reduct/);
+      expect(copy.theory_venn_desc).toContain("(g,r,b)∈{0,1}³");
+      expect(copy.theory_venn_desc).toContain("2³=8");
+      expect(copy.theory_derivation_count_note).not.toMatch(/Boolean|ブール|⊕/);
+      for (const complement of ["¬G=M", "¬R=C", "¬B=Y"]) {
+        expect(copy.theory_complement_desc).toContain(complement);
+      }
+      expect(copy.theory_mixing_desc).toContain("¬(∨ᵢaᵢ)=∧ᵢ¬aᵢ");
+      expect(copy.theory_generation_desc).not.toMatch(/Boolean|atoms|ブール|原子|XOR|⊕/);
+    }
+    expect(en.theory_venn_desc).toContain("no numerical weights have been assigned");
+    expect(ja.theory_venn_desc).toContain("数値の重みはまだ与えていません");
+    expect(en.theory_venn_title).toBe("Venn Diagram");
+    expect(ja.theory_venn_title).toBe("ベン図");
+    expect(en.theory_venn_desc).toContain("Each region of the Venn diagram represents one combination of present and absent primaries.");
+    expect(en.theory_venn_desc).toContain("Inside a circle means that primary is present; outside means it is absent.");
+    expect(ja.theory_venn_desc).toContain("ベン図の各領域は、原色の有無の一つの組合せを表します。");
+    expect(ja.theory_venn_desc).toContain("円の内側はその原色を含むこと、外側は含まないことを表します。");
     expect(en.theory_algebra_definition).toContain("A=𝒫(E)");
     expect(en.theory_algebra_definition).toContain("S∨T=S∪T");
-    expect(en.theory_algebra_definition).toContain("S⊕T=S△T");
+    expect(en.theory_mixing_operations_desc).toContain("S⊕T=S△T");
     expect(en.theory_algebra_structures).toContain("reduct (A,⊕)");
     expect(en.theory_algebra_structures).toContain("(𝔽₂³,+)");
     expect(en.theory_algebra_structures).toContain("(A,⊕,∧)≅𝔽₂×𝔽₂×𝔽₂");
@@ -15,7 +36,7 @@ describe("Theory copy", () => {
 
     expect(ja.theory_algebra_definition).toContain("A=𝒫(E)");
     expect(ja.theory_algebra_definition).toContain("S∨T=S∪T");
-    expect(ja.theory_algebra_definition).toContain("S⊕T=S△T");
+    expect(ja.theory_mixing_operations_desc).toContain("S⊕T=S△T");
     expect(ja.theory_algebra_structures).toContain("reduct (A,⊕)");
     expect(ja.theory_algebra_structures).toContain("(𝔽₂³,+)");
     expect(ja.theory_algebra_structures).toContain("(A,⊕,∧) はブール環 𝔽₂×𝔽₂×𝔽₂");
@@ -23,38 +44,81 @@ describe("Theory copy", () => {
     expect(ja.theory_algebra_structures).toContain("e_c∧e_d=K");
   });
 
-  it("derives primary ranks from three order conditions and treats gapless sums as a consequence", () => {
+  it("derives ranks from the score order before characterizing their unique subset-sum weights", () => {
     for (const copy of [en, ja]) {
-      for (const condition of ["w_B>0", "w_R>w_B", "w_G>w_R+w_B"]) {
-        expect(copy.theory_empirical_order_intro).toContain(condition);
+      for (const comparison of ["K < B", "B < R", "M < G"]) {
+        expect(copy.theory_empirical_order_intro.replace(/\u00a0/g, " ")).toContain(comparison);
       }
-      expect(copy.theory_empirical_desc).toContain("K<B<R<M<G<C<Y<W");
-      expect(copy.theory_empirical_desc).toContain("B=1,R=2,G=4");
+      expect(copy.theory_empirical_desc).toContain("E={G,R,B}");
+      expect(copy.theory_empirical_desc).toContain("𝒫(E)");
+      expect(copy.theory_binary_tone_formula).toContain("T = (4G + 2R + B) / 7 = level / 7");
+      expect(copy.theory_binary_tone_complement).toContain("Tₖ + T₇₋ₖ = 1");
+      const theoryCopy = Object.entries(copy)
+        .filter(([key]) => key.startsWith("theory_") && !key.startsWith("theory_binary_") && key !== "theory_zigzag_complement_desc")
+        .map(([, value]) => value)
+        .join(" ");
+      expect(theoryCopy).not.toMatch(/T=L\/7|T\(h|正規化|normaliz/i);
+      expect(copy.theory_derivation_count_note).toContain("|S|=g+r+b");
+      expect(copy.theory_derivation_count_note).toContain("L=4g+2r+b");
       expect(`${copy.theory_intro} ${copy.theory_empirical_desc} ${copy.theory_conn_order}`).not.toMatch(
         /two independent|two-path|converg|二経路|二つの独立|合流/i,
       );
     }
-    expect(en.theory_empirical_desc).toContain("zero-based rank");
-    expect(en.theory_derivation_supplement).toContain("derived primary ranks 1,2,4");
-    expect(en.theory_derivation_supplement).toContain("consequence");
-    expect(en.theory_derivation_supplement).toContain("original score weights are not fixed at 1,2,4");
-    expect(ja.theory_empirical_desc).toContain("0始まりの順位");
-    expect(ja.theory_derivation_supplement).toContain("導出した原子の順位1・2・4の部分和");
-    expect(ja.theory_derivation_supplement).toContain("帰結");
-    expect(ja.theory_derivation_supplement).toContain("元のスコアの重みが1・2・4に決まるわけではありません");
+    expect(en.theory_empirical_desc).toContain("Three conditions on an additive score define a total order");
+    expect(en.theory_empirical_desc).toContain("ranks 0–7");
+    expect(en.theory_derivation_rank_definition).toContain("zero-based rank L");
+    expect(en.theory_derivation_named_ranks_note).toContain("ranks of the primaries themselves");
+    expect(en.theory_order_proof).toContain("necessary and sufficient");
+    expect(en.theory_derivation_weights_intro).toContain("three positive weights in ascending order");
+    expect(en.theory_derivation_weights_intro).toContain("0–7 without repetition or gaps");
+    expect(en.theory_derivation_weights_intro).toContain("positive integers");
+    expect(en.theory_derivation_weight_one).toContain("the first weight is 1");
+    expect(en.theory_derivation_weight_two).toContain("The next weight must therefore be 2");
+    expect(en.theory_derivation_weight_four).toContain("The final weight must therefore be 4");
+    expect(en.theory_derivation_rank_note).toContain("weights whose eight subset sums reproduce 0–7 must be 1,2,4, up to permutation");
+    expect(en.theory_derivation_bits_note).toContain("three bits (g,r,b)");
+    expect(en.theory_derivation_bits_note).toContain("primary numbers 4,2,1 of G,R,B become the respective bit weights");
+    expect(en.theory_derivation_bits_note).toContain("reproduces the rank of every one of the eight states");
+    expect(en.theory_derivation_supplement).toContain("original score σ are not fixed at 1,2,4");
+    expect(en.theory_derivation_subset_order).toContain("score σ");
+    expect(en.theory_derivation_subset_note).toContain("Color names label the subsets");
+    expect(en.theory_derivation_subset_note).toContain("not set inclusion");
+    expect(ja.theory_empirical_desc).toContain("加法的スコアの三条件によって全順序を定めます");
+    expect(ja.theory_empirical_desc).toContain("八状態に0〜7の順位");
+    expect(ja.theory_derivation_rank_definition).toContain("0始まりの順位 L");
+    expect(ja.theory_derivation_named_ranks_note).toContain("原色そのものの順位");
+    expect(ja.theory_order_proof).toContain("必要十分条件");
+    expect(ja.theory_derivation_weights_intro).toContain("三つの正の重みを小さい順");
+    expect(ja.theory_derivation_weights_intro).toContain("0〜7を重複も隙間もなく再現");
+    expect(ja.theory_derivation_weights_intro).toContain("正の整数");
+    expect(ja.theory_derivation_weight_one).toContain("最初の重みは1");
+    expect(ja.theory_derivation_weight_two).toContain("次の重みは2に定まります");
+    expect(ja.theory_derivation_weight_four).toContain("最後の重みは4に定まります");
+    expect(ja.theory_derivation_rank_note).toContain("重みは、順序を除いて1・2・4に限られます");
+    expect(ja.theory_derivation_bits_note).toContain("3ビット (g,r,b)");
+    expect(ja.theory_derivation_bits_note).toContain("G・R・B の原色番号4・2・1が、そのまま各ビットの重みになります");
+    expect(ja.theory_derivation_bits_note).toContain("八状態すべての順位を再現");
+    expect(ja.theory_derivation_supplement).toContain("元のスコア σ の実数重みが1・2・4に決まるわけではありません");
+    expect(ja.theory_derivation_subset_order).toContain("スコアσ");
+    expect(ja.theory_derivation_subset_note).toContain("色名は各部分集合のラベル");
+    expect(ja.theory_derivation_subset_note).toContain("集合の包含関係");
   });
 
-  it("explains rank correction and complement beside the binary table", () => {
-    expect(en.theory_valuation_modular_note).toContain("L(a)<L(b)");
+  it("explains rank correction and connects complement to the later toggle action", () => {
+    expect(en.theory_derivation_monotonicity_note).toContain("L(a)<L(b)");
     expect(en.theory_valuation_xor_note).toContain("For any two colors a and b");
     expect(en.theory_valuation_xor_note).toContain("once for OR and twice for XOR");
-    expect(en.theory_valuation_complement_note).toContain("κ=τ_W");
-    expect(en.theory_valuation_complement_note).toContain("7−L");
-    expect(ja.theory_valuation_modular_note).toContain("L(a)<L(b)");
+    expect(en.theory_action_desc).toContain("κ=τ_W");
+    expect(en.theory_action_desc).toContain("κ(a)=¬a=a⊕W");
+    expect(en.theory_action_desc).toContain("L(¬a)=7−L(a)");
+    expect(en.theory_valuation_complement_note).toContain("their ranks also sum to 7");
+    expect(ja.theory_derivation_monotonicity_note).toContain("L(a)<L(b)");
     expect(ja.theory_valuation_xor_note).toContain("任意の二色a,b");
     expect(ja.theory_valuation_xor_note).toContain("ORでは一度、XORでは二度");
-    expect(ja.theory_valuation_complement_note).toContain("κ=τ_W");
-    expect(ja.theory_valuation_complement_note).toContain("7−L");
+    expect(ja.theory_action_desc).toContain("κ=τ_W");
+    expect(ja.theory_action_desc).toContain("κ(a)=¬a=a⊕W");
+    expect(ja.theory_action_desc).toContain("L(¬a)=7−L(a)");
+    expect(ja.theory_valuation_complement_note).toContain("順位の和も7");
   });
 
   it("states the exact Fano-Hamming incidence correspondence", () => {
@@ -99,6 +163,9 @@ describe("Theory copy", () => {
   it("keeps the conditional operation identities in the dedicated mixing explanation", () => {
     for (const copy of [en, ja]) {
       const text = copy.theory_mixing_operations_desc;
+      expect(copy.theory_hamming_weight_desc).toContain("wt(g,r,b)=g+r+b=|S|");
+      expect(copy.theory_parity_desc).toContain("π=wt mod 2=g⊕r⊕b");
+      expect(text).not.toContain("Hamming");
       for (const formula of ["[G,R,B]", "a∧b=000", "a∨b=a⊕b", "a∨b=111", "a∧b=XNOR(a,b)", "XNOR(a,b)=¬(a⊕b)"]) {
         expect(text).toContain(formula);
       }
@@ -123,31 +190,53 @@ describe("Theory copy", () => {
   });
 
   it("states the Tone Zigzag as the affine extension of the chromatic six-cycle", () => {
-    expect(en.theory_zigzag_desc).toContain("ι:A→{0,1}³⊂ℝ³");
-    expect(en.theory_zigzag_desc).toContain("γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)");
-    expect(en.theory_zigzag_desc).toContain("λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁)");
-    expect(en.theory_zigzag_desc).toContain("κ̄(x)=1−x");
-    expect(en.theory_zigzag_desc).toContain("T(h+1/2)=1−T(h)");
-    expect(en.theory_zigzag_desc).toContain("1,3,3,3,3,1");
-    expect(en.theory_zigzag_desc).toContain("N(7−ℓ)=N(ℓ)");
-    expect(en.theory_zigzag_desc).toContain("four preimages");
-    expect(en.theory_zigzag_desc).toContain("|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}");
-    expect(en.theory_zigzag_desc).toContain("ΣᵢΔLᵢ=0");
-    expect(en.theory_zigzag_desc).toContain("The sign gives the direction of inclusion");
-    expect(en.theory_zigzag_desc).toContain("weight of the toggled primary");
+    const englishZigzag = [
+      en.theory_zigzag_desc,
+      en.theory_zigzag_intersections_desc,
+      en.theory_zigzag_fibers_desc,
+      en.theory_zigzag_complement_desc,
+    ].join(" ");
+    const japaneseZigzag = [
+      ja.theory_zigzag_desc,
+      ja.theory_zigzag_intersections_desc,
+      ja.theory_zigzag_fibers_desc,
+      ja.theory_zigzag_complement_desc,
+    ].join(" ");
+    for (const copy of [en, ja]) {
+      expect(copy.theory_zigzag_intersections_desc).toContain("0≤u<1");
+      expect(copy.theory_zigzag_intersections_desc).toContain("Σᵢ|ΔLᵢ|=2(1+2+4)=14");
+      expect(copy.theory_action_distance_desc).toContain("(1−2x_c)L({c})");
+      expect(copy.theory_action_distance_desc).not.toContain("±w_c");
+    }
+    expect(englishZigzag).toContain("ι:A→{0,1}³⊂ℝ³");
+    expect(englishZigzag).toContain("γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)");
+    expect(englishZigzag).toContain("λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁)");
+    expect(englishZigzag).toContain("κ̄(x)=1−x");
+    expect(englishZigzag).toContain("T(h)=λ(γ(h))/7");
+    expect(englishZigzag).toContain("T(h+1/2)=1−T(h)");
+    expect(englishZigzag).toContain("T=1/2 (level 7/2)");
+    expect(englishZigzag).toContain("1,3,3,3,3,1");
+    expect(englishZigzag).toContain("N(7−ℓ)=N(ℓ)");
+    expect(englishZigzag).toContain("four preimages");
+    expect(englishZigzag).toContain("|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}");
+    expect(englishZigzag).toContain("ΣᵢΔLᵢ=0");
+    expect(englishZigzag).toContain("The sign gives the direction of inclusion");
+    expect(englishZigzag).toContain("weight of the toggled primary");
 
-    expect(ja.theory_zigzag_desc).toContain("ι:A→{0,1}³⊂ℝ³");
-    expect(ja.theory_zigzag_desc).toContain("γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)");
-    expect(ja.theory_zigzag_desc).toContain("λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁)");
-    expect(ja.theory_zigzag_desc).toContain("κ̄(x)=1−x");
-    expect(ja.theory_zigzag_desc).toContain("T(h+1/2)=1−T(h)");
-    expect(ja.theory_zigzag_desc).toContain("1,3,3,3,3,1");
-    expect(ja.theory_zigzag_desc).toContain("N(7−ℓ)=N(ℓ)");
-    expect(ja.theory_zigzag_desc).toContain("交点数が4");
-    expect(ja.theory_zigzag_desc).toContain("|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}");
-    expect(ja.theory_zigzag_desc).toContain("ΣᵢΔLᵢ=0");
-    expect(ja.theory_zigzag_desc).toContain("符号は包含の向き");
-    expect(ja.theory_zigzag_desc).toContain("絶対値は反転する原色の重み");
+    expect(japaneseZigzag).toContain("ι:A→{0,1}³⊂ℝ³");
+    expect(japaneseZigzag).toContain("γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)");
+    expect(japaneseZigzag).toContain("λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁)");
+    expect(japaneseZigzag).toContain("κ̄(x)=1−x");
+    expect(japaneseZigzag).toContain("T(h)=λ(γ(h))/7");
+    expect(japaneseZigzag).toContain("T(h+1/2)=1−T(h)");
+    expect(japaneseZigzag).toContain("T=1/2（level 7/2）");
+    expect(japaneseZigzag).toContain("1,3,3,3,3,1");
+    expect(japaneseZigzag).toContain("N(7−ℓ)=N(ℓ)");
+    expect(japaneseZigzag).toContain("交点数が4");
+    expect(japaneseZigzag).toContain("|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}");
+    expect(japaneseZigzag).toContain("ΣᵢΔLᵢ=0");
+    expect(japaneseZigzag).toContain("符号は包含の向き");
+    expect(japaneseZigzag).toContain("絶対値は反転する原色の重み");
   });
 
   it("states the subgroup, coset, and dual-octahedron structures exactly", () => {

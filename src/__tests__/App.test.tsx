@@ -95,8 +95,8 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Theory" }));
 
     expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" }, { timeout: 15000 })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Color Order and Binary Rank" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Rank and Boolean Operations" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Total Order and Binary Weights" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Duality of Mixing and Complement" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Geometry and Codes of Nonzero Vectors" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "Eight-State Correspondence Table" })).toBeTruthy();
     expect(window.location.hash).toBe("#theory");

@@ -106,7 +106,7 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
                     data-highlighted={hlLevel === level}
                     aria-pressed={active}
                     aria-controls={resultId}
-                    aria-label={t("theory_generation_primary_aria", channel, info.bits.join(""), level)}
+                    aria-label={t("theory_generation_primary_aria", channel, info.bits.join(""))}
                     onClick={() => toggleGenerator(channel)}
                     onMouseEnter={() => onHover(level)}
                     onMouseLeave={() => onHover(null)}
@@ -141,11 +141,7 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
               </div>
               <div className="theory-generation-formula">
                 <span>
-                  {selectedChannels.length === 0 ? "∅" : selectedChannels.map(({ channel }) => channel).join(" ∨ ")} → {selectedInfo.short}
-                </span>
-                <span>
-                  {selectedChannels.length === 0 ? "0" : selectedChannels.map(({ channel }) => CHROMALUM_GRB_WEIGHTS[channel]).join("+")}=
-                  {selectedInfo.lv}
+                  {`{${selectedChannels.map(({ channel }) => channel).join(",")}}`} → {selectedInfo.short}
                 </span>
               </div>
             </div>

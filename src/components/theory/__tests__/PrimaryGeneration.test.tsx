@@ -24,7 +24,7 @@ describe("PrimaryGeneration", () => {
   it("uses only G, R, and B as generators while displaying all eight generated states", () => {
     renderDemo();
 
-    const generators = screen.getByRole("group", { name: "Primary generators G, R, and B" });
+    const generators = screen.getByRole("group", { name: "Primaries G, R, and B" });
     expect(within(generators).getAllByRole("button")).toHaveLength(3);
 
     const layers = screen.getByLabelText("All eight states grouped by the number of selected primaries");
@@ -33,32 +33,30 @@ describe("PrimaryGeneration", () => {
     ]);
 
     const equation = screen.getByTestId("generation-equation");
-    expect(equation.textContent).toContain("∅ → K");
+    expect(equation.textContent).toContain("{} → K");
     expect(equation.textContent).toContain("K000");
-    expect(equation.textContent).toContain("0=0");
+    expect(equation.textContent).not.toContain("=");
     expect(generators.querySelectorAll('[aria-pressed="true"]')).toHaveLength(0);
     expect(layers.querySelector('[data-level="0"]')?.getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.click(within(generators).getByRole("button", { name: "Primary G, bits 100, weight 4" }));
-    fireEvent.click(within(generators).getByRole("button", { name: "Primary R, bits 010, weight 2" }));
-    expect(equation.textContent).toContain("G ∨ R");
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary G, bits 100" }));
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary R, bits 010" }));
+    expect(equation.textContent).toContain("{G,R} → Y");
     expect(equation.textContent).toContain("Y110");
-    expect(equation.textContent).toContain("4+2=6");
 
-    fireEvent.click(within(generators).getByRole("button", { name: "Primary B, bits 001, weight 1" }));
-    expect(equation.textContent).toContain("G ∨ R ∨ B");
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary B, bits 001" }));
+    expect(equation.textContent).toContain("{G,R,B} → W");
     expect(equation.textContent).toContain("W111");
-    expect(equation.textContent).toContain("4+2+1=7");
   });
 
   it("clears the diagram from surrounding space without cancelling clicks on its primary regions", () => {
     const { container } = renderDemo();
-    const generators = screen.getByRole("group", { name: "Primary generators G, R, and B" });
+    const generators = screen.getByRole("group", { name: "Primaries G, R, and B" });
     const equation = screen.getByTestId("generation-equation");
     const svg = container.querySelector(".theory-venn-svg")!;
     svg.getBoundingClientRect = () => new DOMRect(26, 0, 248, 220);
 
-    fireEvent.click(within(generators).getByRole("button", { name: "Primary G, bits 100, weight 4" }));
+    fireEvent.click(within(generators).getByRole("button", { name: "Primary G, bits 100" }));
     fireEvent.click(svg, { clientX: 150, clientY: 62 });
     expect(equation.textContent).toContain("Y110");
     expect(generators.querySelectorAll('[aria-pressed="true"]')).toHaveLength(2);
@@ -99,7 +97,7 @@ describe("PrimaryGeneration", () => {
 
   it("selects every generated state from the layer list and synchronizes its primary controls", () => {
     renderDemo();
-    const generators = screen.getByRole("group", { name: "Primary generators G, R, and B" });
+    const generators = screen.getByRole("group", { name: "Primaries G, R, and B" });
     const layers = screen.getByRole("group", { name: "All eight states grouped by the number of selected primaries" });
     const equation = screen.getByTestId("generation-equation");
     for (const [name, bits] of [

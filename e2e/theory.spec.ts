@@ -210,7 +210,7 @@ for (const language of ["ja", "en"]) {
             const text = label.getBoundingClientRect();
             const node = label.parentElement!.querySelector("[data-cycle-node-dot]")!.getBoundingClientRect();
             return (
-              /^[01]{3}$/.test(label.textContent!) &&
+              label.textContent === label.parentElement!.getAttribute("data-cycle-node") &&
               text.height >= 7 &&
               text.left >= node.left &&
               text.right <= node.right &&
@@ -640,12 +640,23 @@ test("derives primary ranks with a prose supplement and compares K8 distance in 
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");
-    const derivation = page.locator(".theory-derivation");
+    const derivation = page.locator("#theory-rank");
     await expect(derivation.locator(".theory-derivation-comparisons code")).toHaveText(["wB > 0", "wR > wB", "wG > wR + wB"]);
     await expect(derivation.locator(".theory-derivation-named-ranks span")).toHaveText(["B=1", "R=2", "G=4"]);
-    await expect(derivation.locator(".theory-derivation-supplement")).toContainText(
-      language === "ja" ? "0〜7を重複も隙間もなく埋めます" : "0–7 without repetition or gaps",
+    await expect(derivation.locator(".theory-derivation-subset")).toHaveText([
+      "{}",
+      "{B}",
+      "{R}",
+      "{R,B}",
+      "{G}",
+      "{G,B}",
+      "{G,R}",
+      "{G,R,B}",
+    ]);
+    await expect(derivation.locator(".theory-derivation-proof")).toContainText(
+      language === "ja" ? "0〜7を重複も隙間もなく再現" : "0–7 without repetition or gaps",
     );
+    await expect(derivation.locator(".theory-derivation-proof li")).toHaveCount(3);
     const graph = page.locator("#theory-stella-view");
     const positions = () =>
       graph
@@ -728,11 +739,82 @@ test("derives primary ranks with a prose supplement and compares K8 distance in 
         await derivation.evaluate((root) => {
           const order = root.querySelector(".theory-derivation-order")!.getBoundingClientRect();
           const conclusion = root.querySelector(".theory-derivation-conclusion")!.getBoundingClientRect();
+          const definition = root.querySelector(".theory-derivation-rank-definition")!.getBoundingClientRect();
+          const states = root.querySelector(".theory-derivation-order-colors")!.getBoundingClientRect();
+          const proof = root.querySelector(".theory-derivation-proof")!.getBoundingClientRect();
+          const namedRanks = root.querySelector(".theory-derivation-named-ranks")!.getBoundingClientRect();
           const formula = root.querySelector(".theory-derivation-conclusion > code:last-of-type")!.getBoundingClientRect();
           const supplement = root.querySelector(".theory-derivation-supplement")!.getBoundingClientRect();
-          return { rankFollowsOrder: conclusion.top >= order.bottom, supplementFollowsFormula: supplement.top >= formula.bottom };
+          const intro = root.querySelector("#theory-rank-order > .theory-desc")!;
+          const introText = intro.textContent!;
+          const comparisonsUnbroken = ["K\u00a0<\u00a0B", "B\u00a0<\u00a0R", "M\u00a0<\u00a0G"].every((comparison) => {
+            const start = introText.indexOf(comparison);
+            if (start < 0) return false;
+            const range = document.createRange();
+            range.setStart(intro.firstChild!, start);
+            range.setEnd(intro.firstChild!, start + comparison.length);
+            return range.getClientRects().length === 1;
+          });
+          const comparisons = [...root.querySelectorAll(".theory-derivation-comparisons code")];
+          const firstComparison = comparisons[0].getBoundingClientRect();
+          const conditionsInOneRow = comparisons.every((code) => Math.abs(code.getBoundingClientRect().top - firstComparison.top) < 1);
+          const comparisonCenters = comparisons.map((code) => {
+            const bounds = code.getBoundingClientRect();
+            return bounds.left + bounds.width / 2;
+          });
+          const conditionsEvenlySpaced =
+            Math.abs(comparisonCenters[1] - comparisonCenters[0] - (comparisonCenters[2] - comparisonCenters[1])) < 1;
+          const cards = [...root.querySelectorAll(".theory-derivation-order-colors li")];
+          const firstCard = cards[0].getBoundingClientRect();
+          const statesInOneRow = cards.every((card) => Math.abs(card.getBoundingClientRect().top - firstCard.top) < 1);
+          const centers = cards.map((card) => {
+            const bounds = card.getBoundingClientRect();
+            return bounds.left + bounds.width / 2;
+          });
+          const step = centers[1] - centers[0];
+          const statesEvenlySpaced = centers.every((center, index) => index === 0 || Math.abs(center - centers[index - 1] - step) < 1);
+          const labelsFitCards = cards.every((card) => {
+            const bounds = card.getBoundingClientRect();
+            return [...card.children].every((part) => {
+              const label = part.getBoundingClientRect();
+              return label.left >= bounds.left && label.right <= bounds.right && part.scrollWidth <= part.clientWidth + 1;
+            });
+          });
+          const subsetsPrecedeLabels = cards.every((card) => {
+            const [subset, label, rank] = [...card.children].map((part) => part.getBoundingClientRect());
+            return subset.bottom <= label.top && label.bottom <= rank.top;
+          });
+          return {
+            rankFollowsOrder: conclusion.top >= order.bottom,
+            definitionFollowsStates: definition.top >= states.bottom,
+            proofFollowsDefinition: proof.top >= definition.bottom,
+            proofFollowsNamedRanks: proof.top >= namedRanks.bottom,
+            formulaFollowsNamedRanks: formula.top >= namedRanks.bottom,
+            supplementFollowsFormula: supplement.top >= formula.bottom,
+            subsetsPrecedeLabels,
+            statesInOneRow,
+            statesEvenlySpaced,
+            labelsFitCards,
+            conditionsInOneRow,
+            conditionsEvenlySpaced,
+            comparisonsUnbroken,
+          };
         }),
-      ).toEqual({ rankFollowsOrder: true, supplementFollowsFormula: true });
+      ).toEqual({
+        rankFollowsOrder: true,
+        definitionFollowsStates: true,
+        proofFollowsDefinition: true,
+        proofFollowsNamedRanks: true,
+        formulaFollowsNamedRanks: true,
+        supplementFollowsFormula: true,
+        subsetsPrecedeLabels: true,
+        statesInOneRow: true,
+        statesEvenlySpaced: true,
+        labelsFitCards: true,
+        conditionsInOneRow: true,
+        conditionsEvenlySpaced: true,
+        comparisonsUnbroken: true,
+      });
       await page.locator(".theory-k8-controls").scrollIntoViewIfNeeded();
       const layout = await page.evaluate(() => {
         const graphic = document.querySelector("#theory-stella-view")!.getBoundingClientRect();
@@ -754,7 +836,7 @@ test("derives primary ranks with a prose supplement and compares K8 distance in 
           }),
           fits: [
             ...document.querySelectorAll(
-              ".theory-derivation, .theory-derivation code, .theory-derivation p, .theory-derivation-order, .theory-derivation-named-ranks, .theory-k8-controls, .theory-k8-display-modes, .theory-k8-display-modes button, .theory-k8-summary, .theory-k8-summary > div, .theory-k8-summary code, .theory-k8-edge-legend, .theory-k8-comparison, .theory-k8-comparison-metrics > div, .theory-k8-comparison-metrics dt, .theory-k8-comparison code, .theory-k8-comparison p, .theory-k8-comparison-status",
+              ".theory-derivation, .theory-derivation code, .theory-derivation p, .theory-derivation-order, .theory-derivation-proof, .theory-derivation-proof li, .theory-derivation-named-ranks, .theory-derivation-order-colors, .theory-derivation-order-colors li, .theory-derivation-subset, .theory-k8-controls, .theory-k8-display-modes, .theory-k8-display-modes button, .theory-k8-summary, .theory-k8-summary > div, .theory-k8-summary code, .theory-k8-edge-legend, .theory-k8-comparison, .theory-k8-comparison-metrics > div, .theory-k8-comparison-metrics dt, .theory-k8-comparison code, .theory-k8-comparison p, .theory-k8-comparison-status",
             ),
           ].every((node) => {
             const box = node.getBoundingClientRect();
@@ -1524,25 +1606,32 @@ test.describe("parity inspection dismissal", () => {
   });
 });
 
-test("integrates compact rank relationships below the binary table without extra controls", async ({ page }) => {
+test("integrates rank relationships with their definitions and keeps complement pairs compact", async ({ page }) => {
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
     await page.goto("theory-dev.html");
-    const diagram = page.getByTestId("valuation-diagram");
-    expect(await diagram.evaluate((node) => node.closest(".theory-chapter")?.id)).toBe("theory-rank");
+    const diagram = page.getByTestId("complement-ranks");
+    const identities = page.getByTestId("rank-identities");
+    expect(await diagram.evaluate((node) => node.closest(".theory-chapter")?.id)).toBe("theory-boolean-operations");
     await expect(diagram.locator("select, button, details")).toHaveCount(0);
     await expect(diagram.locator("[data-complement-pair]")).toHaveCount(4);
     await expect(diagram.locator("table")).toHaveCount(0);
-    await expect(diagram).toContainText("L(a∨b)+L(a∧b)=L(a)+L(b)");
-    await expect(diagram).toContainText("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
+    await expect(diagram).not.toContainText("L(¬a)=7−L(a)");
+    await expect(diagram.locator(".theory-valuation-complement-formulas code")).toHaveCount(1);
+    await expect(page.locator("#theory-cube-cycle > .theory-desc").first()).toContainText("L(¬a)=7−L(a)");
+    await expect(diagram).toContainText("L(a)+L(¬a)=7");
+    await expect(identities).toContainText("L(a∨b)+L(a∧b)=L(a)+L(b)");
+    await expect(identities).toContainText("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
     for (const width of [320, 534, 583, 584, 585, 716, 728, 746, 747, 888, 1043, 1186]) {
       await page.setViewportSize({ width, height: 698 });
       await diagram.scrollIntoViewIfNeeded();
       const layout = await diagram.evaluate((root) => {
-        const table = document.querySelector(".theory-binary-svg")!.getBoundingClientRect();
+        const mixing = document.querySelector("#theory-mixing")!.getBoundingClientRect();
+        const identities = document.querySelector('[data-testid="rank-identities"]')!;
         const box = root.getBoundingClientRect();
         return {
-          belowTable: box.top >= table.bottom,
+          beforeMixing: box.bottom <= mixing.top,
+          identitiesBelowMixing: identities.getBoundingClientRect().top >= mixing.bottom,
           height: box.height,
           compactPairs: root.clientWidth < 540 || root.querySelector(".theory-valuation-pairs")!.getBoundingClientRect().height <= 24,
           pairContentFits: [...root.querySelectorAll(".theory-valuation-pair")].every((pair) => {
@@ -1553,7 +1642,7 @@ test("integrates compact rank relationships below the binary table without extra
                 child.left >= bounds.left && child.right <= bounds.right && (index === 0 || child.left >= children[index - 1].right),
             );
           }),
-          overflow: [...root.querySelectorAll("*")]
+          overflow: [...root.querySelectorAll("*"), ...identities.querySelectorAll("*")]
             .filter((el) => {
               const child = el.getBoundingClientRect();
               return child.left < 0 || child.right > innerWidth + 1 || (el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1);
@@ -1561,7 +1650,8 @@ test("integrates compact rank relationships below the binary table without extra
             .map((el) => el.className),
         };
       });
-      expect(layout.belowTable).toBe(true);
+      expect(layout.beforeMixing).toBe(true);
+      expect(layout.identitiesBelowMixing).toBe(true);
       expect(layout.compactPairs).toBe(true);
       expect(layout.pairContentFits).toBe(true);
       expect(layout.overflow, language + ", " + width + "px").toEqual([]);
@@ -1881,7 +1971,7 @@ for (const language of ["ja", "en"]) {
     const black = layers.locator('[data-level="0"]');
     await expect(black).toHaveAttribute("aria-pressed", "true");
     await expect(generation.locator("[data-generation-result]")).toHaveAttribute("data-generation-result", "0");
-    await expect(generation.getByRole("status")).toContainText("∅ → K");
+    await expect(generation.getByRole("status")).toContainText("{} → K");
     await expect(generation.locator('.theory-generation-inputs button[aria-pressed="true"]')).toHaveCount(0);
     await expect(venn).toHaveAttribute("data-selected-level", "0");
     await expect(venn.locator('[data-venn-primary][data-active="true"]')).toHaveCount(0);
@@ -1892,7 +1982,7 @@ for (const language of ["ja", "en"]) {
     await black.press("Enter");
     await expect(black).toBeFocused();
     await expect(generation.locator("[data-generation-result]")).toHaveAttribute("data-generation-result", "0");
-    await expect(generation.getByRole("status")).toContainText("∅ → K");
+    await expect(generation.getByRole("status")).toContainText("{} → K");
     await expect(generation.locator('.theory-generation-inputs button[aria-pressed="true"]')).toHaveCount(0);
     const cyan = layers.locator('[data-level="5"]');
     await cyan.focus();
@@ -1903,7 +1993,7 @@ for (const language of ["ja", "en"]) {
     await expect(inputs.nth(2)).toHaveAttribute("aria-pressed", "true");
     await inputs.nth(1).click();
     await expect(layers.locator('[data-level="7"]')).toHaveAttribute("aria-pressed", "true");
-    await expect(generation.getByRole("status")).toContainText("4+2+1=7");
+    await expect(generation.getByRole("status")).toContainText("{G,R,B} → W");
     const illuminatedPrimaries = () =>
       venn
         .locator('[data-venn-primary][data-active="true"]')
@@ -2014,7 +2104,7 @@ for (const language of ["ja", "en"]) {
       await expect(venn.locator('[data-venn-primary][data-active="true"]')).toHaveCount(0);
       await expect(venn.locator("[stroke-dasharray]")).toHaveCount(0);
       await expect(generation.locator('.theory-generation-inputs button[aria-pressed="true"]')).toHaveCount(0);
-      await expect(generation.getByRole("status")).toContainText("∅ → K");
+      await expect(generation.getByRole("status")).toContainText("{} → K");
     }
   });
 }
@@ -2039,7 +2129,7 @@ test("keeps mixing in its dedicated diagrams and groups the hue net with complem
     const cube = page.locator("#theory-cube-cycle");
     await expect(cube.getByRole("button", { name: language === "ja" ? "混色" : "Mixing", exact: true })).toHaveCount(0);
     await expect(cube).not.toContainText(language === "ja" ? "「混色」モード" : "Mixing mode");
-    await expect(page.locator("#theory-algebra")).toContainText("XNOR(a,b)=¬(a⊕b)");
+    await expect(page.locator("#theory-boolean-operations")).toContainText("XNOR(a,b)=¬(a⊕b)");
     const hasse = cube.getByRole("button", { name: language === "ja" ? "ハッセ図" : "Hasse", exact: true });
     await hasse.click();
     await expect(hasse).toHaveAttribute("aria-pressed", "true");
@@ -2513,7 +2603,7 @@ test("opens the Theory tab and renders the main sections", async ({ page }) => {
   await page.getByRole("tab", { name: "Theory" }).click();
 
   await expect(page.getByRole("heading", { name: /Discrete Algebraic Color Theory|離散代数的色彩理論/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Color Order and Binary Rank|色順と二進順位/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Total Order and Binary Weights|全順序と二進重み/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Toggle Action and Distance Structure|反転作用と距離構造/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Hamming \[7,4,3\] (?:Code|符号)/ })).toBeVisible();
 });

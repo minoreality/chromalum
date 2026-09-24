@@ -368,14 +368,14 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   fill={isActive || isComplement ? THEORY_LEVELS[level].color : C.textDimmer}
                   opacity={isActive || isComplement ? 1 : 0.72}
                 >
-                  {level}/7
+                  {level}
                 </text>
                 <rect x={ML} y={yLevel(level) - 8} width={plotWidth} height={16} fill="transparent" />
               </g>
             );
           })}
 
-          {/* Complement fixed line T=1/2. */}
+          {/* Complement fixed line T=1/2 (level λ=7/2). */}
           <line
             x1={ML}
             y1={yLevel(CHROMALUM_TONE_DENOMINATOR / 2)}
@@ -546,7 +546,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
             fill={C.textMuted}
             transform={`rotate(-90 ${ML - 42} ${MT + plotHeight / 2})`}
           >
-            T=L/7
+            λ(γ(h))
           </text>
           <text x={ML + plotWidth / 2} y={viewBoxHeight - 4} textAnchor="middle" fontFamily={FONT.mono} fontSize={FS.sm} fill={C.textMuted}>
             h ∈ ℝ/ℤ
@@ -592,7 +592,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   className="theory-zigzag-level-button"
                   data-tone-level-control={level}
                   aria-pressed={isPinned}
-                  aria-label={`${levelLabel(level)} · T=${level}/7 · N=${candidateCount}`}
+                  aria-label={`${levelLabel(level)} · λ=${level} · N=${candidateCount}`}
                   onMouseEnter={() => enterLevel(level)}
                   onMouseLeave={leaveLevel}
                   onFocus={() => enterLevel(level)}
