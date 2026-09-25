@@ -37,7 +37,8 @@ describe("Shared hue traversal", () => {
     const { container } = renderTraversal();
     const readout = container.querySelector(".theory-hue-readout")!;
     const cycle = screen.getByRole("group", { name: "Chromatic One-Bit Six-Cycle" });
-    expect([...cycle.querySelectorAll("[data-cycle-node] > text")].map((node) => node.textContent)).toEqual([
+    expect([...cycle.querySelectorAll("[data-cycle-node] > text")].map((node) => node.textContent)).toEqual(["2", "6", "4", "5", "1", "3"]);
+    expect([...cycle.querySelectorAll("[data-cycle-node] > title")].map((node) => node.textContent)).toEqual([
       "010",
       "110",
       "100",
@@ -60,7 +61,7 @@ describe("Shared hue traversal", () => {
     expect(cycle.querySelector("[data-cycle-node][aria-current]")).toBeNull();
     expect(container.querySelector(".theory-hue-caption")?.textContent).toBe("Each node represents a color state.");
 
-    fireEvent.click(within(cycle).getByRole("button", { name: "Choose R 010 as the starting color" }));
+    fireEvent.click(within(cycle).getByRole("button", { name: "Choose R 2 as the starting color" }));
     expectAllDeltas(container, ["Δ4", "Δ2", "Δ1", "Δ4", "Δ2", "Δ1"]);
     expect((clockwise as HTMLButtonElement).disabled).toBe(false);
     expect((counterclockwise as HTMLButtonElement).disabled).toBe(false);
@@ -121,7 +122,7 @@ describe("Shared hue traversal", () => {
     const onHover = vi.fn();
     const { container } = renderTraversal(onHover);
     const cycle = screen.getByRole("group", { name: "Chromatic One-Bit Six-Cycle" });
-    fireEvent.click(within(cycle).getByRole("button", { name: "Choose R 010 as the starting color" }));
+    fireEvent.click(within(cycle).getByRole("button", { name: "Choose R 2 as the starting color" }));
     fireEvent.click(screen.getByRole("button", { name: "Clockwise" }));
     expect(within(cycle).queryAllByRole("button")).toHaveLength(0);
     expect(cycle.querySelectorAll("[tabindex], [aria-pressed]")).toHaveLength(0);
@@ -136,7 +137,7 @@ describe("Shared hue traversal", () => {
       expect(selectedEdges(container)).toEqual([["0"], ["0"], ["0"]]);
       expect(screen.getByRole("status").getAttribute("data-hue-transition")).toBe("2-6");
     }
-    const blue = within(cycle).getByRole("img", { name: "B 001" });
+    const blue = within(cycle).getByRole("img", { name: "B 1" });
     fireEvent.mouseEnter(blue);
     expect(onHover).toHaveBeenLastCalledWith(1);
     fireEvent.mouseLeave(blue);
@@ -152,7 +153,7 @@ describe("Shared hue traversal", () => {
     const clockwise = screen.getByRole("button", { name: "Clockwise" });
     const counterclockwise = screen.getByRole("button", { name: "Counter-clockwise" });
     expect(container.querySelectorAll(".theory-hue-controls button")).toHaveLength(2);
-    fireEvent.click(screen.getByRole("button", { name: "Choose R 010 as the starting color" }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose R 2 as the starting color" }));
 
     for (const [edge, transition, delta, action, sentence] of [
       [0, "2-6", "+4", "Add green", "The transition from red to yellow means adding green."],

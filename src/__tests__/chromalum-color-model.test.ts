@@ -57,7 +57,7 @@ describe("exact CHROMALUM color model", () => {
     ]);
   });
 
-  it("recomputes the binary brightness rank from standard additive RGB orderings", () => {
+  it("derives the same additive rank from different scores satisfying the three conditions", () => {
     const binaryColors = [
       { label: "K", bits: [0, 0, 0] },
       { label: "B", bits: [0, 0, 1] },
@@ -68,13 +68,15 @@ describe("exact CHROMALUM color model", () => {
       { label: "Y", bits: [1, 1, 0] },
       { label: "W", bits: [1, 1, 1] },
     ] as const;
-    const standardWeights = [
+    const scoreWeights = [
+      { G: 5, R: 3, B: 1 },
+      { G: 3, R: 1.5, B: 0.25 },
       { G: 0.587, R: 0.299, B: 0.114 },
       { G: 0.7152, R: 0.2126, B: 0.0722 },
       { G: 0.678, R: 0.2627, B: 0.0593 },
     ] as const;
 
-    for (const weights of standardWeights) {
+    for (const weights of scoreWeights) {
       const ranked = [...binaryColors].sort((left, right) => {
         const score = ({ bits: [g, r, b] }: (typeof binaryColors)[number]) => weights.G * g + weights.R * r + weights.B * b;
         return score(left) - score(right);
@@ -87,14 +89,14 @@ describe("exact CHROMALUM color model", () => {
     }
   });
 
-  it("checks the two brightness inequalities against the complete vertex order", () => {
-    for (let wG = 1; wG <= 8; wG++) {
-      for (let wR = 1; wR <= 8; wR++) {
-        for (let wB = 1; wB <= 8; wB++) {
-          const satisfiesTwoInequalities = wG > wR + wB && wR > wB;
+  it("checks necessity and sufficiency of all three conditions, including zero and negative scores", () => {
+    for (let wG = -1; wG <= 8; wG++) {
+      for (let wR = -1; wR <= 8; wR++) {
+        for (let wB = -1; wB <= 8; wB++) {
+          const satisfiesThreeConditions = wB > 0 && wR > wB && wG > wR + wB;
           const scoresInExpectedOrder = [0, wB, wR, wR + wB, wG, wG + wB, wG + wR, wG + wR + wB];
           const hasCompleteOrder = scoresInExpectedOrder.every((score, index) => index === 0 || scoresInExpectedOrder[index - 1] < score);
-          expect(hasCompleteOrder).toBe(satisfiesTwoInequalities);
+          expect(hasCompleteOrder).toBe(satisfiesThreeConditions);
         }
       }
     }

@@ -46,7 +46,7 @@ Theory タブの核にある次の構造は既知である。
 
 一方、この限定調査で、次の全体を同一の導出鎖と UI に統合した先行例は確認できなかった。
 
-1. 無名の最小部分和 valuation `{1,2,4}` と、二値 RGB 頂点の明るさ順が、名前付き `4G+2R+B` へ収束することを明示し、正規化 tone として使うこと。
+1. 加法的スコアの三条件から二値 RGB 頂点の全順序を導き、その0始まりの順位として `B=1,R=2,G=4` と `L=4g+2r+b` を得て、正規化 tone と他の構造の共通座標に使うこと。無隙間部分和は順位の帰結として扱う。
 2. 補色 tone 反転を、標準サイコロの対面和 7 と接続すること。
 3. hue Gray cycle、tone zigzag、dice net を同じ 6 色構造として重ねること。
 4. `K8` の Hamming 距離分解を、cube / stella octangula / complement matching の色彩アトラスとして提示すること。
@@ -54,7 +54,7 @@ Theory タブの核にある次の構造は既知である。
 
 これは新規性の確定ではなく、限定調査から得た**プロジェクト固有性の候補**である。現時点で安全な位置づけは次である。
 
-> CHROMALUM は、既知の `GF(2)^3` 色加算、RGB cube、Boolean lattice、Fano 平面、Hamming 符号、多面体構造、および既知の `4G+2R+B` 色番号について、無名の最小部分和数学と独立な色の明るさ順が同じ GRB 二進順位へ収束することを明示し、正規化 tone、補色-dice 定理、hue/tone/dice/polyhedra の対応へ統合する、8 頂点 RGB 色集合の離散代数的色彩アトラスである。
+> CHROMALUM は、既知の `GF(2)^3` 色加算、RGB cube、Boolean lattice、Fano 平面、Hamming 符号、多面体構造、および既知の `4G+2R+B` 色番号について、加法的スコアの三条件が全順序と GRB 二進順位を定めるという前提・帰結を明示し、正規化 tone、補色-dice 定理、hue/tone/dice/polyhedra の対応へ統合する、8 頂点 RGB 色集合の離散代数的色彩アトラスである。
 
 ## Essential Prior Art
 
@@ -109,14 +109,14 @@ ZX Spectrum manual の Appendix E は、3 bit の先頭から Green, Red, Blue �
 
 ### GRB Binary Tone
 
-GRB Binary Tone の整数番号は歴史的に既知である。CHROMALUM は、三つの無名の正整数重みの部分和が0..7を埋める数学から `{1,2,4}` を得て、独立な明るさ順 `K<B<R<M<G<C<Y<W` がそれらを B、R、G へ割り当てる、二経路の収束としてこの番号を再解釈する。
+GRB Binary Tone の整数番号は歴史的に既知である。CHROMALUM では、加法的スコアの三条件 `w_B>0`, `w_R>w_B`, `w_G>w_R+w_B` が全順序 `K<B<R<M<G<C<Y<W` を定め、その0始まりの順位が直接 `B=1,R=2,G=4` を与える。無隙間な部分和はこの順位の帰結であり、無名の重みの一意性定理は補足の特徴づけとなる。この初等的な導出自体を新規性の根拠とはしない。
 
 ```text
 level = 4G + 2R + B
 tone = level / 7
 ```
 
-この対応により、bit significance は `G,R,B` の順になり、`lv = 4G + 2R + B` が明るさ順位と tone 順の両方に一致する。CHROMALUM 側の候補的な差分は番号列ではなく、純粋数学と色の順序が同じ名前付き valuation へ収束することの明示、`tone=level/7` という正規化、および他の代数・幾何構造との統合にある。
+この対応により、bit significance は `G,R,B` の順になり、`lv = 4G + 2R + B` が明るさ順位と tone 順の両方に一致する。CHROMALUM 側の候補的な差分は番号列ではなく、三条件から全順序・順位を導く前提と帰結の明示、`tone=level/7` という正規化、および他の代数・幾何構造との統合にある。
 
 ### Dice / Cube Net / Stella
 

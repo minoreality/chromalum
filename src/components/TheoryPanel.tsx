@@ -18,8 +18,8 @@ import { StellaOctangula } from "./theory/StellaOctangula";
 import { HueTraversal } from "./theory/HueTraversal";
 import { ChromaticOctahedron } from "./theory/ChromaticOctahedron";
 import { ConnectionsSummary, ScopeSummary } from "./theory/ConnectionsSummary";
-import { DerivationMap } from "./theory/DerivationMap";
-import { ValuationDiagram } from "./theory/ValuationDiagram";
+import { OrderDerivation, PrimaryNumberDerivation } from "./theory/DerivationMap";
+import { ComplementRanks, RankIdentities } from "./theory/ValuationDiagram";
 
 const S_SECTION: React.CSSProperties = {
   display: "flex",
@@ -144,8 +144,8 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
 
           <p className="theory-hint">{t("theory_pin_hint")}</p>
 
-          {/* Chapter 1 — the named Boolean algebra and primary generation */}
-          <Section id="theory-algebra" title={t("theory_generation_title")} desc={t("theory_algebra_definition")}>
+          {/* Chapter 1 — primary combinations, subsets, and bits */}
+          <Section id="theory-algebra" title={t("theory_generation_title")} desc={t("theory_states_desc")}>
             <Subsection
               id="theory-state-generation"
               title={t("theory_state_generation_title")}
@@ -162,49 +162,53 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
                 )}
               />
             </Subsection>
-            <Subsection
-              id="theory-boolean-operations"
-              title={t("theory_boolean_operations_title")}
-              desc={[t("theory_algebra_structures"), t("theory_mixing_desc")]}
-            >
-              <Figure title={t("theory_mixing_title")}>
-                <ColorMixing />
-              </Figure>
-              <Paragraphs text={t("theory_mixing_operations_desc")} />
+          </Section>
+
+          <hr style={S_DIVIDER} />
+
+          {/* Chapter 2 — total order, rank, and unique primary numbers */}
+          <Section id="theory-rank" title={t("theory_empirical_title")} desc={t("theory_empirical_desc")}>
+            <Subsection id="theory-rank-order" title={t("theory_order_rank_title")} desc={t("theory_empirical_order_intro")}>
+              <OrderDerivation />
+            </Subsection>
+            <Subsection id="theory-rank-derivation" title={t("theory_rank_characterization_title")}>
+              <PrimaryNumberDerivation />
+              <Paragraphs text={[t("theory_derivation_count_note"), t("theory_derivation_monotonicity_note")]} />
             </Subsection>
           </Section>
 
           <hr style={S_DIVIDER} />
 
-          {/* Chapter 2 — independent mathematical and color-order paths */}
-          <Section id="theory-rank" title={t("theory_empirical_title")}>
-            <Subsection id="theory-rank-derivation" title={t("theory_rank_characterization_title")} desc={t("theory_empirical_desc")}>
-              <DerivationMap />
-            </Subsection>
-            <Subsection id="theory-rank-operations" title={t("theory_rank_operations_title")} desc={t("theory_binary_desc")}>
-              <Figure title={t("theory_binary_title")}>
-                <BinaryTable hlLevel={hlLevel} onHover={onHover} />
-              </Figure>
-              <ValuationDiagram />
-            </Subsection>
+          {/* Chapter 3 — complement leads from primary unions to complementary intersections */}
+          <Section id="theory-boolean-operations" title={t("theory_mixing_duality_title")} desc={t("theory_complement_desc")}>
+            <ComplementRanks />
+            <Paragraphs text={t("theory_mixing_desc")} />
+            <Figure title={t("theory_mixing_title")}>
+              <ColorMixing />
+            </Figure>
+            <Paragraphs text={[t("theory_algebra_definition"), t("theory_mixing_operations_desc")]} />
+            <RankIdentities />
+            <aside className="theory-algebra-note" aria-labelledby="theory-algebra-note-label">
+              <p id="theory-algebra-note-label" className="theory-algebra-note-label">
+                {t("theory_algebra_supplement_label")}
+              </p>
+              <Paragraphs text={t("theory_algebra_structures")} />
+            </aside>
           </Section>
 
           <hr style={S_DIVIDER} />
 
-          {/* Chapter 3 — toggle action, cube, and the distance partition on the same vertices */}
+          {/* Chapter 4 — toggle action, cube, and the distance partition on the same vertices */}
           <Section id="theory-cube-cycle" title={t("theory_action_title")} desc={t("theory_action_desc")}>
-            <Paragraphs text={t("theory_action_distance_desc")} />
-            <Subsection
-              id="theory-cube"
-              title={t("theory_cube_cycle_title")}
-              desc={[t("theory_cube_desc"), t("theory_cube_faces_desc"), t("theory_cube_desc2"), t("theory_gray_desc")]}
-            >
+            <Paragraphs text={[t("theory_hamming_weight_desc"), t("theory_action_distance_desc")]} />
+            <Subsection id="theory-cube" title={t("theory_cube_cycle_title")} desc={t("theory_cube_desc")}>
               <ColorCube hlLevel={hlLevel} onHover={onHover} />
+              <Paragraphs text={[t("theory_cube_faces_desc"), t("theory_cube_desc2"), t("theory_gray_desc")]} />
             </Subsection>
             <Subsection
               id="theory-k8"
               title={t("theory_k8_title")}
-              desc={[t("theory_k8_desc"), t("theory_stella_desc"), t("theory_stella_toggle_desc")]}
+              desc={[t("theory_k8_desc"), t("theory_parity_desc"), t("theory_stella_desc"), t("theory_stella_toggle_desc")]}
             >
               <StellaOctangula hlLevel={hlLevel} onHover={onHover} />
               <Paragraphs text={t("theory_stella_faces_desc")} />
@@ -213,7 +217,7 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
 
           <hr style={S_DIVIDER} />
 
-          {/* Chapter 4 — seven nonzero vectors, projective geometry, and coding */}
+          {/* Chapter 5 — seven nonzero vectors, projective geometry, and coding */}
           <Section
             id="theory-fano-hamming"
             title={t("theory_structures_title")}
@@ -225,15 +229,16 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
             <Subsection
               id="theory-hamming"
               title={t("theory_hamming_title")}
-              desc={[t("theory_hamming_bridge"), t("theory_hamming_desc"), t("theory_hamming_desc2"), t("theory_hamming_faces_desc")]}
+              desc={[t("theory_hamming_columns_desc"), t("theory_hamming_desc2")]}
             >
               <HammingDiagram hlLevel={hlLevel} onHover={onHover} />
+              <Paragraphs text={[t("theory_hamming_bridge"), t("theory_hamming_desc"), t("theory_hamming_faces_desc")]} />
             </Subsection>
           </Section>
 
           <hr style={S_DIVIDER} />
 
-          {/* Chapter 5 — finite face arrangements and their polyhedral duality */}
+          {/* Chapter 6 — finite face arrangements and their polyhedral duality */}
           <Section id="theory-polyhedra" title={t("theory_geometry_title")} desc={t("theory_geometry_desc")}>
             <Subsection id="theory-color-die" title={t("theory_dice_section_title")} desc={t("theory_dice_net_desc")}>
               <figure className="theory-figure">
@@ -254,7 +259,7 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
 
           <hr style={S_DIVIDER} />
 
-          {/* Chapter 6 — extend the already-defined chromatic cycle continuously */}
+          {/* Chapter 7 — extend the already-defined chromatic cycle continuously */}
           <Section
             id="theory-geometry"
             title={t("theory_hue_extension_title")}
@@ -263,14 +268,26 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
             <Figure title={t("theory_zigzag_title")}>
               <HueTraversal hlLevel={hlLevel} onHover={onHover} />
             </Figure>
+            <Paragraphs
+              text={[t("theory_zigzag_intersections_desc"), t("theory_zigzag_fibers_desc"), t("theory_zigzag_complement_desc")]}
+            />
           </Section>
 
           <hr style={S_DIVIDER} />
 
-          {/* Chapter 7 — conclusion and the boundaries of the constructions */}
-          <Section id="theory-scope" title={t("theory_connections_title")} desc={t("theory_connections_desc")}>
+          {/* Chapter 8 — conclusion and the boundaries of the constructions */}
+          <Section id="theory-scope" title={t("theory_connections_title")}>
             <ConnectionsSummary />
             <ScopeSummary />
+          </Section>
+
+          <hr style={S_DIVIDER} />
+
+          {/* Reference — correspondences collected after their derivations */}
+          <Section id="theory-reference" title={t("theory_binary_title")}>
+            <figure className="theory-figure" aria-labelledby="theory-reference-heading">
+              <BinaryTable hlLevel={hlLevel} onHover={onHover} />
+            </figure>
           </Section>
         </div>
       </div>

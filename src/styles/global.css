@@ -446,6 +446,17 @@ html:lang(en) .theory-title {
 .theory-intro {
   color: var(--c-text-muted, #9090b8);
 }
+.theory-algebra-note {
+  width: 100%;
+}
+.theory-algebra-note-label {
+  margin: 0 0 4px;
+  color: #aaaac4;
+  font: 600 12px/1.6 var(--font-sans);
+}
+.theory-algebra-note .theory-desc {
+  font-size: 12px;
+}
 .theory-hint {
   font-size: 8px;
   font-family: var(--font-mono);
@@ -1079,70 +1090,96 @@ button.theory-diagram-button {
   line-height: 1.6;
 }
 
-.theory-derivation-paths {
+.theory-derivation-order {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px clamp(8px, 2cqi, 16px);
-  font-size: clamp(11px, 1.65cqi, 13px);
-}
-
-.theory-derivation-order,
-.theory-derivation .theory-subset {
-  display: grid;
-  grid-row: span 3;
-  grid-template-rows: subgrid;
+  gap: clamp(16px, 2.5cqi, 22px);
   min-width: 0;
   margin: 0;
-  padding: clamp(6px, 1.7cqi, 14px);
-  border: 1px solid #2a2a44;
-  border-radius: 8px;
-  background: #0e0e19;
+  padding: 0;
+  border: 0;
+  background: transparent;
   box-sizing: border-box;
-}
-
-.theory-derivation .theory-diagram-label {
-  margin: 0;
-  color: #8ba8ff;
-  font-size: clamp(11px, 1.85cqi, 14px);
-}
-
-.theory-derivation figcaption p {
-  margin: 6px 0 0;
-  color: #aaaac4;
 }
 
 .theory-derivation code {
   display: block;
   font-family: var(--font-mono);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.theory-derivation-score {
+  color: #e5e8f5;
+  font-size: clamp(12px, 2cqi, 15px);
+  text-align: center;
+}
+
+.theory-derivation-order sub {
+  position: relative;
+  bottom: -0.2em;
+  font-size: 0.75em;
+  line-height: 0;
+  vertical-align: baseline;
 }
 
 .theory-derivation-order-visual {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
 }
 
 .theory-derivation-comparisons {
-  display: flex;
-  justify-content: space-evenly;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: 6px;
+  gap: clamp(4px, 1.5cqi, 8px);
+  width: min(100%, 540px);
+  margin-inline: auto;
   color: #d8ddf0;
+}
+
+.theory-derivation-comparisons code {
+  min-width: 0;
+  padding: 6px clamp(2px, 0.8cqi, 6px);
+  border: 1px solid #2a2f47;
+  border-radius: 6px;
+  background: #151827;
+  font-size: clamp(12px, 1.8cqi, 14px);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .theory-derivation-arrow {
   color: #8ba8ff;
-  font: 18px/1 var(--font-mono);
+  font: 20px/1 var(--font-mono);
   text-align: center;
 }
 
+.theory-derivation-state-order {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.theory-derivation-state-order p {
+  margin: 0;
+  color: #aaaac4;
+  font-size: clamp(11px, 1.65cqi, 13px);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.theory-derivation-state-order .theory-derivation-order-note {
+  font-size: 11px;
+}
+
 .theory-derivation-order-colors {
+  --theory-order-gap: clamp(5px, 1cqi, 10px);
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: clamp(1px, 0.5cqi, 4px);
+  grid-template-rows: auto auto auto;
+  gap: 0;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -1151,28 +1188,63 @@ button.theory-diagram-button {
 }
 
 .theory-derivation-order-colors li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--theory-order-gap);
+  grid-template-rows: subgrid;
+  grid-row: 1 / 4;
   min-width: 0;
 }
 
 .theory-derivation-order-colors li span {
   display: block;
-  padding: 2px 0;
+  grid-column: 1;
+  padding: 4px 0;
+  line-height: 1.5;
 }
 
-.theory-derivation-order-colors li span:first-child {
-  border: 1px solid #5a5a70;
-  border-radius: 2px;
-  font-weight: bold;
+.theory-derivation-order-colors .theory-derivation-subset {
+  padding: 6px 0;
+  color: #eef1ff;
+  font-size: clamp(12px, 1.7cqi, 14px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.theory-derivation-order-colors li:not(:last-child)::after {
+  content: "<";
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  color: #aaaac4;
+  font-size: clamp(8px, 1.4cqi, 12px);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.theory-derivation-order-colors .theory-derivation-color-label {
+  padding: 2px 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.theory-derivation-order-colors li:first-child .theory-derivation-color-label {
+  box-shadow: inset 0 0 0 1px #5a5a70;
+}
+
+.theory-derivation-order-colors li span:last-child {
+  color: #d8ddf0;
+  font-variant-numeric: tabular-nums;
 }
 
 .theory-derivation-result {
-  display: grid;
-  gap: 2px;
-  justify-items: center;
-  padding: 8px 0 0;
-  border-top: 1px solid #343a57;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  padding: 12px 0;
   text-align: center;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .theory-derivation-result > span {
@@ -1188,82 +1260,71 @@ button.theory-diagram-button {
 
 .theory-derivation-named-ranks {
   display: flex;
-  gap: clamp(5px, 1.5cqi, 12px);
+  gap: clamp(8px, 2cqi, 16px);
+}
+
+.theory-derivation-named-ranks > span {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #1a1e30;
 }
 
 .theory-derivation-conclusion {
-  position: relative;
-  margin-top: 12px;
-  padding: 18px 0 0;
   text-align: center;
 }
 
-.theory-derivation-conclusion::before {
-  position: absolute;
-  content: "";
-  top: 0;
-  left: 25%;
-  right: 25%;
-  height: 6px;
-  border: solid #495575;
-  border-width: 0 1px 1px;
-}
-
-.theory-derivation-conclusion::after {
-  position: absolute;
-  content: "";
-  top: 6px;
-  left: 50%;
-  height: 6px;
-  border-left: 1px solid #495575;
-}
-
+.theory-derivation-rank-definition code,
 .theory-derivation-conclusion > code {
   margin-top: 4px;
   font-size: clamp(12px, 2cqi, 16px);
   color: #d8ddf0;
+  text-align: center;
 }
 
 .theory-derivation-conclusion p {
   max-width: 700px;
   margin: 6px auto 0;
-}
-
-.theory-derivation-notes {
-  display: grid;
-  gap: 6px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid #2a2a40;
   color: #aaaac4;
-  font-size: 12px;
+  text-align: left;
 }
 
-.theory-derivation-notes p {
-  margin: 0;
+.theory-derivation-proof {
+  max-width: 700px;
+  margin: 0 auto 12px;
+  color: #aaaac4;
+  text-align: left;
 }
 
-.theory-derivation-notes strong {
-  margin-right: 8px;
-  color: #c8c8d8;
-  white-space: nowrap;
+.theory-derivation-proof ol {
+  margin: 10px 0;
+  padding-left: 1.5em;
 }
 
-.theory-derivation-definitions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 18px;
-  margin-top: 4px;
-  font-size: 11px;
+.theory-derivation-proof li + li {
+  margin-top: 6px;
+}
+
+.theory-derivation-conclusion .theory-derivation-supplement {
+  margin-top: 10px;
+  color: #aaaac4;
+  font-size: clamp(11px, 1.65cqi, 13px);
+  text-align: left;
 }
 
 @container theory-derivation (max-width: 500px) {
-  .theory-derivation-comparisons {
+  .theory-derivation-order-colors {
+    font-size: clamp(11px, 3.4cqi, 13px);
+  }
+  .theory-derivation-order-colors .theory-derivation-subset {
+    font-size: clamp(8px, 2.4cqi, 12px);
+    letter-spacing: -0.1em;
+  }
+  .theory-derivation-result {
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
   }
   .theory-derivation-conclusion p,
-  .theory-derivation-notes {
+  .theory-derivation-proof {
     font-size: 11px;
   }
 }
@@ -1280,71 +1341,6 @@ button.theory-diagram-button {
   }
 }
 
-.theory-subset-visual {
-  display: grid;
-  gap: 8px;
-  align-content: center;
-  min-width: 0;
-}
-.theory-subset-steps {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 6px clamp(3px, 0.8cqi, 6px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-family: var(--font-mono);
-}
-.theory-subset-steps li {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: center;
-}
-.theory-subset-weight {
-  color: #aaaac4;
-  white-space: nowrap;
-}
-.theory-subset-values {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: clamp(1px, 0.5cqi, 4px);
-}
-.theory-subset-values span {
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  min-height: 24px;
-  border-bottom: 2px solid #343449;
-  background: #171722;
-  color: #aaaac4;
-}
-.theory-subset-values [data-subset-translated="true"] {
-  border-color: #8ba8ff;
-  background: #232c46;
-  color: #eef1ff;
-}
-.theory-subset-legend {
-  display: flex;
-  gap: clamp(4px, 1.8cqi, 16px);
-  font-size: clamp(11px, 1.4cqi, 12px);
-}
-.theory-subset-legend > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
-}
-.theory-subset-legend i {
-  width: 6px;
-  height: 6px;
-  border-bottom: 2px solid #343449;
-  background: #171722;
-}
-.theory-subset-legend .theory-subset-translated {
-  border-color: #8ba8ff;
-  background: #232c46;
-}
 .theory-stella-node {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -2605,14 +2601,10 @@ button.theory-diagram-button {
 .theory-valuation {
   width: 100%;
   container: valuation / inline-size;
-  padding-top: 12px;
-  border-top: 1px solid #2a2a40;
+  margin: 0;
   color: #a8a8c8;
   font: 11px/1.6 var(--font-mono);
   font-variant-numeric: tabular-nums;
-}
-.theory-valuation figure {
-  margin: 0;
 }
 .theory-valuation code {
   font-family: var(--font-mono);
@@ -2677,21 +2669,14 @@ button.theory-diagram-button {
   font: 11px/1.6 var(--font-sans);
   overflow-wrap: anywhere;
 }
-.theory-valuation-complement + .theory-valuation-note {
-  margin-top: 12px;
+.theory-valuation-complement .theory-valuation-note {
+  margin: 0 0 8px;
 }
 .theory-valuation-identities {
   display: grid;
   justify-items: center;
   gap: 2px;
   margin: 8px 0;
-}
-.theory-valuation-toggle {
-  display: block;
-  margin-top: 4px;
-  font-size: 10px;
-  text-align: center;
-  overflow-wrap: anywhere;
 }
 @container valuation (min-width: 540px) {
   .theory-valuation-pairs {
@@ -3682,6 +3667,7 @@ button.theory-diagram-button {
   color: #8ba8ff;
 }
 .theory-hue-zigzag {
+  container: theory-zigzag / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--theory-hue-plot-gap, 16px);
@@ -3770,6 +3756,13 @@ button.theory-diagram-button {
 }
 .theory-zigzag-summary sub {
   line-height: 0;
+}
+@container theory-zigzag (max-width: 500px) {
+  .theory-zigzag-summary {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
+    text-align: center;
+  }
 }
 .theory-hue-status {
   position: absolute;

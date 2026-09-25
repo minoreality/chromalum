@@ -141,11 +141,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
                 role={onSelectStart ? "button" : "img"}
                 tabIndex={onSelectStart ? 0 : undefined}
                 aria-current={isCurrent ? "true" : undefined}
-                aria-label={
-                  onSelectStart
-                    ? t("theory_hue_choose_start", `${info.short} ${info.bits.join("")}`)
-                    : `${info.short} ${info.bits.join("")}`
-                }
+                aria-label={onSelectStart ? t("theory_hue_choose_start", `${info.short} ${lv}`) : `${info.short} ${lv}`}
                 onMouseEnter={() => onHover(lv)}
                 onMouseLeave={() => onHover(null)}
                 onClick={onSelectStart ? () => onSelectStart(lv) : undefined}
@@ -161,7 +157,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
                 }
                 style={onSelectStart ? { cursor: "pointer" } : undefined}
               >
-                <title>{`${info.short} · ${info.bits.join("")}`}</title>
+                <title>{info.bits.join("")}</title>
                 <circle cx={p.x} cy={p.y} r={NODE_HIT_R} fill="transparent" aria-hidden="true" />
                 {onSelectStart && (
                   <circle
@@ -206,7 +202,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({
                   fontFamily="var(--font-mono)"
                   fill={levelLabelColor(lv)}
                 >
-                  {info.bits.join("")}
+                  {lv}
                 </text>
               </g>
             );
