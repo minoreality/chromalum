@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { C, FS, FONT, SP } from "../../styles/tokens";
 import type { MusicEngineReturn } from "../../hooks/useMusicEngine";
@@ -177,6 +177,7 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
   } = octahedron;
   const { playing: gray3Playing, onPlayingChange: onGray3PlayingChange, code: gray3Code, onCodeChange: onGray3CodeChange } = gray3;
   const { perm: gl32Perm, onPermChange: onGl32PermChange, flash: gl32Flash, onFlashChange: onGl32FlashChange } = gl32;
+  const gl32FlashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const octaResult = octaA ^ octaB;
   const octaPlayable = octaA !== octaB && octaResult >= 1 && octaResult <= 6;
 
@@ -218,7 +219,10 @@ export const MusicAlgebraPanel = React.memo(function MusicAlgebraPanel({
     engine.applyGL32Transform?.(generator, (perm) => {
       onGl32PermChange(perm);
       onGl32FlashChange(true);
-      setTimeout(() => onGl32FlashChange(false), 500);
+      // Restart the window, as ParityChordCard does: the previous transform's
+      // timer would otherwise end this flash early.
+      clearTimeout(gl32FlashTimer.current);
+      gl32FlashTimer.current = setTimeout(() => onGl32FlashChange(false), 500);
     });
   };
 
