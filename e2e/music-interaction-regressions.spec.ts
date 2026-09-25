@@ -44,27 +44,29 @@ test("Stop All ends a moving Music wheel and Escape leaves it stopped", async ({
   await page.emulateMedia({ reducedMotion: "no-preference" });
   const phase = page.getByRole("slider", { name: "Hue phase", exact: true });
   await page.locator(".linked-viz-root svg").scrollIntoViewIfNeeded();
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     const svg = document.querySelector(".linked-viz-root svg")!;
     const wheel = svg.querySelector('g[style*="grab"]')!;
     const rect = wheel.querySelector('circle[fill="transparent"]')!.getBoundingClientRect();
-    const send = (target: Element, type: string, degrees: number) => {
-      target.dispatchEvent(
-        new PointerEvent(type, {
-          bubbles: true,
-          pointerId: 71,
-          pointerType: "touch",
-          clientX: rect.x + rect.width / 2 + rect.width * 0.4 * Math.cos((degrees * Math.PI) / 180),
-          clientY: rect.y + rect.height / 2 + rect.width * 0.4 * Math.sin((degrees * Math.PI) / 180),
-        }),
-      );
+    // The coast reads the flick's pace from each event's timeStamp and keeps
+    // only samples within 90 ms of the last move. Stamped by the real clock, a
+    // runner stall before the last step left one sample and parked the wheel at
+    // 90, so the stamps are fixed: 90 degrees over 96 ms, lifted 16 ms later.
+    const start = performance.now();
+    const send = (target: Element, type: string, degrees: number, atMs: number) => {
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        pointerId: 71,
+        pointerType: "touch",
+        clientX: rect.x + rect.width / 2 + rect.width * 0.4 * Math.cos((degrees * Math.PI) / 180),
+        clientY: rect.y + rect.height / 2 + rect.width * 0.4 * Math.sin((degrees * Math.PI) / 180),
+      });
+      Object.defineProperty(event, "timeStamp", { value: start + atMs });
+      target.dispatchEvent(event);
     };
-    send(wheel, "pointerdown", 0);
-    for (let degrees = 15; degrees <= 90; degrees += 15) {
-      await new Promise((resolve) => setTimeout(resolve, 16));
-      send(svg, "pointermove", degrees);
-    }
-    send(svg, "pointerup", 90);
+    send(wheel, "pointerdown", 0, 0);
+    for (let degrees = 15; degrees <= 90; degrees += 15) send(svg, "pointermove", degrees, (degrees / 15) * 16);
+    send(svg, "pointerup", 90, 7 * 16);
   });
   const released = await phase.inputValue();
   await expect.poll(() => phase.inputValue()).not.toBe(released);
