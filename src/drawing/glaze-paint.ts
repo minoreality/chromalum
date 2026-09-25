@@ -73,10 +73,6 @@ export function paintGlazeBrushLine(
   const sx = x0 < x1 ? 1 : -1,
     sy = y0 < y1 ? 1 : -1;
   let e = ax - ay;
-  const skipDist = Math.max(1, Math.floor(mask.size / 8));
-  const skipDist2 = skipDist * skipDist;
-  let lastPX = x0,
-    lastPY = y0;
   paintGlazeBrush(pixelCandidateOverrideMap, levelData, x0, y0, mask, w, h, glazeLUT);
   for (;;) {
     if (x0 === x1 && y0 === y1) break;
@@ -89,15 +85,9 @@ export function paintGlazeBrushLine(
       e += ax;
       y0 += sy;
     }
-    const dx = x0 - lastPX,
-      dy = y0 - lastPY;
-    if (dx * dx + dy * dy >= skipDist2) {
-      paintGlazeBrush(pixelCandidateOverrideMap, levelData, x0, y0, mask, w, h, glazeLUT);
-      lastPX = x0;
-      lastPY = y0;
-    }
+    // Every lattice centre contributes boundary pixels, as in paintBrushLine.
+    paintGlazeBrush(pixelCandidateOverrideMap, levelData, x0, y0, mask, w, h, glazeLUT);
   }
-  paintGlazeBrush(pixelCandidateOverrideMap, levelData, x1, y1, mask, w, h, glazeLUT);
 }
 
 export function eraseGlazeBrush(
@@ -129,10 +119,6 @@ export function eraseGlazeBrushLine(
   const sx = x0 < x1 ? 1 : -1,
     sy = y0 < y1 ? 1 : -1;
   let e = ax - ay;
-  const skipDist = Math.max(1, Math.floor(mask.size / 8));
-  const skipDist2 = skipDist * skipDist;
-  let lastPX = x0,
-    lastPY = y0;
   eraseGlazeBrush(pixelCandidateOverrideMap, x0, y0, mask, w, h);
   for (;;) {
     if (x0 === x1 && y0 === y1) break;
@@ -145,13 +131,6 @@ export function eraseGlazeBrushLine(
       e += ax;
       y0 += sy;
     }
-    const dx = x0 - lastPX,
-      dy = y0 - lastPY;
-    if (dx * dx + dy * dy >= skipDist2) {
-      eraseGlazeBrush(pixelCandidateOverrideMap, x0, y0, mask, w, h);
-      lastPX = x0;
-      lastPY = y0;
-    }
+    eraseGlazeBrush(pixelCandidateOverrideMap, x0, y0, mask, w, h);
   }
-  eraseGlazeBrush(pixelCandidateOverrideMap, x1, y1, mask, w, h);
 }

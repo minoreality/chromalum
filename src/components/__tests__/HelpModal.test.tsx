@@ -85,6 +85,22 @@ describe("HelpModal", () => {
     expect(screen.queryByText("Pin or release the focused figure element")).toBeNull();
   });
 
+  it.each(["color", "glaze"] as const)("leaves the Source-only palette and zoom-button gestures off the %s tab", (tab) => {
+    render(<HelpModal showHelp={true} activeTabId={tab} setShowHelp={() => {}} helpRef={helpRef} />);
+    expect(screen.getByText("Undo")).toBeTruthy();
+    expect(screen.getByText("Select tone level")).toBeTruthy();
+    expect(screen.getByText("Zoom")).toBeTruthy();
+    // Only Source draws the level palette and the zoom button these rows name.
+    expect(screen.queryByText("Double-click level")).toBeNull();
+    expect(screen.queryByText("Right-click zoom btn")).toBeNull();
+  });
+
+  it("keeps the palette and zoom-button gestures on the Source tab", () => {
+    render(<HelpModal showHelp={true} activeTabId="source" setShowHelp={() => {}} helpRef={helpRef} />);
+    expect(screen.getByText("Double-click level")).toBeTruthy();
+    expect(screen.getByText("Right-click zoom btn")).toBeTruthy();
+  });
+
   it("lists only the figure keys and the common rows for the Theory tab", () => {
     render(<HelpModal showHelp={true} activeTabId="theory" setShowHelp={() => {}} helpRef={helpRef} />);
     expect(screen.getByText("Pin or release the focused figure element")).toBeTruthy();
