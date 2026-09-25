@@ -20,4 +20,4 @@ npx vitest run prototypes/weight-chambers/model.test.ts
 npx playwright test -c prototypes/weight-chambers/playwright.config.ts --workers=1
 ```
 
-`model.test.ts` は格子点14,365個すべてで同点の有無、属する部屋の順序、三条件と K<B<R<M<G<C<Y<W の一致、上半分を検査し、48・12・6・1、de Finetti の一致、各壁で入れ替わる組を確かめる。期待値は {G,R,B} の部分集合から組み立て、モデルのビット演算とは独立に求める。hue-euler と同じく、このファイルは `npm test` にも含まれる。ブラウザ検証は、初期状態、12部屋の順序、キーボードでの壁越え、各壁の同点、クリックでの移動、URL の検証、320〜1186pxでの表示とレイアウトの不動を対象とする。
+`model.test.ts` は格子点14,365個すべてで同点の有無、属する部屋の順序、三条件と K<B<R<M<G<C<Y<W の一致、上半分を検査し、48・12・6・1、de Finetti の一致、各壁で入れ替わる組を確かめる。期待値は {G,R,B} の部分集合から組み立て、モデルのビット演算とは独立に求める。hue-euler と同じく、このファイルは `npm test` にも含まれる。ブラウザ検証は、初期状態、12部屋の順序、キーボードでの壁越え、各壁の同点、クリックでの移動、約分した比の表示、URL の検証、320〜1186pxでの表示とレイアウトの不動を対象とする。

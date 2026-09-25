@@ -264,8 +264,9 @@ function update() {
     wall.toggleAttribute("data-on", onWall(weights, WALLS[Number(wall.dataset.wall)].coefficients));
   }
   document.querySelector(".weights-value")!.textContent = weights.map((v) => String(v).padStart(3, " ")).join(" : ");
+  // A shorter ratio exists only when the weights share a factor. Compare every weight: 0 stays 0 under any factor.
   const ratio = reduced(weights);
-  document.querySelector(".ratio")!.textContent = ratio[0] === weights[0] ? "" : `= ${ratio.join(" : ")}`;
+  document.querySelector(".ratio")!.textContent = ratio.every((v, i) => v === weights[i]) ? "" : `= ${ratio.join(" : ")}`;
   conditions(weights).forEach(({ holds }, i) => {
     const item = document.querySelectorAll<HTMLElement>(".conditions li")[i];
     item.dataset.holds = String(holds);

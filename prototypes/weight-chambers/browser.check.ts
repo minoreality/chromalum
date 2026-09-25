@@ -120,6 +120,19 @@ test("clicking inside a chamber moves the point into it", async ({ page }) => {
   await expect(page.getByRole("slider")).toBeFocused();
 });
 
+test("shows the reduced ratio whenever the weights share a factor, on every edge", async ({ page }) => {
+  for (const [w, ratio] of [
+    ["84,84,0", "= 1 : 1 : 0"],
+    ["84,0,84", "= 1 : 0 : 1"],
+    ["0,84,84", "= 0 : 1 : 1"],
+    ["0,0,168", "= 0 : 0 : 1"],
+    ["82,55,31", ""],
+  ]) {
+    await page.goto(`${PAGE}?w=${w}`);
+    await expect(page.locator(".ratio")).toHaveText(ratio);
+  }
+});
+
 test("falls back to 4:2:1 when the URL weights are off the lattice", async ({ page }) => {
   for (const bad of ["1,2,3", "96,48", "96,-1,73", "a,b,c"]) {
     await page.goto(`${PAGE}?w=${bad}`);
