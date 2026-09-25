@@ -270,6 +270,26 @@ describe("GalleryPanel", () => {
     expect(JSON.parse(localStorage.getItem(BM_KEY) ?? "[]")).toHaveLength(1);
   });
 
+  it.each([false, true])("closes an unbookmarked preview only after storage succeeds (failure: %s)", (failure) => {
+    const bookmarks = [withLevel(2, 1), withLevel(2, 2)];
+    localStorage.setItem(BM_KEY, JSON.stringify(bookmarks));
+    renderGallery();
+    fireEvent.click(screen.getByRole("button", { name: "gallery_filter_bookmarks (2)" }));
+    fireEvent.click(screen.getByRole("button", { name: "gallery_preview (1)" }));
+    if (failure)
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("full");
+      });
+    fireEvent.click(screen.getByRole("button", { name: "gallery_unbookmark" }));
+    if (failure) {
+      expect(screen.getByRole("dialog")).toBeTruthy();
+      expect(JSON.parse(localStorage.getItem(BM_KEY)!)).toEqual(bookmarks);
+    } else {
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(JSON.parse(localStorage.getItem(BM_KEY)!)).toEqual([bookmarks[1]]);
+    }
+  });
+
   it("opens the preview dialog and routes apply, bookmark, save, and dismiss actions", () => {
     const itemCandidateIndexByLevel = withLevel(3, 1);
     galleryMock.items = [makeItem(itemCandidateIndexByLevel)];

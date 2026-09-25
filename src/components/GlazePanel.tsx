@@ -12,6 +12,7 @@ import { useTranslation } from "../i18n";
 import { useGlazeContext } from "../state/GlazeContext";
 import { C, Z, SP, FS, R, HUE_GRADIENT } from "../styles/tokens";
 import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
+import { controlOwnsKey } from "../shortcuts";
 
 interface GlazePanelProps {
   previewCanvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -114,7 +115,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
   // Keyboard shortcuts for zoom/pan + tool switching
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.defaultPrevented || e.altKey) return;
+      if (e.defaultPrevented || e.altKey || controlOwnsKey(e.target, e)) return;
       const isZoomKey = e.key === "+" || e.key === "=" || e.key === "-";
       if ((e.ctrlKey || e.metaKey) && !isZoomKey) return;
       const k = e.key.toLowerCase();
@@ -229,7 +230,7 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
         panZoom.endPan();
         return;
       }
-      glazeDrawing.onUp();
+      glazeDrawing.onUp(e);
     },
     [panZoom, glazeDrawing, panZoomMode, onPinchUp],
   );

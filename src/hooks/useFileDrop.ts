@@ -8,6 +8,10 @@ type DecodedImage = CanvasImageSource & { readonly width: number; readonly heigh
 type ImageLoadSource =
   "stable Blob ImageBitmap" | "stable Blob object URL" | "stable Blob Data URL" | "direct ImageBitmap" | "direct object URL";
 
+function canImportImage(): boolean {
+  return document.querySelector('[role="dialog"][aria-modal="true"]:not([data-modal-owner="crop"])') === null;
+}
+
 function isImageLoadDebugEnabled(): boolean {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debugImageLoad");
 }
@@ -47,8 +51,8 @@ export function useFileDrop(
           settled = true;
           resolve();
         };
-        const isCurrent = () => loadRequestRef.current === requestId;
-        if (!file) {
+        const isCurrent = () => loadRequestRef.current === requestId && canImportImage();
+        if (!file || !canImportImage()) {
           finish();
           return;
         }
@@ -346,6 +350,7 @@ export function useFileDrop(
 
   useEffect(() => {
     const f = (e: ClipboardEvent) => {
+      if (!canImportImage()) return;
       // Skip paste when focus is inside an input, textarea, or contenteditable
       const active = document.activeElement;
       if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || (active as HTMLElement).isContentEditable)) return;
@@ -377,6 +382,7 @@ export function useFileDrop(
   const onDragEnter = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+      if (!canImportImage()) return;
       dragCountRef.current++;
       setDragging(true);
       announce(t("drop_announce"));
@@ -386,7 +392,7 @@ export function useFileDrop(
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
+    e.dataTransfer.dropEffect = canImportImage() ? "copy" : "none";
   }, []);
 
   const onDragLeave = useCallback(

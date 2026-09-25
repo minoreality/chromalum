@@ -38,7 +38,7 @@ type OctaPhase = "pair" | "result" | null;
 
 interface MusicCayleyAlgebraState {
   row: number;
-  onRowChange: StateSetter<number>;
+  onRowChange: (row: number) => void;
   col: number;
   onColChange: StateSetter<number>;
 }

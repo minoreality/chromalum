@@ -28,10 +28,6 @@ export function paintBrushLine(
   const sx = x0 < x1 ? 1 : -1,
     sy = y0 < y1 ? 1 : -1;
   let e = ax - ay;
-  const skipDist = Math.max(1, Math.floor(mask.size / 8));
-  const skipDist2 = skipDist * skipDist;
-  let lastPX = x0,
-    lastPY = y0;
   paintBrush(data, x0, y0, mask, lv, w, h);
   for (;;) {
     if (x0 === x1 && y0 === y1) break;
@@ -44,15 +40,9 @@ export function paintBrushLine(
       e += ax;
       y0 += sy;
     }
-    const dx = x0 - lastPX,
-      dy = y0 - lastPY;
-    if (dx * dx + dy * dy >= skipDist2) {
-      paintBrush(data, x0, y0, mask, lv, w, h);
-      lastPX = x0;
-      lastPY = y0;
-    }
+    // Every lattice centre contributes boundary pixels, even for a wide brush.
+    paintBrush(data, x0, y0, mask, lv, w, h);
   }
-  paintBrush(data, x1, y1, mask, lv, w, h);
 }
 
 function paintBrushRect(

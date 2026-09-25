@@ -26,6 +26,7 @@ function useMusicKeyboardShortcuts(
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || controlOwnsKey(e.target, e)) return;
+      if (e.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       const k = e.key;
       if (k >= "1" && k <= "6") {
         const levelIndex = +k;
@@ -43,6 +44,7 @@ export function useMusicTransportShortcuts(onStopAll: () => void, onMuteToggle: 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || controlOwnsKey(e.target, e)) return;
+      if (e.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (e.key === "Escape") {
         // An open modal owns Escape.
         if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return;

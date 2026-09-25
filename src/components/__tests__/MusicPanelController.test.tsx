@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LanguageProvider } from "../../i18n";
 import { MusicPanel } from "../MusicPanel";
+import { CX, CY, TW, TH } from "../linked-visualization-geometry";
 
 type MusicEngineParams = Parameters<(typeof import("../../hooks/useMusicEngine"))["useMusicEngine"]>[0];
 
@@ -27,6 +28,7 @@ const musicEngineMock = vi.hoisted(() => {
     playGray3Voice: vi.fn(),
     playWeightSpectrum: vi.fn(),
     playCayleyRow: vi.fn(),
+    stopCayleyRow: vi.fn(),
     applyGL32Transform: vi.fn(),
     resetGL32Transform: vi.fn(),
     setToneMode: vi.fn(),
@@ -466,5 +468,72 @@ describe("MusicPanel controller integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "\u25b6 Complement" }));
     expect(musicEngineMock.engine.stopAlgebra).toHaveBeenCalled();
     expect(musicEngineMock.engine.playLineAndComplement).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Music modal and wheel ownership", () => {
+  beforeEach(resetMusicEngineMocks);
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each(["1", "2", "3", "4", "5", "6", "m", "Escape"])("leaves %s to an open modal", (key) => {
+    const view = renderWithLanguage(
+      <>
+        <MusicPanel />
+        <div role="dialog" aria-modal="true">
+          <button>Modal action</button>
+        </div>
+      </>,
+    );
+    musicEngineMock.engine.triggerToneBurst.mockClear();
+    musicEngineMock.engine.stopAlgebra.mockClear();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Modal action" }), { key });
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("false");
+    // Focus can briefly be outside during opening; modal ownership still holds.
+    fireEvent.keyDown(document, { key });
+    expect(musicEngineMock.engine.triggerToneBurst).not.toHaveBeenCalled();
+    expect(musicEngineMock.engine.stopAlgebra).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("false");
+    view.unmount();
+  });
+
+  it.each(["drag", "coast"])("Stop All cancels wheel %s until a fresh pointerdown", (phase) => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.set(++frameId, cb);
+      return frameId;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    const view = renderWithLanguage(<MusicPanel />);
+    const svg = view.container.querySelector(".linked-viz-root svg") as SVGSVGElement;
+    const wheel = svg.querySelector('g[style*="cursor: grab"]')!;
+    svg.getBoundingClientRect = () => ({ left: 0, top: 0, width: TW, height: TH }) as DOMRect;
+    const pointer = (target: Element, type: string, x: number, y: number, time: number) => {
+      const event = new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: y });
+      Object.defineProperty(event, "timeStamp", { value: time });
+      fireEvent(target, event);
+    };
+    pointer(wheel, "pointerdown", CX, CY - 40, 1000);
+    pointer(svg, "pointermove", CX + 40, CY, 1050);
+    if (phase === "coast") pointer(svg, "pointerup", CX + 40, CY, 1060);
+    const stoppedAlpha = latestEngineParams().alpha0;
+    expect(stoppedAlpha).toBe(90);
+    fireEvent.click(screen.getByRole("button", { name: "Stop All" }));
+    musicEngineMock.engine.setDroneMuted.mockClear();
+    pointer(svg, "pointermove", CX, CY + 40, 1070);
+    pointer(svg, "pointerup", CX, CY + 40, 1080);
+    for (const time of [100, 116, 132]) {
+      const pending = [...frames.values()];
+      frames.clear();
+      act(() => pending.forEach((cb) => cb(time)));
+    }
+    expect(latestEngineParams().alpha0).toBe(stoppedAlpha);
+    expect(musicEngineMock.engine.setDroneMuted).not.toHaveBeenCalledWith(false);
+    pointer(wheel, "pointerdown", CX, CY - 40, 2000);
+    pointer(svg, "pointermove", CX + 40, CY, 2050);
+    expect(latestEngineParams().alpha0).toBe(180);
+    expect(musicEngineMock.engine.setDroneMuted).toHaveBeenCalledWith(false);
+    view.unmount();
+    vi.unstubAllGlobals();
   });
 });

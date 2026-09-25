@@ -43,6 +43,8 @@ export interface LinkedVisualizationOverlayContext {
 export interface LinkedVisualizationProps {
   hueAngleDeg: number;
   brushLevel: number;
+  /** Ends any active gesture and wheel momentum when Music stops. */
+  stopSignal?: number;
   onHueAngleDegChange?: (angle: number) => void;
   hoveredCandidate?: LinkedVisualizationHover | null;
   onHoverCandidate?: (d: LinkedVisualizationHover | null) => void;
@@ -133,6 +135,7 @@ const S_TOGGLE_ACTIVE: React.CSSProperties = {
 export const LinkedVisualization = React.memo(function LinkedVisualization({
   hueAngleDeg,
   brushLevel,
+  stopSignal,
   onHueAngleDegChange,
   hoveredCandidate,
   onHoverCandidate,
@@ -213,6 +216,14 @@ export const LinkedVisualization = React.memo(function LinkedVisualization({
     spinRef.current = null;
   }, []);
   useEffect(() => stopSpin, [stopSpin]);
+  useEffect(() => {
+    stopSpin();
+    const pointerId = dragRef.current?.pointerId;
+    dragRef.current = null;
+    spinSamplesRef.current = [];
+    const svg = svgRef.current;
+    if (pointerId !== undefined && svg?.hasPointerCapture?.(pointerId)) svg.releasePointerCapture(pointerId);
+  }, [stopSignal, stopSpin]);
   // A coast belongs to the origin it was released under, so switching origin
   // ends it rather than carrying its speed over to the other one's alpha.
   const setMode = useCallback(

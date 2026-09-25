@@ -87,6 +87,92 @@ describe("useFileDrop", () => {
     window.Image = originalImage;
   });
 
+  it.each(["file", "paste", "drop"])("ignores %s imports while another dialog owns interaction", async (source) => {
+    installImageBitmap();
+    const { result, dispatch, announce } = setup();
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.append(dialog);
+    try {
+      await act(async () => {
+        const file = makeFile("image/png");
+        if (source === "file") await result.current.loadImg(file);
+        if (source === "paste") window.dispatchEvent(makeClipboardEvent([{ type: file.type, getAsFile: () => file }]));
+        if (source === "drop") {
+          result.current.onDragEnter(makeDragEvent([file]));
+          result.current.onDrop(makeDragEvent([file]));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(result.current.dragging).toBe(false);
+      expect(announce).not.toHaveBeenCalledWith("drop_announce");
+    } finally {
+      dialog.remove();
+    }
+  });
+
+  it("allows replacing an image when only the Crop dialog is open", async () => {
+    installImageBitmap();
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue("data:image/png;base64,ok");
+    window.Image = AutoLoadImage as unknown as typeof Image;
+    const onCropRequest = vi.fn();
+    const { result } = setup(onCropRequest);
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.dataset.modalOwner = "crop";
+    document.body.append(dialog);
+    try {
+      await act(async () => {
+        await result.current.loadImg(makeFile("image/png"));
+      });
+      expect(onCropRequest).toHaveBeenCalledOnce();
+    } finally {
+      dialog.remove();
+    }
+  });
+
+  it.each(["bytes", "crop decode"])("discards a pending %s result when another modal opens", async (stage) => {
+    installImageBitmap();
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue("data:image/png;base64,ok");
+    const onCropRequest = vi.fn();
+    const { result, dispatch } = setup(onCropRequest);
+    let finishBytes!: (value: ArrayBuffer) => void;
+    let finishDecode!: () => void;
+    const file = makeFile("image/png");
+    if (stage === "bytes")
+      vi.spyOn(file, "arrayBuffer").mockReturnValue(
+        new Promise((resolve) => {
+          finishBytes = resolve;
+        }),
+      );
+    class PendingImage extends AutoLoadImage {
+      override set src(_value: string) {
+        finishDecode = () => this.onload?.();
+      }
+    }
+    window.Image = (stage === "bytes" ? AutoLoadImage : PendingImage) as unknown as typeof Image;
+    const loading = result.current.loadImg(file);
+    if (stage === "crop decode") await waitFor(() => expect(finishDecode).toBeTypeOf("function"));
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.append(dialog);
+    try {
+      await act(async () => {
+        if (stage === "bytes") finishBytes(new ArrayBuffer(4));
+        else finishDecode();
+        await loading;
+      });
+      expect(onCropRequest).not.toHaveBeenCalled();
+      expect(dispatch).not.toHaveBeenCalled();
+    } finally {
+      dialog.remove();
+    }
+  });
+
   it("reports an unsupported file without changing the canvas", async () => {
     const { result, dispatch, setZoom, setPan, showToast } = setup();
 

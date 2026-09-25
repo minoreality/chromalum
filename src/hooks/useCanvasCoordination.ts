@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useCallback } from "react";
+import { useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { renderCanvasBuffers } from "../drawing/render-buf";
 import type { CanvasData } from "../types";
 import type { MainTabId } from "../tabs";
@@ -39,6 +39,9 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
   } = opts;
   const { clearCursor, clearPreviewCursor } = drawing;
   const { clearCursor: clearGlazeCursor } = glazeDrawing;
+  const previousTabIdRef = useRef(activeTabId);
+  const { onUp: endDrawing } = drawing;
+  const { onUp: endGlaze } = glazeDrawing;
 
   // Bridge cursor redraw schedulers into the shared ref used by pan/zoom.
   useLayoutEffect(() => {
@@ -127,7 +130,20 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
 
   // Render buffer on state change
   useLayoutEffect(() => {
-    if (drawing.drawingRef.current || glazeDrawing.drawingRef.current) return;
+    const tabChanged = previousTabIdRef.current !== activeTabId;
+    if (tabChanged) {
+      // Hooks survive panel unmounts. Settle the old gesture before rendering
+      // the new canvas, including keyboard, hash and history navigation.
+      previousTabIdRef.current = activeTabId;
+      endDrawing();
+      endGlaze();
+      clearCursor();
+      clearPreviewCursor();
+      clearGlazeCursor();
+    }
+    // A pending fill still owns its result, but the new tab must show committed
+    // pixels even if that worker later returns no changes or fails.
+    if (!tabChanged && (drawing.drawingRef.current || glazeDrawing.drawingRef.current)) return;
     const s = drawing.sourceCanvasRef.current,
       p = previewCanvasRef.current,
       hp = hexPreviewCanvasRef.current;
@@ -160,7 +176,7 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
     // Also render glaze tab canvas (may be null if tab not mounted yet)
     renderGlazeCanvas();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, renderGlazeCanvas captured via closure
-  }, [canvasData, colorLUT, activeTabId]);
+  }, [canvasData, colorLUT, activeTabId, endDrawing, endGlaze, clearCursor, clearPreviewCursor, clearGlazeCursor]);
 
   // Glaze tab effect
   useEffect(() => {

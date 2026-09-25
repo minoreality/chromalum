@@ -22,6 +22,37 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test.describe("lazy chunk recovery", () => {
+  test.use({ serviceWorkers: "block" });
+
+  for (const panel of ["Music", "Theory"]) {
+    test(`reloads the ${panel} chunk after a failed load`, async ({ page }) => {
+      let failLoad = true;
+      let chunkRequests = 0;
+      await page.route(new RegExp(`/assets/${panel}Panel-[^/]+\\.js$`), async (route) => {
+        chunkRequests++;
+        if (failLoad) await route.abort("failed");
+        else await route.continue();
+      });
+
+      await page.goto(`./#${panel.toLowerCase()}`);
+      const errorHeading = page.getByRole("heading", { name: "An error occurred" });
+      await expect(errorHeading).toBeVisible();
+      expect(chunkRequests).toBe(1);
+      const reload = page.getByRole("button", { name: "Reload page", exact: true });
+      await expect(reload).toBeVisible({ timeout: 3000 });
+
+      failLoad = false;
+      await reload.click();
+      await expect(
+        page.getByRole("heading", { name: panel === "Music" ? "CHROMATIC MUSIC" : "Discrete Algebraic Color Theory", exact: true }),
+      ).toBeVisible();
+      await expect(errorHeading).toHaveCount(0);
+      expect(chunkRequests).toBe(2);
+    });
+  }
+});
+
 test("pre-caches the production app shell and works offline", async ({ page, context }) => {
   const response = await page.goto("/", { waitUntil: "networkidle" });
   expect(response?.status()).toBe(200);
