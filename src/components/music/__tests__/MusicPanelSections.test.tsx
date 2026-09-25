@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { useState, type ComponentProps, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { LEVEL_CANDIDATES } from "../../../color-engine";
 import { LanguageProvider } from "../../../i18n";
 import type { MusicEngineReturn } from "../../../hooks/useMusicEngine";
@@ -657,5 +657,54 @@ describe("MusicPanel section components", () => {
     expect(engine.applyGL32Transform).toHaveBeenCalledWith("B", expect.any(Function));
     expect(props.gl32.onPermChange).toHaveBeenCalledWith([7, 6, 5, 4, 3, 2, 1, 0]);
     expect(props.gl32.onFlashChange).toHaveBeenCalledWith(true);
+  });
+
+  // A second press inside the 500 ms window must not be put out by the first
+  // press's timer, which is due 200 ms into it.
+  it("keeps a re-pressed parity chord lit for its own window", () => {
+    vi.useFakeTimers();
+    try {
+      const engine = makeMusicEngine({ playParityChord: vi.fn() });
+      renderWithLanguage(<MusicAlgebraPanel {...makeAlgebraProps({ engine })} />);
+      const p2 = screen.getByRole("button", { name: "P2" });
+      const idle = p2.getAttribute("style");
+
+      fireEvent.click(screen.getByRole("button", { name: "P1" }));
+      act(() => vi.advanceTimersByTime(200));
+      fireEvent.click(p2);
+      const lit = p2.getAttribute("style");
+      expect(lit).not.toBe(idle);
+
+      act(() => vi.advanceTimersByTime(499));
+      expect(p2.getAttribute("style")).toBe(lit);
+      act(() => vi.advanceTimersByTime(1));
+      expect(p2.getAttribute("style")).toBe(idle);
+      expect(engine.playParityChord).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("restarts the GL(3,2) flash window on each transform", () => {
+    vi.useFakeTimers();
+    try {
+      const engine = makeMusicEngine({
+        applyGL32Transform: vi.fn((_generator, onPerm) => onPerm?.([0, 1, 2, 3, 4, 5, 6, 7])),
+      });
+      const props = makeAlgebraProps({ engine });
+      renderWithLanguage(<MusicAlgebraPanel {...props} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Gen A" }));
+      act(() => vi.advanceTimersByTime(200));
+      fireEvent.click(screen.getByRole("button", { name: "Gen B" }));
+
+      act(() => vi.advanceTimersByTime(499));
+      expect(props.gl32.onFlashChange).not.toHaveBeenCalledWith(false);
+      act(() => vi.advanceTimersByTime(1));
+      expect(props.gl32.onFlashChange).toHaveBeenLastCalledWith(false);
+      expect(vi.mocked(props.gl32.onFlashChange).mock.calls.filter(([flash]) => flash === false)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

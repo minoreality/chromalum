@@ -59,12 +59,16 @@ export const ParityChordCard = React.memo(function ParityChordCard({
 
   const activeGroups = parityGroupsFor(errorPos, errorPhase, activeParityGroup);
 
+  const highlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handlePlay = useCallback(
     (group: 0 | 1 | 2) => {
       setActiveParityGroup(group);
       engine.initAudio();
       engine.playParityChord?.(group);
-      setTimeout(() => setActiveParityGroup(null), 500);
+      // Each press lights its own full window; an earlier press's timer would
+      // otherwise put this one out early.
+      clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => setActiveParityGroup(null), 500);
     },
     [engine],
   );

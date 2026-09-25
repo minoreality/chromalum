@@ -3,7 +3,8 @@ import { findClosestCandidate, LEVEL_CANDIDATES } from "../../color-engine";
 import { computeGlazeDiff, applyDiffToPixelCandidateOverrideMap, buildDiffFromGlazeFill } from "../../state/undo-diff";
 import { glazeFloodFill } from "../flood-fill";
 import { getBrushMask } from "../brush-mask";
-import { buildGlazeLUT, paintGlazeBrush } from "../glaze-paint";
+import { buildGlazeLUT, eraseGlazeBrushLine, paintGlazeBrush, paintGlazeBrushLine } from "../glaze-paint";
+import { paintBrushLine } from "../paint";
 import { buildGlazeHighlightPixels, GLAZE_HIGHLIGHT_RGBA } from "../glaze-highlight";
 import { renderCanvasBuffers } from "../render-buf";
 
@@ -156,6 +157,56 @@ describe("buildGlazeLUT", () => {
     expect([...pixelCandidateOverrideMap.subarray(0, 2)]).toEqual([0, 0]);
     expect(pixelCandidateOverrideMap[2]).toBeGreaterThan(0);
     expect(pixelCandidateOverrideMap[3]).toBeGreaterThan(0);
+  });
+});
+
+describe("paintGlazeBrushLine / eraseGlazeBrushLine", () => {
+  const W = 128,
+    H = 128;
+  // Short, steep, reversed and corner-clipped segments: a wide brush with a
+  // stamp skipped anywhere along them loses a boundary pixel.
+  const segments = [
+    [48, 48, 51, 49],
+    [40, 40, 52, 47],
+    [60, 30, 57, 50],
+    [3, 1, -2, -1],
+  ] as const;
+
+  /** Pixels where the painted footprint disagrees with paintBrushLine's. */
+  function footprintMismatches(x0: number, y0: number, x1: number, y1: number, size: number, covered: (i: number) => boolean) {
+    const source = new Uint8Array(W * H);
+    paintBrushLine(source, x0, y0, x1, y1, getBrushMask(size), 7, W, H);
+    let mismatches = 0;
+    for (let i = 0; i < W * H; i++) if (covered(i) !== (source[i] !== 0)) mismatches++;
+    return mismatches;
+  }
+
+  it.each([15, 16, 24, 32, 48])("glazes exactly the paintBrushLine footprint at size %i", (size) => {
+    const levelData = new Uint8Array(W * H).fill(3);
+    const glazeLUT = new Uint8Array(8);
+    glazeLUT[3] = 2;
+    for (const [x0, y0, x1, y1] of segments) {
+      const map = new Uint8Array(W * H);
+      paintGlazeBrushLine(map, levelData, x0, y0, x1, y1, getBrushMask(size), W, H, glazeLUT);
+      expect(footprintMismatches(x0, y0, x1, y1, size, (i) => map[i] !== 0)).toBe(0);
+    }
+  });
+
+  it.each([15, 16, 24, 32, 48])("erases exactly the paintBrushLine footprint at size %i", (size) => {
+    for (const [x0, y0, x1, y1] of segments) {
+      const map = new Uint8Array(W * H).fill(2);
+      eraseGlazeBrushLine(map, x0, y0, x1, y1, getBrushMask(size), W, H);
+      expect(footprintMismatches(x0, y0, x1, y1, size, (i) => map[i] === 0)).toBe(0);
+    }
+  });
+
+  it("reaches the boundary pixel paintBrushLine reaches on the size-16 split case", () => {
+    const levelData = new Uint8Array(W * H).fill(3);
+    const glazeLUT = new Uint8Array(8);
+    glazeLUT[3] = 2;
+    const map = new Uint8Array(W * H);
+    paintGlazeBrushLine(map, levelData, 48, 48, 51, 49, getBrushMask(16), W, H, glazeLUT);
+    expect(map[41 * W + 51]).toBe(2);
   });
 });
 

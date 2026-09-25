@@ -83,6 +83,15 @@ const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
 
 const SOURCE_SHORTCUTS: readonly ShortcutEntry[] = [...DRAWING_SHORTCUTS, { key: "Ctrl+S", label: "help_save_color" }];
 
+/**
+ * Gestures on controls only the Source panel draws: its level palette takes the
+ * double-click, its zoom button the right-click. Color has neither control, and
+ * Glaze's zoom button only resets.
+ */
+const SOURCE_ONLY_LABELS: ReadonlySet<TranslationKey> = new Set<TranslationKey>(["help_dblclick_level", "help_zoom_pixel"]);
+
+const COLOR_AND_GLAZE_SHORTCUTS: readonly ShortcutEntry[] = DRAWING_SHORTCUTS.filter((entry) => !SOURCE_ONLY_LABELS.has(entry.label));
+
 const HEX_SHORTCUTS: readonly ShortcutEntry[] = [
   CANVAS_COPY_SHORTCUT,
   { key: "2-5", label: "help_hex_cycle" },
@@ -116,7 +125,7 @@ export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
     tab === "source"
       ? SOURCE_SHORTCUTS
       : hasDrawingShortcuts(tab)
-        ? DRAWING_SHORTCUTS
+        ? COLOR_AND_GLAZE_SHORTCUTS
         : tab === "hex"
           ? HEX_SHORTCUTS
           : tab === "music"

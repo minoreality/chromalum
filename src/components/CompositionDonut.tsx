@@ -8,6 +8,8 @@ import type { CanvasData } from "../types";
 import { useTranslation } from "../i18n";
 
 interface Slice {
+  /** Stable across recomputation: the ring and level, and for glaze the colour. */
+  id: string;
   color: string;
   fraction: number;
   /** Tooltip lines shown on hover/tap */
@@ -20,23 +22,25 @@ const DONUT_SLICE_ATTR = "data-composition-donut-slice";
 export const COMPOSITION_DONUT_PRESERVE_ATTR = "data-composition-donut-preserve";
 const DONUT_PRESERVE_SELECTOR = `[${DONUT_SLICE_ATTR}="true"], [${COMPOSITION_DONUT_PRESERVE_ATTR}="true"]`;
 
-function computeSlices(entries: { count: number; color: string; info: string[]; isGlazed?: boolean }[], total: number): Slice[] {
+function computeSlices(
+  entries: { id: string; count: number; color: string; info: string[]; isGlazed?: boolean }[],
+  total: number,
+): Slice[] {
   const slices: Slice[] = [];
   for (const v of entries) {
-    if (v.count > 0) slices.push({ color: v.color, fraction: v.count / total, info: v.info, isGlazed: v.isGlazed ?? false });
+    if (v.count > 0) slices.push({ id: v.id, color: v.color, fraction: v.count / total, info: v.info, isGlazed: v.isGlazed ?? false });
   }
   return slices;
 }
 
 function drawRing(
-  ringId: string,
   slices: Slice[],
   cx: number,
   cy: number,
   rOuter: number,
   rInner: number,
-  onPreview: (info: string[] | null, color?: string) => void,
-  onActivate: (sliceId: string, info: string[], color: string) => void,
+  onPreview: (sliceId: string | null) => void,
+  onActivate: (sliceId: string) => void,
 ): React.ReactNode[] {
   if (slices.length === 0) return [];
   const elems: React.ReactNode[] = [];
@@ -44,16 +48,16 @@ function drawRing(
 
   for (let i = 0; i < slices.length; i++) {
     const s = slices[i];
-    const sliceId = `${ringId}-${i}`;
+    const sliceId = s.id;
     const sweep = s.fraction * Math.PI * 2;
     if (sweep < 0.001) continue;
 
     const handlers = {
-      onMouseEnter: () => onPreview(s.info, s.color),
+      onMouseEnter: () => onPreview(sliceId),
       onMouseLeave: () => onPreview(null),
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
-        onActivate(sliceId, s.info, s.color);
+        onActivate(sliceId);
       },
       style: S_CURSOR_POINTER,
       [DONUT_SLICE_ATTR]: "true",
@@ -107,40 +111,40 @@ export const CompositionDonut = React.memo(function CompositionDonut({
   candidateIndexByLevel,
 }: CompositionDonutProps) {
   const { t } = useTranslation();
-  const [preview, setPreview] = useState<{ info: string[]; color: string } | null>(null);
-  const [selected, setSelected] = useState<{ id: string; info: string[]; color: string } | null>(null);
+  // Ids, not text: the readout is looked up from the current slices on every
+  // render, so a canvas, palette or language change made from the keyboard,
+  // which fires no pointerdown to clear it, cannot leave old text behind.
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const onPreview = useCallback((info: string[] | null, color?: string) => {
-    setPreview(info && color ? { info, color } : null);
-  }, []);
-
-  const onActivate = useCallback((id: string, info: string[], color: string) => {
-    setPreview(null);
-    setSelected((current) => (current?.id === id ? null : { id, info, color }));
+  const onActivate = useCallback((id: string) => {
+    setPreviewId(null);
+    setSelectedId((current) => (current === id ? null : id));
   }, []);
 
   useEffect(() => {
-    if (!selected) return;
+    if (selectedId === null) return;
 
     const onDocumentPointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (target instanceof Element && target.closest(DONUT_PRESERVE_SELECTOR)) return;
-      setPreview(null);
-      setSelected(null);
+      setPreviewId(null);
+      setSelectedId(null);
     };
 
     document.addEventListener("pointerdown", onDocumentPointerDown);
     return () => document.removeEventListener("pointerdown", onDocumentPointerDown);
-  }, [selected]);
+  }, [selectedId]);
 
   const { graySlices, colorSlices, glazeSlices, hasGlaze } = useMemo(() => {
     const pct = (n: number) => ((n / Math.max(1, total)) * 100).toFixed(1);
 
     // === Layer 1: Gray ===
-    const grayEntries: { count: number; color: string; info: string[] }[] = [];
+    const grayEntries: { id: string; count: number; color: string; info: string[] }[] = [];
     for (let lv = 0; lv < 8; lv++) {
       const g = LEVEL_INFO[lv].gray8;
       grayEntries.push({
+        id: `gray-${lv}`,
         count: levelHistogram[lv],
         color: `rgb(${g},${g},${g})`,
         info: [
@@ -152,7 +156,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({
     }
 
     // === Layer 2: Color ===
-    const colorEntries: { count: number; color: string; info: string[] }[] = [];
+    const colorEntries: { id: string; count: number; color: string; info: string[] }[] = [];
     for (let lv = 0; lv < 8; lv++) {
       const rgb = colorLUT[lv];
       const alts = LEVEL_CANDIDATES[lv];
@@ -160,6 +164,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({
       const candidate = alts[ci];
       const hueLabel = candidate?.hueLabel ?? "—";
       colorEntries.push({
+        id: `color-${lv}`,
         count: levelHistogram[lv],
         color: rgbStr(rgb),
         info: [
@@ -213,13 +218,14 @@ export const CompositionDonut = React.memo(function CompositionDonut({
       }
     }
 
-    const glazeEntries: { count: number; color: string; info: string[]; isGlazed?: boolean }[] = [];
+    const glazeEntries: { id: string; count: number; color: string; info: string[]; isGlazed?: boolean }[] = [];
     for (let lv = 0; lv < 8; lv++) {
       // Check if this level has any glaze changes at all
       const levelHasGlaze = [...glazePerLevel[lv].values()].some((g) => g.isGlazed);
       const levelTotal = levelHistogram[lv];
       const levelPct = (n: number) => (levelTotal > 0 ? ((n / levelTotal) * 100).toFixed(1) : "0.0");
-      for (const [, g] of glazePerLevel[lv]) {
+      for (const [colorKey, g] of glazePerLevel[lv]) {
+        const id = `glaze-${lv}-${colorKey}`;
         // Find candidate index of actual color (for L1-L6; L0/L7 have single candidate)
         const alts = LEVEL_CANDIDATES[lv];
         const candIdx = alts.findIndex((a) => a.rgb[0] === g.rgb[0] && a.rgb[1] === g.rgb[1] && a.rgb[2] === g.rgb[2]);
@@ -231,7 +237,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({
           const lines = [`L${lv} ${hexStr(g.rgb)}`];
           if (hasCandidate) lines.push(t("donut_candidate", candIdx + 1, alts.length));
           lines.push(countLine);
-          glazeEntries.push({ count: g.count, color: rgbStr(g.rgb), info: lines, isGlazed: false });
+          glazeEntries.push({ id, count: g.count, color: rgbStr(g.rgb), info: lines, isGlazed: false });
           continue;
         }
         const defaultColor = hexStr(colorLUT[lv]);
@@ -254,7 +260,7 @@ export const CompositionDonut = React.memo(function CompositionDonut({
           }
         }
         lines.push(countLine);
-        glazeEntries.push({ count: g.count, color: rgbStr(g.rgb), info: lines, isGlazed: g.isGlazed });
+        glazeEntries.push({ id, count: g.count, color: rgbStr(g.rgb), info: lines, isGlazed: g.isGlazed });
       }
     }
 
@@ -277,14 +283,23 @@ export const CompositionDonut = React.memo(function CompositionDonut({
   const glazeOuter = 122;
   const glazeInner = 81;
 
-  const activeInfo = preview ?? selected;
+  const sliceById = useMemo(() => {
+    const drawn = hasGlaze ? [...graySlices, ...colorSlices, ...glazeSlices] : [...graySlices, ...colorSlices];
+    return new Map(drawn.map((slice) => [slice.id, slice]));
+  }, [graySlices, colorSlices, glazeSlices, hasGlaze]);
+  // A slice that has left the canvas takes its selection with it, so the pin
+  // does not come back unasked if the level returns.
+  if (selectedId !== null && !sliceById.has(selectedId)) setSelectedId(null);
+  if (previewId !== null && !sliceById.has(previewId)) setPreviewId(null);
+  const activeInfo =
+    (previewId !== null ? sliceById.get(previewId) : undefined) ?? (selectedId !== null ? sliceById.get(selectedId) : undefined);
 
   return (
     <div
       style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
       onClick={() => {
-        setPreview(null);
-        setSelected(null);
+        setPreviewId(null);
+        setSelectedId(null);
       }}
     >
       <div style={{ maxWidth: "min(260px, 90vw)", width: "100%" }}>
@@ -299,9 +314,9 @@ export const CompositionDonut = React.memo(function CompositionDonut({
           aria-label={t("map_composition")}
           style={{ display: "block", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
         >
-          {drawRing("gray", graySlices, cx, cy, grayOuter, grayInner, onPreview, onActivate)}
-          {drawRing("color", colorSlices, cx, cy, colorOuter, colorInner, onPreview, onActivate)}
-          {hasGlaze && drawRing("glaze", glazeSlices, cx, cy, glazeOuter, glazeInner, onPreview, onActivate)}
+          {drawRing(graySlices, cx, cy, grayOuter, grayInner, setPreviewId, onActivate)}
+          {drawRing(colorSlices, cx, cy, colorOuter, colorInner, setPreviewId, onActivate)}
+          {hasGlaze && drawRing(glazeSlices, cx, cy, glazeOuter, glazeInner, setPreviewId, onActivate)}
           {activeInfo && <circle cx={cx} cy={cy} r={grayInner - 18} fill={activeInfo.color} stroke={C.border} strokeWidth={1} />}
         </svg>
       </div>
