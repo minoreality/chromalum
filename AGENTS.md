@@ -182,10 +182,13 @@ its section in `docs/algebraic-color-model.md`:
   `w_G > w_R + w_B` and `w_R > w_B > 0`. Never substitute BT.601 or any photometric coefficient
   as an integer weight, and never imply perceptual uniformity or derivation from an external
   brightness standard (§Minimal Choices and Derived Definitions, §Evidence Boundary).
-- Two independent paths converge on the same named rank: the unnamed minimal subset-sum weights
-  `{1,2,4}` and the empirical primary order `B < R < G`. Present both; an explanation that
-  starts from "a coordinate convention" was rejected by the author as 恣意的
-  (§二経路の収束と感度).
+- Derive rank in one sequence: an additive score with `w_B>0`, `w_R>w_B`, and
+  `w_G>w_R+w_B` determines `K<B<R<M<G<C<Y<W`; counting preceding states gives
+  `B=1,R=2,G=4` directly. Gapless subset sums and integer additivity on disjoint
+  states follow from this rank, rather than serving as extra starting assumptions.
+  Keep the unnamed `{1,2,4}` uniqueness theorem as a supplementary characterization.
+  Distinguish real score weights `w_G,w_R,w_B`, binary coordinates `g,r,b`, and rank `L`;
+  primary order `B<R<G` alone is insufficient (§全順序からの順位導出と感度).
 - XOR (⊕) is the symmetric difference of the Boolean ring `(A,⊕,∧) ≅ 𝔽₂×𝔽₂×𝔽₂` — not the field
   GF(8), and not physical mixing. Describe it as composition and cancellation of channel
   inversions; the Theory tab's mixing figure is join `∨` / meet `∧`, a different operation

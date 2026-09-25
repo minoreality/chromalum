@@ -72,7 +72,7 @@ export function useGalleryBookmarks({ limit = GALLERY_BOOKMARKS_MAX, onLimitReac
           return;
         }
         setBookmarks(next);
-        return;
+        return "removed" as const;
       }
 
       if (bookmarks.length >= limit) {
@@ -86,6 +86,7 @@ export function useGalleryBookmarks({ limit = GALLERY_BOOKMARKS_MAX, onLimitReac
         return;
       }
       setBookmarks(next);
+      return "added" as const;
     },
     [bookmarks, limit, onLimitReached, onSaveFailed],
   );

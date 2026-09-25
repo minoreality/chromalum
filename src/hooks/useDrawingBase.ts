@@ -5,7 +5,7 @@
    one-render-per-frame queue. What a pixel holds stays in each hook.
    ═══════════════════════════════════════════ */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { LEVEL_MASK } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
 import { unionBBox } from "../drawing/dirty-rect";
@@ -106,6 +106,29 @@ export function hasPointerCapture(e: React.PointerEvent, elements: ReadonlyArray
     }
   }
   return false;
+}
+
+/** The pointer can finish after its canvas is removed or outside the workspace. */
+export function useStrokePointerEnd(pointerIdRef: React.MutableRefObject<number | null>, onUp: () => void): void {
+  const onUpRef = useSyncRef(onUp);
+  useEffect(() => {
+    const endPointer = (event: PointerEvent) => {
+      if (pointerIdRef.current === event.pointerId) onUpRef.current();
+    };
+    const endOnBlur = () => {
+      if (pointerIdRef.current !== null) onUpRef.current();
+    };
+    window.addEventListener("pointerup", endPointer);
+    window.addEventListener("pointercancel", endPointer);
+    window.addEventListener("lostpointercapture", endPointer);
+    window.addEventListener("blur", endOnBlur);
+    return () => {
+      window.removeEventListener("pointerup", endPointer);
+      window.removeEventListener("pointercancel", endPointer);
+      window.removeEventListener("lostpointercapture", endPointer);
+      window.removeEventListener("blur", endOnBlur);
+    };
+  }, [pointerIdRef, onUpRef]);
 }
 
 /**

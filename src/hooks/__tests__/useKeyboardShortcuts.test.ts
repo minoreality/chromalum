@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { act, useState } from "react";
 import { useKeyboardShortcuts } from "../useKeyboardShortcuts";
 import type { KeyboardShortcutDeps } from "../useKeyboardShortcuts";
-import type { ToolId } from "../../constants";
+import type { GlazeToolId, ToolId } from "../../constants";
 
 function makeArgs() {
   // Use simple vi.fn() and cast via the args tuple to avoid Mock generics issues
   const setTool = vi.fn() as unknown as React.Dispatch<React.SetStateAction<ToolId>>;
+  const setGlazeTool = vi.fn();
   const setBrushLevel = vi.fn() as unknown as React.Dispatch<React.SetStateAction<number>>;
   const setBrushSize = vi.fn() as unknown as React.Dispatch<React.SetStateAction<number>>;
   const dispatch = vi.fn() as unknown as React.Dispatch<import("../../types").CanvasAction>;
@@ -27,6 +29,7 @@ function makeArgs() {
 
   const deps: KeyboardShortcutDeps = {
     setTool,
+    setGlazeTool,
     setBrushLevel,
     setBrushSize,
     dispatch,
@@ -50,6 +53,7 @@ function makeArgs() {
   return {
     deps,
     setTool,
+    setGlazeTool,
     setBrushLevel,
     setBrushSize,
     dispatch,
@@ -156,14 +160,19 @@ describe("useKeyboardShortcuts", () => {
   });
 
   it.each(["color", "glaze"] as const)("keeps the drawing shortcuts on the %s canvas", (activeTabId) => {
-    const { deps, setTool, setBrushLevel } = makeArgs();
+    const { deps, setTool, setGlazeTool, setBrushLevel } = makeArgs();
     const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId }));
     cleanup = unmount;
 
     fireKey("b");
     fireKey("3");
 
-    expect(vi.mocked(setTool)).toHaveBeenCalledWith("brush");
+    if (activeTabId === "glaze") {
+      expect(setGlazeTool).toHaveBeenCalledWith("glaze_brush");
+      expect(setTool).not.toHaveBeenCalled();
+    } else {
+      expect(setTool).toHaveBeenCalledWith("brush");
+    }
     expect(vi.mocked(setBrushLevel)).toHaveBeenCalledWith(3);
   });
 
@@ -538,6 +547,75 @@ describe("useKeyboardShortcuts", () => {
     document.body.removeChild(input);
 
     expect(vi.mocked(setTool)).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { key: "+", shiftKey: true, code: "Equal", expected: 1.15 },
+    { key: "=", expected: 1.15 },
+    { key: "-", expected: 1 / 1.15 },
+    { key: "+", ctrlKey: true, shiftKey: true, code: "Equal", expected: 1.15 },
+    { key: "+", metaKey: true, shiftKey: true, code: "Semicolon", expected: 1.15 },
+  ])("changes Source zoom once for $key ($code)", ({ expected, ...init }) => {
+    const { deps } = makeArgs();
+    const { result, unmount } = renderHook(() => {
+      const [zoom, setZoom] = useState(1);
+      useKeyboardShortcuts({ ...deps, setZoom });
+      return zoom;
+    });
+    cleanup = unmount;
+    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+    act(() => {
+      window.dispatchEvent(event);
+    });
+    expect(result.current).toBeCloseTo(expected);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it.each(["b", "e", "f"])("routes %s to the active Glaze tool from tab focus", (key) => {
+    const { deps } = makeArgs();
+    const { result, unmount } = renderHook(() => {
+      const [tool, setTool] = useState<ToolId>("line");
+      const [glazeTool, setGlazeTool] = useState<GlazeToolId>(key === "b" ? "glaze_fill" : "glaze_brush");
+      useKeyboardShortcuts({ ...deps, activeTabId: "glaze", setTool, setGlazeTool });
+      return { tool, glazeTool };
+    });
+    const tab = document.createElement("button");
+    tab.setAttribute("role", "tab");
+    document.body.appendChild(tab);
+    cleanup = () => {
+      unmount();
+      tab.remove();
+    };
+    act(() => {
+      tab.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    });
+    expect(result.current).toEqual({ tool: "line", glazeTool: { b: "glaze_brush", e: "glaze_eraser", f: "glaze_fill" }[key] });
+  });
+
+  it.each(["l", "r", "o"])("does not change the hidden Source tool for %s on Glaze", (key) => {
+    const { deps, setTool } = makeArgs();
+    const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId: "glaze" }));
+    cleanup = unmount;
+    fireKey(key);
+    expect(setTool).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { key: "+", altKey: true, ctrlKey: true },
+    { key: "+", altKey: true, shiftKey: true },
+    { key: "e", ctrlKey: true },
+    { key: "e", metaKey: true },
+    { key: "e", altKey: true },
+  ])("leaves modified $key with its native owner", (init) => {
+    const { deps, setZoom, setGlazeTool, setTool } = makeArgs();
+    const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId: "glaze" }));
+    cleanup = unmount;
+    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+    window.dispatchEvent(event);
+    expect(setZoom).not.toHaveBeenCalled();
+    expect(setGlazeTool).not.toHaveBeenCalled();
+    expect(setTool).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it("leaves Space available to focused buttons", () => {

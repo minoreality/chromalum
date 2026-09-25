@@ -52,6 +52,7 @@ function makeMusicEngine(overrides: Partial<MusicEngineReturn> = {}): MusicEngin
     playGray3Voice: vi.fn(),
     playWeightSpectrum: vi.fn(),
     playCayleyRow: vi.fn(),
+    stopCayleyRow: vi.fn(),
     applyGL32Transform: vi.fn(),
     resetGL32Transform: vi.fn(),
     setToneMode: vi.fn(),

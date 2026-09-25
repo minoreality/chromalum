@@ -27,6 +27,7 @@ import {
   updateStatusBase,
   hasPointerCapture,
   usePaintFrameQueue,
+  useStrokePointerEnd,
 } from "./useDrawingBase";
 import type { DrawingRefs } from "./useDrawingBase";
 import { createStrokeSmoother, smoothStrokePoint } from "../drawing/stroke-smoothing";
@@ -60,7 +61,7 @@ export interface GlazeDrawingResult {
   cursorPosRef: React.MutableRefObject<{ dx: number; dy: number } | null>;
   onDown: (e: React.PointerEvent) => void;
   onMove: (e: React.PointerEvent) => void;
-  onUp: () => void;
+  onUp: (event?: Pick<PointerEvent, "pointerId">) => void;
   onWorkspaceDown: (e: React.PointerEvent) => void;
   onWorkspaceMove: (e: React.PointerEvent) => void;
   onWorkspaceLeave: (e: React.PointerEvent) => void;
@@ -114,6 +115,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     previewPixels32: null,
   });
   const drawingRef = useRef(false);
+  const pointerIdRef = useRef<number | null>(null);
   const lastRef = useRef<{ x: number; y: number } | null>(null);
   const strokeSmootherRef = useRef<StrokeSmoother | null>(null);
   const forceRawNextMoveRef = useRef(false);
@@ -154,6 +156,8 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     pendingUpRef.current = false;
     strokeRef.current = null;
     drawingRef.current = false;
+    pointerIdRef.current = null;
+    pendingWorkspaceStartRef.current = null;
     // Cancel before a replacement redraw, and when this canvas unmounts.
     return () => {
       cancelPaint();
@@ -251,6 +255,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function doDown(e: React.PointerEvent, buttonOverride?: 0 | 1, startPos?: Point) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const button = buttonOverride ?? e.button;
     if (button !== 0 && button !== 1) return;
     e.preventDefault();
@@ -260,6 +265,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
       return;
     }
     trySetPointerCapture(e);
+    pointerIdRef.current = e.pointerId;
     drawingRef.current = true;
     const pos = startPos ?? cPos(e);
     lastRef.current = pos;
@@ -388,6 +394,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function doWorkspaceDown(e: React.PointerEvent) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     pendingWorkspaceStartRef.current = null;
     if (e.button === 1 || spaceRef.current || isInCanvasBounds(e)) {
       doDown(e);
@@ -402,12 +409,14 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     updateStatus(e);
     if (!canArmWorkspaceStart(e)) return;
     trySetPointerCapture(e);
+    pointerIdRef.current = e.pointerId;
     pendingWorkspaceStartRef.current = {
       startPos: canvasPosUnclamped(e, cursor.cursorCanvasRef.current, zoomRef.current, panRef.current, canvasDataRef.current),
     };
   }
 
   function doWorkspaceMove(e: React.PointerEvent) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const pending = pendingWorkspaceStartRef.current;
     if (pending) {
       e.preventDefault();
@@ -418,6 +427,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
         cursor.clearCursor();
       }
       if ((e.buttons & 1) !== 1) {
+        pointerIdRef.current = null;
         pendingWorkspaceStartRef.current = null;
         cursor.clearCursor();
         return;
@@ -441,6 +451,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   }
 
   function doMove(e: React.PointerEvent) {
+    if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     if (isInWorkspaceBounds(e) || drawingRef.current) {
       cursor.trackCursor(e);
     } else {
@@ -452,6 +463,10 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
       return;
     }
     if (!drawingRef.current) return;
+    if (e.buttons === 0) {
+      onUp(e);
+      return;
+    }
     const st = strokeRef.current;
     if (!st || st.params.tool === "glaze_fill") return;
     e.preventDefault();
@@ -556,25 +571,32 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
       });
     }
     drawingRef.current = false;
+    pointerIdRef.current = null;
     lastRef.current = null;
     strokeSmootherRef.current = null;
     forceRawNextMoveRef.current = false;
     strokeRef.current = null;
   }
 
-  const onUp = useCallback(() => {
-    pendingWorkspaceStartRef.current = null;
-    if (panningRef.current) {
-      s.current.endPan();
-      return;
-    }
-    if (fillPendingRef.current) {
-      pendingUpRef.current = true;
-      return;
-    }
-    finishGlazeStroke();
+  const onUp = useCallback(
+    (event?: Pick<PointerEvent, "pointerId">) => {
+      if (event && pointerIdRef.current !== null && pointerIdRef.current !== event.pointerId) return;
+      pointerIdRef.current = null;
+      pendingWorkspaceStartRef.current = null;
+      if (panningRef.current) {
+        s.current.endPan();
+      }
+      if (fillPendingRef.current) {
+        pendingUpRef.current = true;
+        return;
+      }
+      finishGlazeStroke();
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, read via .current
-  }, [dispatch]);
+    [dispatch],
+  );
+
+  useStrokePointerEnd(pointerIdRef, onUp);
 
   const onWorkspaceDown = useCallback((e: React.PointerEvent) => {
     doWorkspaceDown(e);
@@ -600,13 +622,15 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
 
   const onWorkspaceLeave = useCallback(
     (e: React.PointerEvent) => {
+      if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
       if (pendingWorkspaceStartRef.current) {
         pendingWorkspaceStartRef.current = null;
+        pointerIdRef.current = null;
         clearCursor();
         return;
       }
       if (drawingRef.current && hasPointerCapture(e, [previewCanvasRef.current])) return;
-      onUp();
+      onUp(e);
       clearCursor();
     },
     [onUp, clearCursor, previewCanvasRef],

@@ -32,14 +32,15 @@ import { AnalyzePanel } from "./components/AnalyzePanel";
 import { GalleryPanel } from "./components/GalleryPanel";
 import { HexPanel } from "./components/HexPanel";
 import { useTranslation } from "./i18n";
+import { loadLazyChunk } from "./utils/lazy-chunk";
 
 const TheoryPanel = lazy(async () => {
-  const mod = await import("./components/TheoryPanel");
+  const mod = await loadLazyChunk(() => import("./components/TheoryPanel"));
   return { default: mod.TheoryPanel };
 });
 
 const MusicPanel = lazy(async () => {
-  const mod = await import("./components/MusicPanel");
+  const mod = await loadLazyChunk(() => import("./components/MusicPanel"));
   return { default: mod.MusicPanel };
 });
 
@@ -268,6 +269,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
   );
   useKeyboardShortcuts({
     setTool,
+    setGlazeTool,
     setBrushLevel,
     setBrushSize,
     dispatch,

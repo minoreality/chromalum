@@ -35,15 +35,63 @@ describe("TheoryPanel", () => {
       .join("\n");
     expect(introduction).not.toContain("A=𝒫(E)");
     expect(container.querySelector("#theory-algebra")?.textContent).toContain("A=𝒫(E)");
-    expect(container.querySelector("#theory-algebra")?.textContent).toContain("e_c∧e_d=K");
+    expect(container.querySelector("#theory-algebra")?.textContent).not.toMatch(/Boolean|ブール|原子|XOR|⊕|reduct/);
+    expect(container.querySelector("#theory-boolean-operations aside")?.textContent).toContain("e_c∧e_d=K");
   });
 
-  it("groups the two derivations, toggle cube, hue traversal, and Hamming checks without repeated panels", () => {
+  it("derives named ranks with a prose subset-sum supplement and keeps the other panels distinct", () => {
     const { container } = renderWithLanguage();
-    const derivation = container.querySelector(".theory-derivation")!;
-    expect(derivation.querySelectorAll("figure")).toHaveLength(2);
-    expect(container.querySelectorAll('[data-testid="subset-sum-derivation"]')).toHaveLength(1);
-    expect(derivation.textContent).toContain("rank_s(c)=#{x∈A | s(x)<s(c)}");
+    const derivation = container.querySelector("#theory-rank")!;
+    expect(derivation.querySelectorAll("#theory-rank-order figure")).toHaveLength(1);
+    expect(Array.from(derivation.querySelectorAll(".theory-derivation-comparisons code"), (node) => node.textContent)).toEqual([
+      "wB > 0",
+      "wR > wB",
+      "wG > wR + wB",
+    ]);
+    expect(
+      Array.from(derivation.querySelectorAll(".theory-derivation-order-colors li"), (node) =>
+        Array.from(node.children, (part) => part.textContent),
+      ),
+    ).toEqual([
+      ["{}", "K", "0"],
+      ["{B}", "B", "1"],
+      ["{R}", "R", "2"],
+      ["{R,B}", "M", "3"],
+      ["{G}", "G", "4"],
+      ["{G,B}", "C", "5"],
+      ["{G,R}", "Y", "6"],
+      ["{G,R,B}", "W", "7"],
+    ]);
+    expect(Array.from(derivation.querySelectorAll(".theory-derivation-named-ranks span"), (node) => node.textContent)).toEqual([
+      "B=1",
+      "R=2",
+      "G=4",
+    ]);
+    const order = derivation.querySelector(".theory-derivation-order")!;
+    const conclusion = derivation.querySelector(".theory-derivation-conclusion")!;
+    expect(order.compareDocumentPosition(conclusion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const proof = conclusion.querySelector(".theory-derivation-proof")!;
+    expect(proof.textContent).toContain("0–7 without repetition or gaps");
+    expect(proof.querySelectorAll("ol li")).toHaveLength(3);
+    const states = order.querySelector(".theory-derivation-order-colors")!;
+    const rankDefinition = order.querySelector(".theory-derivation-rank-definition")!;
+    const namedRanks = conclusion.querySelector(".theory-derivation-named-ranks")!;
+    const bitsNote = conclusion.querySelector(".theory-derivation-bits-note")!;
+    const rankFormula = conclusion.querySelector("code:last-of-type")!;
+    expect(states.compareDocumentPosition(rankDefinition) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(rankDefinition.textContent).toContain("zero-based rank L");
+    expect(rankDefinition.compareDocumentPosition(namedRanks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(order.querySelector(".theory-desc")?.textContent).toContain("necessary and sufficient");
+    expect(conclusion.firstElementChild?.textContent).toContain("ranks of the primaries themselves");
+    expect(namedRanks.compareDocumentPosition(proof) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(namedRanks.compareDocumentPosition(bitsNote) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bitsNote.textContent).toContain("three bits (g,r,b)");
+    expect(bitsNote.compareDocumentPosition(rankFormula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(conclusion.querySelector("p.theory-derivation-supplement")?.textContent).toContain("original score σ are not fixed at 1,2,4");
+    expect(derivation.textContent).toContain("L(S)=#{T∈A | σ(T)<σ(S)}");
+    expect(order.textContent).not.toContain("T=L/7");
+    expect(conclusion.textContent).toContain("L(g,r,b)=4g+2r+b");
+    expect(conclusion.textContent).not.toContain("T=L/7");
     expect(derivation.querySelector(".theory-derivation-conclusion")?.textContent).toContain("L(g,r,b)=4g+2r+b");
     const cube = screen.getByRole("group", { name: "Color Cube" });
     expect(cube.closest(".theory-chapter")?.id).toBe("theory-cube-cycle");
@@ -54,25 +102,26 @@ describe("TheoryPanel", () => {
     expect(screen.getAllByTestId("hamming-parity-check-card")).toHaveLength(1);
     expect(screen.getByTestId("hamming-parity-sets").closest('[data-testid="hamming-flow-operation-check"]')).not.toBeNull();
   });
-  it("renders seven chapters with only conceptual subsections and the toggle table in the action chapter", () => {
+  it("renders conceptual chapters followed by the correspondence table and keeps the toggle table in the action chapter", () => {
     const { container } = renderWithLanguage();
 
     expect(screen.getByText("Discrete Algebraic Color Theory")).toBeTruthy();
     expect(Array.from(container.querySelectorAll(".theory-heading")).map((heading) => heading.textContent)).toEqual([
-      "The Boolean Algebra of Eight States",
-      "Color Order and Binary Rank",
+      "Three Primaries and Eight States",
+      "Total Order and Binary Weights",
+      "Duality of Mixing and Complement",
       "Toggle Action and Distance Structure",
       "Geometry and Codes of Nonzero Vectors",
       "Hue Order and Polyhedral Duality",
       "Continuous Extension of the Chromatic Six-Cycle",
       "Conclusion and Scope",
+      "Eight-State Correspondence Table",
     ]);
     expect(Array.from(container.querySelectorAll("h4")).map((heading) => heading.textContent)).toEqual([
-      "States and Primary Generation",
-      "Boolean Operations and Mixing",
-      "Characterizing Binary Rank",
-      "Rank and Boolean Operations",
-      "The Cube and Chromatic Six-Cycle",
+      "Subsets and Three Bits",
+      "Total Order and Rank",
+      "Deriving Primary Numbers",
+      "Color Cube",
       "Partitioning K₈ Edges by Hamming Distance",
       "Fano Plane",
       "Hamming [7,4,3] Code",
@@ -84,26 +133,57 @@ describe("TheoryPanel", () => {
     expect(chapters.map((chapter) => chapter.id)).toEqual([
       "theory-algebra",
       "theory-rank",
+      "theory-boolean-operations",
       "theory-cube-cycle",
       "theory-fano-hamming",
       "theory-polyhedra",
       "theory-geometry",
       "theory-scope",
+      "theory-reference",
     ]);
     expect(container.querySelector("#theory-k8")?.parentElement?.id).toBe("theory-cube-cycle");
     expect(container.querySelector("#theory-toggle-table")?.closest(".theory-chapter")?.id).toBe("theory-cube-cycle");
     expect(container.querySelector("#theory-toggle-appendix")).toBeNull();
 
+    const rankChapter = container.querySelector("#theory-rank")!;
+    const rankSections = Array.from(rankChapter.querySelectorAll(":scope > .theory-subsection"));
+    expect(rankSections.map((section) => section.id)).toEqual(["theory-rank-order", "theory-rank-derivation"]);
+    const rankIntro = rankChapter.querySelector(":scope > .theory-desc")!;
+    expect(rankIntro.textContent).toContain("power set 𝒫(E)");
+    expect(rankIntro.compareDocumentPosition(rankSections[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(rankSections[0].querySelector(".theory-derivation-rank-definition")).not.toBeNull();
+    expect(rankSections[1].querySelector(".theory-derivation-proof")).not.toBeNull();
+    expect(rankSections[1].textContent).toContain("L(g,r,b)=4g+2r+b");
+    expect(rankSections[1].textContent).not.toContain("T=L/7");
+    expect(rankSections[1].querySelector(":scope > .theory-desc")?.textContent).toContain("primary count |S|=g+r+b");
+    const reference = screen.getByRole("group", { name: "Eight-State Correspondence Table" }).closest("section");
+    expect(reference?.id).toBe("theory-reference");
+    expect(chapters[chapters.length - 1]).toBe(reference);
+    expect(rankSections[1].textContent).toContain("a⊊b ⇒ L(a)<L(b)");
+    const complement = screen.getByTestId("complement-ranks");
+    const identities = screen.getByTestId("rank-identities");
+    expect(complement.querySelectorAll(".theory-valuation-complement-formulas code")).toHaveLength(1);
+    expect(complement.textContent).toContain("L(a)+L(¬a)=7");
+    expect(complement.textContent).not.toContain("L(¬a)=7−L(a)");
+    expect(container.querySelector("#theory-cube-cycle > .theory-desc")?.textContent).toContain("L(¬a)=7−L(a)");
+    expect(complement.closest(".theory-chapter")?.id).toBe("theory-boolean-operations");
+    expect(complement.previousElementSibling?.textContent).toContain("The complement of a state");
+    expect(identities.closest(".theory-chapter")?.id).toBe("theory-boolean-operations");
+    expect(identities.previousElementSibling?.textContent).toContain("These conditional equalities");
+    expect(container.querySelector("#theory-rank-operations")).toBeNull();
+    expect(rankChapter.querySelector(".theory-diagram-label")).toBeNull();
+
     const text = container.textContent ?? "";
     expect(text).toContain("A=𝒫(E)");
     expect(text).toContain("(A,⊕)≅(𝔽₂³,+)");
     expect(text).toContain("Γ(S)=∨");
-    expect(text).toContain("unnamed weights {1,2,4}");
-    expect(text).toContain("w_G>w_R+w_B · w_R>w_B>0");
+    expect(text).toContain("weights whose eight subset sums reproduce 0–7 must be 1,2,4");
+    expect(text).toContain("wG > wR + wB");
     expect(text).toContain("L(g,r,b)=4g+2r+b");
     expect(text).toContain("L(a∨b)+L(a∧b)=L(a)+L(b)");
     expect(text).toContain("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
-    expect(text).toContain("L(κ(a))=7−L(a)");
+    expect(text).toContain("L(¬a)=7−L(a)");
+    expect(text).toContain("κ(a)=¬a=a⊕W");
     expect(text).toContain("Hxᵀ=h_i⊕h_j⊕h_k");
     expect(text).toContain("rank H=3");
     expect(text).toContain("dim ker H=7−3=4");
@@ -111,7 +191,9 @@ describe("TheoryPanel", () => {
     expect(text).toContain("8·C(3,d)/2");
     expect(text).toContain("T0=ker π={K,M,C,Y}");
     expect(text).toContain("T1={x∈A | π(x)=1}={B,R,G,W}");
+    expect(text).toContain("T(h)=λ(γ(h))/7");
     expect(text).toContain("T(h+1/2)=1−T(h)");
+    expect(text).toContain("T=1/2");
     expect(text).toContain("L(κ(c))=7−L(c)");
 
     for (const retained of [
@@ -128,7 +210,7 @@ describe("TheoryPanel", () => {
       expect(screen.getAllByText(retained).length).toBeGreaterThan(0);
     }
     expect(screen.getByRole("group", { name: "Eight-State Correspondence Table" })).toBeTruthy();
-    expect(screen.getByRole("figure", { name: "GRB Logical OR" }).closest(".theory-chapter")?.id).toBe("theory-algebra");
+    expect(screen.getByRole("figure", { name: "GRB Logical OR" }).closest(".theory-chapter")?.id).toBe("theory-boolean-operations");
     expect(screen.getByRole("figure", { name: "MCY Logical AND" }).closest("details")).toBeNull();
 
     for (const omitted of ["Polyhedra network", "Octahedral Faces and Operations"]) {
@@ -151,7 +233,7 @@ describe("TheoryPanel", () => {
     expect(structuresSection).not.toBeNull();
     expect(geometrySection).not.toBeNull();
 
-    const binaryHeading = within(rankSection!).getByRole("heading", { level: 4, name: "Rank and Boolean Operations" });
+    expect(within(rankSection!).queryByRole("heading", { name: "Rank and Primary Count" })).toBeNull();
     expect(within(rankSection!).queryByRole("heading", { name: "Eight-State Correspondence Table" })).toBeNull();
     expect(within(structuresSection!).queryByRole("heading", { name: "Seven Nonzero Toggle Patterns" })).toBeNull();
     expect(container.querySelector("#theory-geometry")?.querySelectorAll("h4")).toHaveLength(0);
@@ -162,7 +244,7 @@ describe("TheoryPanel", () => {
       level: 4,
       name: "The Dual Octahedron",
     });
-    expect(binaryHeading.closest(".theory-chapter")).toBe(rankSection);
+    expect(rankSection!.textContent).toContain("The primary count |S|=g+r+b");
     expect(dieSection.parentElement).toBe(geometrySection);
     expect(dieHeading.parentElement).toBe(dieSection);
     const net = within(dieSection).getByTestId("hue-order-net");
@@ -179,8 +261,12 @@ describe("TheoryPanel", () => {
     const rankParagraphs = Array.from(rankSection!.querySelectorAll("p.theory-desc"));
     const structureParagraphs = Array.from(structuresSection!.querySelectorAll("p.theory-desc"));
     expect(rankParagraphs.some((node) => node.textContent?.includes("|S|"))).toBe(true);
-    expect(rankParagraphs.some((node) => node.textContent?.includes("π=wt mod 2=g⊕r⊕b"))).toBe(true);
-    expect(rankSection!.querySelector(".theory-binary-key")?.textContent).toContain("P = parity coordinate · D = data coordinate");
+    expect(rankParagraphs.some((node) => node.textContent?.includes("π=wt mod 2"))).toBe(false);
+    expect(container.querySelector("#theory-boolean-operations")?.textContent).not.toContain("π=wt mod 2=g⊕r⊕b");
+    expect(container.querySelector("#theory-k8")?.textContent).toContain("π=wt mod 2=g⊕r⊕b");
+    expect(container.querySelector("#theory-reference .theory-binary-key")?.textContent).toContain(
+      "P = parity coordinate · D = data coordinate",
+    );
     expect(structureParagraphs.some((node) => node.textContent?.includes("ev_K(τ_m)=τ_m(K)=m"))).toBe(true);
     expect(structureParagraphs.some((node) => node.textContent?.includes("Hxᵀ=h_i⊕h_j⊕h_k"))).toBe(true);
   });
@@ -215,6 +301,18 @@ describe("TheoryPanel", () => {
     expect(faceSection.querySelectorAll('[data-testid="toggle-action-readout"]')).toHaveLength(1);
     expect(faceSection.querySelectorAll(".theory-k8-comparison")).toHaveLength(1);
     expect(distance.compareDocumentPosition(action.querySelector("#theory-cube")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(distance.previousElementSibling?.textContent).toContain("Hamming weight");
+    expect(action.textContent).toContain("(1−2x_c)L({c})");
+    expect(action.textContent).not.toContain("±w_c");
+    const cube = action.querySelector(".theory-cube")!;
+    const faces = within(action).getByText(/^Each face fixes one bit/);
+    expect(cube.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const hamming = screen.getByRole("heading", { name: "Hamming [7,4,3] Code" }).closest("section")!;
+    const flow = hamming.querySelector(".theory-hamming-flow")!;
+    const proof = within(hamming).getByText(/^For a word x supported/);
+    const columns = within(hamming).getByText(/^Arrange the seven nonzero three-bit vectors/);
+    expect(columns.compareDocumentPosition(flow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(flow.compareDocumentPosition(proof) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("keeps color names and bit parity in the responsive binary table", () => {
@@ -247,6 +345,7 @@ describe("TheoryPanel", () => {
     };
     expect(valuesFor("Name")).toEqual(["K", "B", "R", "M", "G", "C", "Y", "W"]);
     expect(valuesFor("π").join("")).toBe("01101001");
+    expect(valuesFor("Lv")).toEqual(["0", "1", "2", "3", "4", "5", "6", "7"]);
     expect(textNodes.filter((node) => /^[0-7]\/7$/.test(node.textContent ?? "")).map((node) => node.textContent)).toEqual([
       "0/7",
       "1/7",

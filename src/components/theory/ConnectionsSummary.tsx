@@ -15,23 +15,13 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
   const items = ["theory_conn_core", "theory_conn_order", "theory_conn_structures"] as const;
 
   return (
-    <ol
-      style={{
-        width: "100%",
-        margin: 0,
-        paddingLeft: SP["2xl"],
-        display: "flex",
-        flexDirection: "column",
-        gap: SP.lg,
-        boxSizing: "border-box",
-      }}
-    >
+    <>
       {items.map((key) => (
-        <li key={key} style={S_ITEM}>
+        <p key={key} className="theory-desc">
           {t(key)}
-        </li>
+        </p>
       ))}
-    </ol>
+    </>
   );
 });
 

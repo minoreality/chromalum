@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, MouseEvent, MutableRefObject, SetStateAction } from "react";
 
 import {
@@ -157,7 +157,7 @@ export function useMusicPanelController() {
     hueSpeed,
     setHueSpeed,
     hoveredFanoLine,
-    setHoveredFanoLine,
+    setHoveredFanoLine: setHoveredFanoLineState,
     toneMode,
     setToneMode,
     alpha0,
@@ -176,6 +176,15 @@ export function useMusicPanelController() {
     hueRef,
     lastHueRoundedRef,
   } = useMusicTransportState(hueAngleDeg);
+
+  const [fanoAuditionStopped, setFanoAuditionStopped] = useState(false);
+  const setHoveredFanoLine = useCallback<Dispatch<SetStateAction<number | null>>>(
+    (line) => {
+      setFanoAuditionStopped(false);
+      setHoveredFanoLineState(line);
+    },
+    [setHoveredFanoLineState],
+  );
 
   useEffect(() => {
     hueRef.current = hueAngleDeg;
@@ -207,7 +216,7 @@ export function useMusicPanelController() {
     hammingMode,
     setHammingMode,
     cayleyRow,
-    setCayleyRow,
+    setCayleyRow: setCayleyRowState,
     andStep,
     setAndStep,
     gray3Code,
@@ -281,10 +290,19 @@ export function useMusicPanelController() {
     pitchMappingMode,
     fmEnabled,
     panEnabled: true,
-    hoveredFanoLine,
+    hoveredFanoLine: fanoAuditionStopped ? null : hoveredFanoLine,
     toneMode,
     originMode,
   });
+
+  const setCayleyRow = useCallback(
+    (row: number) => {
+      if (row === cayleyRow) return;
+      engine.stopCayleyRow();
+      setCayleyRowState(row);
+    },
+    [cayleyRow, engine, setCayleyRowState],
+  );
 
   const activeAlpha = originMode === 0 ? alpha0 : alpha7;
 
@@ -302,7 +320,7 @@ export function useMusicPanelController() {
       setHueDir,
     });
 
-  const handleStopAll = useMusicStopAllHandler({
+  const stopPlayback = useMusicStopAllHandler({
     engine,
     transport: { setAlphaDir, setHueDir, setDroneMuted },
     fano: { setGrayStep, setRhythmPlaying, setRhythmFiringLines, setXorStep, setFanoContextLine, setPartitionPhase },
@@ -320,6 +338,11 @@ export function useMusicPanelController() {
     },
     signals: { setStopSignal },
   });
+
+  const handleStopAll = useCallback(() => {
+    stopPlayback();
+    setFanoAuditionStopped(true);
+  }, [stopPlayback]);
 
   useMusicTransportShortcuts(handleStopAll, handleMuteToggle);
 

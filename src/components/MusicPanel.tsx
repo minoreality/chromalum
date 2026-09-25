@@ -156,6 +156,7 @@ export const MusicPanel = React.memo(function MusicPanel() {
           />
 
           <MusicLinkedVisualization
+            stopSignal={stopSignal}
             hueAngleDeg={hueAngleDeg}
             brushLevel={0}
             onHueAngleDegChange={handleLinkedHueAngleChange}

@@ -548,7 +548,10 @@ export const GalleryPanel = React.memo(function GalleryPanel({
                 {t("gallery_apply_btn")}
               </button>
               <button
-                onClick={() => toggleBookmark(displayItems[expandedIndex].candidateIndexByLevel)}
+                onClick={() => {
+                  const result = toggleBookmark(displayItems[expandedIndex].candidateIndexByLevel);
+                  if (filter === "bookmarks" && result === "removed") closePreview();
+                }}
                 style={{
                   ...S_BTN,
                   padding: `${SP.md}px ${SP.lg}px`,

@@ -69,6 +69,7 @@ export interface MusicEngineReturn {
   playGray3Voice: (onStep: (levelIndex: number | null) => void) => void;
   playWeightSpectrum: (onStep: (positions: number[], weight: number, index: number) => void) => void;
   playCayleyRow: (row: number, onStep: (col: number, value: number) => void) => void;
+  stopCayleyRow: () => void;
   applyGL32Transform: (gen: "A" | "B" | "C", onPerm?: (perm: number[]) => void) => void;
   resetGL32Transform: (onPerm?: (perm: number[]) => void) => void;
   setToneMode: (mode: "symmetric" | "grbTone") => void;
@@ -455,6 +456,11 @@ export function useMusicEngine({
     [nodesRef, playBitVectorLevel, registerPlaybackStop],
   );
 
+  const stopCayleyRow = useCallback(() => {
+    clearIntervalSlot(cayleyIntervalRef);
+    finishPlayback("cayley");
+  }, [finishPlayback]);
+
   /* ── 9. applyGL32Transform ── */
   const applyGL32Transform = useCallback(
     (gen: "A" | "B" | "C", onPerm?: (perm: number[]) => void) => {
@@ -628,6 +634,7 @@ export function useMusicEngine({
     playGray3Voice,
     playWeightSpectrum,
     playCayleyRow,
+    stopCayleyRow,
     applyGL32Transform,
     resetGL32Transform,
     setToneMode,

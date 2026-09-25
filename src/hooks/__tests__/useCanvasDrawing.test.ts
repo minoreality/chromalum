@@ -136,6 +136,62 @@ describe("useCanvasDrawing", () => {
     });
   });
 
+  it("finishes its stroke when another input started panning before release", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ dispatch })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    mockPanningRef.current = true;
+    act(() => document.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1, bubbles: true })));
+    expect(mockEndPan).toHaveBeenCalledOnce();
+    expect(result.current.drawingRef.current).toBe(false);
+    expect(dispatch).toHaveBeenCalledOnce();
+  });
+
+  it.each(["pointerup", "pointercancel", "lostpointercapture", "blur"])("finishes the owned stroke on a document-level %s", (type) => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ dispatch })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    act(() => {
+      if (type === "blur") window.dispatchEvent(new Event("blur"));
+      else document.dispatchEvent(new PointerEvent(type, { pointerId: 1, bubbles: true }));
+    });
+    expect(result.current.drawingRef.current).toBe(false);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch.mock.calls[0][0].finalLevelData[55]).toBe(3);
+  });
+
+  it("ignores another pointer's movement and release", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ dispatch })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    act(() => {
+      result.current.onMove(pointerEvent({ target: canvas, pointerId: 2, clientX: 280 }));
+      document.dispatchEvent(new PointerEvent("pointerup", { pointerId: 2, bubbles: true }));
+    });
+    expect(result.current.drawingRef.current).toBe(true);
+    act(() => result.current.onUp());
+    const painted = dispatch.mock.calls[0][0].finalLevelData as Uint8Array;
+    expect([...painted].filter((level) => level === 3)).toHaveLength(1);
+  });
+
+  it("finishes a missed release before a hover can add paint", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useCanvasDrawing(makeOpts({ dispatch })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    act(() => result.current.onMove(pointerEvent({ target: canvas, buttons: 0, clientX: 280 })));
+    expect(result.current.drawingRef.current).toBe(false);
+    const painted = dispatch.mock.calls[0][0].finalLevelData as Uint8Array;
+    expect([...painted].filter((level) => level === 3)).toHaveLength(1);
+  });
+
   it("discards a pending fill when the canvas is replaced", async () => {
     let resolveFill!: (value: { levelData: Uint8Array; changedIndices: Uint32Array; truncated: boolean }) => void;
     floodFillMocks.requestCanvasFill.mockImplementationOnce(

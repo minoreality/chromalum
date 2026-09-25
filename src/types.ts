@@ -131,7 +131,7 @@ export interface PanZoomHandlers {
 export interface DrawingHandlers {
   onPreviewPointerDown: (e: React.PointerEvent) => void;
   onPreviewPointerMove: (e: React.PointerEvent) => void;
-  onUp: () => void;
+  onUp: (event?: Pick<PointerEvent, "pointerId">) => void;
   onPreviewPointerLeave: (e: React.PointerEvent) => void;
   trackPreviewCursor: (e: React.PointerEvent) => void;
   clearPreviewCursor: () => void;

@@ -135,6 +135,54 @@ describe("useGlazeDrawing", () => {
     });
   });
 
+  it("finishes its glaze stroke when another input started panning before release", () => {
+    const dispatch = vi.fn();
+    const canvasData = makeCvs();
+    canvasData.levelData.fill(2);
+    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ canvasData, dispatch })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    mockPanningRef.current = true;
+    act(() => document.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1, bubbles: true })));
+    expect(mockEndPan).toHaveBeenCalledOnce();
+    expect(result.current.drawingRef.current).toBe(false);
+    expect(dispatch).toHaveBeenCalledOnce();
+  });
+
+  it.each(["pointerup", "pointercancel", "lostpointercapture", "blur"])(
+    "finishes the owned glaze stroke on a document-level %s",
+    (type) => {
+      const dispatch = vi.fn();
+      const canvasData = makeCvs();
+      canvasData.levelData.fill(2);
+      const { result } = renderHook(() => useGlazeDrawing(makeOpts({ canvasData, dispatch })));
+      const canvas = result.current.cursorCanvasRef.current!;
+      mockCanvasRect(canvas);
+      act(() => result.current.onDown(pointerEvent({ target: canvas })));
+      act(() => {
+        if (type === "blur") window.dispatchEvent(new Event("blur"));
+        else document.dispatchEvent(new PointerEvent(type, { pointerId: 1, bubbles: true }));
+      });
+      expect(result.current.drawingRef.current).toBe(false);
+      expect(dispatch).toHaveBeenCalledTimes(1);
+      expect(dispatch.mock.calls[0][0].finalPixelCandidateOverrideMap[55]).toBeGreaterThan(0);
+    },
+  );
+
+  it("finishes a missed glaze release before hover paints", () => {
+    const dispatch = vi.fn();
+    const canvasData = makeCvs();
+    canvasData.levelData.fill(2);
+    const { result } = renderHook(() => useGlazeDrawing(makeOpts({ canvasData, dispatch })));
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas })));
+    act(() => result.current.onMove(pointerEvent({ target: canvas, buttons: 0, clientX: 280 })));
+    expect(result.current.drawingRef.current).toBe(false);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
   it("discards a pending glaze fill when the canvas is replaced", async () => {
     let resolveFill!: (value: { pixelCandidateOverrideMap: Uint8Array; changedIndices: Uint32Array; truncated: boolean }) => void;
     floodFillMocks.requestGlazeFill.mockImplementationOnce(

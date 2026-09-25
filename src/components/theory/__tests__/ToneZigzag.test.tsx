@@ -53,6 +53,18 @@ describe("ToneZigzag", () => {
     expect(container.querySelectorAll("[data-edge-row]")).toHaveLength(6);
     expect(CHROMALUM_HUE_EDGE_LEVEL_DELTAS).toEqual([4, -2, 1, -4, 2, -1]);
     expect(screen.getByText("T(h + 1/2) = 1 − T(h)")).toBeTruthy();
+    expect(screen.getByText("λ(γ(h))")).toBeTruthy();
+    expect([...container.querySelectorAll("[data-tone-level] text")].map((label) => label.textContent)).toEqual([
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+    ]);
+    expect(screen.getByRole("button", { name: "G₄ · λ=4 · N=3" })).toBeTruthy();
   });
 
   it("aligns the ordered level sequence with the fourteen plotted intersections", () => {

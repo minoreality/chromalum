@@ -88,6 +88,7 @@ function makePanZoom(overrides?: Partial<PanZoomHandlers>): PanZoomHandlers {
 function renderCanvasShortcuts(overrides: Partial<KeyboardShortcutDeps>) {
   const deps: KeyboardShortcutDeps = {
     setTool: vi.fn(),
+    setGlazeTool: vi.fn(),
     setBrushLevel: vi.fn(),
     setBrushSize: vi.fn(),
     dispatch: vi.fn(),
@@ -236,6 +237,21 @@ describe("SourcePanel interactions", () => {
       previewCanvasRef,
     };
   }
+
+  it.each([
+    { key: "+", shiftKey: true, code: "Equal", expected: 1.15 },
+    { key: "-", expected: 1 / 1.15 },
+    { key: "+", ctrlKey: true, shiftKey: true, code: "Equal", expected: 1.15 },
+    { key: "+", metaKey: true, shiftKey: true, code: "Semicolon", expected: 1.15 },
+  ])("zooms Source once for $key ($code) from its workspace", ({ expected, ...init }) => {
+    const { setZoom, sourceCanvasRef } = renderSource();
+    renderCanvasShortcuts({ activeTabId: "source", setZoom });
+    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+    fireEvent(sourceCanvasRef.current!, event);
+    expect(setZoom).toHaveBeenCalledTimes(1);
+    expect((setZoom.mock.calls[0][0] as (value: number) => number)(1)).toBeCloseTo(expected);
+    expect(event.defaultPrevented).toBe(true);
+  });
 
   it("routes tool, brush-size, zoom, pan, and mobile save-confirm controls", () => {
     const { props, setBrushSize, setPan, setZoom, saveColor } = renderSource();
@@ -606,12 +622,24 @@ describe("GlazePanel interactions", () => {
     ["f", "glaze_fill"],
   ])("keeps the Glaze %s shortcut from changing the Source tool", (key, expectedTool) => {
     const { setGlazeTool } = renderGlaze();
-    const { setTool } = renderCanvasShortcuts({ activeTabId: "glaze" });
+    const { setTool } = renderCanvasShortcuts({ activeTabId: "glaze", setGlazeTool });
 
     fireEvent.keyDown(screen.getByRole("img", { name: "label_glaze" }).parentElement!, { key });
 
     expect(setGlazeTool).toHaveBeenCalledWith(expectedTool);
+    expect(setGlazeTool).toHaveBeenCalledTimes(1);
     expect(setTool).not.toHaveBeenCalled();
+  });
+
+  it("leaves text input keys with the input inside the Glaze workspace", () => {
+    const { setGlazeTool, panZoom } = renderGlaze();
+    renderCanvasShortcuts({ activeTabId: "glaze", setGlazeTool, setZoom: panZoom.setZoom });
+    const input = document.createElement("input");
+    screen.getByRole("img", { name: "label_glaze" }).parentElement!.appendChild(input);
+    fireEvent.keyDown(input, { key: "e" });
+    fireEvent.keyDown(input, { key: "+", shiftKey: true });
+    expect(setGlazeTool).not.toHaveBeenCalled();
+    expect(panZoom.setZoom).not.toHaveBeenCalled();
   });
 
   it.each([

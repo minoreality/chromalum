@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { C, SP, FS, R } from "../styles/tokens";
+import { LazyChunkLoadError } from "../utils/lazy-chunk";
 
 interface Props {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface State {
 const ERROR_FALLBACK_COPY = {
   title: "An error occurred",
   retry: "Retry",
+  reload: "Reload page",
   showDetails: "Show Details",
   hideDetails: "Hide Details",
 };
@@ -47,7 +49,7 @@ function ErrorFallback({ error, componentStack, onRetry }: { error: Error; compo
             fontSize: FS["2xl"],
           }}
         >
-          {ERROR_FALLBACK_COPY.retry}
+          {error instanceof LazyChunkLoadError ? ERROR_FALLBACK_COPY.reload : ERROR_FALLBACK_COPY.retry}
         </button>
         {componentStack && (
           <button
@@ -85,6 +87,7 @@ function ErrorFallback({ error, componentStack, onRetry }: { error: Error; compo
           }}
         >
           {error.stack}
+          {error instanceof LazyChunkLoadError && error.cause instanceof Error && `\n\nCaused by:\n${error.cause.stack}`}
           {"\n\nComponent Stack:"}
           {componentStack}
         </pre>
@@ -111,7 +114,11 @@ export class ErrorBoundary extends Component<Props, State> {
         <ErrorFallback
           error={this.state.error}
           componentStack={this.state.componentStack}
-          onRetry={() => this.setState({ error: null, componentStack: null })}
+          onRetry={() => {
+            // React.lazy caches failed imports, so resetting boundary state cannot retry them.
+            if (this.state.error instanceof LazyChunkLoadError) window.location.reload();
+            else this.setState({ error: null, componentStack: null });
+          }}
         />
       );
     }
