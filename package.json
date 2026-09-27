@@ -57,8 +57,20 @@
       "prototypes/weight-chambers/main.ts",
       "prototypes/weight-chambers/playwright.config.ts",
       "prototypes/weight-chambers/browser.check.ts",
+      "prototypes/theory-before-session/snapshot/src/theory-main.tsx",
+      "prototypes/theory-before-session/playwright.config.ts",
+      "prototypes/theory-before-session/browser.check.ts",
+      "prototypes/theory-before-session/vitest.config.ts",
+      "prototypes/theory-before-session/snapshot/**/*.check.{ts,tsx}",
+      "prototypes/theory-before-session/snapshot/src/__tests__/setup.ts",
       "prototypes/octahedron-gray-net/net.mjs"
-    ]
+    ],
+    "ignoreIssues": {
+      "prototypes/theory-before-session/snapshot/**": [
+        "exports",
+        "types"
+      ]
+    }
   },
   "dependencies": {
     "react": "^19.3.0",
