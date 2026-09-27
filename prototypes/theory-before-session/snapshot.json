@@ -1,0 +1,310 @@
+{
+  "baseCommit": "e2cba60b259be600d3c278f736e67c5a64ab449d",
+  "sourceState": "working-tree",
+  "sourceDate": "2026-09-27",
+  "description": "The six-chapter Theory captured immediately before swapping it into this prototype. The regular Theory is restored to the session-start commit.",
+  "entry": "snapshot/src/theory-main.tsx",
+  "runtimeSourceFiles": 51,
+  "files": [
+    {
+      "path": "docs/algebraic-color-model.md",
+      "sourcePath": "docs/algebraic-color-model.md",
+      "blob": "f13407d289013b4cdfd60a30839c207f7934ddf0"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-27-theory-structure.md",
+      "sourcePath": "docs/superpowers/plans/2026-09-27-theory-structure.md",
+      "blob": "f7e0a9d798f6e3e7ad149b90ce647ce2eb5cb74d"
+    },
+    {
+      "path": "docs/theory-tab-prior-art-and-improvements.md",
+      "sourcePath": "docs/theory-tab-prior-art-and-improvements.md",
+      "blob": "33ec916ecc27179c9bb5b56b0d528f5351b71772"
+    },
+    {
+      "path": "e2e/theory.spec.ts.txt",
+      "sourcePath": "e2e/theory.spec.ts",
+      "blob": "4048e6dd0cf9a12f267570bba9a5f02e33b3d37d"
+    },
+    {
+      "path": "src/__tests__/setup.ts",
+      "sourcePath": "src/__tests__/setup.ts",
+      "blob": "2a28555afa8b7bc8d27be01304363f14ec0a69a4"
+    },
+    {
+      "path": "src/chromalum-color-model.ts",
+      "sourcePath": "src/chromalum-color-model.ts",
+      "blob": "984f7bb0047b35aa632745cde74594fd86ae3568"
+    },
+    {
+      "path": "src/color-engine.ts",
+      "sourcePath": "src/color-engine.ts",
+      "blob": "521470b433ba4e21b4b026358ddf081d492651a9"
+    },
+    {
+      "path": "src/components/__tests__/TheoryPanel.check.tsx",
+      "sourcePath": "src/components/__tests__/TheoryPanel.test.tsx",
+      "blob": "55605dd8cc773b81f9d3a4a02b9ae03444228f34"
+    },
+    {
+      "path": "src/components/ErrorBoundary.tsx",
+      "sourcePath": "src/components/ErrorBoundary.tsx",
+      "blob": "6c3e9c1f7e221a9ca117d0ac111bf2460fd8da3c"
+    },
+    {
+      "path": "src/components/LanguageSwitcher.tsx",
+      "sourcePath": "src/components/LanguageSwitcher.tsx",
+      "blob": "58d9c3344d09f0b16e2d362c104f775cb6bbe9fa"
+    },
+    {
+      "path": "src/components/theory/__tests__/ColorCube.check.tsx",
+      "sourcePath": "src/components/theory/__tests__/ColorCube.test.tsx",
+      "blob": "a17d0c3d6c99cef6a4a31f8ee0dcbfa7b744dbb5"
+    },
+    {
+      "path": "src/components/theory/__tests__/SetOperations.check.tsx",
+      "sourcePath": "src/components/theory/__tests__/SetOperations.test.tsx",
+      "blob": "0c5ec4251f88781558963b74c35fa49ebab38e3e"
+    },
+    {
+      "path": "src/components/theory/BinaryTable.tsx",
+      "sourcePath": "src/components/theory/BinaryTable.tsx",
+      "blob": "56378ec2e3a1d5d8943cdb8e735abe49b44c12c6"
+    },
+    {
+      "path": "src/components/theory/CayleyTable.tsx",
+      "sourcePath": "src/components/theory/CayleyTable.tsx",
+      "blob": "a140237ce7ef09b9a5507a13bf38f29f7ba8f042"
+    },
+    {
+      "path": "src/components/theory/ChromaticOctahedron.tsx",
+      "sourcePath": "src/components/theory/ChromaticOctahedron.tsx",
+      "blob": "5087072b9965d8f1427180abddfda417e5e094e6"
+    },
+    {
+      "path": "src/components/theory/color-cube-geometry.ts",
+      "sourcePath": "src/components/theory/color-cube-geometry.ts",
+      "blob": "f69c12145aa0437100e158a597e1980153cbe6de"
+    },
+    {
+      "path": "src/components/theory/ColorCube.tsx",
+      "sourcePath": "src/components/theory/ColorCube.tsx",
+      "blob": "12279640d19a3103618d05c429f8a9dbcb8f6e3e"
+    },
+    {
+      "path": "src/components/theory/ColorDice.tsx",
+      "sourcePath": "src/components/theory/ColorDice.tsx",
+      "blob": "b607dadcc5bbc025eab30b6043e4759e8102d260"
+    },
+    {
+      "path": "src/components/theory/ColorMixing.tsx",
+      "sourcePath": "src/components/theory/ColorMixing.tsx",
+      "blob": "6260b29164b396883e1295230a3c02716c77f961"
+    },
+    {
+      "path": "src/components/theory/ConnectionsSummary.tsx",
+      "sourcePath": "src/components/theory/ConnectionsSummary.tsx",
+      "blob": "5ed92e275a0f81ccdc55cb6a67ce8298c20f4b8f"
+    },
+    {
+      "path": "src/components/theory/CubeFaceGrid.tsx",
+      "sourcePath": "src/components/theory/CubeFaceGrid.tsx",
+      "blob": "7e53939cf1390835ce9ba2b6be0c89f3a18ce728"
+    },
+    {
+      "path": "src/components/theory/DerivationMap.tsx",
+      "sourcePath": "src/components/theory/DerivationMap.tsx",
+      "blob": "9daacacda8544ecfcb1d096437c45faecf1a7ebb"
+    },
+    {
+      "path": "src/components/theory/FanoHammingMatrix.tsx",
+      "sourcePath": "src/components/theory/FanoHammingMatrix.tsx",
+      "blob": "6ebc31624800cc062f4e23cb8a1d9003136f6f41"
+    },
+    {
+      "path": "src/components/theory/FanoPlane.tsx",
+      "sourcePath": "src/components/theory/FanoPlane.tsx",
+      "blob": "9b12f51f29e0b00b3a6c1703ca7314fbdfa069fd"
+    },
+    {
+      "path": "src/components/theory/GrayCodeHex.tsx",
+      "sourcePath": "src/components/theory/GrayCodeHex.tsx",
+      "blob": "ed3dec6b384422ef18b3b5b086b6f0ddcfe8ae44"
+    },
+    {
+      "path": "src/components/theory/HammingDiagram.tsx",
+      "sourcePath": "src/components/theory/HammingDiagram.tsx",
+      "blob": "778dd73b1ff2d48cb532d167d211a6572c04eafb"
+    },
+    {
+      "path": "src/components/theory/HammingParitySets.tsx",
+      "sourcePath": "src/components/theory/HammingParitySets.tsx",
+      "blob": "369df5646a4d8997bfd15e04a0d06f633e56f6fb"
+    },
+    {
+      "path": "src/components/theory/hue-cycle-label.ts",
+      "sourcePath": "src/components/theory/hue-cycle-label.ts",
+      "blob": "41f89ae33e85ad4ddcf91fecf7f199df32fee58a"
+    },
+    {
+      "path": "src/components/theory/HueTraversal.tsx",
+      "sourcePath": "src/components/theory/HueTraversal.tsx",
+      "blob": "ba853d4dfbbea936d3b64332a715aa0a4f836bb9"
+    },
+    {
+      "path": "src/components/theory/k8-selection.ts",
+      "sourcePath": "src/components/theory/k8-selection.ts",
+      "blob": "3f10669c4fef5e1fde31596e75cfa8294b2748f7"
+    },
+    {
+      "path": "src/components/theory/K8Relations.tsx",
+      "sourcePath": "src/components/theory/K8Relations.tsx",
+      "blob": "5268047468bba616e01cddec43e05936593fec4c"
+    },
+    {
+      "path": "src/components/theory/octahedron-dual-geometry.ts",
+      "sourcePath": "src/components/theory/octahedron-dual-geometry.ts",
+      "blob": "7ec5165b1daa580584db8df1e78f6c29cb49d788"
+    },
+    {
+      "path": "src/components/theory/pin-reset.ts",
+      "sourcePath": "src/components/theory/pin-reset.ts",
+      "blob": "8841c5a0ae162909bdbb34c70327e7c6679fe9e9"
+    },
+    {
+      "path": "src/components/theory/PrimaryGeneration.tsx",
+      "sourcePath": "src/components/theory/PrimaryGeneration.tsx",
+      "blob": "605f4debfd0fae703e2b9ed684feed499710c694"
+    },
+    {
+      "path": "src/components/theory/SetOperations.tsx",
+      "sourcePath": "src/components/theory/SetOperations.tsx",
+      "blob": "aa7e307c92f56e00aa48283d7de5be93fc3965a3"
+    },
+    {
+      "path": "src/components/theory/stella-view.ts",
+      "sourcePath": "src/components/theory/stella-view.ts",
+      "blob": "3b38286fd0a268adbd443bcead4ea6bb0942b653"
+    },
+    {
+      "path": "src/components/theory/StellaOctangula.tsx",
+      "sourcePath": "src/components/theory/StellaOctangula.tsx",
+      "blob": "e3123b3277ebfc7759b40ca600a560ece504add4"
+    },
+    {
+      "path": "src/components/theory/ToggleActionTable.tsx",
+      "sourcePath": "src/components/theory/ToggleActionTable.tsx",
+      "blob": "99fe6958c58fa563793b61e769ecdde5a58b0e09"
+    },
+    {
+      "path": "src/components/theory/ToneZigzag.tsx",
+      "sourcePath": "src/components/theory/ToneZigzag.tsx",
+      "blob": "06d2b270dc90553b4ab65ba04d65ea036f910f30"
+    },
+    {
+      "path": "src/components/theory/useStellaView.ts",
+      "sourcePath": "src/components/theory/useStellaView.ts",
+      "blob": "38523859a381d2d519256d3098d895d9a8216e60"
+    },
+    {
+      "path": "src/components/theory/useTrackballDrag.ts",
+      "sourcePath": "src/components/theory/useTrackballDrag.ts",
+      "blob": "1f6ff02182e6cdb517eaec544d19a506a006e73c"
+    },
+    {
+      "path": "src/components/theory/ValuationDiagram.tsx",
+      "sourcePath": "src/components/theory/ValuationDiagram.tsx",
+      "blob": "62041ace89849dc91ea592981e393205f8cb1b97"
+    },
+    {
+      "path": "src/components/theory/VennDiagram.tsx",
+      "sourcePath": "src/components/theory/VennDiagram.tsx",
+      "blob": "d54b036cacf74cd3805a2445c82f722f6eaedb67"
+    },
+    {
+      "path": "src/components/TheoryPanel.tsx",
+      "sourcePath": "src/components/TheoryPanel.tsx",
+      "blob": "40c7c9866b2cfaba30b53190704e84206b29b60d"
+    },
+    {
+      "path": "src/constants.ts",
+      "sourcePath": "src/constants.ts",
+      "blob": "1bebd19df29a13614b47eafa0f6ddae95edbdc12"
+    },
+    {
+      "path": "src/data/hamming-data.ts",
+      "sourcePath": "src/data/hamming-data.ts",
+      "blob": "9e521a581a55c5b73870a0b33fb628934f438c7c"
+    },
+    {
+      "path": "src/data/theory-data.ts",
+      "sourcePath": "src/data/theory-data.ts",
+      "blob": "5c70d84b9be7a9b019a9e5a867b1c5bdf34dcac7"
+    },
+    {
+      "path": "src/i18n/__tests__/theory-copy.check.ts",
+      "sourcePath": "src/i18n/__tests__/theory-copy.test.ts",
+      "blob": "1fb35917482348add623e2ff88cce641c18fab22"
+    },
+    {
+      "path": "src/i18n/en.ts",
+      "sourcePath": "src/i18n/en.ts",
+      "blob": "69e4bfd338d92a6c48aa7efa817baca2aea0cff5"
+    },
+    {
+      "path": "src/i18n/index.ts",
+      "sourcePath": "src/i18n/index.ts",
+      "blob": "8c65d9aabd544e925605825d90ebb620bcda02f0"
+    },
+    {
+      "path": "src/i18n/ja.ts",
+      "sourcePath": "src/i18n/ja.ts",
+      "blob": "ec3be2b9a1b456f45bbb32f34189c781972dbb99"
+    },
+    {
+      "path": "src/i18n/LanguageContext.tsx",
+      "sourcePath": "src/i18n/LanguageContext.tsx",
+      "blob": "450aa038343ea34ddf7164b223906b18aea020ba"
+    },
+    {
+      "path": "src/i18n/types.ts",
+      "sourcePath": "src/i18n/types.ts",
+      "blob": "bec833350f5759aef80d11149a67409b9ccffed3"
+    },
+    {
+      "path": "src/styles/global.css",
+      "sourcePath": "src/styles/global.css",
+      "blob": "ddeef79881aa541f59525681ab62e821604404cb"
+    },
+    {
+      "path": "src/styles/shared.ts",
+      "sourcePath": "src/styles/shared.ts",
+      "blob": "ac0c5024168dd39b82b0b9227879ab00446a5cec"
+    },
+    {
+      "path": "src/styles/tokens.ts",
+      "sourcePath": "src/styles/tokens.ts",
+      "blob": "af51c0604feb42f48fdb6b485edccd91c721db16"
+    },
+    {
+      "path": "src/theory-main.tsx",
+      "sourcePath": "src/theory-main.tsx",
+      "blob": "fcac5b20a9719becd0deaebd0f7cc4c3e23f4226"
+    },
+    {
+      "path": "src/utils/geometry-3d.ts",
+      "sourcePath": "src/utils/geometry-3d.ts",
+      "blob": "c779e11c25e4dbb937421dc82f820ce701f39007"
+    },
+    {
+      "path": "src/utils/index.ts",
+      "sourcePath": "src/utils/index.ts",
+      "blob": "0c3bfbcfa4fca7ee0588ef4be8a1e9bf172ac152"
+    },
+    {
+      "path": "src/utils/lazy-chunk.ts",
+      "sourcePath": "src/utils/lazy-chunk.ts",
+      "blob": "988a9b1332850a43b218c7a2be7e3ff4d0e54b95"
+    }
+  ]
+}

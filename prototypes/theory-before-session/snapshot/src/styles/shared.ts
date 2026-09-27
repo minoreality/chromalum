@@ -1,0 +1,121 @@
+import type React from "react";
+import { MIN_TAP_SIZE } from "../constants";
+import { C, SP, FS, FW, R, DUR, FONT } from "./tokens";
+
+/* ═══════════════════════════════════════════
+   SHARED STYLES
+   ═══════════════════════════════════════════ */
+export const S_CHECKERBOARD: React.CSSProperties = {
+  backgroundImage:
+    "linear-gradient(45deg, #1a1a2a 25%, transparent 25%), linear-gradient(-45deg, #1a1a2a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1a1a2a 75%), linear-gradient(-45deg, transparent 75%, #1a1a2a 75%)",
+  backgroundSize: "16px 16px",
+  backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+  backgroundColor: "#12122a",
+};
+export const S_BTN: React.CSSProperties = {
+  padding: `${SP.xs}px ${SP.lg}px`,
+  fontSize: FS.lg,
+  border: `1px solid ${C.border}`,
+  background: C.bgPanel,
+  color: C.textMuted,
+  borderRadius: R.lg,
+  cursor: "pointer",
+  transition: `background ${DUR.fast}, border-color ${DUR.fast}, color ${DUR.fast}`,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+export const S_BTN_ACTIVE: React.CSSProperties = {
+  ...S_BTN,
+  border: `1px solid ${C.accent}`,
+  background: C.bgSurfaceAlt,
+  color: C.accentBright,
+  fontWeight: FW.bold,
+};
+export const S_THEORY_BTN: React.CSSProperties = {
+  ...S_BTN,
+  fontWeight: FW.normal,
+};
+export const S_THEORY_BTN_ACTIVE: React.CSSProperties = {
+  ...S_BTN_ACTIVE,
+  fontWeight: FW.normal,
+};
+const BTN_SM_PADDING = `var(--btn-sm-padding, ${SP.xs}px ${SP.md}px)`;
+const BTN_SM_FONT_SIZE = `var(--btn-sm-font-size, ${FS.md}px)`;
+
+export const S_BTN_SM: React.CSSProperties = { ...S_BTN, padding: BTN_SM_PADDING, fontSize: BTN_SM_FONT_SIZE };
+// SM-active drops the font-weight bold (kept on larger S_BTN_ACTIVE) so toggle buttons
+// don't reflow between play/stop states. Active is still clearly marked via color+border+bg.
+export const S_BTN_SM_ACTIVE: React.CSSProperties = {
+  ...S_BTN_ACTIVE,
+  padding: BTN_SM_PADDING,
+  fontSize: BTN_SM_FONT_SIZE,
+  fontWeight: FW.normal,
+};
+export const S_NAV_ARROW: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  color: C.textNavArrow,
+  cursor: "pointer",
+  fontSize: 16,
+  minWidth: MIN_TAP_SIZE,
+  minHeight: MIN_TAP_SIZE,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+export const S_TAB_ACTIVE: React.CSSProperties = {
+  padding: "var(--sp-tab-v) var(--sp-tab-h)",
+  fontSize: "var(--fs-tab)",
+  fontWeight: FW.normal,
+  border: `1px solid ${C.accent}`,
+  background: C.bgSurfaceAlt,
+  color: C.accentBright,
+  borderRadius: `${R.lg}px ${R.lg}px 0 0`,
+  cursor: "pointer",
+  borderBottom: `1px solid ${C.bgSurfaceAlt}`,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+export const S_TAB_INACTIVE: React.CSSProperties = {
+  padding: "var(--sp-tab-v) var(--sp-tab-h)",
+  fontSize: "var(--fs-tab)",
+  fontWeight: FW.normal,
+  border: `1px solid ${C.border}`,
+  background: C.bgPanel,
+  color: C.textDimmer,
+  borderRadius: `${R.lg}px ${R.lg}px 0 0`,
+  cursor: "pointer",
+  borderBottom: `1px solid ${C.border}`,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+export const S_SWATCH: React.CSSProperties = { borderRadius: R.md, cursor: "pointer", padding: 0, background: "none" };
+export const S_CURSOR_POINTER: React.CSSProperties = { cursor: "pointer" };
+export const S_PANEL_SUBTITLE: React.CSSProperties = {
+  fontSize: FS.md,
+  color: C.textDim,
+  textAlign: "center",
+  lineHeight: "14px",
+};
+const S_CANVAS_STATUS: React.CSSProperties = {
+  fontSize: FS.xs,
+  color: C.textDimmer,
+  fontFamily: FONT.mono,
+  textAlign: "center",
+  minHeight: 14,
+  marginTop: SP.xs,
+};
+export const S_CANVAS_STATUS_STABLE: React.CSSProperties = {
+  ...S_CANVAS_STATUS,
+  alignSelf: "center",
+  boxSizing: "border-box",
+  maxWidth: "var(--canvas-status-line-max-width, 100%)",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  width: "var(--canvas-status-line-width, 100%)",
+};
