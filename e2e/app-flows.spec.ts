@@ -369,11 +369,11 @@ test("glazes a chromatic source pixel and clears the glaze layer", async ({ page
   await expect(page.locator("text=/\\d+px/")).toHaveCount(0);
 });
 
-test("opens retired Color links in Hex and uses the seven-tab shortcuts", async ({ page }) => {
+test("opens retired Color links in Hex and preserves the original tab shortcuts", async ({ page }) => {
   await page.goto("#color");
   await expect(page).toHaveURL(/#hex$/);
   await expect(page.getByRole("tab", { name: "Hex" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tab")).toHaveCount(7);
+  await expect(page.getByRole("tab")).toHaveCount(8);
   await expect(page.getByRole("tab", { name: "Color", exact: true })).toHaveCount(0);
   await page.keyboard.press("Alt+4");
   await expect(page.getByRole("tab", { name: "Glaze" })).toHaveAttribute("aria-selected", "true");

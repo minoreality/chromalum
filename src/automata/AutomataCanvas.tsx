@@ -62,6 +62,7 @@ export function AutomataCanvas({
         aria-label={label}
         aria-describedby={id}
         tabIndex={0}
+        onBlur={cancelInteraction}
         {...handlers}
       />
       <p className="automata-hint" id={id}>

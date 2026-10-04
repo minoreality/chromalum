@@ -182,6 +182,9 @@ svg text {
   container-name: app-tabs;
   container-type: inline-size;
 }
+.app-tablist > button[role="tab"] {
+  --sp-tab-h: clamp(2px, 0.8cqw, 4px);
+}
 .app-tab-label {
   display: block;
   width: 100%;
@@ -230,7 +233,7 @@ svg text {
 }
 .automata-controls {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(8px, 2cqw, 12px);
 }
 .automata-control {
@@ -426,12 +429,6 @@ svg text {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
 }
-@container automata (max-width: 340px) {
-  .automata-controls {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 button:focus-visible {
   outline: 2px solid var(--c-accent, #6080ff);
   outline-offset: 2px;

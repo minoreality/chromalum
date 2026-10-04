@@ -69,7 +69,7 @@
 | `src/i18n/en.ts`、`src/i18n/ja.ts`                                                                                                   | Automataの操作ラベル・規則・プリセット・色名           |
 | `src/components/__tests__/AppTabBar.test.tsx`、`src/hooks/__tests__/useUIState.test.ts`、`src/__tests__/App.test.tsx`                | タブ順、復元、履歴、初回読み込み、保持                 |
 | `src/__tests__/shortcuts.test.ts`、`src/hooks/__tests__/useKeyboardShortcuts.test.ts`、`src/components/__tests__/HelpModal.test.tsx` | Alt+8、ヘルプ表記、Sourceへ入力が漏れないこと          |
-| `e2e/accessibility.spec.ts`、`e2e/shortcuts-layout.spec.ts`、`e2e/pwa.spec.ts`                                                       | 対象タブ追加、狭幅、遅延チャンクの復旧とオフライン表示 |
+| `e2e/accessibility.spec.ts`、`e2e/shortcuts-layout.spec.ts`、`e2e/pwa.spec.ts`、`e2e/app-flows.spec.ts`                              | 対象タブ追加、狭幅、遅延チャンクの復旧とオフライン表示 |
 
 ## Task 1: 二次元モデルとプリセットを固定値から移植する
 
@@ -216,17 +216,17 @@ expect(cellsOnLine({ x: 0, y: 0 }, { x: 4, y: 0 })).toEqual([0, 1, 2, 3, 4].map(
 
 ## Task 5: ブラウザーで操作・寸法・本体との分離を確認する
 
-**Files:** `e2e/automata.spec.ts`、`e2e/accessibility.spec.ts`、`e2e/shortcuts-layout.spec.ts`、`e2e/pwa.spec.ts`。実証した不具合の修正は担当Taskのファイルへ限定する。
+**Files:** `e2e/automata.spec.ts`、`e2e/accessibility.spec.ts`、`e2e/shortcuts-layout.spec.ts`、`e2e/pwa.spec.ts`、`e2e/app-flows.spec.ts`。実証した不具合の修正は担当Taskのファイルへ限定する。
 
 **Interfaces:**
 
 - Consumes: `#automata`、`CHROMALUM - Automata`、`automata-board`、翻訳したrole／label、専用localStorage形式。テスト用の本番exportやwindow上の状態APIを追加しない。
 - Produces: マウス・タッチ・キーボード、保存と復元、矩形不変、オフライン、既存タブへの影響のブラウザー証拠。`e2e/automata.spec.ts`内の`readSavedRecord(page:Page):Promise<string>`は、`e2e/app-flows.spec.ts`の同名helperと同じくDB `chromalum`・store `state`・key `current`をreadonlyで読みJSONを返す。
 
-- [ ] 新規`automata.spec.ts`に受け入れテストを書く。black preset＋Wで単セル配置、K消去、水平／垂直／斜めドラッグを行い、終了後の保存seedを全対象セルと比較する。マウスと、タッチcontextのCDP `Input.dispatchTouchEvent`による実際のtouch sequenceで検証する。
-- [ ] 同ファイルへ時間0→1→20→0のseed不変、t>0の読み取り、タブ移動中のドラッグ中断、盤面外でrelease・再入場、blur、規則／色変更、second fingerの開始・終了を追加する。後続のボタンなしmoveではseedが変わらない。盤面外の縦スワイプはページをスクロールできる。
-- [ ] 保存拒否を注入したcontextで、編集→別タブ→Automataが同じ編集を保つことを確認する。通常contextではreload後にseed／rule／time／座標／colorを比較する。言語切り替え後も同じ状態とする。Source／Glazeを編集してもAutomata seedは変わらず、`readSavedRecord`でAutomata操作前後のSource／Glaze保存を比較する。初期描画の保存完了を待ってから基準を取り、width／height／levelData／pixelCandidateOverrideMap／candidateIndexByLevel／lockedLevelsを比較対象にする。
-- [ ] 日英×viewport 1280×900／390×844／320×900で、MS Gothicを強制したケースも検証する。板・操作部・パレット・readoutの矩形をstep前／後／t0復帰で比較する。最大座標(48,48)・時刻20・全プリセット名で横はみ出しと操作対象の重なりがなく、広幅8列／狭幅4列を満たす。
+- [x] 新規`automata.spec.ts`に受け入れテストを書く。black preset＋Wで単セル配置、K消去、水平／垂直／斜めドラッグを行い、終了後の保存seedを全対象セルと比較する。マウスと、タッチcontextのCDP `Input.dispatchTouchEvent`による実際のtouch sequenceで検証する。
+- [x] 同ファイルへ時間0→1→20→0のseed不変、t>0の読み取り、タブ移動中のドラッグ中断、盤面外でrelease・再入場、blur、規則／色変更、second fingerの開始・終了を追加する。後続のボタンなしmoveではseedが変わらない。盤面外の縦スワイプはページをスクロールできる。
+- [x] 保存拒否を注入したcontextで、編集→別タブ→Automataが同じ編集を保つことを確認する。通常contextではreload後にseed／rule／time／座標／colorを比較する。言語切り替え後も同じ状態とする。Source／Glazeを編集してもAutomata seedは変わらず、`readSavedRecord`でAutomata操作前後のSource／Glaze保存を比較する。初期描画の保存完了を待ってから基準を取り、width／height／levelData／pixelCandidateOverrideMap／candidateIndexByLevel／lockedLevelsを比較対象にする。
+- [x] 日英×viewport 1280×900／390×844／320×900で、MS Gothicを強制したケースも検証する。板・操作部・パレット・readoutの矩形をstep前／後／t0復帰で比較する。最大座標(48,48)・時刻20・全プリセット名で横はみ出しと操作対象の重なりがなく、広幅8列／狭幅4列を満たす。
 
 ```ts
 expect(afterStep).toEqual(beforeStep);
@@ -236,15 +236,15 @@ expect(await palette.getByRole("button").count()).toBe(8);
 expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 ```
 
-- [ ] タブ順・End／Home・両端矢印・Alt+8・hash／履歴を実ブラウザーで確認する。palette→Canvas→stepまでキーボードだけで操作し、Canvasの矢印やSpaceがページ移動やSource操作に漏れないことを検証する。列・行入力、配置色select、配置ボタン、チャンネル切り替えがないことも確認する。
-- [ ] `accessibility.spec.ts`と`shortcuts-layout.spec.ts`の対象リストへAutomataを追加する。`pwa.spec.ts`ではAutomataのlazy chunk復旧を既存パターンへ追加し、precache内のchunk存在と、初回に未表示のAutomataをofflineで開いてstep操作できることを検証する。
-- [ ] `npx playwright test e2e/automata.spec.ts --workers=2`を実行する。失敗は該当ケースを`--workers=1`で再現して原因を確認し、担当コードを修正する。仕様を弱めるassertion変更で通さない。
-- [ ] `npm run verify`を実行し、format・lint・knip・全typecheck・build・unit testsがPASSすることを確認する。
-- [ ] `npm run test:e2e -- --workers=2`を実行する。失敗があれば該当ケースを1 workerで再確認し、解消する。
-- [ ] `npm run test:pwa`を実行し、本番ビルドの遅延チャンク復旧・offlineのテストがPASSすることを確認する。
-- [ ] `npm run test:coverage`を実行し、既存しきい値lines／statements=80、functions=70、branches=65を満たすことを確認する。検証コマンドは負荷を重ねず順番に実行する。
-- [ ] 既存の絵を残した本体タブを操作せず、新しい確認用タブで`http://127.0.0.1:5173/chromalum/#automata`を開く。日本語でパレット・ドラッグ・stepを確認し、広幅と狭幅のスクリーンショットを保存する。コンソールに新しいエラーがないことを確認し、ローカル統合版をユーザーへ提示する。
-- [ ] Task 5の4ファイルと実証した修正だけをstageし、`Verify Automata input and layout across browsers`でコミットする。変更したCSS定数があれば、コミット本文に判断した寸法を記す。
+- [x] タブ順・End／Home・両端矢印・Alt+8・hash／履歴を実ブラウザーで確認する。palette→Canvas→stepまでキーボードだけで操作し、Canvasの矢印やSpaceがページ移動やSource操作に漏れないことを検証する。列・行入力、配置色select、配置ボタン、チャンネル切り替えがないことも確認する。
+- [x] `accessibility.spec.ts`と`shortcuts-layout.spec.ts`の対象リストへAutomataを追加する。`pwa.spec.ts`ではAutomataのlazy chunk復旧を既存パターンへ追加し、precache内のchunk存在と、初回に未表示のAutomataをofflineで開いてstep操作できることを検証する。
+- [x] `npx playwright test e2e/automata.spec.ts --workers=2`を実行する。失敗は該当ケースを`--workers=1`で再現して原因を確認し、担当コードを修正する。仕様を弱めるassertion変更で通さない。
+- [x] `npm run verify`を実行し、format・lint・knip・全typecheck・build・unit testsがPASSすることを確認する。
+- [x] `npm run test:e2e -- --workers=2`を実行する。失敗があれば該当ケースを1 workerで再確認し、解消する。
+- [x] `npm run test:pwa`を実行し、本番ビルドの遅延チャンク復旧・offlineのテストがPASSすることを確認する。
+- [x] `npm run test:coverage`を実行し、既存しきい値lines／statements=80、functions=70、branches=65を満たすことを確認する。検証コマンドは負荷を重ねず順番に実行する。
+- [x] 既存の絵を残した本体タブを操作せず、新しい確認用タブで`http://127.0.0.1:5173/chromalum/#automata`を開く。日本語でパレット・ドラッグ・stepを確認し、広幅と狭幅のスクリーンショットを保存する。コンソールに新しいエラーがないことを確認し、ローカル統合版をユーザーへ提示する。
+- [x] Task 5の5ファイルと実証した修正だけをstageし、`Verify Automata input and layout across browsers`でコミットする。変更したCSS定数があれば、コミット本文に判断した寸法を記す。
 
 ## Execution handoff
 

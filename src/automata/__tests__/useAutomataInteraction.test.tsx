@@ -10,10 +10,10 @@ function Harness({ active = true, size = 245 }: { active?: boolean; size?: numbe
   const controller = useAutomataState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const geometry = useMemo(() => getPlaneGeometry(size, 1), [size]);
-  const { cancelInteraction: _cancel, ...handlers } = useAutomataInteraction({ canvasRef, active, controller, geometry });
+  const { cancelInteraction, ...handlers } = useAutomataInteraction({ canvasRef, active, controller, geometry });
   return (
     <>
-      <canvas ref={canvasRef} role="application" tabIndex={0} {...handlers} />
+      <canvas ref={canvasRef} role="application" tabIndex={0} onBlur={cancelInteraction} {...handlers} />
       <output data-testid="seed">{Array.from(controller.state.seed).join("")}</output>
       <output data-testid="selected">
         {controller.state.x},{controller.state.y},{controller.state.time}
