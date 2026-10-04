@@ -360,6 +360,7 @@ describe("useKeyboardShortcuts", () => {
       [3, "source"],
       [6, "theory"],
       [7, "music"],
+      [8, "automata"],
     ] as const)("Alt+%i switches to the %s tab from any tab", (digit, tab) => {
       const { deps, setActiveTabId, setBrushLevel } = makeArgs();
       const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId: "theory" }));
@@ -389,12 +390,11 @@ describe("useKeyboardShortcuts", () => {
       expect(vi.mocked(setActiveTabId)).toHaveBeenCalledWith("gallery");
     });
 
-    it("ignores Alt+8, Alt+9 and Alt+0, which have no tab", () => {
+    it("ignores Alt+9 and Alt+0, which have no tab", () => {
       const { deps, setActiveTabId, setBrushLevel } = makeArgs();
       const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
       cleanup = unmount;
 
-      fireKey("8", { code: "Digit8", altKey: true });
       fireKey("9", { code: "Digit9", altKey: true });
       fireKey("0", { code: "Digit0", altKey: true });
 
@@ -429,7 +429,7 @@ describe("useKeyboardShortcuts", () => {
   });
 
   describe("tabs without a drawing canvas", () => {
-    it.each(["theory", "hex", "music", "gallery", "map"] as const)(
+    it.each(["theory", "hex", "music", "gallery", "map", "automata"] as const)(
       "leaves tools, levels, brush size, and history alone on %s",
       (activeTabId) => {
         const { deps, setTool, setBrushLevel, setBrushSize, dispatch, setZoom, setShowNewCanvas, announce } = makeArgs();

@@ -36,13 +36,30 @@ describe("AppTabBar", () => {
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Glaze" }));
 
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: "End" });
-    expect(onTabChange).toHaveBeenLastCalledWith("music");
-    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Music" }));
+    expect(onTabChange).toHaveBeenLastCalledWith("automata");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Automata" }));
 
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Home" });
     expect(onTabChange).toHaveBeenLastCalledWith("gallery");
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Gallery" }));
     expect(source.tabIndex).toBe(0);
     expect(screen.getByRole("tab", { name: "Gallery" }).tabIndex).toBe(-1);
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "ArrowLeft" });
+    expect(onTabChange).toHaveBeenLastCalledWith("automata");
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "ArrowRight" });
+    expect(onTabChange).toHaveBeenLastCalledWith("gallery");
+  });
+  it("puts Automata immediately after Music", () => {
+    render(<AppTabBar activeTabId="source" onTabChange={() => {}} t={t} />);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Gallery",
+      "Hex",
+      "Source",
+      "Glaze",
+      "Map",
+      "Theory",
+      "Music",
+      "Automata",
+    ]);
   });
 });

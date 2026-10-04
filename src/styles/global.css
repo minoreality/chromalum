@@ -177,6 +177,261 @@ svg text {
 }
 
 /* Focus indicators */
+/* Eight main tabs share a fixed label style, including when selected. */
+.app-tablist {
+  container-name: app-tabs;
+  container-type: inline-size;
+}
+.app-tab-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  font-weight: 400;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+@container app-tabs (max-width: 360px) {
+  .app-tab-label {
+    font-size: clamp(10px, 3cqw, 11px);
+  }
+}
+
+/* Automata: one editable plane and a permanently available discrete palette. */
+.automata-panel {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 500px;
+  margin: 0 auto;
+  container-name: automata;
+  container-type: inline-size;
+  color: var(--c-text-primary);
+  font-family: var(--font-mono);
+}
+.automata-heading {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.automata-heading h2 {
+  margin: 0 0 4px;
+  color: var(--c-accent-bright);
+  font-size: 18px;
+  font-weight: 500;
+}
+.automata-heading p {
+  margin: 0;
+  color: var(--c-text-dim);
+  font-size: 12px;
+}
+.automata-content {
+  display: grid;
+  gap: clamp(8px, 2cqw, 12px);
+  font-size: clamp(11px, 2.6cqw, 13px);
+  line-height: 1.6;
+}
+.automata-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 2cqw, 12px);
+}
+.automata-control {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.automata-control > span,
+.automata-time > span {
+  color: var(--c-text-muted);
+}
+.automata-control select {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  background: var(--c-bg-input);
+  color: var(--c-text-primary);
+  font-size: inherit;
+}
+.automata-time {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0;
+  min-width: 0;
+}
+.automata-time input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--c-accent-bright);
+}
+.automata-actions {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.automata-actions button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  background: var(--c-bg-surface);
+  color: var(--c-text-primary);
+  line-height: inherit;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.automata-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.automata-mode {
+  display: grid;
+  text-align: center;
+  color: var(--c-accent-bright);
+}
+.automata-mode > span {
+  grid-area: 1 / 1;
+}
+.automata-reserved {
+  visibility: hidden;
+  pointer-events: none;
+}
+.automata-palette {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.automata-color {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 5px;
+  font-size: clamp(16px, 4cqw, 20px);
+  font-weight: 600;
+  cursor: pointer;
+}
+.automata-color[aria-pressed="true"] {
+  outline: 2px solid var(--c-accent-bright);
+  outline-offset: 2px;
+}
+.automata-color-0 {
+  background: #000000;
+  color: #ffffff;
+}
+.automata-color-1 {
+  background: #0000ff;
+  color: #ffffff;
+}
+.automata-color-2 {
+  background: #ff0000;
+  color: #000000;
+}
+.automata-color-3 {
+  background: #ff00ff;
+  color: #000000;
+}
+.automata-color-4 {
+  background: #00ff00;
+  color: #000000;
+}
+.automata-color-5 {
+  background: #00ffff;
+  color: #000000;
+}
+.automata-color-6 {
+  background: #ffff00;
+  color: #000000;
+}
+.automata-color-7 {
+  background: #ffffff;
+  color: #000000;
+}
+.automata-stable-copy {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.automata-stable-copy > p {
+  grid-area: 1 / 1;
+  margin: 0;
+}
+.automata-selected-color {
+  text-align: center;
+  color: var(--c-text-muted);
+}
+.automata-canvas-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.automata-board {
+  display: block;
+  box-sizing: content-box;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  outline: 1px solid var(--c-border-hover);
+  background: #000000;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+.automata-panel[data-mode="read"] .automata-board {
+  cursor: default;
+}
+.automata-board:focus-visible,
+.automata-control select:focus-visible,
+.automata-time input:focus-visible,
+.automata-color:focus-visible,
+.automata-actions button:focus-visible {
+  outline: 2px solid var(--c-accent-bright);
+  outline-offset: 3px;
+}
+.automata-hint {
+  margin: 0;
+  color: var(--c-text-dim);
+  font-size: clamp(10px, 2.4cqw, 12px);
+  overflow-wrap: anywhere;
+}
+.automata-readout {
+  padding: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  background: var(--c-bg-panel);
+}
+.automata-notice {
+  margin: 0;
+  color: var(--c-warning);
+  overflow-wrap: anywhere;
+}
+.automata-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@container automata (min-width: 400px) {
+  .automata-palette {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+@container automata (max-width: 340px) {
+  .automata-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 button:focus-visible {
   outline: 2px solid var(--c-accent, #6080ff);
   outline-offset: 2px;

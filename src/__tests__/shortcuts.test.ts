@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { controlOwnsKey } from "../shortcuts";
+import { controlOwnsKey, hasDrawingShortcuts, shortcutsForTab } from "../shortcuts";
 
 function element(html: string): Element {
   const host = document.createElement("div");
@@ -11,6 +11,10 @@ function element(html: string): Element {
 const key = (key: string, code = key) => ({ key, code });
 
 describe("controlOwnsKey", () => {
+  it("offers Alt+1-8 without Source drawing shortcuts on Automata", () => {
+    expect(hasDrawingShortcuts("automata")).toBe(false);
+    expect(shortcutsForTab("automata")).toEqual([{ key: "Alt+1-8", label: "help_switch_tab" }]);
+  });
   it("lets text entry keep every key", () => {
     for (const html of [
       "<input>",

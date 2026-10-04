@@ -94,9 +94,11 @@ export function useUIState(_t: TranslationFn) {
   const [activeTabId, setActiveTabIdRaw] = useState(readInitialActiveTab);
   const activeTab = tabIndexFromId(activeTabId);
   const [hasOpenedMap, setHasOpenedMap] = useState(() => activeTabId === MAP_TAB_ID);
+  const [hasOpenedAutomata, setHasOpenedAutomata] = useState(() => activeTabId === "automata");
   const setActiveTabId = useCallback((tabId: MainTabId) => {
     setActiveTabIdRaw(tabId);
     if (tabId === MAP_TAB_ID) setHasOpenedMap(true);
+    if (tabId === "automata") setHasOpenedAutomata(true);
     writeStoredTab(tabId);
     pushTabHash(tabId);
   }, []);
@@ -125,6 +127,7 @@ export function useUIState(_t: TranslationFn) {
     const applyTab = (tabId: MainTabId) => {
       setActiveTabIdRaw(tabId);
       if (tabId === MAP_TAB_ID) setHasOpenedMap(true);
+      if (tabId === "automata") setHasOpenedAutomata(true);
       writeStoredTab(tabId);
       replaceCurrentHistoryState(tabId);
     };
@@ -182,6 +185,7 @@ export function useUIState(_t: TranslationFn) {
     setActiveTab,
     setActiveTabId,
     hasOpenedMap,
+    hasOpenedAutomata,
     showHelp,
     setShowHelp,
     toast,

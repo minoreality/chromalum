@@ -112,7 +112,7 @@ const THEORY_SHORTCUTS: readonly ShortcutEntry[] = [
 ];
 
 /** Visible controls and standard history keys do not need duplicate help rows. */
-const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "Alt+1-7", label: "help_switch_tab" }];
+const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "Alt+1-8", label: "help_switch_tab" }];
 
 export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
   const own: readonly ShortcutEntry[] =

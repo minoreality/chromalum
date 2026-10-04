@@ -1,6 +1,6 @@
 # Automata CA Integration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 既存CA Labの二次元モデルを、Musicの右側に置くAutomataタブへ移植し、一つの盤面と8色パレットで編集・更新・状態復元を行えるようにする。
 
@@ -61,15 +61,15 @@
 | `src/components/__tests__/AutomataPanel.test.tsx`                                          | UI・パレット・読み取り・計算再利用のテスト         |
 | `src/i18n/__tests__/automata-copy.test.ts`、`e2e/automata.spec.ts`                         | 日英の文言と実ブラウザーの受け入れテスト           |
 
-| 変更する既存ファイル                                                                                                  | 変更範囲                                               |
-| :-------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------- |
-| `src/tabs.ts`、`src/hooks/useUIState.ts`、`src/App.tsx`                                                               | 末尾のタブ、初回表示記録、遅延読み込みと表示保持       |
-| `src/components/AppTabBar.tsx`、`src/styles/global.css`                                                               | 8タブの折り返しとAutomataの全スタイル                  |
-| `src/shortcuts.ts`、`src/hooks/useKeyboardShortcuts.ts`                                                               | タブ切り替えをAlt+1〜8へ拡張                           |
-| `src/i18n/en.ts`、`src/i18n/ja.ts`                                                                                    | Automataの操作ラベル・規則・プリセット・色名           |
-| `src/components/__tests__/AppTabBar.test.tsx`、`src/hooks/__tests__/useUIState.test.ts`、`src/__tests__/App.test.tsx` | タブ順、復元、履歴、初回読み込み、保持                 |
-| `src/__tests__/shortcuts.test.ts`、`src/hooks/__tests__/useKeyboardShortcuts.test.ts`                                 | Alt+8、ヘルプ表記、Sourceへ入力が漏れないこと          |
-| `e2e/accessibility.spec.ts`、`e2e/shortcuts-layout.spec.ts`、`e2e/pwa.spec.ts`                                        | 対象タブ追加、狭幅、遅延チャンクの復旧とオフライン表示 |
+| 変更する既存ファイル                                                                                                                 | 変更範囲                                               |
+| :----------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------- |
+| `src/tabs.ts`、`src/hooks/useUIState.ts`、`src/App.tsx`                                                                              | 末尾のタブ、初回表示記録、遅延読み込みと表示保持       |
+| `src/components/AppTabBar.tsx`、`src/styles/global.css`                                                                              | 8タブの折り返しとAutomataの全スタイル                  |
+| `src/shortcuts.ts`、`src/hooks/useKeyboardShortcuts.ts`                                                                              | タブ切り替えをAlt+1〜8へ拡張                           |
+| `src/i18n/en.ts`、`src/i18n/ja.ts`                                                                                                   | Automataの操作ラベル・規則・プリセット・色名           |
+| `src/components/__tests__/AppTabBar.test.tsx`、`src/hooks/__tests__/useUIState.test.ts`、`src/__tests__/App.test.tsx`                | タブ順、復元、履歴、初回読み込み、保持                 |
+| `src/__tests__/shortcuts.test.ts`、`src/hooks/__tests__/useKeyboardShortcuts.test.ts`、`src/components/__tests__/HelpModal.test.tsx` | Alt+8、ヘルプ表記、Sourceへ入力が漏れないこと          |
+| `e2e/accessibility.spec.ts`、`e2e/shortcuts-layout.spec.ts`、`e2e/pwa.spec.ts`                                                       | 対象タブ追加、狭幅、遅延チャンクの復旧とオフライン表示 |
 
 ## Task 1: 二次元モデルとプリセットを固定値から移植する
 
@@ -180,9 +180,9 @@ expect(cellsOnLine({ x: 0, y: 0 }, { x: 4, y: 0 })).toEqual([0, 1, 2, 3, 4].map(
 - Produces: `AutomataPalette({color,onSelect}:{color:CAColor;onSelect:(color:CAColor)=>void}):React.JSX.Element`、named export `AutomataPanel({active}:{active:boolean}):React.JSX.Element`。本体のpixelsやSource編集関数をpropsに取らない。
 - Produces: `useUIState`の戻り値に`hasOpenedAutomata:boolean`を追加する。初期hash／保存ID、setter、popstate、hashchangeから一度でも開けばtrueを保持する。
 
-- [ ] `AutomataPanel.test.tsx`にt0編集、t20でstep disabled、t0でreturn disabled、presetでt0に戻る、8パレットの順序とaria-pressed、初期と現在の同座標readout、ドラッグ中のlive通知集約を検証するテストを書く。`reuses the plane for color and selection changes`はevolvePlaneの呼び出し回数が増えず、seed／rule／time変更では増えることを確認する。
-- [ ] 既存のタブ・UI state・App・shortcutテストへ末尾Automata、End→Automata、Home→Gallery、両端の矢印循環、Alt+8、`#automata`、タイトル、back／forward、既存history stateの保持を追加する。旧v2番号7はMusicのまま。lazy import解決前に離れても、初回表示後の状態と保存拒否時の状態を保持する。`hasDrawingShortcuts("automata")`はfalseのまま。
-- [ ] `automata-copy.test.ts`へ日英のキー一致と下表の固定文言、規則8件・プリセット12件・色名8件のラベルを検証するテストを書く。動的キーはliteralの型付き対応表で参照する。
+- [x] `AutomataPanel.test.tsx`にt0編集、t20でstep disabled、t0でreturn disabled、presetでt0に戻る、8パレットの順序とaria-pressed、初期と現在の同座標readout、ドラッグ中のlive通知集約を検証するテストを書く。`reuses the plane for color and selection changes`はevolvePlaneの呼び出し回数が増えず、seed／rule／time変更では増えることを確認する。
+- [x] 既存のタブ・UI state・App・shortcutテストへ末尾Automata、End→Automata、Home→Gallery、両端の矢印循環、Alt+8、`#automata`、タイトル、back／forward、既存history stateの保持を追加する。旧v2番号7はMusicのまま。lazy import解決前に離れても、初回表示後の状態と保存拒否時の状態を保持する。`hasDrawingShortcuts("automata")`はfalseのまま。
+- [x] `automata-copy.test.ts`へ日英のキー一致と下表の固定文言、規則8件・プリセット12件・色名8件のラベルを検証するテストを書く。動的キーはliteralの型付き対応表で参照する。
 
 | キー                              | ja                                                              | en                                                                             |
 | :-------------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------- |
@@ -204,15 +204,15 @@ expect(cellsOnLine({ x: 0, y: 0 }, { x: 4, y: 0 })).toEqual([0, 1, 2, 3, 4].map(
 
 日本語の規則・プリセット名は移植元UIの全8件・12件をそのまま対応付ける。英語は規則をCross XOR (4 cells)、Cross + center XOR (5 cells)、Diagonal XOR (4 cells)、Diagonal + center XOR (5 cells)、Surrounding XOR (8 cells)、Surrounding + center XOR (9 cells)、Life、Persian rugとする。プリセットはThree-color rosette (9 cells)、Diamond ring (12 cells)、Three-color corolla (12 cells)、Luminous weave (25 cells)、Color clock、Three-phase color clock、Three-color pulsar、Symmetric fireworks、Color weave (24 cells)、Three points: G, R, B、One white cell、All black。色名は黒／青／赤／マゼンタ／緑／シアン／黄／白とBlack／Blue／Red／Magenta／Green／Cyan／Yellow／White。色の表示は記号・色名・3桁GRBを組み合わせる。
 
-- [ ] `npm test -- src/components/__tests__/AutomataPanel.test.tsx src/i18n/__tests__/automata-copy.test.ts src/components/__tests__/AppTabBar.test.tsx src/hooks/__tests__/useUIState.test.ts src/__tests__/App.test.tsx src/__tests__/shortcuts.test.ts src/hooks/__tests__/useKeyboardShortcuts.test.ts`を実行し、新タブ／export／文言がまだなくFAILすることを確認する。
-- [ ] `AutomataPalette`と`AutomataPanel`を実装する。規則・プリセットだけをnative selectにし、時間はrange 0..20、stepはmin(20,time+1)、returnはset-time=0。結果はseed／rule／timeを依存にmemo化する。表示readoutは毎回更新し、別のpolite live領域は操作終了時に更新する。
-- [ ] `en.ts`／`ja.ts`へ操作・規則・プリセット・色名のキーを追加する。`automata_selected`の{2}／{4}は記号・色名・GRBを含む文字列とし、既存Theoryの文章は編集しない。
-- [ ] `global.css`へAutomataのnamed containerとスタイルを追加する。正方形Canvas、44px以上のパレットボタン、gap=6px、4列を基本にcontainer幅400px以上で8列（8×44+7×6=394px）。幅・文字・余白は既存トークンとclamp／cqwで調整する。modeの2文言は同じgrid cellで非activeをvisibility:hiddenにして高さを予約し、readoutと保存通知も最大文言で領域を予約する。
-- [ ] `tabs.ts`と`useUIState`を接続する。末尾に`{id:"automata",key:"tab_automata"}`を追加し、`LEGACY_TAB_IDS`は変更しない。`App.tsx`では既存の`loadLazyChunk`を使いnamed exportをlazyのdefaultへ包み、activeまたはhasOpenedAutomataで一度mountしたパネルをdisplay:noneとactive propで保持する。
-- [ ] `AppTabBar`に`app-tablist` classとラベルspanを付け、global.cssのscoped container queryで狭幅のラベルを折り返す。選択で文字の太さ・padding・行高が変わって高さが動かないようラベルspanを共通にする。タブのキーボード処理は既存の循環仕様を使う。
-- [ ] `useKeyboardShortcuts.ts`の`Digit([1-7])`を`Digit([1-8])`へ、`shortcuts.ts`の`Alt+1-7`を`Alt+1-8`へ変更する。AutomataをSource／Glaze用の描画ショートカット集合へ追加しない。Canvasの処理済みキーはpreventDefault＋stopPropagationで終える。
-- [ ] 同じテストコマンドと`npm run typecheck:all`を実行し、UI・コピー・互換・型チェックがPASSすることを確認する。
-- [ ] Task 4の列挙済みファイルだけをstageし、`Add Automata after Music with an eight-color palette`でコミットする。
+- [x] `npm test -- src/components/__tests__/AutomataPanel.test.tsx src/i18n/__tests__/automata-copy.test.ts src/components/__tests__/AppTabBar.test.tsx src/hooks/__tests__/useUIState.test.ts src/__tests__/App.test.tsx src/__tests__/shortcuts.test.ts src/hooks/__tests__/useKeyboardShortcuts.test.ts`を実行し、新タブ／export／文言がまだなくFAILすることを確認する。
+- [x] `AutomataPalette`と`AutomataPanel`を実装する。規則・プリセットだけをnative selectにし、時間はrange 0..20、stepはmin(20,time+1)、returnはset-time=0。結果はseed／rule／timeを依存にmemo化する。表示readoutは毎回更新し、別のpolite live領域は操作終了時に更新する。
+- [x] `en.ts`／`ja.ts`へ操作・規則・プリセット・色名のキーを追加する。`automata_selected`の{2}／{4}は記号・色名・GRBを含む文字列とし、既存Theoryの文章は編集しない。
+- [x] `global.css`へAutomataのnamed containerとスタイルを追加する。正方形Canvas、44px以上のパレットボタン、gap=6px、4列を基本にcontainer幅400px以上で8列（8×44+7×6=394px）。幅・文字・余白は既存トークンとclamp／cqwで調整する。modeの2文言は同じgrid cellで非activeをvisibility:hiddenにして高さを予約し、readoutと保存通知も最大文言で領域を予約する。
+- [x] `tabs.ts`と`useUIState`を接続する。末尾に`{id:"automata",key:"tab_automata"}`を追加し、`LEGACY_TAB_IDS`は変更しない。`App.tsx`では既存の`loadLazyChunk`を使いnamed exportをlazyのdefaultへ包み、activeまたはhasOpenedAutomataで一度mountしたパネルをdisplay:noneとactive propで保持する。
+- [x] `AppTabBar`に`app-tablist` classとラベルspanを付け、global.cssのscoped container queryで狭幅のラベルを折り返す。選択で文字の太さ・padding・行高が変わって高さが動かないようラベルspanを共通にする。タブのキーボード処理は既存の循環仕様を使う。
+- [x] `useKeyboardShortcuts.ts`の`Digit([1-7])`を`Digit([1-8])`へ、`shortcuts.ts`の`Alt+1-7`を`Alt+1-8`へ変更する。AutomataをSource／Glaze用の描画ショートカット集合へ追加しない。Canvasの処理済みキーはpreventDefault＋stopPropagationで終える。
+- [x] 同じテストコマンドと`npm run typecheck:all`を実行し、UI・コピー・互換・型チェックがPASSすることを確認する。
+- [x] Task 4の列挙済みファイルだけをstageし、`Add Automata after Music with an eight-color palette`でコミットする。
 
 ## Task 5: ブラウザーで操作・寸法・本体との分離を確認する
 

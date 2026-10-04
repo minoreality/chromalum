@@ -6,6 +6,7 @@ export const MAIN_TABS = [
   { id: "map", key: "tab_map", hash: "map" },
   { id: "theory", key: "tab_theory", hash: "theory" },
   { id: "music", key: "tab_music", hash: "music" },
+  { id: "automata", key: "tab_automata", hash: "automata" },
 ] as const;
 
 export type MainTab = (typeof MAIN_TABS)[number];

@@ -42,6 +42,10 @@ const MusicPanel = lazy(async () => {
   const mod = await loadLazyChunk(() => import("./components/MusicPanel"));
   return { default: mod.MusicPanel };
 });
+const AutomataPanel = lazy(async () => {
+  const mod = await loadLazyChunk(() => import("./components/AutomataPanel"));
+  return { default: mod.AutomataPanel };
+});
 
 // Avoid mounting the large Theory page behind another tab during local development.
 // Public builds and tests keep the existing hidden-panel state retention.
@@ -151,6 +155,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     activeTabId,
     setActiveTabId,
     hasOpenedMap,
+    hasOpenedAutomata,
     showHelp,
     setShowHelp,
     toast,
@@ -632,6 +637,18 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
           <div id={getTabPanelId("music")} role="tabpanel" aria-labelledby={getTabButtonId("music")} style={{ width: "100%" }}>
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
               <MusicPanel />
+            </Suspense>
+          </div>
+        )}
+        {(activeTabId === "automata" || hasOpenedAutomata) && (
+          <div
+            id={getTabPanelId("automata")}
+            role="tabpanel"
+            aria-labelledby={getTabButtonId("automata")}
+            style={{ width: "100%", display: activeTabId === "automata" ? undefined : "none" }}
+          >
+            <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
+              <AutomataPanel active={activeTabId === "automata"} />
             </Suspense>
           </div>
         )}
