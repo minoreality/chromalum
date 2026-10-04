@@ -150,6 +150,53 @@ test("renders all eight colors, erases with K, and fills fast straight and diago
   expect((await savedState(page)).seed).toEqual(expected);
 });
 
+for (const width of [320, 1280]) {
+  for (const dpr of [1, 1.25, 2]) {
+    test.describe(`Automata pixel boundaries at ${width}px and DPR ${dpr}`, () => {
+      test.use({ viewport: { width, height: 900 }, deviceScaleFactor: dpr });
+      test("keeps every unselected pixel opaque and exact through selection and color changes", async ({ page }) => {
+        await page.addInitScript((key) => {
+          localStorage.setItem(
+            key,
+            JSON.stringify({ version: 1, seed: new Array(2401).fill(7), preset: "black", rule: 4, time: 0, x: 48, y: 48, color: 7 }),
+          );
+        }, STORAGE_KEY);
+        await openAutomata(page);
+        expect(await page.evaluate(() => window.devicePixelRatio)).toBe(dpr);
+        const board = page.getByTestId("automata-board");
+        const inspect = (value: number, x: number, y: number) =>
+          board.evaluate(
+            (node, expected) => {
+              const canvas = node as HTMLCanvasElement;
+              const { data, width, height } = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
+              // The contrasting selection outline is deliberate. Include all other cells and their boundaries.
+              const left = Math.floor((expected.x * width) / 49) - 1,
+                right = Math.ceil(((expected.x + 1) * width) / 49) + 1,
+                top = Math.floor((expected.y * height) / 49) - 1,
+                bottom = Math.ceil(((expected.y + 1) * height) / 49) + 1;
+              for (let py = 0; py < height; py++) {
+                for (let px = 0; px < width; px++) {
+                  if (px >= left && px < right && py >= top && py < bottom) continue;
+                  const i = (py * width + px) * 4;
+                  if (data[i] !== expected.value || data[i + 1] !== expected.value || data[i + 2] !== expected.value || data[i + 3] !== 255)
+                    return { x: px, y: py, rgba: Array.from(data.slice(i, i + 4)) };
+                }
+              }
+              return null;
+            },
+            { value, x, y },
+          );
+        expect(await inspect(255, 48, 48)).toBeNull();
+        await board.press("ArrowLeft");
+        expect((await savedState(page)).seed).toEqual(new Array(2401).fill(7));
+        expect(await inspect(255, 47, 48)).toBeNull();
+        await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("black");
+        expect(await inspect(0, 24, 24)).toBeNull();
+      });
+    });
+  }
+}
+
 test("keeps the edited seed through 0 → 1 → 20 → 0 and makes results read-only", async ({ page }) => {
   await openAutomata(page);
   await blank(page);
