@@ -2,7 +2,6 @@ export const MAIN_TABS = [
   { id: "gallery", key: "tab_gallery", hash: "gallery" },
   { id: "hex", key: "tab_hex", hash: "hex" },
   { id: "source", key: "tab_source", hash: "source" },
-  { id: "color", key: "tab_color", hash: "color" },
   { id: "glaze", key: "tab_glaze", hash: "glaze" },
   { id: "map", key: "tab_map", hash: "map" },
   { id: "theory", key: "tab_theory", hash: "theory" },

@@ -5,7 +5,9 @@
  * level change and any associated override change together.
  */
 import { MAX_UNDO, LEVEL_MASK, isAllowedCanvasSize } from "../constants";
-import { applyDiff, applyDiffToPixelCandidateOverrideMap, compressDiff, decompressDiff } from "./undo-diff";
+import { applyDiff, applyDiffToPixelCandidateOverrideMap, compressDiff, decompressDiff, computeDiff } from "./undo-diff";
+import { paintBrush } from "../drawing/paint";
+import { getBrushMask } from "../drawing/brush-mask";
 import { RingBuffer } from "../utils/ring-buffer";
 import type { AppState, CanvasAction, CompressedDiff, Diff } from "../types";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../constants";
@@ -162,6 +164,14 @@ export function createInitialState(): AppState {
 
 export function canvasReducer(state: AppState, action: CanvasAction): AppState {
   switch (action.type) {
+    case "brush_stamp": {
+      const { width, height, levelData } = state.canvasData;
+      const finalLevelData = new Uint8Array(levelData);
+      paintBrush(finalLevelData, action.x, action.y, getBrushMask(action.brushSize), action.level, width, height);
+      // Commit against the latest state, including consecutive key presses,
+      // through the same history and glaze-override path as a pointer stroke.
+      return canvasReducer(state, { type: "stroke_end", finalLevelData, diff: computeDiff(levelData, finalLevelData) });
+    }
     case "stroke_end": {
       const { finalLevelData, finalPixelCandidateOverrideMap, diff } = action;
       if (!diff || diff.indices.length === 0) return state;

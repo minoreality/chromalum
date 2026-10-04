@@ -60,6 +60,9 @@ const GLAZE_TOOLS: { id: GlazeToolId; labelKey: string; key: string }[] = [
   { id: "glaze_brush", labelKey: "tool_glaze_brush", key: "b" },
   { id: "glaze_eraser", labelKey: "tool_glaze_eraser", key: "e" },
   { id: "glaze_fill", labelKey: "tool_glaze_fill", key: "f" },
+  { id: "glaze_line", labelKey: "tool_line", key: "l" },
+  { id: "glaze_rect", labelKey: "tool_rect", key: "r" },
+  { id: "glaze_ellipse", labelKey: "tool_ellipse", key: "o" },
 ];
 const S_GLAZE_ACTION_BUTTON_BASE: React.CSSProperties = {
   boxSizing: "border-box",
@@ -120,22 +123,11 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
       if ((e.ctrlKey || e.metaKey) && !isZoomKey) return;
       const k = e.key.toLowerCase();
       // Tool shortcuts
-      if (k === "b") {
+      const tool = GLAZE_TOOLS.find((entry) => entry.key === k);
+      if (tool) {
         e.preventDefault();
-        setGlazeTool("glaze_brush");
-        announce(t("announce_glaze_brush"));
-        return;
-      }
-      if (k === "e") {
-        e.preventDefault();
-        setGlazeTool("glaze_eraser");
-        announce(t("announce_glaze_eraser"));
-        return;
-      }
-      if (k === "f") {
-        e.preventDefault();
-        setGlazeTool("glaze_fill");
-        announce(t("announce_glaze_fill"));
+        setGlazeTool(tool.id);
+        announce(t("announce_" + tool.id));
         return;
       }
       // Brush size
@@ -415,21 +407,29 @@ export const GlazePanel = React.memo(function GlazePanel(props: GlazePanelProps)
         </div>
         <div className="panel-sidebar">
           {/* Tools */}
-          <div role="radiogroup" aria-label={t("aria_glaze_tools")} style={{ display: "flex", gap: SP.lg, justifyContent: "center" }}>
-            {GLAZE_TOOLS.map((gt) => (
-              <button
-                key={gt.id}
-                role="radio"
-                aria-checked={glazeTool === gt.id}
-                onClick={() => {
-                  setGlazeTool(gt.id);
-                  if (panZoomMode) setPanZoomMode(false);
-                  announce(t("announce_" + gt.id));
-                }}
-                style={glazeTool === gt.id ? S_GLAZE_ACTION_BUTTON_ACTIVE : S_GLAZE_ACTION_BUTTON}
-              >
-                {t(gt.labelKey)}({gt.key.toUpperCase()})
-              </button>
+          <div
+            role="radiogroup"
+            aria-label={t("aria_glaze_tools")}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg }}
+          >
+            {[GLAZE_TOOLS.slice(0, 3), GLAZE_TOOLS.slice(3)].map((row, index) => (
+              <div key={index} style={{ display: "flex", gap: SP.lg, justifyContent: "center" }}>
+                {row.map((gt) => (
+                  <button
+                    key={gt.id}
+                    role="radio"
+                    aria-checked={glazeTool === gt.id}
+                    onClick={() => {
+                      setGlazeTool(gt.id);
+                      if (panZoomMode) setPanZoomMode(false);
+                      announce(t("announce_" + gt.id));
+                    }}
+                    style={glazeTool === gt.id ? S_GLAZE_ACTION_BUTTON_ACTIVE : S_GLAZE_ACTION_BUTTON}
+                  >
+                    {t(gt.labelKey)}({gt.key.toUpperCase()})
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
 

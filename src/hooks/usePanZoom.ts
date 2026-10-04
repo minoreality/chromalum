@@ -3,6 +3,7 @@ import {
   ZOOM_MIN,
   ZOOM_MAX,
   MOUSE_NOTCH_PX,
+  MOUSE_NOTCH_DELTA,
   WHEEL_GESTURE_GAP_MS,
   WHEEL_LINE_PX,
   WHEEL_PAGE_PX,
@@ -24,6 +25,8 @@ interface PanZoomResult {
   setPanZoomMode: React.Dispatch<React.SetStateAction<boolean>>;
   startPan: (e: React.PointerEvent) => void;
   handleMiddleDown: (e: React.PointerEvent) => void;
+  resetView: () => void;
+  cancelPanInteraction: () => void;
   movePan: (e: React.PointerEvent) => void;
   endPan: () => void;
   onWheel: (e: WheelEvent) => void;
@@ -89,19 +92,26 @@ export function wheelDeltaPx(delta: number, deltaMode: number | undefined): numb
 
 export type WheelDevice = "mouse" | "trackpad";
 
+type WheelInput = Pick<WheelEvent, "deltaX" | "deltaY" | "deltaMode"> & { wheelDeltaY?: number };
+
 /**
- * A wheel event does not say what produced it. A classic notch is one large,
- * whole-pixel, vertical-only delta — or a line/page delta, which only a wheel
- * emits. A precision trackpad streams sub-notch deltas and moves both axes.
- * Returns `prev` when an event says nothing either way, and the caller seeds it
- * with "mouse", so an unrecognised device keeps zooming as the help panel says.
+ * Device detection is heuristic. Chromium's optional legacy wheelDeltaY keeps
+ * discrete notch units even when the CSS deltaY is fractional (the
+ * Windows mouse reported deltaY=133.3333251953125, wheelDeltaY=-120). Use that
+ * hint before treating fractional deltas as trackpad input. Without it, retain
+ * common 100/120px notch fallbacks and continuous/two-axis trackpad scrolling.
+ * A zero delta preserves the previous device.
  */
-export function classifyWheelDevice(e: Pick<WheelEvent, "deltaX" | "deltaY" | "deltaMode">, prev: WheelDevice): WheelDevice {
+export function classifyWheelDevice(e: WheelInput, prev: WheelDevice): WheelDevice {
   if (e.deltaMode) return "mouse";
-  if (e.deltaX !== 0 || !Number.isInteger(e.deltaX) || !Number.isInteger(e.deltaY)) return "trackpad";
+  if (e.deltaX !== 0) return "trackpad";
   const dy = Math.abs(e.deltaY);
   if (dy === 0) return prev;
-  return dy % MOUSE_NOTCH_PX === 0 ? "mouse" : "trackpad";
+  if (!Number.isInteger(dy)) {
+    const notch = Math.abs(e.wheelDeltaY ?? 0);
+    return notch !== 0 && notch % MOUSE_NOTCH_DELTA === 0 ? "mouse" : "trackpad";
+  }
+  return dy % MOUSE_NOTCH_PX === 0 || dy % MOUSE_NOTCH_DELTA === 0 ? "mouse" : "trackpad";
 }
 
 /**
@@ -205,6 +215,12 @@ export function usePanZoom(
     [panRef],
   );
 
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    scheduleCursorRedrawRef.current?.();
+  }, [setZoom, setPan, scheduleCursorRedrawRef]);
+
   /** Middle-click handler: double-click resets zoom/pan, single starts pan. */
   const handleMiddleDown = useCallback(
     (e: React.PointerEvent) => {
@@ -212,15 +228,13 @@ export function usePanZoom(
       const now = performance.now();
       if (now - lastMiddleDownRef.current < 400) {
         lastMiddleDownRef.current = 0;
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-        scheduleCursorRedrawRef.current?.();
+        resetView();
         return;
       }
       lastMiddleDownRef.current = now;
       startPan(e);
     },
-    [startPan, setZoom, setPan, scheduleCursorRedrawRef],
+    [startPan, resetView],
   );
 
   const movePan = useCallback(
@@ -383,6 +397,8 @@ export function usePanZoom(
     setPanZoomMode,
     startPan,
     handleMiddleDown,
+    resetView,
+    cancelPanInteraction: clearPanInteraction,
     movePan,
     endPan,
     onWheel,

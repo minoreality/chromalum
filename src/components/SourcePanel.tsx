@@ -24,6 +24,7 @@ interface SourcePanelProps {
   onMove: (e: React.PointerEvent) => void;
   onUp: () => void;
   onPointerLeave: (e: React.PointerEvent) => void;
+  cancelKeyboardDrawing: () => void;
   clearCursor: () => void;
   undo: () => void;
   redo: () => void;
@@ -31,7 +32,6 @@ interface SourcePanelProps {
   loadImg: (file: File) => Promise<void>;
   announce: (msg: string) => void;
   scheduleCursorRedraw: () => void;
-  previewCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   onNewCanvas: () => void;
   panZoomMode: boolean;
   setPanZoomMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -74,6 +74,7 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     onMove,
     onUp,
     onPointerLeave,
+    cancelKeyboardDrawing,
     clearCursor,
     undo,
     redo,
@@ -81,7 +82,6 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     loadImg,
     announce,
     scheduleCursorRedraw,
-    previewCanvasRef,
     onNewCanvas,
     panZoomMode,
     setPanZoomMode,
@@ -99,12 +99,13 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (e.button === 1) {
+        cancelKeyboardDrawing();
         handleMiddleDown(e);
         return;
       }
       (panZoomMode ? onPinchDown : onDown)(e);
     },
-    [handleMiddleDown, panZoomMode, onPinchDown, onDown],
+    [cancelKeyboardDrawing, handleMiddleDown, panZoomMode, onPinchDown, onDown],
   );
   const handleZoomReset = useCallback(() => {
     setZoom(1);
@@ -185,14 +186,18 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     (kind: "gray" | "color" | "glaze") => {
       const ts = timestamp();
       if (kind === "gray") saveColor(sourceCanvasRef, `chromalum_gray_${ts}.png`);
-      else if (kind === "color") saveColor(previewCanvasRef, `chromalum_color_${ts}.png`);
+      else if (kind === "color") saveColor(null, `chromalum_color_${ts}.png`);
       else saveGlaze(`chromalum_glaze_${ts}.png`);
     },
-    [saveColor, saveGlaze, sourceCanvasRef, previewCanvasRef],
+    [saveColor, saveGlaze, sourceCanvasRef],
   );
-  const requestSave = useCallback((kind: "gray" | "color" | "glaze") => {
-    setConfirmSave(kind);
-  }, []);
+  const requestSave = useCallback(
+    (kind: "gray" | "color" | "glaze") => {
+      cancelKeyboardDrawing();
+      setConfirmSave(kind);
+    },
+    [cancelKeyboardDrawing],
+  );
   const handleSaveColor = useCallback(() => requestSave("color"), [requestSave]);
   // Ctrl+S makes the same request as the Save Color button; the panel is
   // mounted only while the Source tab is active.
@@ -233,9 +238,9 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
     (e: React.MouseEvent) => {
       if (!window.matchMedia("(pointer: fine)").matches) return;
       e.preventDefault();
-      shareColor(previewCanvasRef, `chromalum_color_${timestamp()}.png`);
+      shareColor(null, `chromalum_color_${timestamp()}.png`);
     },
-    [shareColor, previewCanvasRef],
+    [shareColor],
   );
   const handleShareGray = useCallback(
     (e: React.MouseEvent) => {
@@ -480,11 +485,6 @@ export const SourcePanel = React.memo(function SourcePanel(props: SourcePanelPro
                 key={i}
                 onClick={() => {
                   setBrushLevel(i);
-                  announce(t("announce_level", i, info.name));
-                }}
-                onDoubleClick={() => {
-                  setBrushLevel(i);
-                  setTool(i === 0 ? "eraser" : "brush");
                   announce(t("announce_level", i, info.name));
                 }}
                 aria-label={t("announce_level", i, info.name)}

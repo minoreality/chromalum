@@ -32,8 +32,8 @@ describe("AppTabBar", () => {
     source.focus();
 
     fireEvent.keyDown(source, { key: "ArrowRight" });
-    expect(onTabChange).toHaveBeenLastCalledWith("color");
-    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Color" }));
+    expect(onTabChange).toHaveBeenLastCalledWith("glaze");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Glaze" }));
 
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: "End" });
     expect(onTabChange).toHaveBeenLastCalledWith("music");

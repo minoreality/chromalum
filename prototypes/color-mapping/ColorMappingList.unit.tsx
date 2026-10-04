@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ColorMappingList } from "../ColorMappingList";
-import { LEVEL_CANDIDATES } from "../../color-engine";
+import { ColorMappingList } from "./ColorMappingList";
+import { LEVEL_CANDIDATES } from "../../src/color-engine";
 
-vi.mock("../../i18n", () => ({
+vi.mock("./i18n", () => ({
   useTranslation: () => ({
     t: (key: string, ...args: unknown[]) => `${key}(${args.join(",")})`,
   }),

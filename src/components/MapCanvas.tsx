@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import type { AnalysisPixelMaps, CanvasData } from "../types";
 import type { MapMode } from "../types";
 import { buildRegionSizeMap, getAnalysisMapHoverInfo, rasterizeAnalysisMap } from "../drawing/analysis-map-render";
@@ -8,8 +8,9 @@ import { recordDebugPerf, startDebugPerf } from "../utils/perf-debug";
 import { useTranslation } from "../i18n";
 import { useCanvasCopy } from "../hooks/useCanvasCopy";
 import { ConfirmModal } from "./ConfirmModal";
-import { S_CANVAS_STATUS_STABLE } from "../styles/shared";
+import { S_CANVAS_STATUS_STABLE, S_CHECKERBOARD } from "../styles/shared";
 import { getFullStatusText, getVisibleStatusText, type StatusText, useCompactStatus } from "../utils/status-display";
+import { usePreviewCanvasNavigation, type CanvasNavigationHandlers } from "../hooks/usePreviewCanvasNavigation";
 
 const EMPTY_REGION_SIZE_BY_ID = new Map<number, number>();
 
@@ -22,6 +23,8 @@ export function MapCanvas({
   canvasData,
   displayWidth,
   displayHeight,
+  canvasTransform,
+  navigation,
   showToast,
 }: {
   active?: boolean;
@@ -31,6 +34,8 @@ export function MapCanvas({
   canvasData: CanvasData;
   displayWidth: number;
   displayHeight: number;
+  canvasTransform: React.CSSProperties;
+  navigation: CanvasNavigationHandlers;
   showToast?: (message: string, type: "error" | "success" | "info") => void;
 }) {
   const { t } = useTranslation();
@@ -72,12 +77,17 @@ export function MapCanvas({
 
   // Hover info
   const [hoverInfo, setHoverInfo] = useState<StatusText | null>(null);
+  const hoverPosition = useRef<{ x: number; y: number } | null>(null);
 
-  const onMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const px = (((e.clientX - rect.left) / rect.width) * cw) | 0;
-      const py = (((e.clientY - rect.top) / rect.height) * ch) | 0;
+  const updateCanvasHover = useCallback(
+    (point: { x: number; y: number }) => {
+      const rect = ref.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0 || rect.height === 0) {
+        setHoverInfo(null);
+        return;
+      }
+      const px = Math.floor(((point.x - rect.left) / rect.width) * cw);
+      const py = Math.floor(((point.y - rect.top) / rect.height) * ch);
       if (px < 0 || px >= cw || py < 0 || py >= ch) {
         setHoverInfo(null);
         return;
@@ -96,10 +106,26 @@ export function MapCanvas({
     [mode, pixelMaps, candidateIndexByLevel, canvasData, cw, ch, regionSizeCache],
   );
 
-  const onMouseLeave = useCallback(() => setHoverInfo(null), []);
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      hoverPosition.current = { x: e.clientX, y: e.clientY };
+      updateCanvasHover(hoverPosition.current);
+    },
+    [updateCanvasHover],
+  );
+
+  useLayoutEffect(() => {
+    if (hoverPosition.current) updateCanvasHover(hoverPosition.current);
+  }, [canvasTransform, displayWidth, displayHeight, updateCanvasHover]);
+
+  const onMouseLeave = useCallback(() => {
+    hoverPosition.current = null;
+    setHoverInfo(null);
+  }, []);
 
   // Long-press to save map image (mobile)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savePressConsumed = useRef(false);
   const [showSaveHint, setShowSaveHint] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   // This transient state belongs to the active tab, even though Map is cached.
@@ -157,7 +183,10 @@ export function MapCanvas({
   }, []);
 
   useEffect(() => {
-    if (!active) cancelLongPress();
+    if (!active) {
+      cancelLongPress();
+      savePressConsumed.current = false;
+    }
     return cancelLongPress;
   }, [active, cancelLongPress]);
 
@@ -165,10 +194,12 @@ export function MapCanvas({
     (e: React.PointerEvent) => {
       if (!active || e.pointerType !== "touch") return;
       cancelLongPress();
+      if (e.isPrimary === false || e.target !== ref.current) return;
       longPressOrigin.current = { x: e.clientX, y: e.clientY };
       longPressTimer.current = setTimeout(() => {
         longPressTimer.current = null;
         longPressOrigin.current = null;
+        savePressConsumed.current = true;
         setConfirmSaveOpen(true);
       }, 1000);
     },
@@ -185,9 +216,22 @@ export function MapCanvas({
     [cancelLongPress],
   );
 
+  const canvasNavigation = usePreviewCanvasNavigation(navigation, active && !confirmSaveOpen);
+
   return (
     <div
       className="map-canvas-frame"
+      onPointerDownCapture={() => {
+        savePressConsumed.current = false;
+      }}
+      onClickCapture={(e) => {
+        // Releasing the hold can produce a click on the newly opened backdrop.
+        // Consume that click; a new pointer-down still operates the dialog.
+        if (!savePressConsumed.current || e.detail === 0) return;
+        savePressConsumed.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       style={{
         alignItems: "center",
         display: "flex",
@@ -197,7 +241,43 @@ export function MapCanvas({
         width: displayWidth,
       }}
     >
-      <div className="canvas-workspace" tabIndex={0} aria-label={t("map_title")} aria-keyshortcuts="Control+c Meta+c">
+      <div
+        className="canvas-workspace"
+        ref={canvasNavigation.workspaceRef}
+        tabIndex={0}
+        aria-label={t("map_title")}
+        aria-keyshortcuts="Control+c Meta+c"
+        onPointerDown={(e) => {
+          onPointerDown(e);
+          canvasNavigation.onPointerDown(e);
+        }}
+        onPointerMove={(e) => {
+          onPointerMoveLP(e);
+          canvasNavigation.onPointerMove(e);
+        }}
+        onPointerUp={(e) => {
+          cancelLongPress();
+          canvasNavigation.onPointerUp(e);
+        }}
+        onPointerCancel={(e) => {
+          cancelLongPress();
+          canvasNavigation.onPointerCancel(e);
+        }}
+        onLostPointerCapture={(e) => {
+          cancelLongPress();
+          canvasNavigation.onPointerCancel(e);
+        }}
+        style={{
+          width: displayWidth,
+          height: displayHeight,
+          overflow: "hidden",
+          position: "relative",
+          border: `1px solid ${C.border}`,
+          borderRadius: R.lg,
+          touchAction: "none",
+          ...S_CHECKERBOARD,
+        }}
+      >
         <canvas
           ref={ref}
           role="img"
@@ -206,17 +286,12 @@ export function MapCanvas({
           height={ch || 1}
           onMouseMove={onMouseMove}
           onMouseLeave={onMouseLeave}
-          onPointerDown={onPointerDown}
-          onPointerUp={cancelLongPress}
-          onPointerCancel={cancelLongPress}
-          onPointerMove={onPointerMoveLP}
           style={{
             width: displayWidth,
             height: displayHeight,
             display: "block",
             imageRendering: "pixelated",
-            borderRadius: R.lg,
-            border: `1px solid ${C.border}`,
+            ...canvasTransform,
             cursor: "crosshair",
             touchAction: "none",
           }}

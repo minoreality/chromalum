@@ -1,19 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../../color-engine";
-import { formatColorPixelStatus, formatGlazePixelStatus, formatHexPixelStatus, formatSourcePixelStatus } from "../pixel-status";
+import { formatGlazePixelStatus, formatHexPixelStatus, formatSourcePixelStatus } from "../pixel-status";
 
 describe("pixel status formatters", () => {
   it("formats source pixels as source tone data", () => {
     expect(formatSourcePixelStatus({ x: 4, y: 2, lv: 3 })).toEqual({
       full: "(4,2) Source L3 Magenta T=3/7 bits=011",
       compact: "(4,2) Src L3 T=3/7",
-    });
-  });
-
-  it("formats color pixels as global output candidates", () => {
-    expect(formatColorPixelStatus({ x: 4, y: 2, lv: 3, candidateIndexByLevel: DEFAULT_CANDIDATE_INDEX_BY_LEVEL })).toEqual({
-      full: "(4,2) Color L3 c3/3 #ff00ff hue=300° Δ0°",
-      compact: "(4,2) Color L3 c3/3 #ff00ff h=300°",
     });
   });
 

@@ -11,6 +11,9 @@ export interface KeyboardShortcutDeps {
   setTool: React.Dispatch<React.SetStateAction<ToolId>>;
   setGlazeTool: React.Dispatch<React.SetStateAction<GlazeToolId>>;
   setBrushLevel: React.Dispatch<React.SetStateAction<number>>;
+  beginSourceDrawing: (level: number, code: string) => void;
+  endSourceDrawing: (code: string) => void;
+  cancelSourceDrawing: () => void;
   setBrushSize: React.Dispatch<React.SetStateAction<number>>;
   dispatch: React.Dispatch<CanvasAction>;
   announce: (msg: string) => void;
@@ -43,6 +46,9 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     setTool,
     setGlazeTool,
     setBrushLevel,
+    beginSourceDrawing,
+    endSourceDrawing,
+    cancelSourceDrawing,
     setBrushSize,
     dispatch,
     announce,
@@ -123,22 +129,25 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       {
         key: "l",
         action: () => {
-          setTool("line");
-          announce(t("announce_line"));
+          if (activeTabId === "glaze") setGlazeTool("glaze_line");
+          else setTool("line");
+          announce(t(activeTabId === "glaze" ? "announce_glaze_line" : "announce_line"));
         },
       },
       {
         key: "r",
         action: () => {
-          setTool("rect");
-          announce(t("announce_rect"));
+          if (activeTabId === "glaze") setGlazeTool("glaze_rect");
+          else setTool("rect");
+          announce(t(activeTabId === "glaze" ? "announce_glaze_rect" : "announce_rect"));
         },
       },
       {
         key: "o",
         action: () => {
-          setTool("ellipse");
-          announce(t("announce_ellipse"));
+          if (activeTabId === "glaze") setGlazeTool("glaze_ellipse");
+          else setTool("ellipse");
+          announce(t(activeTabId === "glaze" ? "announce_glaze_ellipse" : "announce_ellipse"));
         },
       },
     ];
@@ -146,11 +155,11 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     const down = (e: KeyboardEvent) => {
       // A panel or focused control may already have handled this bubbling key.
       if (e.defaultPrevented) return;
-      // Global chords work from any focus: Alt+1..8 switch tabs in tab-bar
+      // Global chords work from any focus: Alt+1..7 switch tabs in tab-bar
       // order and Alt+L switches the language. Matched on e.code because
       // Option+digit types a symbol on macOS.
       if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-        const digit = /^Digit([1-8])$/.exec(e.code);
+        const digit = /^Digit([1-7])$/.exec(e.code);
         if (digit) {
           const tab = tabIdFromIndex(Number(digit[1]) - 1);
           if (tab === null) return;
@@ -185,10 +194,12 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       // Help is reachable from every tab. "?" always arrives with Shift held.
       if (e.key === "F1" || (key === "?" && !isCtrl)) {
         e.preventDefault();
+        cancelSourceDrawing();
         setShowHelp((v) => !v);
         return;
       }
       if (key === "Escape" && !isCtrl) {
+        cancelSourceDrawing();
         setShowHelp(false);
         return;
       }
@@ -212,9 +223,6 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
         return;
       }
 
-      // Glaze has no shape tools; never change the hidden Source selection.
-      if (activeTabId === "glaze" && (key === "l" || key === "r" || key === "o")) return;
-
       // Space key for pan (stateful, handle separately). The repeats a held key
       // sends have to be prevented too: holding Space is the gesture, and letting
       // one repeat through hands the key back to the browser, which scrolls the
@@ -222,6 +230,7 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       if (e.code === "Space") {
         e.preventDefault();
         if (!e.repeat) {
+          cancelSourceDrawing();
           spaceRef.current = true;
           setCursorMode("grab");
         }
@@ -239,7 +248,9 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
 
       // Level keys 0-7 (no ctrl)
       if (!isCtrl && key >= "0" && key <= "7") {
+        e.preventDefault();
         setBrushLevel(+key);
+        if (activeTabId === "source" && !e.repeat && !isStrokeActive()) beginSourceDrawing(+key, e.code || e.key);
         announce(t("announce_level", key, LEVEL_INFO[+key].name));
         return;
       }
@@ -258,6 +269,8 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       }
     };
     const up = (e: KeyboardEvent) => {
+      // Finish the owning physical key even if focus or modifiers changed.
+      endSourceDrawing(e.code || e.key);
       if (e.code === "Space") {
         spaceRef.current = false;
         setCursorMode(null);
@@ -265,6 +278,7 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
       }
     };
     const blur = () => {
+      cancelSourceDrawing();
       if (spaceRef.current) {
         spaceRef.current = false;
         setCursorMode(null);
@@ -284,6 +298,9 @@ export function useKeyboardShortcuts(deps: KeyboardShortcutDeps) {
     setTool,
     setGlazeTool,
     setBrushLevel,
+    beginSourceDrawing,
+    endSourceDrawing,
+    cancelSourceDrawing,
     setBrushSize,
     dispatch,
     announce,

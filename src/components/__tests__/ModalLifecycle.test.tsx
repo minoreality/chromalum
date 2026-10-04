@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CropModal } from "../CropModal";
 import { MapCanvas } from "../MapCanvas";
+import { makeCanvasNavigation } from "./canvas-navigation-fixture";
 
 vi.mock("../../i18n", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
@@ -52,6 +53,8 @@ describe("Map dialog lifecycle", () => {
       mode: "levelTone" as const,
       displayWidth: 200,
       displayHeight: 200,
+      canvasTransform: {},
+      navigation: makeCanvasNavigation(),
       candidateIndexByLevel: new Array<number>(8).fill(0),
       canvasData: { width: 2, height: 2, levelData: new Uint8Array(4), pixelCandidateOverrideMap: new Uint8Array(4) },
       pixelMaps: {
@@ -73,7 +76,13 @@ describe("Map dialog lifecycle", () => {
   it.each([400, 1000])("closes the save dialog and cancels pending long press on departure after %i ms", (delay) => {
     vi.useFakeTimers();
     const view = render(map(true));
-    fireEvent.pointerDown(view.container.querySelector("canvas")!, { pointerType: "touch", pointerId: 1, clientX: 10, clientY: 10 });
+    fireEvent.pointerDown(view.container.querySelector("canvas")!, {
+      pointerType: "touch",
+      isPrimary: true,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
     act(() => vi.advanceTimersByTime(delay));
     if (delay === 1000) expect(screen.getByRole("dialog")).toBeTruthy();
     view.rerender(map(false));
@@ -88,7 +97,7 @@ describe("Map dialog lifecycle", () => {
     const view = render(map(true));
     const timers = vi.spyOn(globalThis, "setTimeout");
     const cancelTimer = vi.spyOn(globalThis, "clearTimeout");
-    fireEvent.pointerDown(view.container.querySelector("canvas")!, { pointerType: "touch", pointerId: 1 });
+    fireEvent.pointerDown(view.container.querySelector("canvas")!, { pointerType: "touch", isPrimary: true, pointerId: 1 });
     const timerIndex = timers.mock.calls.findIndex(([, delay]) => delay === 1000);
     expect(timerIndex).toBeGreaterThanOrEqual(0);
     const longPressTimer = timers.mock.results[timerIndex].value;

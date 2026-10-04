@@ -5,7 +5,7 @@ import type { MainTabId } from "./tabs";
 export type ShortcutEntry = { readonly label: TranslationKey } & ({ readonly key: string } | { readonly keyCopy: TranslationKey });
 
 /** Tabs whose canvas owns the drawing shortcuts (tools, levels, pan, zoom, history). */
-const DRAWING_TAB_IDS: ReadonlySet<MainTabId> = new Set<MainTabId>(["source", "color", "glaze"]);
+const DRAWING_TAB_IDS: ReadonlySet<MainTabId> = new Set<MainTabId>(["source", "glaze"]);
 
 export function hasDrawingShortcuts(tab: MainTabId): boolean {
   return DRAWING_TAB_IDS.has(tab);
@@ -64,7 +64,6 @@ const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
   { key: "0-7", label: "help_level" },
   { key: "[ / ]", label: "help_brush_size" },
   { keyCopy: "help_eyedropper_key", label: "help_eyedropper" },
-  { keyCopy: "help_dblclick_level_key", label: "help_dblclick_level" },
   // Navigation
   { keyCopy: "help_pan_combined_key", label: "help_pan" },
   { keyCopy: "help_arrow_pan_key", label: "help_arrow_pan" },
@@ -73,27 +72,27 @@ const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
   { keyCopy: "help_zoom_pixel_key", label: "help_zoom_pixel" },
   // File operations
   CANVAS_COPY_SHORTCUT,
-  { key: "Ctrl+N", label: "help_new_canvas" },
   { key: "Ctrl+V", label: "help_paste" },
-  { keyCopy: "help_drop_image_key", label: "help_drop_image" },
-  // Edit
-  { key: "Ctrl+Z", label: "help_undo" },
-  { key: "Ctrl+Y / ⌘⇧Z", label: "help_redo" },
 ];
 
-const SOURCE_SHORTCUTS: readonly ShortcutEntry[] = [...DRAWING_SHORTCUTS, { key: "Ctrl+S", label: "help_save_color" }];
+const SOURCE_SHORTCUTS: readonly ShortcutEntry[] = [
+  ...DRAWING_SHORTCUTS.map((entry): ShortcutEntry => (entry.label === "help_level" ? { key: "0-7", label: "help_source_level" } : entry)),
+  { keyCopy: "help_source_shape_key", label: "help_source_shape" },
+  { key: "Esc", label: "help_source_cancel" },
+  { key: "Ctrl+S", label: "help_save_color" },
+];
 
 /**
- * Gestures on controls only the Source panel draws: its level palette takes the
- * double-click, its zoom button the right-click. Color has neither control, and
+ * Only Source's zoom button takes the pixel-scale right-click gesture.
  * Glaze's zoom button only resets.
  */
-const SOURCE_ONLY_LABELS: ReadonlySet<TranslationKey> = new Set<TranslationKey>(["help_dblclick_level", "help_zoom_pixel"]);
+const SOURCE_ONLY_LABELS: ReadonlySet<TranslationKey> = new Set<TranslationKey>(["help_zoom_pixel"]);
 
-const COLOR_AND_GLAZE_SHORTCUTS: readonly ShortcutEntry[] = DRAWING_SHORTCUTS.filter((entry) => !SOURCE_ONLY_LABELS.has(entry.label));
+const GLAZE_SHORTCUTS: readonly ShortcutEntry[] = DRAWING_SHORTCUTS.filter((entry) => !SOURCE_ONLY_LABELS.has(entry.label));
 
 const HEX_SHORTCUTS: readonly ShortcutEntry[] = [
   CANVAS_COPY_SHORTCUT,
+  { keyCopy: "help_hex_view_key", label: "help_hex_view" },
   { key: "2-5", label: "help_hex_cycle" },
   // The gold ring is the pin's whole report, and neither gesture is printed
   // anywhere on the figure, so the panel is the only place it can be found.
@@ -112,20 +111,15 @@ const THEORY_SHORTCUTS: readonly ShortcutEntry[] = [
   { keyCopy: "help_theory_navigate_key", label: "help_theory_navigate" },
 ];
 
-/** Available on every tab, listed last. */
-const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [
-  { key: "Alt+1-8", label: "help_switch_tab" },
-  { key: "Alt+L", label: "help_switch_language" },
-  { key: "?/F1", label: "help_this_help" },
-  { key: "Esc", label: "help_close" },
-];
+/** Visible controls and standard history keys do not need duplicate help rows. */
+const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "Alt+1-7", label: "help_switch_tab" }];
 
 export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
   const own: readonly ShortcutEntry[] =
     tab === "source"
       ? SOURCE_SHORTCUTS
       : hasDrawingShortcuts(tab)
-        ? COLOR_AND_GLAZE_SHORTCUTS
+        ? GLAZE_SHORTCUTS
         : tab === "hex"
           ? HEX_SHORTCUTS
           : tab === "music"

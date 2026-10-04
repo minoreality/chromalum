@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useRef, useCallback, useMemo, useState } from "react";
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from "react";
 import { PersistenceNotice } from "./components/PersistenceNotice";
 
 import { isShapeTool } from "./constants";
@@ -7,7 +7,7 @@ import { usePanZoom } from "./hooks/usePanZoom";
 import { useCanvasDrawing } from "./hooks/useCanvasDrawing";
 import { useGlazeDrawing } from "./hooks/useGlazeDrawing";
 import { useCanvasCoordination } from "./hooks/useCanvasCoordination";
-import { useStablePanZoomHandlers, useStableDrawingHandlers } from "./hooks/useStableHandlers";
+import { useStablePanZoomHandlers } from "./hooks/useStableHandlers";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { useImageImportCrop } from "./hooks/useImageImportCrop";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -21,7 +21,6 @@ import { Toast } from "./components/Toast";
 import { getTabButtonId, getTabPanelId, tabFromId } from "./tabs";
 import { AppTabBar } from "./components/AppTabBar";
 import { SourcePanel } from "./components/SourcePanel";
-import { ColorPanel } from "./components/ColorPanel";
 import { GlazePanel } from "./components/GlazePanel";
 import { AboutModal } from "./components/AboutModal";
 import { HelpModal } from "./components/HelpModal";
@@ -177,18 +176,16 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
   } = app;
 
   const levelHistogram = state.levelHistogram;
-  const [scrollToGallery, setScrollToGallery] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [scrollToGallery, setScrollToGallery] = useState(false);
 
   useEffect(() => {
     document.title = `CHROMALUM - ${t(tabFromId(activeTabId).key)}`;
   }, [activeTabId, t]);
 
-  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const glazePreviewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const hexPreviewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const sourceCanvasWrapRef = useRef<HTMLDivElement | null>(null);
-  const previewCanvasWrapRef = useRef<HTMLDivElement | null>(null);
   const glazeWrapRef = useRef<HTMLDivElement | null>(null);
   const helpRef = useRef<HTMLDivElement | null>(null);
 
@@ -196,11 +193,9 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     canvasData,
     dispatch,
     colorLUT,
-    candidateIndexByLevel,
     brushLevel,
     brushSize,
     tool,
-    previewCanvasRef,
     setBrushLevel,
   });
 
@@ -224,9 +219,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     drawing,
     glazeDrawing,
     sourceCanvasWrapRef,
-    previewCanvasWrapRef,
     glazeWrapRef,
-    previewCanvasRef,
     hexPreviewCanvasRef,
     glazePreviewCanvasRef,
     sharedScheduleCursorRedrawRef,
@@ -250,13 +243,11 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
   useCanvasCopy(
     activeTabId === "source"
       ? drawing.sourceCanvasRef
-      : activeTabId === "color"
-        ? previewCanvasRef
-        : activeTabId === "glaze"
-          ? glazePreviewCanvasRef
-          : activeTabId === "hex"
-            ? hexPreviewCanvasRef
-            : null,
+      : activeTabId === "glaze"
+        ? glazePreviewCanvasRef
+        : activeTabId === "hex"
+          ? hexPreviewCanvasRef
+          : null,
     showToast,
     t,
   );
@@ -267,10 +258,23 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     () => drawing.drawingRef.current || glazeDrawing.drawingRef.current,
     [drawing.drawingRef, glazeDrawing.drawingRef],
   );
+  const { beginKeyboardDrawing, endKeyboardDrawing, cancelKeyboardDrawing } = drawing;
+  const beginSourceDrawing = useCallback(
+    (level: number, code: string) => {
+      if (!panZoom.panZoomMode) beginKeyboardDrawing(level, code);
+    },
+    [panZoom.panZoomMode, beginKeyboardDrawing],
+  );
+  useLayoutEffect(() => {
+    if (activeTabId !== "source" || showHelp || showNewCanvas || showAbout || cropImage || panZoom.panZoomMode) cancelKeyboardDrawing();
+  }, [activeTabId, showHelp, showNewCanvas, showAbout, cropImage, panZoom.panZoomMode, cancelKeyboardDrawing]);
   useKeyboardShortcuts({
     setTool,
     setGlazeTool,
     setBrushLevel,
+    beginSourceDrawing,
+    endSourceDrawing: endKeyboardDrawing,
+    cancelSourceDrawing: cancelKeyboardDrawing,
     setBrushSize,
     dispatch,
     announce,
@@ -301,8 +305,35 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
       imageRendering: "pixelated" as const,
       transform: `scale(${panZoom.zoom}) translate(${(panZoom.pan.x * displayWidth) / canvasData.width}px,${(panZoom.pan.y * displayHeight) / canvasData.height}px)`,
       transformOrigin: "center center",
+      // Navigation settles immediately, including under reduced-motion CSS.
+      transitionProperty: "none",
     }),
     [panZoom.zoom, panZoom.pan.x, panZoom.pan.y, displayWidth, displayHeight, canvasData.width, canvasData.height],
+  );
+
+  const previewNavigation = useMemo(
+    () => ({
+      handleMiddleDown: panZoom.handleMiddleDown,
+      movePan: panZoom.movePan,
+      endPan: panZoom.endPan,
+      cancelPanInteraction: panZoom.cancelPanInteraction,
+      resetView: panZoom.resetView,
+      onWheel: panZoom.onWheel,
+      onPinchDown: panZoom.onPinchDown,
+      onPinchMove: panZoom.onPinchMove,
+      onPinchUp: panZoom.onPinchUp,
+    }),
+    [
+      panZoom.handleMiddleDown,
+      panZoom.movePan,
+      panZoom.endPan,
+      panZoom.cancelPanInteraction,
+      panZoom.resetView,
+      panZoom.onWheel,
+      panZoom.onPinchDown,
+      panZoom.onPinchMove,
+      panZoom.onPinchUp,
+    ],
   );
 
   const canvasCursor =
@@ -383,14 +414,6 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     movePan: panZoom.movePan,
     endPan: panZoom.endPan,
   });
-  const drawingHandlers = useStableDrawingHandlers({
-    onPreviewPointerDown: drawing.onPreviewWorkspacePointerDown,
-    onPreviewPointerMove: drawing.onPreviewWorkspacePointerMove,
-    onUp: drawing.onUp,
-    onPreviewPointerLeave: drawing.onWorkspaceLeavePrv,
-    trackPreviewCursor: drawing.trackPreviewCursor,
-    clearPreviewCursor: drawing.clearPreviewCursor,
-  });
 
   return (
     <main
@@ -459,6 +482,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
               onMove={drawing.onWorkspaceMove}
               onUp={drawing.onUp}
               onPointerLeave={drawing.onWorkspaceLeave}
+              cancelKeyboardDrawing={cancelKeyboardDrawing}
               clearCursor={drawing.clearCursor}
               undo={undo}
               redo={redo}
@@ -466,7 +490,6 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
               loadImg={fileDrop.loadImg}
               announce={announce}
               scheduleCursorRedraw={scheduleCursorRedrawFn}
-              previewCanvasRef={previewCanvasRef}
               onNewCanvas={handleNewCanvas}
               panZoomMode={panZoom.panZoomMode}
               setPanZoomMode={panZoom.setPanZoomMode}
@@ -477,27 +500,6 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
             />
           </div>
         )}
-        {activeTabId === "color" && (
-          <div id={getTabPanelId("color")} role="tabpanel" aria-labelledby={getTabButtonId("color")}>
-            <ColorPanel
-              previewCanvasRef={previewCanvasRef}
-              previewCursorRef={drawing.previewCursorRef}
-              previewCanvasWrapRef={previewCanvasWrapRef}
-              statusRef={drawing.statusRef}
-              displayWidth={displayWidth}
-              displayHeight={displayHeight}
-              canvasTransform={canvasTransform}
-              canvasCursor={canvasCursor}
-              candidateIndexByLevel={candidateIndexByLevel}
-              candidateIndexDispatch={candidateIndexDispatch}
-              brushLevel={brushLevel}
-              setBrushLevel={setBrushLevel}
-              tool={tool}
-              panZoom={panZoomHandlers}
-              drawing={drawingHandlers}
-            />
-          </div>
-        )}
         {activeTabId === "hex" && (
           <div id={getTabPanelId("hex")} role="tabpanel" aria-labelledby={getTabButtonId("hex")}>
             <HexPanel
@@ -505,6 +507,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
               canvasData={canvasData}
               displayWidth={displayWidth}
               displayHeight={displayHeight}
+              canvasTransform={canvasTransform}
+              navigation={previewNavigation}
               candidateIndexByLevel={candidateIndexByLevel}
               candidateIndexDispatch={candidateIndexDispatch}
               levelHistogram={levelHistogram}
@@ -585,6 +589,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
               displayWidth={displayWidth}
               displayHeight={displayHeight}
               active={activeTabId === "map"}
+              canvasTransform={canvasTransform}
+              navigation={previewNavigation}
               mapMode={mapMode}
               setMapMode={setMapMode}
               showToast={showToast}

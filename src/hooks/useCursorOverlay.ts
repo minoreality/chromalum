@@ -18,15 +18,11 @@ interface CursorOverlayRefs {
 
 interface CursorOverlayResult {
   cursorCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
-  previewCursorRef: React.MutableRefObject<HTMLCanvasElement | null>;
   cursorRafRef: React.MutableRefObject<number | null>;
   scheduleCursorRedrawRef: React.MutableRefObject<(() => void) | null>;
   cursorPosRef: React.MutableRefObject<{ dx: number; dy: number } | null>;
-  previewCursorPosRef: React.MutableRefObject<{ dx: number; dy: number } | null>;
   trackCursor: (e: React.PointerEvent) => void;
   clearCursor: () => void;
-  trackPreviewCursor: (e: React.PointerEvent) => void;
-  clearPreviewCursor: () => void;
   scheduleCursorRedraw: () => void;
 }
 
@@ -40,16 +36,12 @@ function snapGridEdge(value: number, min: number, max: number): number {
 
 export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.MutableRefObject<HTMLDivElement | null>): CursorOverlayResult {
   const cursorCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const previewCursorRef = useRef<HTMLCanvasElement | null>(null);
   const cursorRafRef = useRef<number | null>(null);
   const scheduleCursorRedrawRef = useRef<(() => void) | null>(null);
   const cursorPosRef = useRef<{ dx: number; dy: number } | null>(null);
-  const previewCursorPosRef = useRef<{ dx: number; dy: number } | null>(null);
   const prevGridStateRef = useRef<string>("");
   const forceSrcRedrawRef = useRef(false);
-  const forcePrvRedrawRef = useRef(false);
   const getCursorRect = useRectCache(cursorCanvasRef);
-  const getPreviewCursorRect = useRectCache(previewCursorRef);
 
   const { zoomRef, panRef, canvasDataRef, displayWidthRef, displayHeightRef, panningRef, brushSizeRef, toolRef } = refs;
 
@@ -163,9 +155,8 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
   }
 
   function drawCursorAndGrid() {
-    // Only redraw canvases that have a cursor or need grid update
+    // Redraw when the cursor or grid state changes.
     const hasSrc = cursorPosRef.current !== null;
-    const hasPrv = previewCursorPosRef.current !== null;
     const z = zoomRef.current,
       p = panRef.current,
       cv = canvasDataRef.current;
@@ -173,12 +164,9 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
     const gridChanged = gridKey !== prevGridStateRef.current;
     if (gridChanged) prevGridStateRef.current = gridKey;
     const forceSrc = forceSrcRedrawRef.current;
-    const forcePrv = forcePrvRedrawRef.current;
     forceSrcRedrawRef.current = false;
-    forcePrvRedrawRef.current = false;
     // Always redraw if grid changed (zoom/pan), otherwise only the canvas with active cursor
     if (hasSrc || gridChanged || forceSrc) drawCursorAndGridOn(cursorCanvasRef.current, cursorPosRef);
-    if (hasPrv || gridChanged || forcePrv) drawCursorAndGridOn(previewCursorRef.current, previewCursorPosRef);
   }
 
   function scheduleCursorRedraw() {
@@ -218,41 +206,13 @@ export function useCursorOverlay(refs: CursorOverlayRefs, statusRef: React.Mutab
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleCursorRedraw is synced through scheduleCursorRedrawRef
   }, [statusRef]);
 
-  const trackPreviewCursor = useCallback(
-    (e: React.PointerEvent) => {
-      const c = previewCursorRef.current;
-      if (!c) return;
-      const r = getPreviewCursorRect();
-      previewCursorPosRef.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
-      scheduleCursorRedraw();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleCursorRedraw is synced through scheduleCursorRedrawRef
-    [getPreviewCursorRect],
-  );
-
-  const clearPreviewCursor = useCallback(() => {
-    previewCursorPosRef.current = null;
-    forcePrvRedrawRef.current = true;
-    scheduleCursorRedraw();
-    const el = statusRef.current;
-    if (el) {
-      el.textContent = "\u2014";
-      el.title = "";
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleCursorRedraw is synced through scheduleCursorRedrawRef
-  }, [statusRef]);
-
   return {
     cursorCanvasRef,
-    previewCursorRef,
     cursorRafRef,
     scheduleCursorRedrawRef,
     cursorPosRef,
-    previewCursorPosRef,
     trackCursor,
     clearCursor,
-    trackPreviewCursor,
-    clearPreviewCursor,
     scheduleCursorRedraw,
   };
 }

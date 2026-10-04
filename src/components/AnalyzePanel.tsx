@@ -7,6 +7,7 @@ import { usePixelMaps } from "../hooks/usePixelMaps";
 import { COMPOSITION_DONUT_PRESERVE_ATTR, CompositionDonut } from "./CompositionDonut";
 import { C, SP, FS, FW } from "../styles/tokens";
 import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
+import type { CanvasNavigationHandlers } from "../hooks/usePreviewCanvasNavigation";
 
 interface AnalyzePanelProps {
   levelHistogram: number[];
@@ -18,6 +19,8 @@ interface AnalyzePanelProps {
   canvasData: CanvasData;
   displayWidth: number;
   displayHeight: number;
+  canvasTransform: React.CSSProperties;
+  navigation: CanvasNavigationHandlers;
   active: boolean;
   mapMode: MapMode;
   setMapMode: (mode: MapMode) => void;
@@ -55,6 +58,8 @@ export const AnalyzePanel = React.memo(
     canvasData,
     displayWidth,
     displayHeight,
+    canvasTransform,
+    navigation,
     active,
     mapMode,
     setMapMode,
@@ -80,6 +85,8 @@ export const AnalyzePanel = React.memo(
               canvasData={canvasData}
               displayWidth={displayWidth}
               displayHeight={displayHeight}
+              canvasTransform={canvasTransform}
+              navigation={navigation}
               {...(showToast ? { showToast } : {})}
             />
             <div className="map-mode-buttons" style={{ display: "flex", gap: SP.xs, marginTop: SP.xs }}>
@@ -120,6 +127,7 @@ export const AnalyzePanel = React.memo(
     if (prev.candidateIndexByLevel !== next.candidateIndexByLevel) return false;
     if (prev.active !== next.active) return false;
     if (prev.displayWidth !== next.displayWidth || prev.displayHeight !== next.displayHeight) return false;
+    if (prev.canvasTransform !== next.canvasTransform || prev.navigation !== next.navigation) return false;
     for (let i = 0; i < 8; i++) {
       if (prev.levelHistogram[i] !== next.levelHistogram[i]) return false;
       const prevColor = prev.colorLUT[i],

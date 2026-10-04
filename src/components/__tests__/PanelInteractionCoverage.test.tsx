@@ -10,10 +10,10 @@ import type { GlazeDrawingResult } from "../../hooks/useGlazeDrawing";
 import { useKeyboardShortcuts, type KeyboardShortcutDeps } from "../../hooks/useKeyboardShortcuts";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../../color-engine";
 import { SourcePanel } from "../SourcePanel";
-import { ColorPanel } from "../ColorPanel";
 import { GlazePanel } from "../GlazePanel";
 import { CropModal } from "../CropModal";
 import { MapCanvas } from "../MapCanvas";
+import { makeCanvasNavigation } from "./canvas-navigation-fixture";
 
 vi.mock("../../i18n", () => ({
   useTranslation: () => ({
@@ -90,6 +90,9 @@ function renderCanvasShortcuts(overrides: Partial<KeyboardShortcutDeps>) {
     setTool: vi.fn(),
     setGlazeTool: vi.fn(),
     setBrushLevel: vi.fn(),
+    beginSourceDrawing: vi.fn(),
+    endSourceDrawing: vi.fn(),
+    cancelSourceDrawing: vi.fn(),
     setBrushSize: vi.fn(),
     dispatch: vi.fn(),
     announce: vi.fn(),
@@ -104,7 +107,7 @@ function renderCanvasShortcuts(overrides: Partial<KeyboardShortcutDeps>) {
     setShowNewCanvas: vi.fn(),
     t: (key) => key,
     setZoom: vi.fn(),
-    activeTabId: "color",
+    activeTabId: "source",
     setActiveTabId: vi.fn(),
     toggleLanguage: vi.fn(),
     ...overrides,
@@ -162,7 +165,6 @@ describe("SourcePanel interactions", () => {
 
   function renderSource(overrides?: Partial<React.ComponentProps<typeof SourcePanel>>) {
     const sourceCanvasRef = React.createRef<HTMLCanvasElement>();
-    const previewCanvasRef = React.createRef<HTMLCanvasElement>();
     const setBrushSize = vi.fn();
     const setPan = vi.fn();
     const setZoom = vi.fn();
@@ -205,6 +207,7 @@ describe("SourcePanel interactions", () => {
       onMove: vi.fn(),
       onUp: vi.fn(),
       onPointerLeave: vi.fn(),
+      cancelKeyboardDrawing: vi.fn(),
       clearCursor: vi.fn(),
       undo: vi.fn(),
       redo: vi.fn(),
@@ -212,7 +215,6 @@ describe("SourcePanel interactions", () => {
       loadImg: vi.fn().mockResolvedValue(undefined),
       announce: vi.fn(),
       scheduleCursorRedraw: vi.fn(),
-      previewCanvasRef,
       onNewCanvas: vi.fn(),
       panZoomMode: false,
       setPanZoomMode: vi.fn(),
@@ -234,7 +236,6 @@ describe("SourcePanel interactions", () => {
       shareColor,
       shareGlaze,
       sourceCanvasRef,
-      previewCanvasRef,
     };
   }
 
@@ -306,10 +307,7 @@ describe("SourcePanel interactions", () => {
     fireEvent.click(screen.getByRole("button", { name: "btn_save_color" }));
     expect(screen.getByRole("dialog", { name: "confirm_save_color" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "btn_yes" }));
-    expect(saveColor).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.stringMatching(/^chromalum_color_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/),
-    );
+    expect(saveColor).toHaveBeenCalledWith(null, expect.stringMatching(/^chromalum_color_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/));
 
     fireEvent.click(screen.getByRole("button", { name: "btn_save_glaze" }));
     fireEvent.click(screen.getByRole("button", { name: "btn_yes" }));
@@ -322,10 +320,7 @@ describe("SourcePanel interactions", () => {
     );
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "btn_save_color" }));
-    expect(shareColor).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.stringMatching(/^chromalum_color_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/),
-    );
+    expect(shareColor).toHaveBeenCalledWith(null, expect.stringMatching(/^chromalum_color_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/));
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "btn_save_glaze" }));
     expect(shareGlaze).toHaveBeenCalledWith(expect.stringMatching(/^chromalum_glaze_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/));
@@ -345,7 +340,7 @@ describe("SourcePanel interactions", () => {
     );
   });
 
-  it("routes pixel-perfect zoom, brush range, level double-click, and pan-mode pointer controls", () => {
+  it("routes pixel-perfect zoom, brush range, level selection, and pan-mode pointer controls", () => {
     const setTool = vi.fn();
     const setBrushLevel = vi.fn();
     const setBrushSize = vi.fn();
@@ -381,9 +376,12 @@ describe("SourcePanel interactions", () => {
     fireEvent.change(screen.getByLabelText("aria_brush_size"), { target: { value: "12" } });
     expect(setBrushSize).toHaveBeenCalledWith(12);
 
-    fireEvent.doubleClick(screen.getByLabelText("announce_level(0,Black)"));
+    const level = screen.getByLabelText("announce_level(0,Black)");
+    fireEvent.click(level);
+    fireEvent.click(level);
+    fireEvent.doubleClick(level);
     expect(setBrushLevel).toHaveBeenCalledWith(0);
-    expect(setTool).toHaveBeenCalledWith("eraser");
+    expect(setTool).not.toHaveBeenCalled();
 
     const canvas = screen.getByRole("application", { name: "aria_drawing_canvas" });
     fireEvent.pointerDown(canvas, { button: 0 });
@@ -395,104 +393,6 @@ describe("SourcePanel interactions", () => {
     expect(props.onPinchMove).toHaveBeenCalled();
     expect(props.onPinchUp).toHaveBeenCalledTimes(2);
     expect(props.clearCursor).toHaveBeenCalled();
-  });
-});
-
-describe("ColorPanel interactions", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  function renderColor() {
-    const setZoom = vi.fn();
-    const panZoom = makePanZoom({ setZoom });
-    const drawing = {
-      onPreviewPointerDown: vi.fn(),
-      onPreviewPointerMove: vi.fn(),
-      onUp: vi.fn(),
-      onPreviewPointerLeave: vi.fn(),
-      trackPreviewCursor: vi.fn(),
-      clearPreviewCursor: vi.fn(),
-    };
-    const view = render(
-      <ColorPanel
-        previewCanvasRef={React.createRef<HTMLCanvasElement>()}
-        previewCursorRef={React.createRef<HTMLCanvasElement>()}
-        previewCanvasWrapRef={React.createRef<HTMLDivElement>()}
-        statusRef={React.createRef<HTMLDivElement>()}
-        displayWidth={64}
-        displayHeight={64}
-        canvasTransform={{}}
-        canvasCursor="crosshair"
-        candidateIndexByLevel={[0, 0, 0, 0, 0, 0, 0, 0]}
-        candidateIndexDispatch={vi.fn()}
-        brushLevel={2}
-        setBrushLevel={vi.fn()}
-        tool="brush"
-        panZoom={panZoom}
-        drawing={drawing}
-      />,
-    );
-    return { ...view, drawing, panZoom, setZoom };
-  }
-
-  it("routes keyboard pan/zoom and pointer drawing paths", () => {
-    const { drawing, panZoom, setZoom } = renderColor();
-
-    const canvas = screen.getByRole("img", { name: "aria_color_preview_canvas" });
-    fireEvent.pointerDown(canvas, { button: 0 });
-    expect(drawing.onPreviewPointerDown).toHaveBeenCalled();
-
-    panZoom.panningRef.current = true;
-    fireEvent.pointerMove(canvas);
-    fireEvent.pointerUp(canvas);
-    expect(panZoom.movePan).toHaveBeenCalled();
-    expect(panZoom.endPan).toHaveBeenCalled();
-
-    const wrap = screen.getByLabelText("aria_color_preview");
-    fireEvent.mouseLeave(wrap);
-    expect(drawing.clearPreviewCursor).toHaveBeenCalled();
-
-    fireEvent.keyDown(wrap, { key: "+" });
-    expect(setZoom).toHaveBeenCalledWith(expect.any(Function));
-    expect((setZoom.mock.calls[0][0] as (value: number) => number)(1)).toBeCloseTo(1.15);
-  });
-
-  it("selects level zero without resetting the Color viewport", () => {
-    const { panZoom } = renderColor();
-    const { setBrushLevel } = renderCanvasShortcuts({ setZoom: panZoom.setZoom });
-
-    fireEvent.keyDown(screen.getByLabelText("aria_color_preview"), { key: "0" });
-
-    expect(setBrushLevel).toHaveBeenCalledWith(0);
-    expect(panZoom.setZoom).not.toHaveBeenCalled();
-    expect(panZoom.setPan).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    { key: "=", ctrlKey: true },
-    { key: "+", ctrlKey: true, shiftKey: true },
-    { key: "-", metaKey: true },
-  ])("zooms once for a modified $key chord on the Color workspace", (init) => {
-    const { panZoom } = renderColor();
-    renderCanvasShortcuts({ setZoom: panZoom.setZoom });
-
-    fireEvent.keyDown(screen.getByLabelText("aria_color_preview"), init);
-
-    expect(panZoom.setZoom).toHaveBeenCalledTimes(1);
-  });
-
-  it.each([
-    { key: "ArrowLeft", altKey: true },
-    { key: "ArrowRight", ctrlKey: true },
-  ])("leaves modified $key navigation out of Color pan shortcuts", (init) => {
-    const { panZoom } = renderColor();
-    const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
-
-    fireEvent(screen.getByLabelText("aria_color_preview"), event);
-
-    expect(panZoom.setPan).not.toHaveBeenCalled();
-    expect(event.defaultPrevented).toBe(false);
   });
 });
 
@@ -824,6 +724,8 @@ describe("MapCanvas rendering and inspection", () => {
         canvasData={canvasData}
         displayWidth={20}
         displayHeight={20}
+        canvasTransform={{}}
+        navigation={makeCanvasNavigation()}
       />,
     );
 
@@ -836,6 +738,8 @@ describe("MapCanvas rendering and inspection", () => {
           canvasData={canvasData}
           displayWidth={20}
           displayHeight={20}
+          canvasTransform={{}}
+          navigation={makeCanvasNavigation()}
         />,
       );
     }
@@ -879,6 +783,8 @@ describe("MapCanvas rendering and inspection", () => {
         canvasData={makeCanvasData(2, 2)}
         displayWidth={20}
         displayHeight={20}
+        canvasTransform={{}}
+        navigation={makeCanvasNavigation()}
       />,
     );
 
@@ -905,6 +811,8 @@ describe("MapCanvas rendering and inspection", () => {
         canvasData={makeCanvasData(2, 2)}
         displayWidth={20}
         displayHeight={20}
+        canvasTransform={{}}
+        navigation={makeCanvasNavigation()}
       />,
     );
 

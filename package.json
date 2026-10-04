@@ -63,7 +63,12 @@
       "prototypes/theory-before-session/vitest.config.ts",
       "prototypes/theory-before-session/snapshot/**/*.check.{ts,tsx}",
       "prototypes/theory-before-session/snapshot/src/__tests__/setup.ts",
-      "prototypes/octahedron-gray-net/net.mjs"
+      "prototypes/octahedron-gray-net/net.mjs",
+      "prototypes/color-mapping/main.tsx",
+      "prototypes/color-mapping/playwright.config.ts",
+      "prototypes/color-mapping/browser.check.ts",
+      "prototypes/color-mapping/vitest.config.ts",
+      "prototypes/color-mapping/ColorMappingList.unit.tsx"
     ],
     "ignoreIssues": {
       "prototypes/theory-before-session/snapshot/**": [

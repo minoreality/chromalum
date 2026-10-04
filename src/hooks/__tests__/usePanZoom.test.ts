@@ -50,7 +50,7 @@ describe("usePanZoom", () => {
     };
   }
 
-  function makeWheelEvent(overrides?: Partial<WheelEvent> & { rect?: Partial<DOMRect> }): WheelEvent {
+  function makeWheelEvent(overrides?: Partial<WheelEvent> & { wheelDeltaY?: number; rect?: Partial<DOMRect> }): WheelEvent {
     const rect = {
       left: 0,
       top: 0,
@@ -154,7 +154,7 @@ describe("usePanZoom", () => {
     });
     expect(result.current.pan).toEqual({ x: canvasData.width, y: -canvasData.height });
 
-    // The shape the arrow keys arrive in: Source, Color and Glaze each step the
+    // The shape the arrow keys arrive in: Source and Glaze each step the
     // pan by 10 a press and none of them bounded the result themselves.
     act(() => {
       result.current.setPan({ x: 0, y: 0 });
@@ -222,6 +222,33 @@ describe("usePanZoom", () => {
   });
 
   describe("onWheel", () => {
+    it.each([
+      { name: "the measured Windows mouse delta", deltaY: -133.3333251953125, wheelDeltaY: 120 },
+      { name: "a 120px notch without legacy metadata", deltaY: -120 },
+    ])("zooms up and down without panning for $name", ({ deltaY, wheelDeltaY }) => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      act(() => {
+        result.current.onWheel(makeWheelEvent({ deltaY, ...(wheelDeltaY === undefined ? {} : { wheelDeltaY }) }));
+      });
+      expect(result.current.zoom).toBeGreaterThan(1);
+      expect(result.current.pan.x).toBeCloseTo(0);
+      expect(result.current.pan.y).toBeCloseTo(0);
+
+      act(() => {
+        result.current.onWheel(
+          makeWheelEvent({
+            deltaY: -deltaY,
+            ...(wheelDeltaY === undefined ? {} : { wheelDeltaY: -wheelDeltaY }),
+          }),
+        );
+      });
+      expect(result.current.zoom).toBeCloseTo(1);
+      expect(result.current.pan.x).toBeCloseTo(0);
+      expect(result.current.pan.y).toBeCloseTo(0);
+    });
+
     it("zooms in and out around the pointer", () => {
       const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
       const scheduleCursorRedraw = vi.fn();
@@ -299,6 +326,20 @@ describe("usePanZoom", () => {
       expect(result.current.zoom).toBe(1);
     });
 
+    it.each([
+      { deltaY: -40, wheelDeltaY: 120 },
+      { deltaY: -80, wheelDeltaY: 240 },
+    ])("pans a fresh whole-pixel scroll with deltaY=$deltaY despite legacy notch metadata", (input) => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      act(() => {
+        result.current.onWheel(makeWheelEvent(input));
+      });
+      expect(result.current.zoom).toBe(1);
+      expect(result.current.pan).toEqual({ x: 0, y: -input.deltaY });
+    });
+
     it("holds a gesture's device when one delta happens to match a notch", () => {
       const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
       const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
@@ -311,6 +352,18 @@ describe("usePanZoom", () => {
       });
       expect(result.current.zoom).toBe(1);
       expect(result.current.pan).toEqual({ x: 0, y: 12 + MOUSE_NOTCH_PX });
+    });
+
+    it("keeps a trackpad flick panning when a later event has a legacy notch value", () => {
+      const { canvasData, displayWidth, scheduleCursorRedrawRef } = makeMocks();
+      const { result } = renderHook(() => usePanZoom(canvasData, displayWidth, scheduleCursorRedrawRef));
+
+      act(() => {
+        result.current.onWheel(makeWheelEvent({ deltaY: -12, wheelDeltaY: 36 }));
+        result.current.onWheel(makeWheelEvent({ deltaY: -40, wheelDeltaY: 120 }));
+      });
+      expect(result.current.zoom).toBe(1);
+      expect(result.current.pan).toEqual({ x: 0, y: 52 });
     });
 
     it("classifies the pointing device from one wheel event", () => {

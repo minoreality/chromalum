@@ -47,16 +47,19 @@ export const en = {
   btn_save_gray: "💾Save Gray",
   btn_save_glaze: "💾Save Glaze",
 
-  // ColorPanel
-  label_colorized: "COLOR MAPPING PREVIEW",
+  // Color preview
   label_diagram: "HEXAGON DIAGRAM",
+  label_color_list: "LEVEL COLOR MAPPING",
+  hex_palette_label: "Palette display",
+  hex_list_label: "Level color mapping",
+  pattern_count_go_gallery: "View {0} patterns in Gallery",
   aria_color_preview: "Color preview (keyboard: +/- to zoom, arrow keys to pan)",
   aria_color_preview_canvas: "Color preview canvas",
 
-  // ColorMappingList
+  // Color candidates
+  aria_color_candidate: "Level {0} color candidate {1} {2}",
   aria_prev_color: "Previous color candidate (Level {0} {1})",
   aria_next_color: "Next color candidate (Level {0} {1})",
-  aria_color_candidate: "Level {0} color candidate {1} {2}",
 
   // HexDiagram
   hex_diagram_label: "Pure-hue loop color selection",
@@ -65,7 +68,6 @@ export const en = {
   btn_random_color: "Randomize palette",
 
   random_patterns: "{0} patterns",
-  pattern_count_go_gallery: "View {0} patterns in Gallery",
 
   // NewCanvasModal
   new_canvas_title: "New Canvas",
@@ -94,46 +96,42 @@ export const en = {
 
   // HelpModal
   help_title: "Keyboard Shortcuts",
-  help_level: "Select tone level",
-  help_brush_size: "Brush size +/-",
+  help_level: "Select level",
+  help_source_level: "Level / paint",
+  help_source_shape: "Draw shape",
+  help_source_shape_key: "Hold 0-7",
+  help_source_cancel: "Cancel shape",
+  help_brush_size: "Brush size",
   help_pan: "Pan",
   help_zoom: "Zoom",
-  help_new_canvas: "New canvas",
-  help_undo: "Undo",
-  help_redo: "Redo",
   help_paste: "Paste image",
-  help_copy_canvas: "Copy image (canvas hovered or focused)",
-  help_copy_gallery_preview: "Copy preview (image hovered or focused)",
-  help_this_help: "Shortcuts panel (also F1)",
+  help_copy_canvas: "Copy canvas",
+  help_copy_gallery_preview: "Copy preview",
   help_close: "Close",
-  help_pan_key: "Space+Drag",
   help_zoom_key: "Wheel / +/-",
-  help_eyedropper: "Pick level (eyedropper)",
+  help_eyedropper: "Pick level",
   help_eyedropper_key: "Right-click / Alt+click",
-  help_dblclick_level: "Select level + Brush tool",
-  help_dblclick_level_key: "Double-click level",
-  help_zoom_pixel: "Pixel-perfect zoom",
+  help_zoom_pixel: "Pixel scale",
   help_zoom_pixel_key: "Right-click zoom btn",
   help_pan_combined_key: "Space / Mid-click drag",
-  help_middle_reset: "Reset zoom & pan",
-  help_middle_reset_key: "Middle-click x2",
-  help_arrow_pan: "Pan (canvas focused)",
+  help_middle_reset: "Reset view",
+  help_middle_reset_key: "Middle-click ×2",
+  help_arrow_pan: "Pan",
   help_arrow_pan_key: "Arrow keys",
-  help_drop_image: "Load image",
-  help_drop_image_key: "Drag & drop",
-  help_hex_cycle: "Cycle the candidate color for that level",
-  help_hex_pin: "Pin or release that level's color",
-  help_hex_pin_key: "Right-click / Long press",
-  help_music_play: "Play that level",
-  help_theory_pin: "Pin or release the focused figure element",
-  help_theory_clear: "Clear every figure's pinned selection",
-  help_theory_navigate: "Move within a focused table",
+  help_hex_cycle: "Cycle color",
+  help_hex_pin: "Pin / release",
+  help_hex_pin_key: "Right-click / Hold",
+  help_hex_view: "Palette view",
+  help_hex_view_key: "Blank ×2 / Hold / V",
+  help_music_play: "Play level",
+  help_theory_pin: "Pin / release",
+  help_theory_clear: "Clear pins",
+  help_theory_navigate: "Move in table",
   help_theory_navigate_key: "Arrows / Home / End",
   help_switch_tab: "Switch tab",
-  help_switch_language: "Switch language (EN / JA)",
-  help_music_stop_all: "Stop every sequence",
+  help_music_stop_all: "Stop playback",
   help_music_mute: "Mute / unmute",
-  help_save_color: "Save color image",
+  help_save_color: "Save color",
 
   // App - toast messages
   toast_restore_invalid: "Auto-save off\nInvalid or unsupported data. Edits are unsaved. Export PNG to keep them.",
@@ -177,7 +175,7 @@ export const en = {
   about_body_1:
     "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, white, and black. It reorganizes brightness into relationships among colors. Behind this color expression lies an algebraic structure connecting the eight colors.",
   about_body_2:
-    "Start by drawing in the Source tab or loading an image. Assign colors and shape the palette in the Hex and Color tabs. The Gallery tab lets you browse every possible combination. In the Glaze tab, you can overlay alternative candidate colors. Use the Map tab to analyze information in the canvas.",
+    "Start by drawing in the Source tab or loading an image. Assign colors and shape the palette in the Hex tab. The Gallery tab lets you browse every possible combination. In the Glaze tab, you can overlay alternative candidate colors. Use the Map tab to analyze information in the canvas.",
   about_body_3: "The Theory tab explains the underlying color system, and the Music tab explores the same color structure through sound.",
 
   // Tablist
@@ -185,7 +183,6 @@ export const en = {
 
   // Tabs
   tab_source: "Source",
-  tab_color: "Color",
   tab_hex: "Hex",
   tab_glaze: "Glaze",
   tab_map: "Map",
@@ -647,6 +644,9 @@ export const en = {
   announce_glaze_brush: "Glaze brush",
   announce_glaze_eraser: "Glaze eraser",
   announce_glaze_fill: "Glaze fill",
+  announce_glaze_line: "Glaze line",
+  announce_glaze_rect: "Glaze rectangle",
+  announce_glaze_ellipse: "Glaze ellipse",
   announce_hue_picked: "Hue picked: {0}\u00B0",
   announce_hue_achromatic: "No hue (achromatic)",
   glaze_show_highlight: "Emphasize glazed area",
@@ -660,7 +660,7 @@ export const en = {
   title_save_gray: "Save grayscale PNG",
   title_save_color: "Save color PNG",
   title_save_glaze: "Save glaze PNG",
-  title_level_btn: "Level {0} {1} (Double-click: switch to Brush/Eraser)",
+  title_level_btn: "Level {0} {1}",
   title_zoom_pixel: "Right-click: pixel-perfect zoom",
   title_share: "Right-click: Share",
 

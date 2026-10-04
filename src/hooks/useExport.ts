@@ -4,10 +4,10 @@ import { openBlobUrlInNewTab } from "../utils";
 import type { CanvasData, ImageRenderCache } from "../types";
 
 interface ExportResult {
-  saveColor: (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => void;
+  saveColor: (ref: React.RefObject<HTMLCanvasElement | null> | null, name: string) => void;
   saveColorWithLUT: (lut: [number, number, number][], name: string) => void;
   saveGlaze: (name: string) => void;
-  shareColor: (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => void;
+  shareColor: (ref: React.RefObject<HTMLCanvasElement | null> | null, name: string) => void;
   shareGlaze: (name: string) => void;
 }
 
@@ -106,8 +106,8 @@ export function useExport(
   t: import("../i18n").TranslationFn,
 ): ExportResult {
   const saveColor = useCallback(
-    (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => {
-      const c = ref.current ?? renderToTempCanvas(canvasData, colorLUT, false);
+    (ref: React.RefObject<HTMLCanvasElement | null> | null, name: string) => {
+      const c = ref?.current ?? renderToTempCanvas(canvasData, colorLUT, false);
       downloadCanvas(c, name, showToast, t);
     },
     [canvasData, colorLUT, showToast, t],
@@ -130,8 +130,8 @@ export function useExport(
   );
 
   const shareColor = useCallback(
-    (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => {
-      const c = ref.current ?? renderToTempCanvas(canvasData, colorLUT, false);
+    (ref: React.RefObject<HTMLCanvasElement | null> | null, name: string) => {
+      const c = ref?.current ?? renderToTempCanvas(canvasData, colorLUT, false);
       shareCanvas(c, name, showToast, t);
     },
     [canvasData, colorLUT, showToast, t],

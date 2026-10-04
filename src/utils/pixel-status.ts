@@ -79,9 +79,7 @@ function formatShortCount(n: number): string {
 }
 
 function glazeActionLabel(glazeTool: GlazeToolId): string {
-  if (glazeTool === "glaze_eraser") return "eraser";
-  if (glazeTool === "glaze_fill") return "fill";
-  return "brush";
+  return glazeTool.slice(6);
 }
 
 function glazeTargetLabel({
@@ -114,20 +112,19 @@ export function formatSourcePixelStatus({ x, y, lv }: PixelStatusBase): StatusTe
   };
 }
 
-export function formatColorPixelStatus({
+export function formatHexListPixelStatus({
   x,
   y,
   lv,
   candidateIndexByLevel,
 }: PixelStatusBase & { candidateIndexByLevel: readonly number[] }): StatusText {
   const candidate = resolveGlobalCandidate(candidateIndexByLevel, lv);
-  const rgb = candidate.rgb;
   return {
-    full: `(${x},${y}) Color L${lv} ${candidateLabel(candidate)} ${hexStr(rgb)} hue=${angleLabel(candidate.hueAngleDeg)} \u0394${signedHueDelta(
+    full: `(${x},${y}) Hex L${lv} ${candidateLabel(candidate)} ${hexStr(candidate.rgb)} hue=${angleLabel(candidate.hueAngleDeg)} \u0394${signedHueDelta(
       lv,
       candidate.hueAngleDeg,
     )}`,
-    compact: `(${x},${y}) Color L${lv} ${candidateLabel(candidate)} ${hexStr(rgb)} h=${angleLabel(candidate.hueAngleDeg)}`,
+    compact: `(${x},${y}) Hex L${lv} ${candidateLabel(candidate)} ${hexStr(candidate.rgb)} h=${angleLabel(candidate.hueAngleDeg)}`,
   };
 }
 

@@ -27,8 +27,10 @@ export const ZOOM_PINCH_RATE = 0.01;
 /** Wheel deltaMode 1 (line) and 2 (page) in CSS pixels, to normalise before zooming. */
 export const WHEEL_LINE_PX = 16,
   WHEEL_PAGE_PX = 400;
-/** One notch of a classic mouse wheel, in CSS pixels, on Chromium and WebKit. */
+/** Common whole-pixel notch fallback; actual CSS deltas vary with system scaling. */
 export const MOUSE_NOTCH_PX = 100;
+/** Legacy wheelDeltaY units per notch; measured as ±120 on the Windows mouse. */
+export const MOUSE_NOTCH_DELTA = 120;
 /** Idle gap that ends a wheel gesture, so a device switch never lands mid-scroll. */
 export const WHEEL_GESTURE_GAP_MS = 120;
 export const BRUSH_MIN = 1,
@@ -52,6 +54,7 @@ export const NUM_VERTICES = 6; /* hexagon vertex count */
    TOOLS DEFINITION
    ═══════════════════════════════════════════ */
 export type ToolId = "brush" | "eraser" | "fill" | "line" | "rect" | "ellipse";
+export type ShapeToolId = Extract<ToolId, "line" | "rect" | "ellipse">;
 
 interface ToolDef {
   readonly id: ToolId;
@@ -69,9 +72,9 @@ export const TOOLS = [
 ] as const satisfies readonly ToolDef[];
 
 const SHAPE_TOOL_SET: ReadonlySet<ToolId> = new Set(TOOLS.filter((t) => t.shape).map((t) => t.id));
-export const isShapeTool = (t: ToolId): boolean => SHAPE_TOOL_SET.has(t);
+export const isShapeTool = (t: ToolId): t is ShapeToolId => SHAPE_TOOL_SET.has(t);
 
-export type GlazeToolId = "glaze_brush" | "glaze_eraser" | "glaze_fill";
+export type GlazeToolId = `glaze_${ToolId}`;
 
 export function isAllowedCanvasSize(w: number, h: number): boolean {
   if (!Number.isInteger(w) || !Number.isInteger(h) || w <= 0 || h <= 0) return false;

@@ -47,16 +47,19 @@ export const ja = {
   btn_save_gray: "💾モノクロ保存",
   btn_save_glaze: "💾グレーズ保存",
 
-  // ColorPanel
-  label_colorized: "COLOR MAPPING PREVIEW",
+  // Color preview
   label_diagram: "HEXAGON DIAGRAM",
+  label_color_list: "LEVEL COLOR MAPPING",
+  hex_palette_label: "配色表示",
+  hex_list_label: "レベル別配色一覧",
+  pattern_count_go_gallery: "{0}通りのパターンをGalleryで見る",
   aria_color_preview: "カラープレビュー（キーボード: +/-でズーム、矢印キーでパン）",
   aria_color_preview_canvas: "カラープレビューキャンバス",
 
-  // ColorMappingList
+  // Color candidates
+  aria_color_candidate: "Level {0} 色候補 {1} {2}",
   aria_prev_color: "前の色候補 (Level {0} {1})",
   aria_next_color: "次の色候補 (Level {0} {1})",
-  aria_color_candidate: "Level {0} 色候補 {1} {2}",
 
   // HexDiagram
   hex_diagram_label: "純色相環の色選択",
@@ -65,7 +68,6 @@ export const ja = {
   btn_random_color: "配色をランダムに変更",
 
   random_patterns: "{0}通り",
-  pattern_count_go_gallery: "{0}通りのパターンをGalleryで見る",
 
   // NewCanvasModal
   new_canvas_title: "新規キャンバス",
@@ -94,46 +96,42 @@ export const ja = {
 
   // HelpModal
   help_title: "ショートカット一覧",
-  help_level: "トーンレベル選択",
-  help_brush_size: "ブラシサイズ増減",
+  help_level: "レベル選択",
+  help_source_level: "レベル選択・描画",
+  help_source_shape: "図形描画",
+  help_source_shape_key: "0-7 長押し",
+  help_source_cancel: "図形キャンセル",
+  help_brush_size: "ブラシサイズ",
   help_pan: "パン",
   help_zoom: "ズーム",
-  help_new_canvas: "新規キャンバス",
-  help_undo: "取り消し",
-  help_redo: "やり直し",
   help_paste: "画像ペースト",
-  help_copy_canvas: "画像コピー（キャンバスにホバー・フォーカス時）",
-  help_copy_gallery_preview: "プレビュー画像コピー（ホバー・フォーカス時）",
-  help_this_help: "ショートカット (F1も可)",
+  help_copy_canvas: "画像コピー",
+  help_copy_gallery_preview: "プレビューコピー",
   help_close: "閉じる",
-  help_pan_key: "Space+ドラッグ",
   help_zoom_key: "ホイール / +/-",
-  help_eyedropper: "レベル取得（スポイト）",
+  help_eyedropper: "スポイト",
   help_eyedropper_key: "右クリック / Alt+クリック",
-  help_dblclick_level: "レベル選択+ブラシ切替",
-  help_dblclick_level_key: "レベルダブルクリック",
-  help_zoom_pixel: "ピクセル等倍ズーム",
-  help_zoom_pixel_key: "ズームボタン右クリック",
+  help_zoom_pixel: "ピクセル等倍",
+  help_zoom_pixel_key: "ズーム右クリック",
   help_pan_combined_key: "Space / 中クリック+ドラッグ",
-  help_middle_reset: "ズーム＆パンリセット",
-  help_middle_reset_key: "中クリック x2",
-  help_arrow_pan: "パン（キャンバスフォーカス時）",
+  help_middle_reset: "表示リセット",
+  help_middle_reset_key: "中クリック×2",
+  help_arrow_pan: "パン",
   help_arrow_pan_key: "矢印キー",
-  help_drop_image: "画像読み込み",
-  help_drop_image_key: "ドラッグ＆ドロップ",
-  help_hex_cycle: "そのレベルの候補色を切替",
-  help_hex_pin: "そのレベルの色を固定・解除",
+  help_hex_cycle: "候補色切替",
+  help_hex_pin: "色の固定・解除",
   help_hex_pin_key: "右クリック / 長押し",
-  help_music_play: "そのレベルを鳴らす",
-  help_theory_pin: "フォーカス中の図の要素を固定・解除",
-  help_theory_clear: "すべての図の固定を解除",
-  help_theory_navigate: "フォーカス中の表の中を移動",
+  help_hex_view: "図・一覧切替",
+  help_hex_view_key: "背景×2 / 長押し / V",
+  help_music_play: "レベルを鳴らす",
+  help_theory_pin: "図の固定・解除",
+  help_theory_clear: "固定をすべて解除",
+  help_theory_navigate: "表内を移動",
   help_theory_navigate_key: "矢印 / Home / End",
   help_switch_tab: "タブ切替",
-  help_switch_language: "言語切替（EN / JA）",
-  help_music_stop_all: "すべての再生を停止",
-  help_music_mute: "ミュート切替",
-  help_save_color: "カラー画像を保存",
+  help_music_stop_all: "再生停止",
+  help_music_mute: "ミュート",
+  help_save_color: "カラー保存",
 
   // App - toast messages
   toast_restore_invalid: "自動保存停止\n保存データが無効・未対応です。変更は未保存です。PNG で書き出してください。",
@@ -178,7 +176,7 @@ export const ja = {
   about_body_1:
     "CHROMALUMは、光の三原色と色の三原色、そして白と黒からなる八色を出発点に、明るさを色の関係へと組み替えていくアートツールです。この色彩表現の奥には、八つの色をめぐる代数的な構造があります。",
   about_body_2:
-    "まずはSourceタブで絵を描くか、画像を読み込むところから始めます。HexタブやColorタブで色を割り当て、配色を決めます。その組み合わせの全パターンはGalleryタブで参照できます。Glazeタブでは別の候補色をオーバーレイすることができます。キャンバスの情報の分析にはMapタブを使います。",
+    "まずはSourceタブで絵を描くか、画像を読み込むところから始めます。Hexタブで色を割り当て、配色を決めます。その組み合わせの全パターンはGalleryタブで参照できます。Glazeタブでは別の候補色をオーバーレイすることができます。キャンバスの情報の分析にはMapタブを使います。",
   about_body_3: "Theoryタブでは色彩体系の理論を読み解き、Musicタブでは同じ色彩構造の音響化を扱います。",
 
   // Tablist
@@ -186,7 +184,6 @@ export const ja = {
 
   // Tabs
   tab_source: "Source",
-  tab_color: "Color",
   tab_hex: "Hex",
   tab_glaze: "Glaze",
   tab_map: "Map",
@@ -642,6 +639,9 @@ export const ja = {
   announce_glaze_brush: "グレーズブラシ",
   announce_glaze_eraser: "グレーズ消しゴム",
   announce_glaze_fill: "グレーズ塗りつぶし",
+  announce_glaze_line: "グレーズ線分",
+  announce_glaze_rect: "グレーズ四角",
+  announce_glaze_ellipse: "グレーズ楕円",
   announce_hue_picked: "色相取得: {0}°",
   announce_hue_achromatic: "色相なし（無彩色）",
   glaze_show_highlight: "グレーズ範囲を強調",
@@ -655,7 +655,7 @@ export const ja = {
   title_save_gray: "グレースケールPNGを保存",
   title_save_color: "カラーPNGを保存",
   title_save_glaze: "グレーズPNGを保存",
-  title_level_btn: "レベル{0} {1} (ダブルクリック: ブラシ/消しゴム切替)",
+  title_level_btn: "レベル{0} {1}",
   title_zoom_pixel: "右クリック: ピクセル等倍ズーム",
   title_share: "右クリック: 共有",
 
