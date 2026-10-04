@@ -50,8 +50,7 @@ export function AutomataPanel({ active }: { active: boolean }): React.JSX.Elemen
   return (
     <section className="automata-panel" aria-labelledby={id + "-title"} data-mode={state.time === 0 ? "edit" : "read"}>
       <header className="automata-heading">
-        <h2 id={id + "-title"}>{t("automata_title")}</h2>
-        <p>{t("automata_subtitle")}</p>
+        <h2 id={id + "-title"}>{t("automata_subtitle")}</h2>
       </header>
       <div className="automata-content">
         <div className="automata-controls" data-testid="automata-controls">

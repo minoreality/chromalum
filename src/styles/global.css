@@ -215,15 +215,12 @@ svg text {
   margin-bottom: 12px;
 }
 .automata-heading h2 {
-  margin: 0 0 4px;
-  color: var(--c-accent-bright);
-  font-size: 18px;
-  font-weight: 500;
-}
-.automata-heading p {
   margin: 0;
   color: var(--c-text-dim);
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 14px;
 }
 .automata-content {
   display: grid;

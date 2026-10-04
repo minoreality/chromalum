@@ -3,8 +3,7 @@ import type { Translations } from "./types";
 export const en = {
   // Automata
   tab_automata: "Flow",
-  automata_title: "Flow",
-  automata_subtitle: "Cellular Automaton",
+  automata_subtitle: "CELLULAR AUTOMATA",
   automata_rule: "Rule",
   automata_preset: "Initial pattern",
   automata_palette: "Palette",
