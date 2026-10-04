@@ -15,8 +15,8 @@ function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: Autom
               const center = dx === 0 && dy === 0;
               const diagonal = dx !== 0 && dy !== 0;
               if (center && ![5, 9, "diagonal-center"].includes(rule)) continue;
-              if (!center && [4, 5].includes(rule) && diagonal) continue;
-              if (!center && ["diagonal", "diagonal-center"].includes(rule) && !diagonal) continue;
+              if (!center && (rule === 4 || rule === 5) && diagonal) continue;
+              if (!center && (rule === "diagonal" || rule === "diagonal-center") && !diagonal) continue;
               const xx = x + dx,
                 yy = y + dy;
               if (xx >= 0 && xx < size && yy >= 0 && yy < size) count += (current[yy * size + xx] >> bit) & 1;

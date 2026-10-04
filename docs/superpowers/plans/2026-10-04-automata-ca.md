@@ -145,10 +145,10 @@ expect(automataReducer(painted, { type: "set-color", color: 0 }).seed).toBe(pain
 - Consumes: Tasks 1–2のモデル・`Cell`・`AutomataController`。Canvasは完成した`board:Uint8Array`を受け取り、計算・保存を担当しない。
 - Produces: `PlaneGeometry = {cssSize:number;cellSize:number;dpr:number}`、`getPlaneGeometry(cssSize:number,dpr:number):PlaneGeometry`、`hitTestCell(clientX:number,clientY:number,rect:Pick<DOMRect,"left"|"top"|"width"|"height">):Cell|null`、`cellsOnLine(from:Cell,to:Cell):Cell[]`。
 - Produces: `drawPlane(ctx:CanvasRenderingContext2D,board:Uint8Array,geometry:PlaneGeometry,selection:Cell):void`。
-- Produces: `useAutomataInteraction(input:{canvasRef:RefObject<HTMLCanvasElement|null>;active:boolean;controller:AutomataController;geometry:PlaneGeometry|null}):Pick<CanvasHTMLAttributes<HTMLCanvasElement>,"onPointerDown"|"onPointerMove"|"onPointerUp"|"onPointerCancel"|"onLostPointerCapture"|"onKeyDown">`。
+- Produces: `useAutomataInteraction(input:{canvasRef:RefObject<HTMLCanvasElement|null>;active:boolean;controller:AutomataController;geometry:PlaneGeometry|null}):Pick<CanvasHTMLAttributes<HTMLCanvasElement>,"onPointerDown"|"onPointerMove"|"onPointerUp"|"onPointerCancel"|"onLostPointerCapture"|"onKeyDown"> & {cancelInteraction:()=>void}`。
 - Produces: `AutomataCanvas({active,controller,board,label,description}:{active:boolean;controller:AutomataController;board:Uint8Array;label:string;description:string}):React.JSX.Element`。Canvasのtest IDは`automata-board`、座標はCanvasのCSS矩形で測る。翻訳済みのlabel／descriptionを受け取り、Task 4で追加する翻訳キーには依存しない。
 
-- [ ] `geometry.test.ts`へ右端・下端の除外、幅0、DPR1／1.25／2で同じCSS座標が同じセルになるテストを書く。`fills every grid cell between pointer events`は水平・垂直・斜め・逆向きの整数点列を検証する。全点が49×49内にある入力を使う。
+- [x] `geometry.test.ts`へ右端・下端の除外、幅0、DPR1／1.25／2で同じCSS座標が同じセルになるテストを書く。`fills every grid cell between pointer events`は水平・垂直・斜め・逆向きの整数点列を検証する。全点が49×49内にある入力を使う。
 
 ```ts
 const rect = { left: 10, top: 20, width: 245, height: 245 };
@@ -159,16 +159,16 @@ expect(hitTestCell(30, 30, { ...rect, width: 0 })).toBeNull();
 expect(cellsOnLine({ x: 0, y: 0 }, { x: 4, y: 0 })).toEqual([0, 1, 2, 3, 4].map((x) => ({ x, y: 0 })));
 ```
 
-- [ ] `useAutomataInteraction.test.tsx`へt0クリック／黒消去／速いドラッグ／t>0読み取り／盤面外と再入場をテストする。`only the owning pointer ends a stroke`ではid1で開始、id2の開始・終了・cancel・捕捉喪失を無視してid1で続けられることを確認する。`never resumes after interruption`はrelease、cancel、捕捉喪失、blur、inactive、rule／preset／time／color変更、寸法変更の各ケースで、後続moveのseed不変と終了時保存を確認する。
-- [ ] 同テストで矢印の0..48クランプ、t0 Enter／Space配置、t>0不変、修飾キー付き矢印の非横取りを検証する。canvasをフォーカス可能にし、テストのPointerEventに`isPrimary:true`とowner IDを明記する。捕捉APIはこのテスト内だけでmockする。
-- [ ] `AutomataCanvas.test.tsx`へ`does not measure or draw while hidden`を書く。active=falseでobserverを切断し、幅0を描画に使わない。active=trueで再接続・再描画する。timeだけの変更でCanvasのDOM同一性とbacking sizeが変わらないことも確認する。
-- [ ] `npm test -- src/automata/__tests__/geometry.test.ts src/automata/__tests__/useAutomataInteraction.test.tsx src/automata/__tests__/AutomataCanvas.test.tsx`を実行し、未作成のexportでFAILすることを確認する。
-- [ ] `geometry.ts`の3関数を実装する。hit testはDPRを掛けずCSS矩形からfloorでセルへ変換し、半開区間を使う。補間は両端を含むBresenhamで全格子点を訪れる。
-- [ ] `render.ts`の`drawPlane`を実装する。Canvas backing sizeは`round(cssSize*dpr)`、変換はDPR、色はTask 1の固定色。白黒の二重枠で全8色上の選択を示す。時刻変更ではCanvas属性を設定し直さない。
-- [ ] `useAutomataInteraction`を実装する。主ボタン・primary pointerだけを捕捉し、開始色とrevisionを保持する。各イベントで最新snapshotを見て、revision違い・非active・マウス／ペンの主ボタンなしでは終了する。盤面外では補間起点を消し、再入場を単独のセルから始める。終了はowner IDで判定し冪等にする。blur等のlistenerはcleanupで外す。
-- [ ] `AutomataCanvas`を実装する。表示中のみResizeObserverを接続し、寸法変更は操作を終了させる。role=application、tabIndex=0、受け取ったlabelとdescriptionへのaria-describedbyを付ける。Canvasのタッチ操作は`touch-action:none`、周囲は通常のスクロールとする（CSSはTask 4）。
-- [ ] 同じテストコマンドを実行し、補間・owner・全中断条件・非表示停止がPASSすることを確認する。
-- [ ] Task 3の7ファイルだけをstageし、`Add direct painting to the Automata canvas`でコミットする。
+- [x] `useAutomataInteraction.test.tsx`へt0クリック／黒消去／速いドラッグ／t>0読み取り／盤面外と再入場をテストする。`only the owning pointer ends a stroke`ではid1で開始、id2の開始・終了・cancel・捕捉喪失を無視してid1で続けられることを確認する。`never resumes after interruption`はrelease、cancel、捕捉喪失、blur、inactive、rule／preset／time／color変更、寸法変更の各ケースで、後続moveのseed不変と終了時保存を確認する。
+- [x] 同テストで矢印の0..48クランプ、t0 Enter／Space配置、t>0不変、修飾キー付き矢印の非横取りを検証する。canvasをフォーカス可能にし、テストのPointerEventに`isPrimary:true`とowner IDを明記する。捕捉APIはこのテスト内だけでmockする。
+- [x] `AutomataCanvas.test.tsx`へ`does not measure or draw while hidden`を書く。active=falseでobserverを切断し、幅0を描画に使わない。active=trueで再接続・再描画する。timeだけの変更でCanvasのDOM同一性とbacking sizeが変わらないことも確認する。
+- [x] `npm test -- src/automata/__tests__/geometry.test.ts src/automata/__tests__/useAutomataInteraction.test.tsx src/automata/__tests__/AutomataCanvas.test.tsx`を実行し、未作成のexportでFAILすることを確認する。
+- [x] `geometry.ts`の3関数を実装する。hit testはDPRを掛けずCSS矩形からfloorでセルへ変換し、半開区間を使う。補間は両端を含むBresenhamで全格子点を訪れる。
+- [x] `render.ts`の`drawPlane`を実装する。Canvas backing sizeは`round(cssSize*dpr)`、変換はDPR、色はTask 1の固定色。白黒の二重枠で全8色上の選択を示す。時刻変更ではCanvas属性を設定し直さない。
+- [x] `useAutomataInteraction`を実装する。主ボタン・primary pointerだけを捕捉し、開始色とrevisionを保持する。各イベントで最新snapshotを見て、revision違い・非active・マウス／ペンの主ボタンなしでは終了する。盤面外では補間起点を消し、再入場を単独のセルから始める。終了はowner IDで判定し冪等にする。blur等のlistenerはcleanupで外す。
+- [x] `AutomataCanvas`を実装する。表示中のみResizeObserverを接続し、寸法変更は操作を終了させる。role=application、tabIndex=0、受け取ったlabelとdescriptionへのaria-describedbyを付ける。Canvasのタッチ操作は`touch-action:none`、周囲は通常のスクロールとする（CSSはTask 4）。
+- [x] 同じテストコマンドを実行し、補間・owner・全中断条件・非表示停止がPASSすることを確認する。
+- [x] Task 3の7ファイルだけをstageし、`Add direct painting to the Automata canvas`でコミットする。
 
 ## Task 4: パレット・日英UI・Music右側のタブを接続する
 
