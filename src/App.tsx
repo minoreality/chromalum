@@ -648,7 +648,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
             style={{ width: "100%", display: activeTabId === "automata" ? undefined : "none" }}
           >
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
-              <AutomataPanel active={activeTabId === "automata"} />
+              <AutomataPanel active={activeTabId === "automata"} displayWidth={displayWidth} displayHeight={displayHeight} />
             </Suspense>
           </div>
         )}

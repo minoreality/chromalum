@@ -14,7 +14,7 @@ function show() {
   });
   return render(
     <LanguageProvider>
-      <AutomataPanel active={true} />
+      <AutomataPanel active={true} displayWidth={245} displayHeight={245} />
     </LanguageProvider>,
   );
 }

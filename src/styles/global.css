@@ -202,8 +202,7 @@ svg text {
 /* Automata: one editable plane and a permanently available discrete palette. */
 .automata-panel {
   box-sizing: border-box;
-  width: calc(100% - 32px);
-  max-width: 500px;
+  width: 100%;
   margin: 0 auto;
   container-name: automata;
   container-type: inline-size;
@@ -212,7 +211,7 @@ svg text {
 }
 .automata-heading {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 .automata-heading h2 {
   margin: 0;
@@ -223,8 +222,18 @@ svg text {
   line-height: 14px;
 }
 .automata-content {
+  font-size: clamp(11px, 2.6cqw, 13px);
+  line-height: 1.6;
+}
+.automata-sidebar {
+  container-name: automata;
+  container-type: inline-size;
+  min-width: 0;
+}
+.automata-tools {
   display: grid;
   gap: clamp(8px, 2cqw, 12px);
+  width: 100%;
   font-size: clamp(11px, 2.6cqw, 13px);
   line-height: 1.6;
 }
@@ -367,8 +376,18 @@ svg text {
 }
 .automata-canvas-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
   gap: 8px;
   min-width: 0;
+}
+.automata-board-frame {
+  box-sizing: content-box;
+  justify-self: center;
+  width: var(--display-max, 100%);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  overflow: hidden;
 }
 .automata-board {
   display: block;
@@ -378,7 +397,7 @@ svg text {
   aspect-ratio: 1;
   padding: 0;
   border: none;
-  outline: 1px solid var(--c-border-hover);
+  outline: none;
   background: #000000;
   image-rendering: pixelated;
   cursor: crosshair;
@@ -387,7 +406,7 @@ svg text {
 .automata-panel[data-mode="read"] .automata-board {
   cursor: default;
 }
-.automata-board:focus-visible,
+.automata-board-frame:has(.automata-board:focus-visible),
 .automata-control select:focus-visible,
 .automata-time input:focus-visible,
 .automata-color:focus-visible,

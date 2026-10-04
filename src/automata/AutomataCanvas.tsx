@@ -54,17 +54,19 @@ export function AutomataCanvas({
   }, [active, board, geometry, controller.state.x, controller.state.y]);
   return (
     <div className="automata-canvas-group">
-      <canvas
-        className="automata-board"
-        data-testid="automata-board"
-        ref={ref}
-        role="application"
-        aria-label={label}
-        aria-describedby={id}
-        tabIndex={0}
-        onBlur={cancelInteraction}
-        {...handlers}
-      />
+      <div className="automata-board-frame">
+        <canvas
+          className="automata-board"
+          data-testid="automata-board"
+          ref={ref}
+          role="application"
+          aria-label={label}
+          aria-describedby={id}
+          tabIndex={0}
+          onBlur={cancelInteraction}
+          {...handlers}
+        />
+      </div>
       <p className="automata-hint" id={id}>
         {description}
       </p>

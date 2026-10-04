@@ -358,6 +358,7 @@ test("navigates all tabs and paints with the keyboard without leaking drawing ke
   await blank(page);
   await palette(page).getByRole("button").last().focus();
   await page.keyboard.press("Space");
+  await tab.focus();
   await page.keyboard.press("Tab");
   const board = page.getByTestId("automata-board");
   await expect(board).toBeFocused();
@@ -369,15 +370,17 @@ test("navigates all tabs and paints with the keyboard without leaking drawing ke
   for (let i = 0; i < 50; i++) await page.keyboard.press("ArrowRight");
   for (let i = 0; i < 50; i++) await page.keyboard.press("ArrowDown");
   expect(await savedState(page)).toMatchObject({ x: 48, y: 48 });
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Shift+Tab"); // Return button is disabled at t0.
+  for (let color = 0; color < 8; color++) {
+    await page.keyboard.press("Tab");
+    await expect(palette(page).getByRole("button").nth(color)).toBeFocused();
+  }
+  for (const name of ["Rule", "Initial pattern"]) {
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("combobox", { name, exact: true })).toBeFocused();
+  }
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("slider")).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Advance one step", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("slider")).toHaveValue("1");
@@ -474,17 +477,35 @@ async function rectangles(page: Page) {
 
 for (const language of ["ja", "en"] as const) {
   for (const viewport of [
-    { width: 1280, height: 900 },
-    { width: 390, height: 844 },
-    { width: 320, height: 900 },
+    { width: 1280, height: 900, paletteRows: 1 },
+    { width: 682, height: 668, paletteRows: 1 },
+    { width: 390, height: 844, paletteRows: 2 },
+    { width: 320, height: 900, paletteRows: 2 },
   ]) {
     for (const wideGlyphs of [false, true]) {
       test(`keeps ${language} Automata geometry stable at ${viewport.width}px${wideGlyphs ? " with MS Gothic" : ""}`, async ({ page }) => {
-        await page.setViewportSize(viewport);
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await openAutomata(page, language);
         if (wideGlyphs)
           await page.addStyleTag({ content: '.automata-panel *, .app-tab-label { font-family: "MS Gothic", monospace !important; }' });
         const board = page.getByTestId("automata-board");
+        const placement = await board.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          return { x: box.x + scrollX, y: box.y + scrollY, width: box.width };
+        });
+        for (const tab of ["Hex", "Source", "Glaze", "Map"]) {
+          await page.getByRole("tab", { name: tab, exact: true }).click();
+          const canvas = page.getByRole("tabpanel", { name: tab, exact: true }).locator("canvas").first();
+          await expect(canvas).toBeVisible();
+          const reference = await canvas.evaluate((node) => {
+            const box = node.getBoundingClientRect();
+            return { x: box.x + scrollX, y: box.y + scrollY, width: box.width };
+          });
+          expect(placement.x, `${tab} canvas left`).toBeCloseTo(reference.x, 2);
+          expect(placement.y, `${tab} canvas top`).toBeCloseTo(reference.y, 2);
+          expect(placement.width, `${tab} canvas width`).toBeCloseTo(reference.width, 2);
+        }
+        await page.getByRole("tab", { name: "Flow", exact: true }).click();
         await clickCell(page, 48, 48);
         await selectColor(page, 3);
         const before = await rectangles(page);
@@ -505,7 +526,7 @@ for (const language of ["ja", "en"] as const) {
               return { x: r.x, y: r.y, width: r.width, height: r.height };
             }),
           );
-        expect(new Set(buttons.map((r) => r.y)).size).toBe(viewport.width === 1280 ? 1 : 2);
+        expect(new Set(buttons.map((r) => r.y)).size).toBe(viewport.paletteRows);
         for (const button of buttons) {
           expect(button.width).toBeGreaterThanOrEqual(44);
           expect(button.height).toBeGreaterThanOrEqual(44);
