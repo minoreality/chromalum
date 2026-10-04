@@ -1,6 +1,6 @@
 # Automata CA Integration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 既存CA Labの二次元モデルを、Musicの右側に置くAutomataタブへ移植し、一つの盤面と8色パレットで編集・更新・状態復元を行えるようにする。
 
@@ -82,9 +82,9 @@
 - Produces: `evolvePlane(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array`。配列は行優先、入力不変、時刻0もコピーを返す。正の整数寸法・寸法に合う0〜7の配列・時刻0〜20を受け付け、範囲違反はRangeError。
 - Produces: `AutomataPreset`（Global Constraintsの12IDのunion）、`AUTOMATA_PRESETS: readonly AutomataPreset[]`、`makePlaneSeed(preset: AutomataPreset): Uint8Array`（49×49、毎回新しい配列）。
 
-- [ ] 移植元の2ファイルのSHA-256を設計書の値と照合する。違っていたら比較元の変更点を確認し、未確認の値を基準にしない。
-- [ ] 一時ディレクトリの生成スクリプトで、12初期配置と12×8規則×時刻1・7・20の結果を移植元の`ca-model.cjs`から生成し、`ca-golden.ts`へ49文字×49行の0〜7文字列として固定する。`GOLDEN_SEEDS`、`GOLDEN_CASES`、`decodeRows(rows: readonly string[]): Uint8Array`をexportし、比較元の2ハッシュを記録する。生成スクリプトはリポジトリへ追加しない。
-- [ ] `model.test.ts`／`presets.test.ts`へ失敗するテストを書く。`matches all reference planes`では全固定値と配列全体を比較する。`updates synchronously with black exterior`、`preserves every input`、`keeps Life still lifes and period-two oscillators`、`kills occupied rug cells`、`rejects invalid dimensions and states`を小さい盤面と独立したチャンネル別二値oracleで検証する。
+- [x] 移植元の2ファイルのSHA-256を設計書の値と照合する。違っていたら比較元の変更点を確認し、未確認の値を基準にしない。
+- [x] 一時ディレクトリの生成スクリプトで、12初期配置と12×8規則×時刻1・7・20の結果を移植元の`ca-model.cjs`から生成し、`ca-golden.ts`へ49文字×49行の0〜7文字列として固定する。`GOLDEN_SEEDS`、`GOLDEN_CASES`、`decodeRows(rows: readonly string[]): Uint8Array`をexportし、比較元の2ハッシュを記録する。生成スクリプトはリポジトリへ追加しない。
+- [x] `model.test.ts`／`presets.test.ts`へ失敗するテストを書く。`matches all reference planes`では全固定値と配列全体を比較する。`updates synchronously with black exterior`、`preserves every input`、`keeps Life still lifes and period-two oscillators`、`kills occupied rug cells`、`rejects invalid dimensions and states`を小さい盤面と独立したチャンネル別二値oracleで検証する。
 
 ```ts
 const seed = Uint8Array.from([0, 0, 0, 0, 1, 0, 0, 0, 0]);
@@ -96,11 +96,11 @@ expect(makePlaneSeed("white")[24 * 49 + 24]).toBe(7);
 expect(() => evolvePlane(seed, 3, 21, 4)).toThrow(RangeError);
 ```
 
-- [ ] `npm test -- src/automata/__tests__/model.test.ts src/automata/__tests__/presets.test.ts`を実行する。未作成のモデル／プリセットのimportで失敗することを確認する。
-- [ ] `model.ts`に型・定数と`evolvePlane`を実装する。2枚のバッファで同期更新し、Life／rugは3ビットを別々に更新して再結合する。
-- [ ] `presets.ts`に`makePlaneSeed`を移植する。花時計等の位相・回転も移植元に合わせ、退役済み`carpets`と一次元コードを取り込まない。表示文言は含めない。
-- [ ] 同じテストコマンドを実行する。全固定値・二値oracle・境界・入力不変性がPASSすることを確認する。
-- [ ] Task 1の明示的な5ファイルだけをstageし、`Port the two-dimensional Automata model`でコミットする。外部プレビューと依存ファイルに差分がないことを確認する。
+- [x] `npm test -- src/automata/__tests__/model.test.ts src/automata/__tests__/presets.test.ts`を実行する。未作成のモデル／プリセットのimportで失敗することを確認する。
+- [x] `model.ts`に型・定数と`evolvePlane`を実装する。2枚のバッファで同期更新し、Life／rugは3ビットを別々に更新して再結合する。
+- [x] `presets.ts`に`makePlaneSeed`を移植する。花時計等の位相・回転も移植元に合わせ、退役済み`carpets`と一次元コードを取り込まない。表示文言は含めない。
+- [x] 同じテストコマンドを実行する。全固定値・二値oracle・境界・入力不変性がPASSすることを確認する。
+- [x] Task 1の明示的な5ファイルだけをstageし、`Port the two-dimensional Automata model`でコミットする。外部プレビューと依存ファイルに差分がないことを確認する。
 
 ## Task 2: 編集状態と保存・復元を実装する
 
@@ -115,7 +115,7 @@ expect(() => evolvePlane(seed, 3, 21, 4)).toThrow(RangeError);
 - Produces: `serializeAutomataState(state: AutomataState): string`、`loadAutomataState(storage?: Pick<Storage,"getItem">): {state: AutomataState; persistenceUnavailable: boolean}`、`saveAutomataState(state: AutomataState, storage?: Pick<Storage,"setItem">): boolean`。
 - Produces: `AutomataController`は`state`、`revision:number`、`interacting:boolean`、`persistenceUnavailable:boolean`、`dispatch(action: AutomataAction):void`、`getSnapshot():{state:AutomataState;revision:number}`、`beginInteraction():void`、`finishInteraction():void`。`useAutomataState(): AutomataController`が返す。
 
-- [ ] `state.test.ts`へ既定値、時刻の往復、t>0の描画拒否、プリセット再選択での再生成、黒消去、無変更時の配列再利用のテストを書く。プリセット変更はt0・中央に戻り、rule／colorを保つ。
+- [x] `state.test.ts`へ既定値、時刻の往復、t>0の描画拒否、プリセット再選択での再生成、黒消去、無変更時の配列再利用のテストを書く。プリセット変更はt0・中央に戻り、rule／colorを保つ。
 
 ```ts
 const initial = createAutomataState();
@@ -127,14 +127,14 @@ expect(automataReducer(advanced, { type: "set-time", time: 0 }).seed).toBe(paint
 expect(automataReducer(painted, { type: "set-color", color: 0 }).seed).toBe(painted.seed);
 ```
 
-- [ ] `persistence.test.ts`へ往復、項目ごとの不正値、2401以外の配列、セルの小数・負数・8、unknown version、壊れたJSONのテストを書く。`0 is valid`ではtime／x／y／color=0を保持する。`storage access may throw`ではlocalStorageのgetter、getItem、setItemをそれぞれ失敗させ、例外を外へ出さず失敗フラグを返すことを確認する。
-- [ ] `useAutomataState.test.tsx`へ`saves the last edit once on release or cancel`を書く。20回のpaint dispatch中の保存呼び出しは0、終了後は1で最後のセルを含む。終了を2回呼んでも増えない。保存拒否後もpaintとtime変更を続けられる。テストファイルにはjsdom指定を付ける。
-- [ ] `npm test -- src/automata/__tests__/state.test.ts src/automata/__tests__/persistence.test.ts src/automata/__tests__/useAutomataState.test.tsx`を実行し、未作成のexportでFAILすることを確認する。
-- [ ] `state.ts`の3関数を実装する。paintはt0限定・盤面内の整数座標のみ、変更がある場合だけseedを一度コピーし、最後の有効セルを選択する。設定値の整数範囲はtime=0..20、x/y=0..48、color=0..7。不正項目のみ既定値に戻し、不正seedでも他の妥当な設定を保つ。
-- [ ] `persistence.ts`を実装する。形式は`{version:1,seed:number[],preset,rule,time,x,y,color}`。window.localStorageの取得をtry内で行う。形式破損は既定値へ戻し、実際の保存APIの失敗だけを通知対象にする。
-- [ ] `useAutomataState`を実装する。最新stateとrevisionのrefをReact表示状態と同期し、React updaterの中では保存しない。設定コマンドは操作を終了してrevisionを増やす。選択／paintはrevisionを変えない。操作中の変更はdirtyだけ記録し、終了時に最新refを保存する。
-- [ ] 同じテストコマンドを実行し、全テストがPASSすることを確認する。
-- [ ] Task 2の6ファイルだけをstageし、`Persist Automata edits independently of Source`でコミットする。
+- [x] `persistence.test.ts`へ往復、項目ごとの不正値、2401以外の配列、セルの小数・負数・8、unknown version、壊れたJSONのテストを書く。`0 is valid`ではtime／x／y／color=0を保持する。`storage access may throw`ではlocalStorageのgetter、getItem、setItemをそれぞれ失敗させ、例外を外へ出さず失敗フラグを返すことを確認する。
+- [x] `useAutomataState.test.tsx`へ`saves the last edit once on release or cancel`を書く。20回のpaint dispatch中の保存呼び出しは0、終了後は1で最後のセルを含む。終了を2回呼んでも増えない。保存拒否後もpaintとtime変更を続けられる。テストファイルにはjsdom指定を付ける。
+- [x] `npm test -- src/automata/__tests__/state.test.ts src/automata/__tests__/persistence.test.ts src/automata/__tests__/useAutomataState.test.tsx`を実行し、未作成のexportでFAILすることを確認する。
+- [x] `state.ts`の3関数を実装する。paintはt0限定・盤面内の整数座標のみ、変更がある場合だけseedを一度コピーし、最後の有効セルを選択する。設定値の整数範囲はtime=0..20、x/y=0..48、color=0..7。不正項目のみ既定値に戻し、不正seedでも他の妥当な設定を保つ。
+- [x] `persistence.ts`を実装する。形式は`{version:1,seed:number[],preset,rule,time,x,y,color}`。window.localStorageの取得をtry内で行う。形式破損は既定値へ戻し、実際の保存APIの失敗だけを通知対象にする。
+- [x] `useAutomataState`を実装する。最新stateとrevisionのrefをReact表示状態と同期し、React updaterの中では保存しない。設定コマンドは操作を終了してrevisionを増やす。選択／paintはrevisionを変えない。操作中の変更はdirtyだけ記録し、終了時に最新refを保存する。
+- [x] 同じテストコマンドを実行し、全テストがPASSすることを確認する。
+- [x] Task 2の6ファイルだけをstageし、`Persist Automata edits independently of Source`でコミットする。
 
 ## Task 3: 一つのCanvasに描画と直接操作を組み込む
 
