@@ -4,7 +4,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 type AxeViolation = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"][number];
 
 const INTENTIONAL_COLOR_SAMPLE_ATTR = 'data-a11y-color-contrast-exception="intentional-color-sample"';
-const MAIN_ACCESSIBILITY_TABS = ["Source", "Hex", "Glaze", "Map", "Gallery", "Theory", "Music", "Automata"] as const;
+const MAIN_ACCESSIBILITY_TABS = ["Source", "Hex", "Glaze", "Map", "Gallery", "Theory", "Music", "Flow"] as const;
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {

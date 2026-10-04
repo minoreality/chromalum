@@ -102,7 +102,7 @@ describe("AutomataPanel", () => {
       throw new Error("Denied");
     });
     fireEvent.keyDown(screen.getByRole("application"), { key: "Enter" });
-    expect(screen.getByRole("status").textContent).toBe("Automata edits cannot be restored after reloading.");
+    expect(screen.getByRole("status").textContent).toBe("Flow edits cannot be restored after reloading.");
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");

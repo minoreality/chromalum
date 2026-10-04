@@ -28,7 +28,7 @@ test.describe("lazy chunk recovery", () => {
   for (const { panel, heading } of [
     { panel: "Music", heading: "CHROMATIC MUSIC" },
     { panel: "Theory", heading: "Discrete Algebraic Color Theory" },
-    { panel: "Automata", heading: "Automata" },
+    { panel: "Automata", heading: "Flow" },
   ]) {
     test(`reloads the ${panel} chunk after a failed load`, async ({ page }) => {
       let failLoad = true;
@@ -155,8 +155,8 @@ test("pre-caches the production app shell and works offline", async ({ page, con
   const offlineReloadResponse = await page.reload({ waitUntil: "domcontentloaded", timeout: 10_000 });
   expect(offlineReloadResponse?.status()).toBe(200);
 
-  await page.getByRole("tab", { name: "Automata", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Automata", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Flow", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Advance one step", exact: true }).click();
   await expect(page.getByRole("slider")).toHaveValue("1");
 

@@ -27,10 +27,10 @@ describe("App", () => {
   it("keeps a cold Automata panel through tab changes even when saves are denied", async () => {
     window.history.replaceState(null, "", "/#automata");
     renderApp();
-    expect(document.title).toBe("CHROMALUM - Automata");
+    expect(document.title).toBe("CHROMALUM - Flow");
     fireEvent.click(screen.getByRole("tab", { name: "Source" }));
     const board = await screen.findByTestId("automata-board", {}, { timeout: 15000 });
-    fireEvent.click(screen.getByRole("tab", { name: "Automata" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Flow" }));
     expect(screen.getByRole("application", { name: "Cellular automaton board" })).toBe(board);
     const original = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
@@ -40,7 +40,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
     fireEvent.click(screen.getByRole("tab", { name: "Source" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Automata" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Flow" }));
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
     expect(screen.getByRole("application", { name: "Cellular automaton board" })).toBe(board);
   });

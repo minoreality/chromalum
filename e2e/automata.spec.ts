@@ -102,8 +102,8 @@ async function savedDrawing(page: Page) {
 
 test("opens the eighth tab directly with the complete native controls", async ({ page }) => {
   await openAutomata(page);
-  await expect(page).toHaveTitle("CHROMALUM - Automata");
-  await expect(page.getByRole("tab")).toHaveText(["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Automata"]);
+  await expect(page).toHaveTitle("CHROMALUM - Flow");
+  await expect(page.getByRole("tab")).toHaveText(["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Flow"]);
   await expect(page.getByRole("combobox")).toHaveCount(2);
   await expect(page.getByRole("combobox").nth(0).getByRole("option")).toHaveCount(8);
   await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(12);
@@ -301,7 +301,7 @@ test("retains state after reload and language changes, independently of Source a
   await source.click();
   await expect.poll(async () => JSON.parse(await readSavedRecord(page)).revision).toBeGreaterThan(oldRevision);
   const sourceRecord = await savedDrawing(page);
-  await page.getByRole("tab", { name: "Automata", exact: true }).click();
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
   await blank(page);
   await clickCell(page, 12, 18);
   await page.getByRole("combobox", { name: "Rule", exact: true }).selectOption("diagonal-center");
@@ -319,7 +319,7 @@ test("retains state after reload and language changes, independently of Source a
   const glaze = page.getByRole("img", { name: "HUE GLAZE OVERLAY", exact: true });
   await expect(glaze).toBeVisible();
   await glaze.click();
-  await page.getByRole("tab", { name: "Automata", exact: true }).click();
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
   expect((await savedState(page)).seed).toEqual(before.seed);
 });
 
@@ -334,9 +334,9 @@ test("keeps edits across tabs when Automata storage is blocked", async ({ page }
   await openAutomata(page);
   await blank(page);
   await clickCell(page, 12, 18);
-  await expect(page.locator(".automata-panel").getByRole("status")).toHaveText("Automata edits cannot be restored after reloading.");
+  await expect(page.locator(".automata-panel").getByRole("status")).toHaveText("Flow edits cannot be restored after reloading.");
   await page.getByRole("tab", { name: "Source", exact: true }).click();
-  await page.getByRole("tab", { name: "Automata", exact: true }).click();
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
   await expect(page.getByTestId("automata-readout")).toHaveText("Cell (12, 18): initial W White · GRB 111 → t=0 W White · GRB 111");
   await page.getByRole("button", { name: "Advance one step", exact: true }).click();
   await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
@@ -345,7 +345,7 @@ test("keeps edits across tabs when Automata storage is blocked", async ({ page }
 
 test("navigates all tabs and paints with the keyboard without leaking drawing keys", async ({ page }) => {
   await openAutomata(page);
-  const tab = page.getByRole("tab", { name: "Automata", exact: true });
+  const tab = page.getByRole("tab", { name: "Flow", exact: true });
   await tab.press("Home");
   await expect(page.getByRole("tab", { name: "Gallery", exact: true })).toBeFocused();
   await page.keyboard.press("ArrowLeft");
@@ -550,11 +550,12 @@ for (const language of ["ja", "en"] as const) {
         );
         expect(new Set(nav.map((tab) => tab.height)).size).toBe(1);
         expect(nav.every((tab) => tab.fits)).toBe(true);
+        expect(nav.at(-1)?.lines).toBe(1);
         if (viewport.width === 1280) expect(nav.map((tab) => tab.lines)).toEqual(new Array(8).fill(1));
         const navigationHeight = (await page
           .getByRole("tablist", { name: language === "ja" ? "メインナビゲーション" : "Main navigation" })
           .boundingBox())!.height;
-        for (const label of ["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Automata"]) {
+        for (const label of ["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Flow"]) {
           await page.getByRole("tab", { name: label, exact: true }).click();
           const navigation = page.getByRole("tablist", { name: language === "ja" ? "メインナビゲーション" : "Main navigation" });
           expect((await navigation.boundingBox())!.height, `${label} navigation height`).toBe(navigationHeight);

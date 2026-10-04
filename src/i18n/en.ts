@@ -2,8 +2,8 @@ import type { Translations } from "./types";
 
 export const en = {
   // Automata
-  tab_automata: "Automata",
-  automata_title: "Automata",
+  tab_automata: "Flow",
+  automata_title: "Flow",
   automata_subtitle: "Cellular Automaton",
   automata_rule: "Rule",
   automata_preset: "Initial pattern",
@@ -17,7 +17,7 @@ export const en = {
   automata_keyboard_hint: "Arrow keys select a cell. At time 0, Enter or Space places the selected color.",
   automata_selected: "Cell ({0}, {1}): initial {2} → t={3} {4}",
   automata_selected_color: "Selected color: {0}",
-  automata_storage_unavailable: "Automata edits cannot be restored after reloading.",
+  automata_storage_unavailable: "Flow edits cannot be restored after reloading.",
   automata_rule_4: "Cross XOR (4 cells)",
   automata_rule_5: "Cross + center XOR (5 cells)",
   automata_rule_diagonal: "Diagonal XOR (4 cells)",

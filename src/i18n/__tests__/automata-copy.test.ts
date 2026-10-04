@@ -13,8 +13,8 @@ describe("Automata copy", () => {
   it("keeps the direct-editing labels and tab name", () => {
     const jp = ja as Record<string, string>,
       english = en as Record<string, string>;
-    expect(jp.tab_automata).toBe("Automata");
-    expect(english.tab_automata).toBe("Automata");
+    expect(jp.tab_automata).toBe("Flow");
+    expect(english.tab_automata).toBe("Flow");
     expect(jp.automata_step).toBe("1ステップ進む");
     expect(jp.automata_return).toBe("初期配置に戻る");
     expect(jp.automata_edit_mode).toBe("初期配置を編集");

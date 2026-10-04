@@ -15,7 +15,7 @@ for (const language of ["ja", "en"] as const) {
       await page.goto("./#source");
       if (wideGlyphs) await page.addStyleTag({ content: '[role="dialog"] span { font-family: "MS Gothic", monospace !important; }' });
 
-      for (const tab of ["Source", "Glaze", "Hex", "Map", "Gallery", "Theory", "Music", "Automata"]) {
+      for (const tab of ["Source", "Glaze", "Hex", "Map", "Gallery", "Theory", "Music", "Flow"]) {
         await page.getByRole("tab", { name: tab, exact: true }).click();
         await page.getByRole("button", { name: "Shortcuts", exact: true }).click();
         const dialog = page.getByRole("dialog", { name: language === "ja" ? "ショートカット一覧" : "Keyboard Shortcuts" });

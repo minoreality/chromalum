@@ -37,7 +37,7 @@ describe("AppTabBar", () => {
 
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: "End" });
     expect(onTabChange).toHaveBeenLastCalledWith("automata");
-    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Automata" }));
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Flow" }));
 
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Home" });
     expect(onTabChange).toHaveBeenLastCalledWith("gallery");
@@ -49,7 +49,7 @@ describe("AppTabBar", () => {
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: "ArrowRight" });
     expect(onTabChange).toHaveBeenLastCalledWith("gallery");
   });
-  it("puts Automata immediately after Music", () => {
+  it("puts Flow immediately after Music", () => {
     render(<AppTabBar activeTabId="source" onTabChange={() => {}} t={t} />);
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Gallery",
@@ -59,7 +59,7 @@ describe("AppTabBar", () => {
       "Map",
       "Theory",
       "Music",
-      "Automata",
+      "Flow",
     ]);
   });
 });

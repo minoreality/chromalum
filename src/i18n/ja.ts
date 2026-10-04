@@ -2,8 +2,8 @@ import type { Translations } from "./types";
 
 export const ja = {
   // Automata
-  tab_automata: "Automata",
-  automata_title: "Automata",
+  tab_automata: "Flow",
+  automata_title: "Flow",
   automata_subtitle: "Cellular Automaton",
   automata_rule: "規則",
   automata_preset: "初期配置",
@@ -17,7 +17,7 @@ export const ja = {
   automata_keyboard_hint: "矢印キーでセルを選択。時刻0ではEnterまたはSpaceで色を置きます。",
   automata_selected: "セル({0}, {1})：初期 {2} → t={3} {4}",
   automata_selected_color: "選択色：{0}",
-  automata_storage_unavailable: "Automataの編集は再読み込み後に復元できません。",
+  automata_storage_unavailable: "Flowの編集は再読み込み後に復元できません。",
   automata_rule_4: "十字のXOR（4セル）",
   automata_rule_5: "十字＋中央のXOR（5セル）",
   automata_rule_diagonal: "斜めのXOR（4セル）",
