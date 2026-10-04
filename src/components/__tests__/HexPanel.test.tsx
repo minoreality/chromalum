@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CANDIDATE_INDEX_BY_LEVEL } from "../../color-engine";
 import type { CanvasData } from "../../types";
 import { HexPanel } from "../HexPanel";
+import { makeCanvasNavigation } from "./canvas-navigation-fixture";
 
 vi.mock("../../i18n", () => ({
   useTranslation: () => ({
@@ -28,6 +29,8 @@ function makeProps(overrides?: Partial<React.ComponentProps<typeof HexPanel>>): 
     canvasData: makeCvs(),
     displayWidth: 128,
     displayHeight: 96,
+    canvasTransform: {},
+    navigation: makeCanvasNavigation(),
     candidateIndexByLevel: [...DEFAULT_CANDIDATE_INDEX_BY_LEVEL],
     candidateIndexDispatch: vi.fn(),
     levelHistogram: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -61,17 +64,18 @@ describe("HexPanel", () => {
     expect(props.candidateIndexDispatch).toHaveBeenNthCalledWith(2, { type: "cycle_color", levelIndex: 5, direction: 1 });
   });
 
-  it("routes pattern-count click and keyboard activation when a gallery link is provided", () => {
+  it("shows the pattern-count link only under the diagram", () => {
     const onPatternClick = vi.fn();
     render(<HexPanel {...makeProps({ onPatternClick })} />);
-
     const patternLink = screen.getByRole("button", { name: "pattern_count_go_gallery(42)" });
     fireEvent.click(patternLink);
     fireEvent.keyDown(patternLink, { key: "Enter" });
     fireEvent.keyDown(patternLink, { key: " " });
-    fireEvent.keyDown(patternLink, { key: "Escape" });
-
     expect(onPatternClick).toHaveBeenCalledTimes(3);
+    fireEvent.keyDown(document, { key: "v" });
+    expect(screen.queryByRole("button", { name: "pattern_count_go_gallery(42)" })).toBeNull();
+    fireEvent.keyDown(document, { key: "v" });
+    expect(screen.getByRole("button", { name: "pattern_count_go_gallery(42)" })).toBeTruthy();
   });
 
   it("leaves a pinned level out of the 2-5 shortcut", () => {
@@ -117,12 +121,6 @@ describe("HexPanel", () => {
     fireEvent(document, event);
 
     expect(props.candidateIndexDispatch).not.toHaveBeenCalled();
-  });
-
-  it("does not expose the pattern-count row as a button without a gallery callback", () => {
-    render(<HexPanel {...makeProps()} />);
-
-    expect(screen.queryByRole("button", { name: "pattern_count_go_gallery(42)" })).toBeNull();
   });
 
   it("reports hex candidate details for the hovered preview pixel", () => {

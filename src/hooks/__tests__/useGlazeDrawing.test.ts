@@ -135,6 +135,138 @@ describe("useGlazeDrawing", () => {
     });
   });
 
+  it.each([
+    {
+      tool: "glaze_line",
+      intermediate: [7, 1],
+      painted: [
+        [1, 1],
+        [4, 4],
+        [7, 7],
+      ],
+      restored: [
+        [4, 1],
+        [1, 7],
+      ],
+    },
+    {
+      tool: "glaze_rect",
+      intermediate: [3, 3],
+      painted: [
+        [4, 1],
+        [7, 4],
+        [4, 7],
+        [1, 4],
+      ],
+      restored: [
+        [3, 2],
+        [4, 4],
+      ],
+    },
+    {
+      tool: "glaze_ellipse",
+      intermediate: [3, 3],
+      painted: [
+        [4, 1],
+        [7, 4],
+        [4, 7],
+        [1, 4],
+      ],
+      restored: [
+        [2, 1],
+        [1, 1],
+        [4, 4],
+      ],
+    },
+  ])("replaces the $tool preview while preserving existing glaze and Source levels", ({ tool, intermediate, painted, restored }) => {
+    const canvasData = makeCvs();
+    canvasData.levelData.fill(2);
+    canvasData.pixelCandidateOverrideMap.fill(3);
+    const dispatch = vi.fn();
+    const { result } = renderHook(() =>
+      useGlazeDrawing(makeOpts({ canvasData, dispatch, glazeTool: tool as GlazeToolId, hueAngleDeg: 225 })),
+    );
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    const at = (x: number, y: number) => pointerEvent({ target: canvas, clientX: (x + 0.5) * 32, clientY: (y + 0.5) * 32 });
+    act(() => {
+      result.current.onDown(at(1, 1));
+      result.current.onMove(at(intermediate[0], intermediate[1]));
+      result.current.onMove(at(7, 7));
+      result.current.onUp();
+    });
+
+    const committed = dispatch.mock.calls[0][0];
+    const overrides = committed.finalPixelCandidateOverrideMap as Uint8Array;
+    for (const [x, y] of painted) expect(overrides[y * 10 + x], `painted (${x},${y})`).toBe(2);
+    for (const [x, y] of restored) expect(overrides[y * 10 + x], `restored (${x},${y})`).toBe(3);
+    expect(Array.from(committed.finalLevelData)).toEqual(Array(100).fill(2));
+    expect(Array.from(canvasData.pixelCandidateOverrideMap)).toEqual(Array(100).fill(3));
+    expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies only the selected Glaze candidates along a line crossing different Source levels", () => {
+    const canvasData = makeCvs();
+    canvasData.pixelCandidateOverrideMap.fill(1);
+    canvasData.levelData.set([0, 1, 2, 3, 4, 5, 6, 7], 11);
+    const beforeLevels = canvasData.levelData.slice();
+    const dispatch = vi.fn();
+    const { result } = renderHook(() =>
+      useGlazeDrawing(
+        makeOpts({
+          canvasData,
+          dispatch,
+          glazeTool: "glaze_line" as GlazeToolId,
+          candidateOverridesByLevel: new Map([
+            [2, 1],
+            [4, 2],
+          ]),
+        }),
+      ),
+    );
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => {
+      result.current.onDown(pointerEvent({ target: canvas, clientX: 48, clientY: 48 }));
+      result.current.onMove(pointerEvent({ target: canvas, clientX: 272, clientY: 48 }));
+      result.current.onUp();
+    });
+    const committed = dispatch.mock.calls[0][0];
+    expect(Array.from(committed.finalPixelCandidateOverrideMap.slice(11, 19))).toEqual([1, 1, 2, 1, 3, 1, 1, 1]);
+    expect(committed.finalLevelData).toEqual(beforeLevels);
+  });
+
+  it("keeps a Glaze rectangle's initial tool, brush size and color when controls change during the drag", () => {
+    const canvasData = makeCvs();
+    canvasData.levelData.fill(2);
+    const dispatch = vi.fn();
+    const { result, rerender } = renderHook(
+      (params: { glazeTool: GlazeToolId; brushSize: number; hueAngleDeg: number; candidateOverridesByLevel: Map<number, number> }) =>
+        useGlazeDrawing(makeOpts({ canvasData, dispatch, ...params })),
+      {
+        initialProps: {
+          glazeTool: "glaze_rect" as GlazeToolId,
+          brushSize: 1,
+          hueAngleDeg: 225,
+          candidateOverridesByLevel: new Map<number, number>(),
+        },
+      },
+    );
+    const canvas = result.current.cursorCanvasRef.current!;
+    mockCanvasRect(canvas);
+    act(() => result.current.onDown(pointerEvent({ target: canvas, clientX: 48, clientY: 48 })));
+    rerender({ glazeTool: "glaze_brush", brushSize: 5, hueAngleDeg: 0, candidateOverridesByLevel: new Map([[2, 0]]) });
+    act(() => {
+      result.current.onMove(pointerEvent({ target: canvas, clientX: 240, clientY: 240 }));
+      result.current.onUp();
+    });
+    const overrides = dispatch.mock.calls[0][0].finalPixelCandidateOverrideMap as Uint8Array;
+    expect(overrides[1 * 10 + 4]).toBe(2);
+    expect(overrides[4 * 10 + 7]).toBe(2);
+    expect(overrides[4 * 10 + 4]).toBe(0);
+    expect(overrides[0 * 10 + 4]).toBe(0);
+  });
+
   it("finishes its glaze stroke when another input started panning before release", () => {
     const dispatch = vi.fn();
     const canvasData = makeCvs();

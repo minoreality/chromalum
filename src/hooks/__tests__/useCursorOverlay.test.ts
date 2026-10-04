@@ -96,79 +96,56 @@ describe("useCursorOverlay", () => {
     vi.restoreAllMocks();
   });
 
-  it("tracks and clears source and preview cursor positions", () => {
+  it("tracks and clears the Source cursor position", () => {
     const refs = makeRefs();
     const status = document.createElement("div");
     status.title = "old status";
     status.textContent = "ready";
     const statusRef = { current: status };
     const cur = document.createElement("canvas");
-    const prv = document.createElement("canvas");
     const curCtx = makeContext();
-    const prvCtx = makeContext();
-    installCanvasContexts(
-      new Map([
-        [cur, curCtx],
-        [prv, prvCtx],
-      ]),
-    );
+    installCanvasContexts(new Map([[cur, curCtx]]));
     const raf = installRafQueue();
     mockRect(cur, 10, 20);
-    mockRect(prv, 100, 120);
 
     const { result } = renderHook(() => useCursorOverlay(refs, statusRef));
     result.current.cursorCanvasRef.current = cur;
-    result.current.previewCursorRef.current = prv;
 
     act(() => {
       result.current.trackCursor(pointerEvent(22, 45));
-      result.current.trackPreviewCursor(pointerEvent(125, 150));
     });
 
     expect(result.current.cursorPosRef.current).toEqual({ dx: 12, dy: 25 });
-    expect(result.current.previewCursorPosRef.current).toEqual({ dx: 25, dy: 30 });
     expect(raf.rafCallbacks).toHaveLength(1);
 
     raf.flushNextFrame();
     expect(result.current.cursorRafRef.current).toBeNull();
     expect(curCtx.clearRect).toHaveBeenCalledWith(0, 0, cur.width, cur.height);
-    expect(prvCtx.clearRect).toHaveBeenCalledWith(0, 0, prv.width, prv.height);
 
     act(() => {
       result.current.clearCursor();
-      result.current.clearPreviewCursor();
     });
 
     expect(result.current.cursorPosRef.current).toBeNull();
-    expect(result.current.previewCursorPosRef.current).toBeNull();
     expect(status.textContent).toBe("\u2014");
     expect(status.title).toBe("");
 
     raf.flushNextFrame();
     expect(curCtx.clearRect).toHaveBeenCalledTimes(2);
-    expect(prvCtx.clearRect).toHaveBeenCalledTimes(2);
   });
 
-  it("coalesces redraws and redraws both overlays when the grid state changes", () => {
+  it("coalesces redraws and redraws the Source overlay when the grid state changes", () => {
     const refs = makeRefs({
       zoomRef: { current: 8 },
       brushSizeRef: { current: 3 },
     });
     const cur = document.createElement("canvas");
-    const prv = document.createElement("canvas");
     const curCtx = makeContext();
-    const prvCtx = makeContext();
-    installCanvasContexts(
-      new Map([
-        [cur, curCtx],
-        [prv, prvCtx],
-      ]),
-    );
+    installCanvasContexts(new Map([[cur, curCtx]]));
     const raf = installRafQueue();
 
     const { result } = renderHook(() => useCursorOverlay(refs, { current: null }));
     result.current.cursorCanvasRef.current = cur;
-    result.current.previewCursorRef.current = prv;
 
     act(() => {
       result.current.scheduleCursorRedraw();
@@ -178,7 +155,6 @@ describe("useCursorOverlay", () => {
     expect(raf.rafCallbacks).toHaveLength(1);
     raf.flushNextFrame();
     expect(curCtx.lineTo).toHaveBeenCalled();
-    expect(prvCtx.lineTo).toHaveBeenCalled();
   });
 
   it("snaps grid lines to device-pixel centers", () => {
@@ -264,10 +240,8 @@ describe("useCursorOverlay", () => {
 
     act(() => {
       result.current.trackCursor(pointerEvent(10, 10));
-      result.current.trackPreviewCursor(pointerEvent(10, 10));
     });
     expect(result.current.cursorPosRef.current).toBeNull();
-    expect(result.current.previewCursorPosRef.current).toBeNull();
 
     result.current.cursorCanvasRef.current = cur;
     refs.panningRef.current = true;

@@ -1,4 +1,5 @@
 import { devices, expect, test, type Locator, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { SAVED_STATE_VERSION } from "../src/utils/idb-persistence";
 
@@ -301,7 +302,7 @@ for (const kind of ["unsupported", "malformed", "null"] as const) {
     const canvas = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
     await drawAtCenter(page, canvas);
     await expect.poll(() => canvasPixel(canvas, 160, 160)).toEqual([255, 255, 255, 255]);
-    await page.getByRole("tab", { name: "Color" }).click();
+    await page.getByRole("tab", { name: "Hex" }).click();
     await expect(notice).toHaveCount(0);
     await page.getByRole("tab", { name: "Source" }).click();
 
@@ -366,6 +367,55 @@ test("glazes a chromatic source pixel and clears the glaze layer", async ({ page
   await expect(page.locator("text=/\\d+px/")).toBeVisible();
   await page.getByRole("button", { name: /Clear Glaze/ }).click();
   await expect(page.locator("text=/\\d+px/")).toHaveCount(0);
+});
+
+test("opens retired Color links in Hex and uses the seven-tab shortcuts", async ({ page }) => {
+  await page.goto("#color");
+  await expect(page).toHaveURL(/#hex$/);
+  await expect(page.getByRole("tab", { name: "Hex" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab")).toHaveCount(7);
+  await expect(page.getByRole("tab", { name: "Color", exact: true })).toHaveCount(0);
+  await page.keyboard.press("Alt+4");
+  await expect(page.getByRole("tab", { name: "Glaze" })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Alt+7");
+  await expect(page.getByRole("tab", { name: "Music" })).toHaveAttribute("aria-selected", "true");
+  await page.goBack();
+  await expect(page.getByRole("tab", { name: "Glaze" })).toHaveAttribute("aria-selected", "true");
+  await page.goBack();
+  await expect(page.getByRole("tab", { name: "Hex" })).toHaveAttribute("aria-selected", "true");
+});
+
+test("exports the selected Hex palette from Source without a Color canvas", async ({ page }) => {
+  await gotoSource(page);
+  await createCanvas(page, 8);
+  const source = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
+  await selectLevel(page, 2, "Red");
+  await drawAtCenter(page, source);
+  await expect.poll(() => canvasPixel(source, 4, 4)).toEqual([73, 73, 73, 255]);
+  await page.getByRole("tab", { name: "Hex" }).click();
+  await page.getByRole("button", { name: "Level 2 color candidate (#0040ff)", exact: true }).click();
+  await expect.poll(() => canvasPixel(page.getByRole("img", { name: "Color preview canvas" }), 4, 4)).toEqual([0, 64, 255, 255]);
+  await page.getByRole("tab", { name: "Source" }).click();
+  await page.getByRole("button", { name: /Save Color/ }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("dialog", { name: "Save color image?" }).getByRole("button", { name: "Yes" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^chromalum_color_.+\.png$/);
+  const path = await download.path();
+  if (!path) throw new Error("PNG download unavailable");
+  const png = (await readFile(path)).toString("base64");
+  const pixel = await page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(image, 0, 0);
+    return Array.from(ctx.getImageData(4, 4, 1, 1).data);
+  }, png);
+  expect(pixel).toEqual([0, 64, 255, 255]);
 });
 
 test("keeps the Hex preview canvas at the source image dimensions", async ({ page }) => {

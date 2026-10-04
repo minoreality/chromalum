@@ -12,9 +12,7 @@ interface CanvasCoordinationOptions {
   drawing: CanvasDrawingResult;
   glazeDrawing: GlazeDrawingResult;
   sourceCanvasWrapRef: React.MutableRefObject<HTMLDivElement | null>;
-  previewCanvasWrapRef: React.MutableRefObject<HTMLDivElement | null>;
   glazeWrapRef: React.MutableRefObject<HTMLDivElement | null>;
-  previewCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
   hexPreviewCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
   glazePreviewCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
   sharedScheduleCursorRedrawRef: React.MutableRefObject<(() => void) | null>;
@@ -29,15 +27,13 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
     drawing,
     glazeDrawing,
     sourceCanvasWrapRef,
-    previewCanvasWrapRef,
     glazeWrapRef,
-    previewCanvasRef,
     hexPreviewCanvasRef,
     glazePreviewCanvasRef,
     sharedScheduleCursorRedrawRef,
     onWheel,
   } = opts;
-  const { clearCursor, clearPreviewCursor } = drawing;
+  const { clearCursor } = drawing;
   const { clearCursor: clearGlazeCursor } = glazeDrawing;
   const previousTabIdRef = useRef(activeTabId);
   const { onUp: endDrawing } = drawing;
@@ -72,18 +68,15 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
   // Wheel listener (non-passive)
   useEffect(() => {
     const s = sourceCanvasWrapRef.current,
-      p = previewCanvasWrapRef.current,
       g = glazeWrapRef.current;
     const wheelOpts: AddEventListenerOptions = { passive: false };
     if (s) s.addEventListener("wheel", onWheel, wheelOpts);
-    if (p) p.addEventListener("wheel", onWheel, wheelOpts);
     if (g) g.addEventListener("wheel", onWheel, wheelOpts);
     return () => {
       if (s) s.removeEventListener("wheel", onWheel, wheelOpts);
-      if (p) p.removeEventListener("wheel", onWheel, wheelOpts);
       if (g) g.removeEventListener("wheel", onWheel, wheelOpts);
     };
-  }, [onWheel, sourceCanvasWrapRef, previewCanvasWrapRef, glazeWrapRef, activeTabId]);
+  }, [onWheel, sourceCanvasWrapRef, glazeWrapRef, activeTabId]);
 
   useEffect(() => {
     function isPointInElement(e: MouseEvent | PointerEvent, el: HTMLElement | null) {
@@ -95,7 +88,6 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
 
     function clearCursorsOutsideWorkspace(e: MouseEvent | PointerEvent) {
       if (sourceCanvasWrapRef.current && !isPointInElement(e, sourceCanvasWrapRef.current)) clearCursor();
-      if (previewCanvasWrapRef.current && !isPointInElement(e, previewCanvasWrapRef.current)) clearPreviewCursor();
       if (glazeWrapRef.current && !isPointInElement(e, glazeWrapRef.current)) clearGlazeCursor();
     }
 
@@ -105,7 +97,7 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
       document.removeEventListener("pointermove", clearCursorsOutsideWorkspace);
       document.removeEventListener("mousemove", clearCursorsOutsideWorkspace);
     };
-  }, [clearCursor, clearPreviewCursor, clearGlazeCursor, sourceCanvasWrapRef, previewCanvasWrapRef, glazeWrapRef]);
+  }, [clearCursor, clearGlazeCursor, sourceCanvasWrapRef, glazeWrapRef]);
 
   const renderGlazeCanvas = useCallback(() => {
     const gp = glazePreviewCanvasRef.current;
@@ -138,25 +130,18 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
       endDrawing();
       endGlaze();
       clearCursor();
-      clearPreviewCursor();
       clearGlazeCursor();
     }
     // A pending fill still owns its result, but the new tab must show committed
     // pixels even if that worker later returns no changes or fails.
     if (!tabChanged && (drawing.drawingRef.current || glazeDrawing.drawingRef.current)) return;
     const s = drawing.sourceCanvasRef.current,
-      p = previewCanvasRef.current,
       hp = hexPreviewCanvasRef.current;
-    if (!s && !p && !hp) return;
+    if (!s && !hp) return;
     let needReset = false;
     if (s && (s.width !== canvasData.width || s.height !== canvasData.height)) {
       s.width = canvasData.width;
       s.height = canvasData.height;
-      needReset = true;
-    }
-    if (p && (p.width !== canvasData.width || p.height !== canvasData.height)) {
-      p.width = canvasData.width;
-      p.height = canvasData.height;
       needReset = true;
     }
     if (hp && (hp.width !== canvasData.width || hp.height !== canvasData.height)) {
@@ -165,18 +150,11 @@ export function useCanvasCoordination(opts: CanvasCoordinationOptions): void {
     }
     if (needReset)
       drawing.imgCacheRef.current = { sourceImageData: null, previewImageData: null, sourcePixels32: null, previewPixels32: null };
-    const previewCanvas = p || hp;
-    renderCanvasBuffers(canvasData.levelData, canvasData.width, canvasData.height, colorLUT, s, previewCanvas, drawing.imgCacheRef.current);
-    if (hp && p) {
-      const hctx = hp.getContext("2d");
-      if (hctx && drawing.imgCacheRef.current.previewImageData) {
-        hctx.putImageData(drawing.imgCacheRef.current.previewImageData, 0, 0);
-      }
-    }
+    renderCanvasBuffers(canvasData.levelData, canvasData.width, canvasData.height, colorLUT, s, hp, drawing.imgCacheRef.current);
     // Also render glaze tab canvas (may be null if tab not mounted yet)
     renderGlazeCanvas();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, renderGlazeCanvas captured via closure
-  }, [canvasData, colorLUT, activeTabId, endDrawing, endGlaze, clearCursor, clearPreviewCursor, clearGlazeCursor]);
+  }, [canvasData, colorLUT, activeTabId, endDrawing, endGlaze, clearCursor, clearGlazeCursor]);
 
   // Glaze tab effect
   useEffect(() => {

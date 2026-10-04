@@ -92,15 +92,30 @@ pinch focal point stable.
 
 `useCanvasCoordination` connects the shared viewport state back to the mounted
 canvas surfaces. It bridges cursor redraw scheduling between source and glaze
-drawing hooks, attaches non-passive wheel listeners to the source, color, and
-glaze workspaces, and redraws the source/color/hex/glaze buffers when canvas
+drawing hooks, attaches non-passive wheel listeners to the source and glaze
+workspaces, and redraws the source/hex/glaze buffers when canvas
 state or color lookup tables change.
 
 Tab state uses stable ids from `src/tabs.ts`. The Map tab's current id and
 canonical URL hash are both `map`; the old `#stats` hash remains a legacy alias
 that opens the Map tab.
+The retired `#color` hash opens Hex. Browser storage and history keep tab ids;
+legacy numeric entries use the original eight-tab order so removing Color does
+not shift saved selections.
 
 ## Rendering
+
+`HexPanel` keeps the unchanged diagram and its pattern count in the sidebar's
+original flex layout. A boxless wrapper controls their visibility and accessibility.
+`HexPaletteList` overlays that same area without affecting the diagram's dimensions;
+the list scrolls inside it when needed. The inactive view is hidden
+and inert. `useBackgroundPress` switches views on background double-click or a
+stationary primary-touch hold; controls, scrolling, pointer cancellation, and a
+second touch do not switch them. The list's `useColorPin` follows the diagram's
+candidate selection and pin gestures, using the same palette, locks, and histogram.
+Switching views remounts the diagram to run its existing interaction cleanup;
+its source remains unchanged. Background hit testing also excludes the original
+pointer-transparent disabled die.
 
 `renderCanvasBuffers` converts tone levels plus the active color lookup table
 into `ImageData`. It supports dirty-rectangle updates and optional
@@ -108,7 +123,7 @@ into `ImageData`. It supports dirty-rectangle updates and optional
 
 The app intentionally keeps rendering close to browser primitives:
 
-- Canvas elements display source, color, hex, glaze, gallery, and map outputs.
+- Canvas elements display source, hex, glaze, gallery, and map outputs.
 - Typed arrays hold source levels, candidate overrides, and analysis buffers.
 - Reusable image caches avoid unnecessary allocation in repeated renders.
 

@@ -69,7 +69,7 @@ for (const tab of ["Source", "Glaze"] as const) {
   }
 }
 
-for (const tab of ["Source", "Color", "Glaze"] as const) {
+for (const tab of ["Source", "Glaze"] as const) {
   test(`commits an interrupted ${tab} stroke before switching tabs`, async ({ page }) => {
     await page.goto("./#source");
     await page.getByRole("button", { name: "Level 2 Red", exact: true }).click();
@@ -96,7 +96,7 @@ for (const tab of ["Source", "Color", "Glaze"] as const) {
       .toEqual([320, 320]);
     await page.mouse.move(5, 5);
     await page.mouse.up();
-    await page.keyboard.press(tab === "Source" ? "Alt+3" : tab === "Color" ? "Alt+4" : "Alt+5");
+    await page.keyboard.press(tab === "Source" ? "Alt+3" : "Alt+4");
     await expect.poll(() => canvasImage(canvas)).not.toBe(beforeStroke);
     const completedStroke = await canvasImage(canvas);
     const nextBox = await canvas.boundingBox();

@@ -1,7 +1,11 @@
 import { LEVEL_MASK } from "../constants";
+import type { ShapeToolId } from "../constants";
 import { LEVEL_CANDIDATES, findClosestCandidate } from "../color-engine";
-import { forEachBrushPixel } from "./brush-mask";
+import { forEachBrushPixel, shapeMaskBBox } from "./brush-mask";
 import type { BrushMask } from "./brush-mask";
+import { restoreRect, unionBBox } from "./dirty-rect";
+import { BRUSH_SHAPE_PAINTERS } from "./paint";
+import type { DirtyRect, Point } from "../types";
 
 /* ═══════════════════════════════════════════
    GLAZE PAINT FUNCTIONS
@@ -34,6 +38,59 @@ export function buildMultiDirectLUT(candidates: Map<number, number>): Uint8Array
     lut[level] = idx + 1;
   });
   return lut;
+}
+
+interface GlazeShapePreview {
+  workingOverrideMap: Uint8Array;
+  beforeOverrideMap: Uint8Array;
+  coverageMask: Uint8Array;
+  levelData: Uint8Array;
+  tool: ShapeToolId;
+  origin: Point;
+  point: Point;
+  brushMask: BrushMask;
+  width: number;
+  height: number;
+  glazeLUT: Uint8Array;
+  previousBBox: DirtyRect | null;
+}
+
+/** Replace the preview with Source's outline geometry, applying only Glaze candidate overrides. */
+export function previewGlazeShape({
+  workingOverrideMap,
+  beforeOverrideMap,
+  coverageMask,
+  levelData,
+  tool,
+  origin,
+  point,
+  brushMask,
+  width,
+  height,
+  glazeLUT,
+  previousBBox,
+}: GlazeShapePreview): { shapeBBox: DirtyRect | null; dirtyBBox: DirtyRect | null } {
+  const shapeBBox = shapeMaskBBox(origin.x, origin.y, point.x, point.y, brushMask, width, height);
+  const dirtyBBox = unionBBox(previousBBox, shapeBBox);
+  if (!dirtyBBox) return { shapeBBox, dirtyBBox };
+
+  restoreRect(workingOverrideMap, beforeOverrideMap, width, dirtyBBox);
+  for (let y = dirtyBBox.y; y < dirtyBBox.y + dirtyBBox.h; y++) {
+    const start = y * width + dirtyBBox.x;
+    coverageMask.fill(0, start, start + dirtyBBox.w);
+  }
+  if (shapeBBox) {
+    BRUSH_SHAPE_PAINTERS[tool](coverageMask, origin.x, origin.y, point.x, point.y, brushMask, 1, width, height);
+    for (let y = shapeBBox.y; y < shapeBBox.y + shapeBBox.h; y++) {
+      const end = y * width + shapeBBox.x + shapeBBox.w;
+      for (let idx = y * width + shapeBBox.x; idx < end; idx++) {
+        if (coverageMask[idx] === 0) continue;
+        const overrideValue = glazeLUT[levelData[idx] & LEVEL_MASK];
+        if (overrideValue !== 0) workingOverrideMap[idx] = overrideValue;
+      }
+    }
+  }
+  return { shapeBBox, dirtyBBox };
 }
 
 export function paintGlazeBrush(

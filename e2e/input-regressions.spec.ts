@@ -5,6 +5,46 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
+for (const tab of ["Source", "Glaze"]) {
+  for (const input of ["120px", "measured fractional"]) {
+    test(`zooms ${tab} with ${input} mouse notches`, async ({ page }) => {
+      await page.clock.install();
+      await page.setViewportSize({ width: 1280, height: 1000 });
+      await page.goto(`./#${tab.toLowerCase()}`);
+      const workspace = page.locator('[role="tabpanel"]:visible .canvas-workspace');
+      const canvas = workspace.locator("canvas").first();
+      const scale = () => canvas.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+
+      // End the initial gesture window so the first event must classify itself.
+      await page.clock.runFor(200);
+
+      // Capture from this Windows mouse: CSS delta is fractional,
+      // while wheelDeltaY still records one physical notch.
+      for (const direction of [-1, 1]) {
+        if (input === "120px") {
+          await canvas.hover();
+          await page.mouse.wheel(0, direction * 120);
+        } else {
+          await canvas.evaluate((el, direction) => {
+            const rect = el.getBoundingClientRect();
+            const event = new WheelEvent("wheel", {
+              bubbles: true,
+              cancelable: true,
+              deltaY: direction * 133.3333251953125,
+              clientX: rect.left + rect.width / 2,
+              clientY: rect.top + rect.height / 2,
+            });
+            Object.defineProperty(event, "wheelDeltaY", { value: -direction * 120 });
+            el.dispatchEvent(event);
+          }, direction);
+        }
+        if (direction < 0) await expect.poll(scale).toBeGreaterThan(1);
+        else await expect.poll(scale).toBeCloseTo(1);
+      }
+    });
+  }
+}
+
 async function pasteBlackImage(page: Page, width: number, height: number) {
   await page.evaluate(
     async ({ width, height }) => {
@@ -325,25 +365,23 @@ test("keeps the Hex palette unchanged while Help is open", async ({ page }) => {
   await expect.poll(() => canvasImage(canvas)).not.toBe(before);
 });
 
-for (const tab of ["Color", "Glaze"] as const) {
-  test(`selects level zero without resetting the ${tab} viewport`, async ({ page }) => {
-    const source = await fillSourceRedLevel(page);
-    await page.getByRole("tab", { name: tab, exact: true }).click();
-    const workspace = page.locator('[role="tabpanel"]:visible .canvas-workspace');
-    await workspace.focus();
-    await workspace.press("=");
-    await workspace.press("ArrowRight");
-    const canvas = workspace.getByRole("img");
-    const transform = await canvas.evaluate((el) => (el as HTMLElement).style.transform);
-    await workspace.press("0");
-    expect(await canvas.evaluate((el) => (el as HTMLElement).style.transform)).toBe(transform);
+test("selects level zero without resetting the Glaze viewport", async ({ page }) => {
+  const source = await fillSourceRedLevel(page);
+  await page.getByRole("tab", { name: "Glaze", exact: true }).click();
+  const workspace = page.locator('[role="tabpanel"]:visible .canvas-workspace');
+  await workspace.focus();
+  await workspace.press("=");
+  await workspace.press("ArrowRight");
+  const canvas = workspace.getByRole("img");
+  const transform = await canvas.evaluate((el) => (el as HTMLElement).style.transform);
+  await workspace.press("0");
+  expect(await canvas.evaluate((el) => (el as HTMLElement).style.transform)).toBe(transform);
 
-    await page.getByRole("tab", { name: "Source", exact: true }).click();
-    await page.getByRole("button", { name: /Reset zoom/ }).click();
-    await source.click();
-    await expect.poll(() => canvasPixel(source, 160, 160)).toEqual([0, 0, 0, 255]);
-  });
-}
+  await page.getByRole("tab", { name: "Source", exact: true }).click();
+  await page.getByRole("button", { name: /Reset zoom/ }).click();
+  await source.click();
+  await expect.poll(() => canvasPixel(source, 160, 160)).toEqual([0, 0, 0, 255]);
+});
 
 test("applies each Glaze brush-size shortcut once", async ({ page }) => {
   await page.goto("./#glaze");

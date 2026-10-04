@@ -1,4 +1,4 @@
-import { useRef, useCallback, useLayoutEffect } from "react";
+import { useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { LEVEL_MASK } from "../constants";
 import type { ToolId } from "../constants";
 import { LEVEL_INFO } from "../color-engine";
@@ -15,7 +15,7 @@ import {
 } from "./useStrokeManager";
 import { useFloodFillWorker } from "./useFloodFillWorker";
 import { renderCanvasBuffers } from "../drawing/render-buf";
-import { formatColorPixelStatus, formatSourcePixelStatus } from "../utils/pixel-status";
+import { formatSourcePixelStatus } from "../utils/pixel-status";
 import type { BufferPool } from "./useStrokeManager";
 import { useSyncRef, useSyncRefs } from "./useSyncRef";
 import { useCursorOverlay } from "./useCursorOverlay";
@@ -37,11 +37,11 @@ import { pressureAdjustedBrushSize } from "../drawing/stroke-pressure";
 import type { PointerPressureSample } from "../drawing/stroke-pressure";
 import type { CanvasData, StrokeState, ImageRenderCache, CanvasAction, DirtyRect, Point } from "../types";
 import { useDrawingContext } from "../state/DrawingContext";
+import { controlOwnsKey } from "../shortcuts";
 
 export interface CanvasDrawingResult {
   sourceCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
   cursorCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
-  previewCursorRef: React.MutableRefObject<HTMLCanvasElement | null>;
   statusRef: React.MutableRefObject<HTMLDivElement | null>;
   imgCacheRef: React.MutableRefObject<ImageRenderCache>;
   strokeRef: React.MutableRefObject<StrokeState | null>;
@@ -58,28 +58,20 @@ export interface CanvasDrawingResult {
   onWorkspaceLeave: (e: React.PointerEvent) => void;
   trackCursor: (e: React.PointerEvent) => void;
   clearCursor: () => void;
-  onPreviewPointerDown: (e: React.PointerEvent) => void;
-  onPreviewPointerMove: (e: React.PointerEvent) => void;
-  onPreviewWorkspacePointerDown: (e: React.PointerEvent) => void;
-  onPreviewWorkspacePointerMove: (e: React.PointerEvent) => void;
-  onWorkspaceLeavePrv: (e: React.PointerEvent) => void;
-  trackPreviewCursor: (e: React.PointerEvent) => void;
-  clearPreviewCursor: () => void;
+  beginKeyboardDrawing: (level: number, code: string) => void;
+  endKeyboardDrawing: (code: string) => void;
+  cancelKeyboardDrawing: () => void;
 }
 
 interface CanvasDrawingOptions {
   canvasData: CanvasData;
   dispatch: React.Dispatch<CanvasAction>;
   colorLUT: [number, number, number][];
-  candidateIndexByLevel: readonly number[];
   brushLevel: number;
   brushSize: number;
   tool: ToolId;
-  previewCanvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
   setBrushLevel: (lv: number) => void;
 }
-
-type CanvasStatusMode = "source" | "color";
 
 /** What one brush frame renders: the stroke's working buffer and the surfaces it lands on. */
 interface BrushFrame {
@@ -88,12 +80,11 @@ interface BrushFrame {
   h: number;
   lut: [number, number, number][];
   sourceCanvas: HTMLCanvasElement | null;
-  previewCanvas: HTMLCanvasElement | null;
   imgCache: ImageRenderCache;
 }
 
 export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResult {
-  const { canvasData, dispatch, colorLUT, candidateIndexByLevel, brushLevel, brushSize, tool, previewCanvasRef, setBrushLevel } = opts;
+  const { canvasData, dispatch, colorLUT, brushLevel, brushSize, tool, setBrushLevel } = opts;
   const ctx = useDrawingContext();
   const { displayWidth, displayHeight, panningRef, spaceRef, zoomRef, panRef, startPan, movePan, endPan, announce, t } = ctx;
   const sourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -107,6 +98,8 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   const strokeRef = useRef<StrokeState | null>(null);
   const drawingRef = useRef(false);
   const pointerIdRef = useRef<number | null>(null);
+  const hoverPointRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const keyboardGestureRef = useRef<{ code: string; tool: ToolId } | null>(null);
   // Buffer pool: reuse before/working allocations across strokes
   const strokeBufferPoolRef = useRef<BufferPool>({ beforeData: null, workingData: null, size: 0 });
   const lastRef = useRef<{ x: number; y: number } | null>(null);
@@ -114,7 +107,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   const forceRawNextMoveRef = useRef(false);
   const activeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const { queue: queuePaint, cancel: cancelPaint } = usePaintFrameQueue<BrushFrame>((frame, dirty) =>
-    renderCanvasBuffers(frame.levelData, frame.w, frame.h, frame.lut, frame.sourceCanvas, frame.previewCanvas, frame.imgCache, dirty),
+    renderCanvasBuffers(frame.levelData, frame.w, frame.h, frame.lut, frame.sourceCanvas, null, frame.imgCache, dirty),
   );
   const fillPendingRef = useRef(false);
   const pendingUpRef = useRef(false);
@@ -125,7 +118,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     clearCursor: () => void;
     startPos: Point;
   } | null>(null);
-  const floodFillWorker = useFloodFillWorker();
+  const { requestCanvasFill } = useFloodFillWorker();
 
   // Undo, Redo and Clear can replace the canvas mid-stroke, and not only while
   // a Worker fill is in flight: their buttons carry no isStrokeActive() guard,
@@ -143,6 +136,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     fillPendingRef.current = false;
     pendingUpRef.current = false;
     strokeRef.current = null;
+    keyboardGestureRef.current = null;
     drawingRef.current = false;
     pointerIdRef.current = null;
     pendingWorkspaceStartRef.current = null;
@@ -160,7 +154,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
   const displayHeightRef = useSyncRef(displayHeight);
 
   // Batch-sync remaining values used in imperative callbacks
-  const s = useSyncRefs({ candidateIndexByLevel, brushLevel, colorLUT, startPan, movePan, endPan, setBrushLevel, announce, t });
+  const s = useSyncRefs({ brushLevel, colorLUT, startPan, movePan, endPan, setBrushLevel, announce, t });
 
   // Cursor overlay sub-hook
   const cursor = useCursorOverlay(
@@ -187,15 +181,10 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     return e.clientX >= r.left && e.clientX < r.left + r.width && e.clientY >= r.top && e.clientY < r.top + r.height;
   }
 
-  function updateStatus(e: React.PointerEvent, refEl: HTMLCanvasElement | null, mode: CanvasStatusMode) {
+  function updateStatus(e: React.PointerEvent, refEl: HTMLCanvasElement | null) {
     const d = drawingRef.current && strokeRef.current?.workingData ? strokeRef.current.workingData : canvasDataRef.current.levelData;
-    const statusCanvas =
-      refEl ?? activeCanvasRef.current ?? (mode === "color" ? cursor.previewCursorRef.current : cursor.cursorCanvasRef.current);
-    updateStatusBase(e, statusRef.current, statusCanvas, drawRefs, d, (pos, lv) =>
-      mode === "source"
-        ? formatSourcePixelStatus({ x: pos.x, y: pos.y, lv })
-        : formatColorPixelStatus({ x: pos.x, y: pos.y, lv, candidateIndexByLevel: s.current.candidateIndexByLevel }),
-    );
+    const statusCanvas = refEl ?? activeCanvasRef.current ?? cursor.cursorCanvasRef.current;
+    updateStatusBase(e, statusRef.current, statusCanvas, drawRefs, d, (pos, lv) => formatSourcePixelStatus({ x: pos.x, y: pos.y, lv }));
   }
 
   function queueBrushRender(levelData: Uint8Array, W: number, H: number, dirtyBB: DirtyRect) {
@@ -206,12 +195,98 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
         h: H,
         lut: s.current.colorLUT,
         sourceCanvas: sourceCanvasRef.current,
-        previewCanvas: previewCanvasRef.current,
         imgCache: imgCacheRef.current,
       },
       dirtyBB,
     );
   }
+
+  const resetStroke = useCallback(() => {
+    drawingRef.current = false;
+    pointerIdRef.current = null;
+    keyboardGestureRef.current = null;
+    pendingWorkspaceStartRef.current = null;
+    lastRef.current = null;
+    strokeSmootherRef.current = null;
+    forceRawNextMoveRef.current = false;
+    strokeRef.current = null;
+    activeCanvasRef.current = null;
+  }, []);
+
+  const finishStroke = useCallback(() => {
+    // Flush pending brush render
+    if (cancelPaint()) {
+      const st2 = strokeRef.current;
+      if (st2)
+        renderCanvasBuffers(
+          st2.workingData,
+          canvasDataRef.current.width,
+          canvasDataRef.current.height,
+          s.current.colorLUT,
+          sourceCanvasRef.current,
+          null,
+          imgCacheRef.current,
+        );
+    }
+    const st = strokeRef.current;
+    if (drawingRef.current && st) {
+      const finalData = new Uint8Array(st.workingData);
+      const diff = st.beforeData ? computeStrokeResult(st.beforeData, finalData, st.fillChangedIndices) : null;
+      dispatch({ type: "stroke_end", finalLevelData: finalData, diff });
+    }
+    resetStroke();
+  }, [cancelPaint, canvasDataRef, s, dispatch, resetStroke]);
+
+  const cancelKeyboardDrawing = useCallback(() => {
+    if (!keyboardGestureRef.current) return;
+    fillGenerationRef.current++;
+    fillPendingRef.current = false;
+    pendingUpRef.current = false;
+    cancelPaint();
+    resetStroke();
+    const cv = canvasDataRef.current;
+    renderCanvasBuffers(cv.levelData, cv.width, cv.height, s.current.colorLUT, sourceCanvasRef.current, null, imgCacheRef.current);
+  }, [cancelPaint, resetStroke, canvasDataRef, s]);
+
+  const requestFill = useCallback(
+    (cv: CanvasData, pos: Point, level: number) => {
+      const fillStroke = strokeRef.current;
+      if (!fillStroke) return;
+      const fillGeneration = fillGenerationRef.current;
+      const { width: W, height: H } = cv;
+      fillPendingRef.current = true;
+      requestCanvasFill(fillStroke.workingData, pos.x, pos.y, level, W, H)
+        .then((res) => {
+          if (
+            fillGenerationRef.current !== fillGeneration ||
+            canvasDataRef.current !== cv ||
+            strokeRef.current !== fillStroke ||
+            res.levelData.length !== W * H
+          )
+            return;
+          fillStroke.workingData.set(res.levelData);
+          if (res.changedIndices.length > 0) {
+            fillStroke.fillChangedIndices = res.changedIndices;
+            if (res.truncated) s.current.announce(s.current.t("toast_fill_truncated"));
+          }
+          renderCanvasBuffers(fillStroke.workingData, W, H, s.current.colorLUT, sourceCanvasRef.current, null, imgCacheRef.current);
+          fillPendingRef.current = false;
+          if (pendingUpRef.current) {
+            pendingUpRef.current = false;
+            finishStroke();
+          }
+        })
+        .catch((err) => {
+          if (fillGenerationRef.current !== fillGeneration || canvasDataRef.current !== cv || strokeRef.current !== fillStroke) return;
+          fillPendingRef.current = false;
+          pendingUpRef.current = false;
+          resetStroke();
+          s.current.announce(s.current.t("toast_fill_error"));
+          console.error("CHROMALUM: canvas flood fill failed:", err);
+        });
+    },
+    [requestCanvasFill, canvasDataRef, s, finishStroke, resetStroke],
+  );
 
   function doDown(e: React.PointerEvent, refEl: HTMLCanvasElement | null, buttonOverride?: 0 | 1 | 2, startPos?: Point) {
     if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
@@ -253,82 +328,16 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       H = cv.height;
 
     if (curTool === "fill") {
-      const fillGeneration = fillGenerationRef.current;
-      const fillStroke = strokeRef.current;
-      fillPendingRef.current = true;
-      floodFillWorker
-        .requestCanvasFill(workingData, pos.x, pos.y, lv, W, H)
-        .then((res) => {
-          if (
-            fillGenerationRef.current !== fillGeneration ||
-            canvasDataRef.current !== cv ||
-            strokeRef.current !== fillStroke ||
-            res.levelData.length !== W * H
-          )
-            return;
-          const st = strokeRef.current;
-          if (!st) {
-            fillPendingRef.current = false;
-            return;
-          }
-          st.workingData.set(res.levelData);
-          if (res.changedIndices.length > 0) {
-            st.fillChangedIndices = res.changedIndices;
-            if (res.truncated) s.current.announce(s.current.t("toast_fill_truncated"));
-          }
-          renderCanvasBuffers(
-            st.workingData,
-            W,
-            H,
-            s.current.colorLUT,
-            sourceCanvasRef.current,
-            previewCanvasRef.current,
-            imgCacheRef.current,
-          );
-          fillPendingRef.current = false;
-          if (pendingUpRef.current) {
-            pendingUpRef.current = false;
-            finishStroke();
-          }
-        })
-        .catch((err) => {
-          if (fillGenerationRef.current !== fillGeneration || canvasDataRef.current !== cv || strokeRef.current !== fillStroke) return;
-          fillPendingRef.current = false;
-          pendingUpRef.current = false;
-          strokeRef.current = null;
-          drawingRef.current = false;
-          s.current.announce(s.current.t("toast_fill_error"));
-          console.error("CHROMALUM: canvas flood fill failed:", err);
-        });
+      requestFill(cv, pos, lv);
       return;
     } else if (isShapeTool(curTool)) {
       const bb = applyShapeDot(workingData, curTool, pos, curBS, lv, W, H);
       strokeRef.current.prevShapeBBox = bb;
-      if (bb)
-        renderCanvasBuffers(
-          workingData,
-          W,
-          H,
-          s.current.colorLUT,
-          sourceCanvasRef.current,
-          previewCanvasRef.current,
-          imgCacheRef.current,
-          bb,
-        );
+      if (bb) renderCanvasBuffers(workingData, W, H, s.current.colorLUT, sourceCanvasRef.current, null, imgCacheRef.current, bb);
     } else {
       const effectiveBrushSize = pressureAdjustedBrushSize(curBS, e.nativeEvent);
       const dirtyBB = applyBrushDot(workingData, pos, effectiveBrushSize, lv, W, H);
-      if (dirtyBB)
-        renderCanvasBuffers(
-          workingData,
-          W,
-          H,
-          s.current.colorLUT,
-          sourceCanvasRef.current,
-          previewCanvasRef.current,
-          imgCacheRef.current,
-          dirtyBB,
-        );
+      if (dirtyBB) renderCanvasBuffers(workingData, W, H, s.current.colorLUT, sourceCanvasRef.current, null, imgCacheRef.current, dirtyBB);
     }
   }
 
@@ -341,8 +350,11 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     refEl: HTMLCanvasElement | null,
     cursorTrack: (e: React.PointerEvent) => void,
     clearCursor: () => void,
-    statusMode: CanvasStatusMode,
   ) {
+    if (keyboardGestureRef.current) {
+      e.preventDefault();
+      return;
+    }
     if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     pendingWorkspaceStartRef.current = null;
     if (e.button === 1 || spaceRef.current || isInCanvasBounds(e, refEl)) {
@@ -355,7 +367,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       return;
     }
     cursorTrack(e);
-    updateStatus(e, refEl, statusMode);
+    updateStatus(e, refEl);
     if (!canArmWorkspaceStart(e)) return;
     trySetPointerCapture(e);
     pointerIdRef.current = e.pointerId;
@@ -372,7 +384,6 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     refEl: HTMLCanvasElement | null,
     cursorTrack: (e: React.PointerEvent) => void,
     clearCursor: () => void,
-    statusMode: CanvasStatusMode,
   ) {
     if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const pending = pendingWorkspaceStartRef.current;
@@ -381,7 +392,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       const pendingRefEl = pending.refEl ?? refEl;
       if (isInWorkspaceBounds(e, pendingRefEl)) {
         pending.cursorTrack(e);
-        updateStatus(e, pendingRefEl, statusMode);
+        updateStatus(e, pendingRefEl);
       } else {
         pending.clearCursor();
       }
@@ -394,19 +405,19 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       if (!isInCanvasBounds(e, pendingRefEl)) return;
       pendingWorkspaceStartRef.current = null;
       doDown(e, pendingRefEl, 0, pending.startPos);
-      doMove(e, pendingRefEl, pending.cursorTrack, pending.clearCursor, statusMode);
+      doMove(e, pendingRefEl, pending.cursorTrack, pending.clearCursor);
       return;
     }
     if (!drawingRef.current && !panningRef.current && !isInCanvasBounds(e, refEl)) {
       if (isInWorkspaceBounds(e, refEl)) {
         cursorTrack(e);
-        updateStatus(e, refEl, statusMode);
+        updateStatus(e, refEl);
       } else {
         clearCursor();
       }
       return;
     }
-    doMove(e, refEl, cursorTrack, clearCursor, statusMode);
+    doMove(e, refEl, cursorTrack, clearCursor);
   }
 
   function doMove(
@@ -414,7 +425,6 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     refEl: HTMLCanvasElement | null,
     cursorTrack: (e: React.PointerEvent) => void,
     clearCursor: () => void,
-    statusMode: CanvasStatusMode,
   ) {
     if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
     const canvasEl = refEl ?? activeCanvasRef.current ?? cursor.cursorCanvasRef.current;
@@ -423,7 +433,8 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     } else {
       clearCursor();
     }
-    updateStatus(e, canvasEl, statusMode);
+    updateStatus(e, canvasEl);
+    if (keyboardGestureRef.current) return;
     if (panningRef.current) {
       s.current.movePan(e);
       return;
@@ -460,16 +471,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       );
       st.prevShapeBBox = newBB;
       lastRef.current = pos;
-      renderCanvasBuffers(
-        workingData,
-        W,
-        H,
-        s.current.colorLUT,
-        sourceCanvasRef.current,
-        previewCanvasRef.current,
-        imgCacheRef.current,
-        dirtyBB,
-      );
+      renderCanvasBuffers(workingData, W, H, s.current.colorLUT, sourceCanvasRef.current, null, imgCacheRef.current, dirtyBB);
       return;
     }
 
@@ -514,57 +516,20 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   const onMove = useCallback(
     (e: React.PointerEvent) => {
-      doMove(e, cursor.cursorCanvasRef.current, cursor.trackCursor, cursor.clearCursor, "source");
+      doMove(e, cursor.cursorCanvasRef.current, cursor.trackCursor, cursor.clearCursor);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs, cursor.cursorCanvasRef is stable
     [cursor.trackCursor, cursor.clearCursor],
   );
 
-  const onPreviewPointerDown = useCallback((e: React.PointerEvent) => {
-    doDown(e, cursor.previewCursorRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- doDown reads from sync refs, cursor.previewCursorRef is stable
-  }, []);
-
-  const onPreviewPointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      doMove(e, cursor.previewCursorRef.current, cursor.trackPreviewCursor, cursor.clearPreviewCursor, "color");
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- doMove reads from sync refs, cursor.previewCursorRef is stable
-    [cursor.trackPreviewCursor, cursor.clearPreviewCursor],
-  );
-
-  function finishStroke() {
-    // Flush pending brush render
-    if (cancelPaint()) {
-      const st2 = strokeRef.current;
-      if (st2)
-        renderCanvasBuffers(
-          st2.workingData,
-          canvasDataRef.current.width,
-          canvasDataRef.current.height,
-          s.current.colorLUT,
-          sourceCanvasRef.current,
-          previewCanvasRef.current,
-          imgCacheRef.current,
-        );
-    }
-    const st = strokeRef.current;
-    if (drawingRef.current && st) {
-      const finalData = new Uint8Array(st.workingData);
-      const diff = st.beforeData ? computeStrokeResult(st.beforeData, finalData, st.fillChangedIndices) : null;
-      dispatch({ type: "stroke_end", finalLevelData: finalData, diff });
-    }
-    drawingRef.current = false;
-    pointerIdRef.current = null;
-    lastRef.current = null;
-    strokeSmootherRef.current = null;
-    forceRawNextMoveRef.current = false;
-    strokeRef.current = null;
-    activeCanvasRef.current = null;
-  }
-
   const onUp = useCallback(
     (event?: Pick<PointerEvent, "pointerId">) => {
+      // Pointer release/leave cannot finish a key-owned gesture. A lifecycle
+      // call without a pointer (for example switching tabs) abandons it.
+      if (keyboardGestureRef.current) {
+        if (!event) cancelKeyboardDrawing();
+        return;
+      }
       if (event && pointerIdRef.current !== null && pointerIdRef.current !== event.pointerId) return;
       pointerIdRef.current = null;
       pendingWorkspaceStartRef.current = null;
@@ -577,15 +542,14 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
       }
       finishStroke();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, read via .current
-    [dispatch],
+    [cancelKeyboardDrawing, finishStroke, panningRef, s],
   );
 
   useStrokePointerEnd(pointerIdRef, onUp);
 
   const onWorkspaceDown = useCallback(
     (e: React.PointerEvent) => {
-      doWorkspaceDown(e, cursor.cursorCanvasRef.current, cursor.trackCursor, cursor.clearCursor, "source");
+      doWorkspaceDown(e, cursor.cursorCanvasRef.current, cursor.trackCursor, cursor.clearCursor);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doWorkspaceDown reads from sync refs, cursor.cursorCanvasRef is stable
     [cursor.trackCursor, cursor.clearCursor],
@@ -593,7 +557,7 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
 
   const onWorkspaceMove = useCallback(
     (e: React.PointerEvent) => {
-      doWorkspaceMove(e, cursor.cursorCanvasRef.current, cursor.trackCursor, cursor.clearCursor, "source");
+      doWorkspaceMove(e, cursor.cursorCanvasRef.current, cursor.trackCursor, cursor.clearCursor);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doWorkspaceMove reads from sync refs, cursor.cursorCanvasRef is stable
     [cursor.trackCursor, cursor.clearCursor],
@@ -614,11 +578,137 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     // eslint-disable-next-line react-hooks/exhaustive-deps -- drawingRef is a stable ref read via .current
   }, [cursor.clearCursor]);
 
-  const clearPreviewCursor = useCallback(() => {
-    if (drawingRef.current) return;
-    cursor.clearPreviewCursor();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- drawingRef is a stable ref read via .current
-  }, [cursor.clearPreviewCursor]);
+  const beginKeyboardDrawing = useCallback(
+    (level: number, code: string) => {
+      const point = hoverPointRef.current;
+      const overlay = cursor.cursorCanvasRef.current;
+      const workspace = overlay?.parentElement;
+      if (
+        !point ||
+        !overlay ||
+        !workspace ||
+        drawingRef.current ||
+        pointerIdRef.current !== null ||
+        fillPendingRef.current ||
+        panningRef.current ||
+        spaceRef.current
+      )
+        return;
+      // Test the current hit target and transform, not the previous hover's pixel:
+      // zoom, pan, scrolling, or a popup can move the canvas under a still pointer.
+      if (!workspace.contains(document.elementFromPoint(point.clientX, point.clientY))) return;
+      const cv = canvasDataRef.current;
+      const pos = canvasPosUnclamped(point, overlay, zoomRef.current, panRef.current, cv);
+      if (!isCanvasPointInBounds(pos, cv)) return;
+      const selectedTool = toolRef.current;
+      const size = brushSizeRef.current;
+      if (selectedTool !== "fill" && !isShapeTool(selectedTool)) {
+        dispatch({ type: "brush_stamp", x: pos.x, y: pos.y, level, brushSize: size });
+        return;
+      }
+      const { beforeData, workingData } = allocateStrokeBuffers(strokeBufferPoolRef.current, cv.levelData);
+      strokeRef.current = createStrokeState(workingData, beforeData, selectedTool, level, size, pos);
+      keyboardGestureRef.current = { code, tool: selectedTool };
+      drawingRef.current = true;
+      activeCanvasRef.current = overlay;
+      lastRef.current = pos;
+      if (selectedTool === "fill") {
+        // Keyboard fill is a complete action even when the worker finishes
+        // before keyup; pointer fill still waits for its pointer release.
+        pendingUpRef.current = true;
+        requestFill(cv, pos, level);
+      } else {
+        const bb = applyShapeDot(workingData, selectedTool, pos, size, level, cv.width, cv.height);
+        strokeRef.current.prevShapeBBox = bb;
+        if (bb)
+          renderCanvasBuffers(workingData, cv.width, cv.height, s.current.colorLUT, sourceCanvasRef.current, null, imgCacheRef.current, bb);
+      }
+    },
+    [dispatch, cursor.cursorCanvasRef, canvasDataRef, zoomRef, panRef, panningRef, spaceRef, brushSizeRef, toolRef, requestFill, s],
+  );
+
+  const moveKeyboardShape = useCallback(
+    (point: { clientX: number; clientY: number }) => {
+      const gesture = keyboardGestureRef.current;
+      const st = strokeRef.current;
+      if (!gesture || !isShapeTool(gesture.tool) || !st) return;
+      const cv = canvasDataRef.current;
+      const pos = canvasPosUnclamped(point, cursor.cursorCanvasRef.current, zoomRef.current, panRef.current, cv);
+      const { shapeBBox, dirtyBBox } = applyShapeStroke(
+        st.workingData,
+        st.beforeData,
+        st.params.tool,
+        st.shapeStart!,
+        pos,
+        st.params.brushSize,
+        st.params.brushLevel,
+        cv.width,
+        cv.height,
+        st.prevShapeBBox,
+      );
+      st.prevShapeBBox = shapeBBox;
+      lastRef.current = pos;
+      renderCanvasBuffers(
+        st.workingData,
+        cv.width,
+        cv.height,
+        s.current.colorLUT,
+        sourceCanvasRef.current,
+        null,
+        imgCacheRef.current,
+        dirtyBBox,
+      );
+    },
+    [canvasDataRef, cursor.cursorCanvasRef, zoomRef, panRef, s],
+  );
+
+  const endKeyboardDrawing = useCallback(
+    (code: string) => {
+      const gesture = keyboardGestureRef.current;
+      if (!gesture || gesture.code !== code || !isShapeTool(gesture.tool)) return;
+      const point = hoverPointRef.current;
+      if (point) moveKeyboardShape(point);
+      finishStroke();
+    },
+    [moveKeyboardShape, finishStroke],
+  );
+
+  useEffect(() => {
+    const clearPoint = () => {
+      hoverPointRef.current = null;
+      cancelKeyboardDrawing();
+    };
+    const trackPointer = (event: PointerEvent) => {
+      if (event.pointerType === "touch") {
+        clearPoint();
+        return;
+      }
+      hoverPointRef.current = { clientX: event.clientX, clientY: event.clientY };
+      moveKeyboardShape(event);
+    };
+    const startTouch = (event: PointerEvent) => {
+      if (event.pointerType === "touch") clearPoint();
+    };
+    const leaveWindow = (event: PointerEvent) => {
+      if (event.relatedTarget === null) clearPoint();
+    };
+    const focusControl = (event: FocusEvent) => {
+      if (controlOwnsKey(event.target, { key: "0", code: "Digit0" })) cancelKeyboardDrawing();
+    };
+    window.addEventListener("pointermove", trackPointer);
+    window.addEventListener("pointerdown", startTouch);
+    window.addEventListener("pointerout", leaveWindow);
+    window.addEventListener("blur", clearPoint);
+    window.addEventListener("focusin", focusControl);
+    return () => {
+      window.removeEventListener("pointermove", trackPointer);
+      window.removeEventListener("pointerdown", startTouch);
+      window.removeEventListener("pointerout", leaveWindow);
+      window.removeEventListener("blur", clearPoint);
+      window.removeEventListener("focusin", focusControl);
+      cancelKeyboardDrawing();
+    };
+  }, [moveKeyboardShape, cancelKeyboardDrawing]);
 
   const onWorkspaceLeave = useCallback(
     (e: React.PointerEvent) => {
@@ -636,42 +726,9 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     [onUp, clearCursor],
   );
 
-  const onPreviewWorkspacePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      doWorkspaceDown(e, cursor.previewCursorRef.current, cursor.trackPreviewCursor, cursor.clearPreviewCursor, "color");
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- doWorkspaceDown reads from sync refs, cursor.previewCursorRef is stable
-    [cursor.trackPreviewCursor, cursor.clearPreviewCursor],
-  );
-
-  const onPreviewWorkspacePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      doWorkspaceMove(e, cursor.previewCursorRef.current, cursor.trackPreviewCursor, cursor.clearPreviewCursor, "color");
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- doWorkspaceMove reads from sync refs, cursor.previewCursorRef is stable
-    [cursor.trackPreviewCursor, cursor.clearPreviewCursor],
-  );
-
-  const onWorkspaceLeavePrv = useCallback(
-    (e: React.PointerEvent) => {
-      if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) return;
-      if (pendingWorkspaceStartRef.current) {
-        pendingWorkspaceStartRef.current = null;
-        pointerIdRef.current = null;
-        clearPreviewCursor();
-        return;
-      }
-      if (drawingRef.current && hasPointerCapture(e, [previewCanvasRef.current])) return;
-      onUp(e);
-      clearPreviewCursor();
-    },
-    [onUp, clearPreviewCursor, previewCanvasRef],
-  );
-
   return {
     sourceCanvasRef,
     cursorCanvasRef: cursor.cursorCanvasRef,
-    previewCursorRef: cursor.previewCursorRef,
     statusRef,
     imgCacheRef,
     strokeRef,
@@ -688,12 +745,8 @@ export function useCanvasDrawing(opts: CanvasDrawingOptions): CanvasDrawingResul
     onWorkspaceLeave,
     trackCursor: cursor.trackCursor,
     clearCursor,
-    onPreviewPointerDown,
-    onPreviewPointerMove,
-    onPreviewWorkspacePointerDown,
-    onPreviewWorkspacePointerMove,
-    onWorkspaceLeavePrv,
-    trackPreviewCursor: cursor.trackPreviewCursor,
-    clearPreviewCursor,
+    beginKeyboardDrawing,
+    endKeyboardDrawing,
+    cancelKeyboardDrawing,
   };
 }

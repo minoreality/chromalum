@@ -18,8 +18,7 @@ need to keep outside the browser.
 ## Basic Workflow
 
 1. Use the Source tab to draw an eight-level tone image or import an image.
-2. Use Hex and Color to choose how the eight tone levels map to color
-   candidates.
+2. Use Hex to choose how the eight tone levels map to color candidates.
 3. Use Glaze to paint per-pixel color-variant overrides while preserving the
    underlying source tone structure.
 4. Use Gallery to generate, compare, bookmark, and export color-pattern
@@ -31,9 +30,50 @@ need to keep outside the browser.
 
 ## Drawing And Navigation
 
+Hex offers a diagram and a level-by-level color list. Double-click the diagram
+background or list content outside the buttons to switch views; on a touch
+screen, hold that background in place. `V` also switches views. Moving the touch
+scrolls the page instead. Color dots, candidate buttons, and the central die
+keep their own operations.
+
+Both views share the selected colors and level pins. Right-click or hold a color
+candidate to pin or release that level. The compact list shows the current color,
+its hue difference from the canonical vertex, and its alternative candidates.
+Use the Gallery tab to browse the available patterns.
+The diagram keeps its pattern-count display and link to Gallery. The list does
+not show pattern counts; on narrow screens it scrolls within the same area.
+
 The Source workspace includes brush, eraser, fill, line, rectangle, and ellipse
-tools, plus undo and redo. Pan and zoom are shared across canvas workspaces so
-you can inspect the same structure from Source, Color, Hex, Glaze, and Map.
+tools, plus undo and redo. Selecting a tone level leaves the selected tool
+unchanged. Pan and zoom are shared across canvas workspaces so you can inspect
+the same structure from Source, Hex, Glaze, and Map.
+The four tabs keep the same canvas frame, zoom, and pan when you switch tabs.
+Drag with the middle mouse button to pan, or click that button twice quickly
+over the canvas to return to the initial display size and position (100% zoom,
+centered). Hex and Map also support touch pan and pinch zoom; double-tap their
+image canvas to reset the shared view. Map's single-finger long press still
+opens its save confirmation.
+
+Glaze has the same brush, eraser, fill, line, rectangle, and ellipse tool layout
+as Source. Drag to preview a shape outline using the current brush size and
+Glaze color settings, then release to commit it as one undo step. Shapes
+preserve Source tone levels and existing Glaze outside their final outline;
+direct candidate mode applies only to the levels with selected candidates.
+
+In Source, press `0`–`7` with the pointer over the canvas to select that level
+and draw with the selected tool. Brush and eraser selections place one brush
+mark using the current brush size; fill changes the connected region of the
+pointed pixel's level, regardless of brush size. Holding the key does not repeat
+brush marks or fills.
+
+For line, rectangle, and ellipse, hold a number key to set the start point,
+move the pointer to preview the shape, then release that same key to finish.
+The shape keeps the level and brush size from the initial key press. `Esc`
+cancels the preview. Switching tabs, opening a dialog, or leaving the browser
+window also cancels an unfinished keyboard gesture. Each completed action is
+one Undo/Redo step. Outside the canvas, the keys only select the level. Number
+keys do not start drawing during a pointer stroke, in pan mode, or while a
+dialog or text field owns the keyboard.
 
 Image import uses a lossy input classifier: it applies the model's 4:2:1 channel
 weights directly to gamma-encoded sRGB code values, then quantizes the result to

@@ -19,8 +19,6 @@ const mockPanRef = { current: { x: 0, y: 0 } };
 const cursorOverlayMocks = vi.hoisted(() => ({
   trackCursor: vi.fn(),
   clearCursor: vi.fn(),
-  trackPreviewCursor: vi.fn(),
-  clearPreviewCursor: vi.fn(),
 }));
 const floodFillMocks = vi.hoisted(() => ({
   requestCanvasFill: vi.fn(),
@@ -49,14 +47,11 @@ vi.mock("../useFloodFillWorker", () => ({
 vi.mock("../useCursorOverlay", () => ({
   useCursorOverlay: () => ({
     cursorCanvasRef: { current: document.createElement("canvas") },
-    previewCursorRef: { current: document.createElement("canvas") },
     cursorRafRef: { current: null },
     scheduleCursorRedrawRef: { current: null },
     cursorPosRef: { current: null },
     trackCursor: cursorOverlayMocks.trackCursor,
     clearCursor: cursorOverlayMocks.clearCursor,
-    trackPreviewCursor: cursorOverlayMocks.trackPreviewCursor,
-    clearPreviewCursor: cursorOverlayMocks.clearPreviewCursor,
   }),
 }));
 
@@ -82,7 +77,6 @@ function makeOpts(overrides?: Partial<Parameters<typeof useCanvasDrawing>[0]>) {
     brushLevel: 3,
     brushSize: 1,
     tool: "brush" as ToolId,
-    previewCanvasRef: { current: null as HTMLCanvasElement | null },
     setBrushLevel: vi.fn(),
     ...overrides,
   };

@@ -24,12 +24,68 @@ describe("useUIState", () => {
     expect(result.current.activeTabId).toBe("source");
   });
 
+  it("opens Hex and canonicalizes a retired Color link", () => {
+    window.history.replaceState(null, "", "/#color");
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTabId).toBe("hex");
+    expect(window.location.hash).toBe("#hex");
+  });
+
+  it("redirects to Hex when a retired Color hash is entered after loading", () => {
+    const { result } = renderHook(() => useUIState(t));
+
+    act(() => {
+      window.history.pushState(null, "", "#color");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(result.current.activeTabId).toBe("hex");
+    expect(window.location.hash).toBe("#hex");
+  });
+
+  it.each([
+    [3, "hex"],
+    [4, "glaze"],
+    [5, "map"],
+    [6, "theory"],
+    [7, "music"],
+  ])("restores legacy saved tab %i as %s after Color removal", (index, tab) => {
+    localStorage.setItem("chromalum-active-tab-v2", String(index));
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTabId).toBe(tab);
+    expect(localStorage.getItem("chromalum-active-tab-v3")).toBe(tab);
+  });
+
+  it("prefers the stable saved tab ID over a legacy numeric tab", () => {
+    localStorage.setItem("chromalum-active-tab-v3", "glaze");
+    localStorage.setItem("chromalum-active-tab-v2", "7");
+
+    const { result } = renderHook(() => useUIState(t));
+
+    expect(result.current.activeTabId).toBe("glaze");
+  });
+
+  it("restores a legacy Music history entry without a hash", () => {
+    const { result } = renderHook(() => useUIState(t));
+
+    act(() => {
+      window.history.replaceState({ chromalumActiveTab: 7 }, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate", { state: { chromalumActiveTab: 7 } }));
+    });
+
+    expect(result.current.activeTabId).toBe("music");
+  });
+
   it("initial activeTab prefers a supported URL hash", () => {
     window.history.replaceState(null, "", "/#theory");
 
     const { result } = renderHook(() => useUIState(t));
 
-    expect(result.current.activeTab).toBe(6);
+    expect(result.current.activeTab).toBe(5);
     expect(result.current.activeTabId).toBe("theory");
   });
 
@@ -38,7 +94,7 @@ describe("useUIState", () => {
 
     const { result } = renderHook(() => useUIState(t));
 
-    expect(result.current.activeTab).toBe(5);
+    expect(result.current.activeTab).toBe(4);
     expect(result.current.activeTabId).toBe("map");
     expect(result.current.hasOpenedMap).toBe(true);
   });
@@ -48,7 +104,7 @@ describe("useUIState", () => {
 
     const { result } = renderHook(() => useUIState(t));
 
-    expect(result.current.activeTab).toBe(5);
+    expect(result.current.activeTab).toBe(4);
     expect(result.current.activeTabId).toBe("map");
     expect(result.current.hasOpenedMap).toBe(true);
   });
@@ -58,13 +114,13 @@ describe("useUIState", () => {
 
     const { result } = renderHook(() => useUIState(t));
 
-    expect(result.current.activeTab).toBe(7);
+    expect(result.current.activeTab).toBe(6);
     expect(result.current.activeTabId).toBe("music");
   });
 
   it("initial activeTab falls back to Source when stored tab cannot be read", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation((key) => {
-      if (key === "chromalum-active-tab-v2") throw new DOMException("Storage blocked", "SecurityError");
+      if (key.startsWith("chromalum-active-tab-")) throw new DOMException("Storage blocked", "SecurityError");
       return null;
     });
 
@@ -77,36 +133,36 @@ describe("useUIState", () => {
   it("setActiveTab changes tab", () => {
     const { result } = renderHook(() => useUIState(t));
     act(() => {
-      result.current.setActiveTab(6);
+      result.current.setActiveTab(5);
     });
-    expect(result.current.activeTab).toBe(6);
+    expect(result.current.activeTab).toBe(5);
     expect(result.current.activeTabId).toBe("theory");
     expect(window.location.hash).toBe("#theory");
-    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("6");
+    expect(localStorage.getItem("chromalum-active-tab-v3")).toBe("theory");
   });
 
-  it("setActiveTabId changes tab while preserving numeric storage compatibility", () => {
+  it("setActiveTabId changes tab while storing its stable ID", () => {
     const { result } = renderHook(() => useUIState(t));
     act(() => {
       result.current.setActiveTabId("theory");
     });
-    expect(result.current.activeTab).toBe(6);
+    expect(result.current.activeTab).toBe(5);
     expect(result.current.activeTabId).toBe("theory");
     expect(window.location.hash).toBe("#theory");
-    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("6");
+    expect(localStorage.getItem("chromalum-active-tab-v3")).toBe("theory");
   });
 
   it("setActiveTab still changes tab when storage cannot be written", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation((key) => {
-      if (key === "chromalum-active-tab-v2") throw new DOMException("Storage blocked", "SecurityError");
+      if (key.startsWith("chromalum-active-tab-")) throw new DOMException("Storage blocked", "SecurityError");
     });
     const { result } = renderHook(() => useUIState(t));
 
     act(() => {
-      result.current.setActiveTab(6);
+      result.current.setActiveTab(5);
     });
 
-    expect(result.current.activeTab).toBe(6);
+    expect(result.current.activeTab).toBe(5);
     expect(result.current.activeTabId).toBe("theory");
     expect(window.location.hash).toBe("#theory");
   });
@@ -116,7 +172,7 @@ describe("useUIState", () => {
     expect(result.current.hasOpenedMap).toBe(false);
 
     act(() => {
-      result.current.setActiveTab(5);
+      result.current.setActiveTab(4);
     });
     expect(result.current.hasOpenedMap).toBe(true);
     expect(result.current.activeTabId).toBe("map");
@@ -136,9 +192,9 @@ describe("useUIState", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
 
-    expect(result.current.activeTab).toBe(7);
+    expect(result.current.activeTab).toBe(6);
     expect(result.current.activeTabId).toBe("music");
-    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("7");
+    expect(localStorage.getItem("chromalum-active-tab-v3")).toBe("music");
   });
 
   it("tracks map opening from manual hash changes", () => {
@@ -150,7 +206,7 @@ describe("useUIState", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
 
-    expect(result.current.activeTab).toBe(5);
+    expect(result.current.activeTab).toBe(4);
     expect(result.current.activeTabId).toBe("map");
     expect(result.current.hasOpenedMap).toBe(true);
   });
@@ -159,7 +215,7 @@ describe("useUIState", () => {
     const { result } = renderHook(() => useUIState(t));
 
     act(() => {
-      result.current.setActiveTab(6);
+      result.current.setActiveTab(5);
     });
     act(() => {
       window.history.replaceState({ chromalumActiveTab: 2 }, "", "/");
@@ -169,7 +225,7 @@ describe("useUIState", () => {
     expect(result.current.activeTab).toBe(2);
     expect(result.current.activeTabId).toBe("source");
     expect(window.location.hash).toBe("");
-    expect(localStorage.getItem("chromalum-active-tab-v2")).toBe("2");
+    expect(localStorage.getItem("chromalum-active-tab-v3")).toBe("source");
   });
 
   it("ignores storage failures while restoring scroll position", () => {

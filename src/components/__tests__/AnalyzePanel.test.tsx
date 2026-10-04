@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MapMode } from "../../types";
 import { COMPOSITION_DONUT_PRESERVE_ATTR } from "../CompositionDonut";
 import { AnalyzePanel } from "../AnalyzePanel";
+import { makeCanvasNavigation } from "./canvas-navigation-fixture";
 
 const analyzeMocks = vi.hoisted(() => ({
   mapCanvasProps: [] as Array<Record<string, unknown>>,
@@ -56,6 +57,8 @@ function makeProps(overrides?: Partial<Parameters<typeof AnalyzePanel>[0]>) {
     canvasData: { width: w, height: h, levelData: new Uint8Array(w * h), pixelCandidateOverrideMap: new Uint8Array(w * h) },
     displayWidth: 320,
     displayHeight: 320,
+    canvasTransform: {},
+    navigation: makeCanvasNavigation(),
     active: true,
     mapMode: "levelTone" as const,
     setMapMode: vi.fn(),

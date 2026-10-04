@@ -55,6 +55,7 @@ export interface AppState {
 
 export type CanvasAction =
   | { type: "stroke_end"; finalLevelData: Uint8Array; finalPixelCandidateOverrideMap?: Uint8Array; diff: Diff | null }
+  | { type: "brush_stamp"; x: number; y: number; level: number; brushSize: number }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "load_image"; width: number; height: number; levelData: Uint8Array; pixelCandidateOverrideMap?: Uint8Array }
@@ -128,19 +129,10 @@ export interface PanZoomHandlers {
   endPan: () => void;
 }
 
-export interface DrawingHandlers {
-  onPreviewPointerDown: (e: React.PointerEvent) => void;
-  onPreviewPointerMove: (e: React.PointerEvent) => void;
-  onUp: (event?: Pick<PointerEvent, "pointerId">) => void;
-  onPreviewPointerLeave: (e: React.PointerEvent) => void;
-  trackPreviewCursor: (e: React.PointerEvent) => void;
-  clearPreviewCursor: () => void;
-}
-
 export interface SaveActions {
-  saveColor: (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => void;
+  saveColor: (ref: React.RefObject<HTMLCanvasElement | null> | null, name: string) => void;
   saveColorWithLUT: (lut: [number, number, number][], name: string) => void;
   saveGlaze: (name: string) => void;
-  shareColor: (ref: React.RefObject<HTMLCanvasElement | null>, name: string) => void;
+  shareColor: (ref: React.RefObject<HTMLCanvasElement | null> | null, name: string) => void;
   shareGlaze: (name: string) => void;
 }

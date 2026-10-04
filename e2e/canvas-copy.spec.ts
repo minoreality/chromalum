@@ -29,7 +29,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-for (const tab of ["Source", "Color", "Glaze", "Hex", "Map"]) {
+for (const tab of ["Source", "Glaze", "Hex", "Map"]) {
   test(`${tab} copies a hovered canvas without focusing or drawing`, async ({ page }) => {
     await page.goto(`/#${tab.toLowerCase()}`);
     const workspace = page.locator(".canvas-workspace");
@@ -100,7 +100,7 @@ test("Gallery copies the hovered preview at original size without applying it", 
   await page.goto("/#source");
   await page.getByRole("button", { name: "Level 2 Red", exact: true }).click();
   await page.getByRole("application", { name: "Drawing canvas (grayscale)" }).click();
-  await page.getByRole("tab", { name: "Color", exact: true }).click();
+  await page.getByRole("tab", { name: "Hex", exact: true }).click();
   const originalColor = await page
     .getByRole("img", { name: "Color preview canvas" })
     .evaluate((node: HTMLCanvasElement) => node.toDataURL());
@@ -142,7 +142,7 @@ test("Gallery copies the hovered preview at original size without applying it", 
   await page.keyboard.press("Control+c");
   expect(await page.evaluate(() => window.copiedCanvasImages)).toHaveLength(2);
   await page.keyboard.press("Escape");
-  await page.getByRole("tab", { name: "Color", exact: true }).click();
+  await page.getByRole("tab", { name: "Hex", exact: true }).click();
   expect(await page.getByRole("img", { name: "Color preview canvas" }).evaluate((node: HTMLCanvasElement) => node.toDataURL())).toBe(
     originalColor,
   );

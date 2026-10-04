@@ -1,6 +1,6 @@
 import { useRef, useCallback, useLayoutEffect } from "react";
-import { LEVEL_MASK } from "../constants";
-import type { GlazeToolId } from "../constants";
+import { LEVEL_MASK, isShapeTool } from "../constants";
+import type { GlazeToolId, ShapeToolId, ToolId } from "../constants";
 import { LEVEL_CANDIDATES } from "../color-engine";
 import {
   buildGlazeLUT,
@@ -10,9 +10,11 @@ import {
   paintGlazeBrushLine,
   eraseGlazeBrush,
   eraseGlazeBrushLine,
+  previewGlazeShape,
 } from "../drawing/glaze-paint";
 import { dirtyFromChanged, unionBBox } from "../drawing/dirty-rect";
 import { brushMaskBBox, getBrushMask } from "../drawing/brush-mask";
+import type { BrushMask } from "../drawing/brush-mask";
 import { computeGlazeDiff, buildDiffFromGlazeFill } from "../state/undo-diff";
 import { useFloodFillWorker } from "./useFloodFillWorker";
 import { renderCanvasBuffers } from "../drawing/render-buf";
@@ -76,6 +78,7 @@ interface GlazeStroke {
   fillChangedIndices: Uint32Array | null;
   glazeLUT: Uint8Array;
   params: { tool: GlazeToolId; brushSize: number };
+  shape: { tool: ShapeToolId; origin: Point; brushMask: BrushMask; previousBBox: DirtyRect | null } | null;
 }
 
 /** What one glaze frame renders: the levels underneath, the stroke's working override map, and the surfaces. */
@@ -120,6 +123,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   const strokeSmootherRef = useRef<StrokeSmoother | null>(null);
   const forceRawNextMoveRef = useRef(false);
   const strokeRef = useRef<GlazeStroke | null>(null);
+  const shapeCoverageRef = useRef<Uint8Array | null>(null);
   // Buffer pool: reuse override map allocations across strokes.
   const overrideMapPoolRef = useRef<{ beforeOverrideMap: Uint8Array | null; workingOverrideMap: Uint8Array | null; size: number }>({
     beforeOverrideMap: null,
@@ -169,9 +173,7 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
   const canvasDataRef = useSyncRef(canvasData);
   const displayWidthRef = useSyncRef(displayWidth);
   const displayHeightRef = useSyncRef(displayHeight);
-  const toolRef = useSyncRef(
-    glazeTool === "glaze_brush" ? ("brush" as const) : glazeTool === "glaze_eraser" ? ("eraser" as const) : ("fill" as const),
-  );
+  const toolRef = useSyncRef(glazeTool.slice(6) as ToolId);
 
   // Batch-sync remaining values used in imperative callbacks
   const s = useSyncRefs({
@@ -293,15 +295,39 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     const curHue = s.current.hueAngleDeg;
     const glazeLUT = isDirect ? buildMultiDirectLUT(nextCandidateOverrides) : buildGlazeLUT(curHue);
     const params = { tool: s.current.glazeTool, brushSize: brushSizeRef.current };
-    strokeRef.current = { workingOverrideMap, beforeOverrideMap, fillChangedIndices: null, glazeLUT, params };
+    const baseTool = params.tool.slice(6) as ToolId;
+    const shape = isShapeTool(baseTool)
+      ? { tool: baseTool, origin: pos, brushMask: getBrushMask(params.brushSize), previousBBox: null }
+      : null;
+    if (shape) {
+      if (!shapeCoverageRef.current || shapeCoverageRef.current.length !== n) shapeCoverageRef.current = new Uint8Array(n);
+      else shapeCoverageRef.current.fill(0);
+    }
+    const stroke: GlazeStroke = { workingOverrideMap, beforeOverrideMap, fillChangedIndices: null, glazeLUT, params, shape };
+    strokeRef.current = stroke;
     const curTool = params.tool;
-    strokeSmootherRef.current = curTool === "glaze_fill" ? null : createStrokeSmoother(pos);
+    strokeSmootherRef.current = curTool === "glaze_fill" || shape ? null : createStrokeSmoother(pos);
     forceRawNextMoveRef.current = startPos !== undefined && !isCanvasPointInBounds(startPos, canvasDataRef.current);
     const mask = getBrushMask(pressureAdjustedBrushSize(params.brushSize, e.nativeEvent));
     const W = cv.width,
       H = cv.height;
 
-    if (curTool === "glaze_fill") {
+    if (shape) {
+      const dirtyBB = updateShapePreview(stroke, pos, cv);
+      if (dirtyBB)
+        renderCanvasBuffers(
+          cv.levelData,
+          W,
+          H,
+          s.current.colorLUT,
+          sourceCanvasRef.current,
+          previewCanvasRef.current,
+          imgCacheRef.current,
+          dirtyBB,
+          workingOverrideMap,
+        );
+      return;
+    } else if (curTool === "glaze_fill") {
       const seedIdx = pos.y * W + pos.x;
       const seedLv = cv.levelData[seedIdx] & LEVEL_MASK;
       // In direct mode, only fill if seed pixel's level is in the direct map
@@ -387,6 +413,25 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
         dirtyBB,
         workingOverrideMap,
       );
+  }
+
+  function updateShapePreview(stroke: GlazeStroke, point: Point, cv: CanvasData): DirtyRect | null {
+    const shape = stroke.shape;
+    const coverageMask = shapeCoverageRef.current;
+    if (!shape || !coverageMask) return null;
+    const { shapeBBox, dirtyBBox } = previewGlazeShape({
+      workingOverrideMap: stroke.workingOverrideMap,
+      beforeOverrideMap: stroke.beforeOverrideMap,
+      coverageMask,
+      levelData: cv.levelData,
+      ...shape,
+      point,
+      width: cv.width,
+      height: cv.height,
+      glazeLUT: stroke.glazeLUT,
+    });
+    shape.previousBBox = shapeBBox;
+    return dirtyBBox;
   }
 
   function canArmWorkspaceStart(e: React.PointerEvent) {
@@ -475,6 +520,14 @@ export function useGlazeDrawing(opts: GlazeDrawingOptions): GlazeDrawingResult {
     const W = cv.width,
       H = cv.height;
     const curTool = st.params.tool;
+
+    if (st.shape) {
+      const point = canvasPosUnclamped(e, cursor.cursorCanvasRef.current, zoomRef.current, panRef.current, cv);
+      const dirtyBB = updateShapePreview(st, point, cv);
+      lastRef.current = point;
+      if (dirtyBB) queueGlazeRender(cv.levelData, workingOverrideMap, W, H, dirtyBB);
+      return;
+    }
 
     // Brush / eraser: keep true canvas-space positions, including samples
     // outside the canvas. Glaze paint functions clip writes to the color map,

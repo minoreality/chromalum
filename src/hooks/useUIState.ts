@@ -5,14 +5,22 @@ import type { MainTabId } from "../tabs";
 import type { MapMode } from "../types";
 import type { TranslationFn } from "../i18n";
 
-const LS_TAB = "chromalum-active-tab-v2";
+const LS_TAB = "chromalum-active-tab-v3";
+const LEGACY_LS_TAB = "chromalum-active-tab-v2";
+// v2 storage and old history entries used the eight-tab order. Color now opens Hex.
+const LEGACY_TAB_IDS: readonly MainTabId[] = ["gallery", "hex", "source", "hex", "glaze", "map", "theory", "music"];
 const LS_SCROLL = "chromalum-scroll-y";
 const HISTORY_TAB_STATE_KEY = "chromalumActiveTab";
 const TAB_HASH_LOOKUP = new Map<string, MainTabId>(MAIN_TABS.map(({ hash, id }) => [hash, id]));
 TAB_HASH_LOOKUP.set("stats", MAP_TAB_ID);
+TAB_HASH_LOOKUP.set("color", "hex");
 
-function isValidTabIndex(tab: unknown): tab is number {
-  return typeof tab === "number" && Number.isInteger(tab) && tab >= 0 && tab < MAIN_TABS.length;
+function readLegacyTab(tab: unknown): MainTabId | null {
+  return typeof tab === "number" && Number.isInteger(tab) ? (LEGACY_TAB_IDS[tab] ?? null) : null;
+}
+
+function isTabId(tab: unknown): tab is MainTabId {
+  return MAIN_TABS.some(({ id }) => id === tab);
 }
 
 function normalizeHash(hash: string): string {
@@ -33,10 +41,11 @@ function readTabFromHash(): MainTabId | null {
 function readStoredTab(): MainTabId | null {
   try {
     if (typeof localStorage === "undefined") return null;
-    const saved = localStorage.getItem(LS_TAB);
+    const savedId = localStorage.getItem(LS_TAB);
+    if (isTabId(savedId)) return savedId;
+    const saved = localStorage.getItem(LEGACY_LS_TAB);
     if (saved === null) return null;
-    const tab = Number(saved);
-    return isValidTabIndex(tab) ? tabIdFromIndex(tab) : null;
+    return readLegacyTab(Number(saved));
   } catch {
     return null;
   }
@@ -44,7 +53,7 @@ function readStoredTab(): MainTabId | null {
 
 function writeStoredTab(tabId: MainTabId): void {
   try {
-    if (typeof localStorage !== "undefined") localStorage.setItem(LS_TAB, String(tabIndexFromId(tabId)));
+    if (typeof localStorage !== "undefined") localStorage.setItem(LS_TAB, tabId);
   } catch {
     // URL/history state still preserves navigation when storage is unavailable.
   }
@@ -56,13 +65,13 @@ function readInitialActiveTab(): MainTabId {
 
 function getHistoryStateWithTab(tabId: MainTabId): object {
   const state = typeof window !== "undefined" ? window.history.state : null;
-  const tab = tabIndexFromId(tabId);
-  return state && typeof state === "object" ? { ...state, [HISTORY_TAB_STATE_KEY]: tab } : { [HISTORY_TAB_STATE_KEY]: tab };
+  return state && typeof state === "object" ? { ...state, [HISTORY_TAB_STATE_KEY]: tabId } : { [HISTORY_TAB_STATE_KEY]: tabId };
 }
 
 function replaceCurrentHistoryState(tabId: MainTabId): void {
   if (typeof window === "undefined") return;
-  window.history.replaceState(getHistoryStateWithTab(tabId), "", window.location.href);
+  const url = normalizeHash(window.location.hash) === "color" ? `#${tabFromId(tabId).hash}` : window.location.href;
+  window.history.replaceState(getHistoryStateWithTab(tabId), "", url);
 }
 
 function pushTabHash(tabId: MainTabId): void {
@@ -78,7 +87,7 @@ function pushTabHash(tabId: MainTabId): void {
 function readTabFromHistoryState(state: unknown): MainTabId | null {
   if (!state || typeof state !== "object") return null;
   const tab = (state as Record<string, unknown>)[HISTORY_TAB_STATE_KEY];
-  return isValidTabIndex(tab) ? tabIdFromIndex(tab) : null;
+  return isTabId(tab) ? tab : readLegacyTab(tab);
 }
 
 export function useUIState(_t: TranslationFn) {
@@ -110,6 +119,7 @@ export function useUIState(_t: TranslationFn) {
   const initialActiveTabIdRef = useRef(activeTabId);
 
   useEffect(() => {
+    writeStoredTab(initialActiveTabIdRef.current);
     replaceCurrentHistoryState(initialActiveTabIdRef.current);
 
     const applyTab = (tabId: MainTabId) => {

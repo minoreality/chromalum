@@ -4,7 +4,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 type AxeViolation = Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"][number];
 
 const INTENTIONAL_COLOR_SAMPLE_ATTR = 'data-a11y-color-contrast-exception="intentional-color-sample"';
-const MAIN_ACCESSIBILITY_TABS = ["Source", "Color", "Hex", "Glaze", "Map", "Gallery", "Theory", "Music"] as const;
+const MAIN_ACCESSIBILITY_TABS = ["Source", "Hex", "Glaze", "Map", "Gallery", "Theory", "Music"] as const;
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -63,6 +63,14 @@ for (const tab of MAIN_ACCESSIBILITY_TABS) {
     await expectNoA11yViolations(page, `${tab} tab`);
   });
 }
+
+test("has no detectable accessibility violations in the Hex palette list", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Hex" }).click();
+  await page.keyboard.press("v");
+  await expect(page.getByRole("list", { name: "Level color mapping" })).toBeVisible();
+  await expectNoA11yViolations(page, "Hex palette list");
+});
 
 test("has no detectable accessibility violations in representative dialogs", async ({ page }) => {
   await gotoSource(page);

@@ -1,11 +1,11 @@
 import React, { memo, useState, useEffect } from "react";
-import { CANONICAL_VERTEX_HUE_BY_LEVEL } from "../chromalum-color-model";
-import { LEVEL_INFO, LEVEL_CANDIDATES, hue2rgb } from "../color-engine";
-import { rgbStr, hexStr } from "../utils";
-import { S_NAV_ARROW, S_SWATCH } from "../styles/shared";
-import type { ColorAction } from "../state/color-reducer";
-import { useTranslation } from "../i18n";
-import { C, SP, FS, R, DUR, FONT } from "../styles/tokens";
+import { CANONICAL_VERTEX_HUE_BY_LEVEL } from "../../src/chromalum-color-model";
+import { LEVEL_INFO, LEVEL_CANDIDATES, hue2rgb } from "../../src/color-engine";
+import { rgbStr, hexStr } from "../../src/utils";
+import { S_NAV_ARROW, S_SWATCH } from "../../src/styles/shared";
+import type { ColorAction } from "../../src/state/color-reducer";
+import { useTranslation } from "./i18n";
+import { C, SP, FS, R, DUR, FONT } from "../../src/styles/tokens";
 
 const MOBILE_BP = 600;
 

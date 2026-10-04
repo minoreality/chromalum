@@ -42,7 +42,6 @@ function makeDrawingResult(scheduleCursorRedraw: (() => void) | null): CanvasDra
   return {
     sourceCanvasRef: ref<HTMLCanvasElement | null>(null),
     cursorCanvasRef: ref<HTMLCanvasElement | null>(null),
-    previewCursorRef: ref<HTMLCanvasElement | null>(null),
     statusRef: ref<HTMLDivElement | null>(null),
     imgCacheRef: ref(makeImgCache()),
     strokeRef: ref(null),
@@ -59,13 +58,9 @@ function makeDrawingResult(scheduleCursorRedraw: (() => void) | null): CanvasDra
     onWorkspaceLeave: vi.fn(),
     trackCursor: vi.fn(),
     clearCursor: vi.fn(),
-    onPreviewPointerDown: vi.fn(),
-    onPreviewPointerMove: vi.fn(),
-    onPreviewWorkspacePointerDown: vi.fn(),
-    onPreviewWorkspacePointerMove: vi.fn(),
-    onWorkspaceLeavePrv: vi.fn(),
-    trackPreviewCursor: vi.fn(),
-    clearPreviewCursor: vi.fn(),
+    beginKeyboardDrawing: vi.fn(),
+    endKeyboardDrawing: vi.fn(),
+    cancelKeyboardDrawing: vi.fn(),
   };
 }
 
@@ -107,9 +102,7 @@ describe("useCanvasCoordination", () => {
       drawing,
       glazeDrawing,
       sourceCanvasWrapRef: ref<HTMLDivElement | null>(null),
-      previewCanvasWrapRef: ref<HTMLDivElement | null>(null),
       glazeWrapRef: ref<HTMLDivElement | null>(null),
-      previewCanvasRef: ref<HTMLCanvasElement | null>(null),
       hexPreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
       glazePreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
       sharedScheduleCursorRedrawRef,
@@ -146,9 +139,7 @@ describe("useCanvasCoordination", () => {
         drawing,
         glazeDrawing,
         sourceCanvasWrapRef: ref<HTMLDivElement | null>(null),
-        previewCanvasWrapRef: ref<HTMLDivElement | null>(null),
         glazeWrapRef: ref<HTMLDivElement | null>(null),
-        previewCanvasRef: ref<HTMLCanvasElement | null>(null),
         hexPreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
         glazePreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
         sharedScheduleCursorRedrawRef: ref<(() => void) | null>(null),
@@ -180,9 +171,7 @@ describe("useCanvasCoordination", () => {
         drawing,
         glazeDrawing,
         sourceCanvasWrapRef: ref(srcWrap),
-        previewCanvasWrapRef: ref<HTMLDivElement | null>(null),
         glazeWrapRef: ref<HTMLDivElement | null>(null),
-        previewCanvasRef: ref<HTMLCanvasElement | null>(null),
         hexPreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
         glazePreviewCanvasRef: ref<HTMLCanvasElement | null>(null),
         sharedScheduleCursorRedrawRef: ref<(() => void) | null>(null),
@@ -199,7 +188,6 @@ describe("useCanvasCoordination", () => {
       document.dispatchEvent(new MouseEvent("mousemove", { clientX: 5, clientY: 50 }));
     });
     expect(drawing.clearCursor).toHaveBeenCalled();
-    expect(drawing.clearPreviewCursor).not.toHaveBeenCalled();
     expect(glazeDrawing.clearCursor).not.toHaveBeenCalled();
   });
 });

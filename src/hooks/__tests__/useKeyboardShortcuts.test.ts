@@ -31,6 +31,9 @@ function makeArgs() {
     setTool,
     setGlazeTool,
     setBrushLevel,
+    beginSourceDrawing: vi.fn(),
+    endSourceDrawing: vi.fn(),
+    cancelSourceDrawing: vi.fn(),
     setBrushSize,
     dispatch,
     announce,
@@ -159,7 +162,7 @@ describe("useKeyboardShortcuts", () => {
     }
   });
 
-  it.each(["color", "glaze"] as const)("keeps the drawing shortcuts on the %s canvas", (activeTabId) => {
+  it.each(["glaze"] as const)("keeps the drawing shortcuts on the %s canvas", (activeTabId) => {
     const { deps, setTool, setGlazeTool, setBrushLevel } = makeArgs();
     const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId }));
     cleanup = unmount;
@@ -355,8 +358,8 @@ describe("useKeyboardShortcuts", () => {
     it.each([
       [1, "gallery"],
       [3, "source"],
-      [7, "theory"],
-      [8, "music"],
+      [6, "theory"],
+      [7, "music"],
     ] as const)("Alt+%i switches to the %s tab from any tab", (digit, tab) => {
       const { deps, setActiveTabId, setBrushLevel } = makeArgs();
       const { unmount } = renderHook(() => useKeyboardShortcuts({ ...deps, activeTabId: "theory" }));
@@ -386,11 +389,12 @@ describe("useKeyboardShortcuts", () => {
       expect(vi.mocked(setActiveTabId)).toHaveBeenCalledWith("gallery");
     });
 
-    it("ignores Alt+9 and Alt+0, which have no tab", () => {
+    it("ignores Alt+8, Alt+9 and Alt+0, which have no tab", () => {
       const { deps, setActiveTabId, setBrushLevel } = makeArgs();
       const { unmount } = renderHook(() => useKeyboardShortcuts(deps));
       cleanup = unmount;
 
+      fireKey("8", { code: "Digit8", altKey: true });
       fireKey("9", { code: "Digit9", altKey: true });
       fireKey("0", { code: "Digit0", altKey: true });
 
@@ -571,7 +575,7 @@ describe("useKeyboardShortcuts", () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it.each(["b", "e", "f"])("routes %s to the active Glaze tool from tab focus", (key) => {
+  it.each(["b", "e", "f", "l", "r", "o"])("routes %s to the active Glaze tool from tab focus", (key) => {
     const { deps } = makeArgs();
     const { result, unmount } = renderHook(() => {
       const [tool, setTool] = useState<ToolId>("line");
@@ -589,7 +593,10 @@ describe("useKeyboardShortcuts", () => {
     act(() => {
       tab.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
     });
-    expect(result.current).toEqual({ tool: "line", glazeTool: { b: "glaze_brush", e: "glaze_eraser", f: "glaze_fill" }[key] });
+    expect(result.current).toEqual({
+      tool: "line",
+      glazeTool: { b: "glaze_brush", e: "glaze_eraser", f: "glaze_fill", l: "glaze_line", r: "glaze_rect", o: "glaze_ellipse" }[key],
+    });
   });
 
   it.each(["l", "r", "o"])("does not change the hidden Source tool for %s on Glaze", (key) => {

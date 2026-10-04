@@ -44,7 +44,7 @@ describe("App", () => {
 
     const notice = screen.getByRole("alert", { name: new RegExp(`^${title}`) });
     expect(notice.textContent).toContain(unsaved);
-    fireEvent.click(screen.getByRole("tab", { name: "Color" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Hex" }));
     expect(screen.getByRole("alert", { name: new RegExp(`^${title}`) })).toBe(notice);
     await act(async () => vi.advanceTimersByTime(5000));
     expect(screen.queryByRole("alert")).toBeNull();

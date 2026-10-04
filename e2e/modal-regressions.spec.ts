@@ -102,13 +102,13 @@ test("Map departure cancels a pending touch long press and closes an open save d
   const mapTab = page.getByRole("tab", { name: "Map", exact: true });
   await mapTab.click();
   const canvas = page.locator(".map-canvas-frame canvas");
-  await canvas.dispatchEvent("pointerdown", { pointerType: "touch", pointerId: 1, clientX: 10, clientY: 10 });
+  await canvas.dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true, pointerId: 1, clientX: 10, clientY: 10 });
   await page.keyboard.press("Alt+3");
   await page.waitForTimeout(1100);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await mapTab.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await canvas.dispatchEvent("pointerdown", { pointerType: "touch", pointerId: 2, clientX: 10, clientY: 10 });
+  await canvas.dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true, pointerId: 2, clientX: 10, clientY: 10 });
   await expect(page.getByRole("dialog", { name: "Save this map?" })).toBeVisible();
   await page.keyboard.press("Alt+3");
   await expect(page.getByRole("dialog")).toHaveCount(0);
