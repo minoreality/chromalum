@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../../../i18n";
@@ -114,19 +114,35 @@ describe("StellaOctangula", () => {
     expect(turnOf(2, 2, 400).result).not.toEqual(turnOf(2, 2, 900).result);
   });
 
-  it("keeps turning under the middle button, and holds still when motion is reduced", async () => {
-    const reduce = vi.spyOn(window, "matchMedia");
-    const media = (matches: boolean) =>
-      ({
-        matches,
-        media: "(prefers-reduced-motion: reduce)",
-        addEventListener: () => {},
-        removeEventListener: () => {},
-      }) as unknown as MediaQueryList;
+  it.each([false, true])("respects reduced motion (%s) while holding the middle button", async (reduced) => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    const requestFrame = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    });
+    const cancelFrame = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation((id) => {
+      frames.delete(id);
+    });
+    const reduce = vi.spyOn(window, "matchMedia").mockReturnValue({
+      matches: reduced,
+      media: "(prefers-reduced-motion: reduce)",
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    } as unknown as MediaQueryList);
+    const advanceFrame = async (time: number) => {
+      await act(async () => {
+        // Frames requested by a callback belong to the next animation frame.
+        for (const [id, callback] of [...frames]) {
+          if (frames.delete(id)) callback(time);
+        }
+      });
+    };
 
-    const spinFor = async (reduced: boolean) => {
-      reduce.mockImplementation(() => media(reduced));
-      const { container, unmount } = renderStella();
+    let view: ReturnType<typeof renderStella> | undefined;
+    try {
+      view = renderStella();
+      const { container } = view;
       const diagram = container.querySelector("#theory-stella-view")!;
       const pose = () =>
         [...diagram.querySelectorAll("[data-stella-vertex]")].map((node) => node.getAttribute("data-stella-depth")).join(" ");
@@ -136,28 +152,31 @@ describe("StellaOctangula", () => {
       fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 200, clientY: 120, buttons: 4 });
       fireEvent.pointerMove(diagram, { pointerId: 1, clientX: 600, clientY: 120, buttons: 4 });
       const held = pose();
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      const later = pose();
-      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 600, clientY: 120, buttons: 0 });
+      // The first frame establishes the timestamp; subsequent frames turn.
+      await advanceFrame(100);
+      let previous = held;
+      for (const time of [116, 132]) {
+        await advanceFrame(time);
+        const current = pose();
+        if (reduced) expect(current).toBe(held);
+        else expect(current).not.toBe(previous);
+        previous = current;
+      }
 
       // And it stops once the button is let go.
-      await new Promise((resolve) => setTimeout(resolve, 120));
+      fireEvent.pointerUp(diagram, { pointerId: 1, clientX: 600, clientY: 120, buttons: 0 });
       const released = pose();
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const settled = pose();
-      unmount();
-      return { moved: held !== later, stopped: released === settled };
-    };
-
-    const normal = await spinFor(false);
-    expect(normal.moved).toBe(true);
-    expect(normal.stopped).toBe(true);
-
-    // Motion nobody asked for is exactly what the setting rules out.
-    const reduced = await spinFor(true);
-    expect(reduced.moved).toBe(false);
-
-    reduce.mockRestore();
+      expect(frames.size).toBe(0);
+      for (const time of [148, 164]) {
+        await advanceFrame(time);
+        expect(pose()).toBe(released);
+      }
+    } finally {
+      view?.unmount();
+      reduce.mockRestore();
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+    }
   });
 
   it("drops the ball while Shift is held, turning as far as the hand goes", () => {

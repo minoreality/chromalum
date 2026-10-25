@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { LanguageProvider } from "../../i18n";
 import { MusicPanel } from "../MusicPanel";
 import { CX, CY, TW, TH } from "../linked-visualization-geometry";
@@ -94,6 +94,9 @@ describe("MusicPanel controller integration", () => {
 
   it("passes transport mode changes through to the music engine", () => {
     renderWithLanguage(<MusicPanel />);
+    // Keep accessible-name queries within the transport controls instead of
+    // repeatedly walking the unrelated diagrams and algebra controls.
+    const transport = within(screen.getByRole("radiogroup", { name: "Pitch mapping" }).parentElement!);
 
     expect(latestEngineParams()).toMatchObject({
       pitchMappingMode: "chromalum",
@@ -102,22 +105,22 @@ describe("MusicPanel controller integration", () => {
       volume: 0.7,
     });
 
-    fireEvent.click(screen.getByRole("radio", { name: "Whole-tone" }));
+    fireEvent.click(transport.getByRole("radio", { name: "Whole-tone" }));
     expect(latestEngineParams().pitchMappingMode).toBe("wholeTone");
 
-    fireEvent.click(screen.getByRole("button", { name: "FM" }));
+    fireEvent.click(transport.getByRole("button", { name: "FM" }));
     expect(latestEngineParams().fmEnabled).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Even" }));
+    fireEvent.click(transport.getByRole("button", { name: "Even" }));
     expect(latestEngineParams().toneMode).toBe("symmetric");
 
-    fireEvent.click(screen.getByRole("button", { name: "Mute" }));
+    fireEvent.click(transport.getByRole("button", { name: "Mute" }));
     expect(latestEngineParams().volume).toBe(0);
-    expect(screen.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("true");
+    expect(transport.getByRole("button", { name: "Mute" }).getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.change(screen.getByLabelText("Volume"), { target: { value: "25" } });
+    fireEvent.change(transport.getByLabelText("Volume"), { target: { value: "25" } });
     expect(latestEngineParams().volume).toBe(0.25);
-    expect(screen.getByRole("button", { name: "Mute" })).toBeTruthy();
+    expect(transport.getByRole("button", { name: "Mute" })).toBeTruthy();
   });
 
   it("restores the pre-mute volume when unmuted", () => {
