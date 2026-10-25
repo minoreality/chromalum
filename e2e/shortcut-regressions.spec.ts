@@ -17,15 +17,15 @@ test("Source bare zoom keys and shifted Ctrl/Meta plus change zoom exactly once"
   await zoom.click();
   await workspace.focus();
   await page.keyboard.press("Shift+Equal");
-  await expect(zoom).toHaveAccessibleName("Reset zoom (current 115%)");
+  await expect(zoom).toHaveAccessibleName("115% — Reset zoom");
   await page.keyboard.press("Minus");
-  await expect(zoom).toHaveAccessibleName("Reset zoom (current 100%)");
+  await expect(zoom).toHaveAccessibleName("100% — Reset zoom");
 
   for (const modifier of ["Control", "Meta"]) {
     await zoom.click();
     await workspace.focus();
     await page.keyboard.press(`${modifier}+Shift+Equal`);
-    await expect(zoom).toHaveAccessibleName("Reset zoom (current 115%)");
+    await expect(zoom).toHaveAccessibleName("115% — Reset zoom");
   }
 
   // Playwright's keyboard maps US keys. Dispatch the actual JIS '+' event
@@ -44,7 +44,7 @@ test("Source bare zoom keys and shifted Ctrl/Meta plus change zoom exactly once"
     return event.defaultPrevented;
   });
   expect(consumed).toBe(true);
-  await expect(zoom).toHaveAccessibleName("Reset zoom (current 115%)");
+  await expect(zoom).toHaveAccessibleName("115% — Reset zoom");
 });
 
 test("Glaze tool keys follow the active tab from tab, toolbar, and canvas focus", async ({ page }) => {
@@ -84,6 +84,6 @@ test("a modal text field keeps zoom and tool keys away from Source", async ({ pa
   await page.keyboard.press("Shift+Equal");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
-  await expect(zoom).toHaveAccessibleName("Reset zoom (current 100%)");
+  await expect(zoom).toHaveAccessibleName("100% — Reset zoom");
   await expect(page.getByRole("radio", { name: /Line/ })).toHaveAttribute("aria-checked", "true");
 });
