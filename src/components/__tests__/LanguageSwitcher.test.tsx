@@ -32,6 +32,20 @@ describe("LanguageSwitcher", () => {
     expect(newText).not.toBe(initialText);
   });
 
+  it.each([
+    ["en", "JA"],
+    ["ja", "EN"],
+  ])("includes the visible language code in its accessible name in %s", (language, code) => {
+    localStorage.setItem("chromalum_lang", language);
+    render(
+      <LanguageProvider>
+        <LanguageSwitcher />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: new RegExp(`\\b${code}\\b`) }).textContent).toBe(code);
+  });
+
   it("toggles language even when localStorage access is blocked", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new DOMException("Storage blocked", "SecurityError");

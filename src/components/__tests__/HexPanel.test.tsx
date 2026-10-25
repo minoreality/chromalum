@@ -67,15 +67,15 @@ describe("HexPanel", () => {
   it("shows the pattern-count link only under the diagram", () => {
     const onPatternClick = vi.fn();
     render(<HexPanel {...makeProps({ onPatternClick })} />);
-    const patternLink = screen.getByRole("button", { name: "pattern_count_go_gallery(42)" });
+    const patternLink = screen.getByRole("button", { name: /pattern_count_go_gallery\(42\)/ });
     fireEvent.click(patternLink);
     fireEvent.keyDown(patternLink, { key: "Enter" });
     fireEvent.keyDown(patternLink, { key: " " });
     expect(onPatternClick).toHaveBeenCalledTimes(3);
     fireEvent.keyDown(document, { key: "v" });
-    expect(screen.queryByRole("button", { name: "pattern_count_go_gallery(42)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /pattern_count_go_gallery\(42\)/ })).toBeNull();
     fireEvent.keyDown(document, { key: "v" });
-    expect(screen.getByRole("button", { name: "pattern_count_go_gallery(42)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /pattern_count_go_gallery\(42\)/ })).toBeTruthy();
   });
 
   it("leaves a pinned level out of the 2-5 shortcut", () => {

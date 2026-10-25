@@ -9,7 +9,7 @@ export const LanguageSwitcher = React.memo(function LanguageSwitcher() {
       type="button"
       className="header-action-link"
       onClick={() => setLang(lang === "ja" ? "en" : "ja")}
-      aria-label={t("lang_switch_label")}
+      aria-label={`${t("lang_switch")}: ${t("lang_switch_label")}`}
       title={t("lang_switch_label")}
       style={{
         background: "none",
