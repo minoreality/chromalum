@@ -4,39 +4,6 @@ import { decodeRows, GOLDEN_SEEDS } from "./fixtures/ca-golden";
 
 const saved = () => ({ version: 1, seed: Array<number>(2401).fill(2), preset: "rgb", rule: "life", time: 20, x: 48, y: 0, color: 0 });
 describe("Automata state", () => {
-  const image = { width: 3, height: 2, levelData: Uint8Array.from([0, 1, 2, 3, 4, 7]) };
-  it("copies the image into a matching plane and keeps source pixels independent", () => {
-    const state = automataReducer(createAutomataState(), { type: "set-image", image, sourceKey: "first" });
-    expect([state.width, state.height, state.preset, state.time, state.x, state.y]).toEqual([3, 2, "image", 0, 1, 1]);
-    expect(state.seed).toEqual(image.levelData);
-    expect(state.seed).not.toBe(image.levelData);
-    const painted = automataReducer(state, { type: "paint-cells", cells: [{ x: 2, y: 1 }], color: 6 });
-    expect(painted.seed[5]).toBe(6);
-    expect(image.levelData[5]).toBe(7);
-    expect(automataReducer(painted, { type: "select-cell", x: 3, y: 1 })).toBe(painted);
-  });
-  it("retains edited image seeds on restoration and refreshes changed source images", () => {
-    const initial = automataReducer(createAutomataState(), { type: "set-image", image, sourceKey: "first" });
-    const edited = { ...initial, seed: new Uint8Array(6).fill(6), time: 5 };
-    expect(automataReducer(edited, { type: "sync-source", image, sourceKey: "first" })).toBe(edited);
-    const refreshed = automataReducer(edited, { type: "sync-source", image, sourceKey: "second" });
-    expect(refreshed.seed).toEqual(image.levelData);
-    expect(refreshed.time).toBe(0);
-  });
-  it("centers an existing edited plane when the source dimensions change", () => {
-    const state = createAutomataState();
-    state.seed[24 * 49 + 24] = 6;
-    const resized = automataReducer(state, {
-      type: "sync-source",
-      image: { width: 80, height: 30, levelData: new Uint8Array(2400) },
-      sourceKey: "new",
-    });
-    expect([resized.width, resized.height]).toEqual([80, 30]);
-    expect(resized.seed[15 * 80 + 40]).toBe(6);
-    const white = automataReducer(resized, { type: "set-preset", preset: "white" });
-    expect(white.seed[15 * 80 + 40]).toBe(7);
-    expect(white.seed.length).toBe(2400);
-  });
   it("opens the editable rosette at the center with green", () => {
     const state = createAutomataState();
     expect([state.rule, state.preset, state.time, state.x, state.y, state.color]).toEqual([4, "rosette", 0, 24, 24, 4]);

@@ -430,6 +430,7 @@ svg text {
   box-sizing: content-box;
   width: 100%;
   height: auto;
+  aspect-ratio: 1;
   padding: 0;
   border: none;
   outline: none;
@@ -440,9 +441,6 @@ svg text {
 }
 .automata-panel[data-mode="read"] .automata-board {
   cursor: default;
-}
-.automata-board[aria-busy="true"] {
-  opacity: 0.6;
 }
 .automata-board-frame:has(.automata-board:focus-visible),
 .automata-control select:focus-visible,
@@ -667,6 +665,12 @@ input[type="checkbox"]:focus-visible {
 .hex-diag-wrap {
   max-width: 462px;
 }
+.panel-layout > .panel-sidebar.hex-palette-switcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  width: min(420px, var(--app-inline-content-width));
+}
 .hex-palette-switcher {
   position: relative;
   touch-action: pan-y pinch-zoom;
@@ -678,18 +682,17 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 .hex-palette-view {
-  /* The diagram retains the sidebar's original flex items and spacing. */
-  display: contents;
-}
-.hex-palette-view[data-view="list"] {
-  position: absolute;
-  inset: 0;
+  /* Both views reserve their full height so switching never moves the page. */
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
-  container: hex-palette / inline-size;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
   min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
+}
+.hex-palette-view[data-view="list"] {
+  container: hex-palette / inline-size;
 }
 .hex-palette-view[data-active="false"] {
   visibility: hidden;
@@ -791,33 +794,27 @@ input[type="checkbox"]:focus-visible {
 }
 @container hex-palette (max-width: 360px) {
   .hex-list-row {
-    display: grid;
-    grid-template-columns: max-content max-content minmax(0, 1fr);
-    row-gap: 3px;
+    gap: clamp(2px, 0.7cqw, 3px);
+    padding-inline: clamp(2px, 0.8cqw, 3px);
   }
   .hex-list-level {
-    grid-column: 1;
-    grid-row: 1;
+    gap: 3px;
+    font-size: 10px;
   }
-  .hex-list-current {
-    grid-column: 2;
-    grid-row: 1;
+  .hex-list-gray {
+    width: 14px;
+    height: 14px;
+  }
+  .hex-list-current-swatch,
+  .hex-list-arrow {
+    width: 22px;
   }
   .hex-list-equation {
-    grid-column: 3;
-    grid-row: 1;
-    justify-content: flex-start;
-    font-size: clamp(9px, 3cqw, 10px);
-  }
-  .hex-list-row[data-multiple="true"] .hex-list-equation {
-    grid-column: 2 / -1;
-    grid-row: 2;
-    padding-bottom: 4px;
+    gap: 1px;
+    font-size: clamp(9px, 2.7cqw, 10px);
   }
   .hex-list-candidates {
-    grid-column: 3;
-    grid-row: 1;
-    width: max-content;
+    gap: 2px;
   }
   .hex-list-row[data-multiple="false"] .hex-list-candidates {
     display: none;

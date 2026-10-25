@@ -1,27 +1,19 @@
-import { PLANE_SIZE, type Cell, type PlaneDimensions } from "./model";
-const DEFAULT_DIMENSIONS = { width: PLANE_SIZE, height: PLANE_SIZE };
-export interface PlaneGeometry extends PlaneDimensions {
-  cssWidth: number;
-  cssHeight: number;
+import { PLANE_SIZE, type Cell } from "./model";
+export interface PlaneGeometry {
+  cssSize: number;
   cellSize: number;
   dpr: number;
 }
-export function getPlaneGeometry(cssWidth: number, dpr: number, dimensions = DEFAULT_DIMENSIONS): PlaneGeometry {
-  const cellSize = cssWidth / dimensions.width;
-  return { ...dimensions, cssWidth, cssHeight: cellSize * dimensions.height, cellSize, dpr };
+export function getPlaneGeometry(cssSize: number, dpr: number): PlaneGeometry {
+  return { cssSize, cellSize: cssSize / PLANE_SIZE, dpr };
 }
-export function hitTestCell(
-  clientX: number,
-  clientY: number,
-  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
-  dimensions = DEFAULT_DIMENSIONS,
-): Cell | null {
+export function hitTestCell(clientX: number, clientY: number, rect: Pick<DOMRect, "left" | "top" | "width" | "height">): Cell | null {
   if (![clientX, clientY, rect.left, rect.top, rect.width, rect.height].every(Number.isFinite) || rect.width <= 0 || rect.height <= 0)
     return null;
   const x = clientX - rect.left,
     y = clientY - rect.top;
   if (x < 0 || x >= rect.width || y < 0 || y >= rect.height) return null;
-  return { x: Math.floor((x / rect.width) * dimensions.width), y: Math.floor((y / rect.height) * dimensions.height) };
+  return { x: Math.floor((x / rect.width) * PLANE_SIZE), y: Math.floor((y / rect.height) * PLANE_SIZE) };
 }
 export function cellsOnLine(from: Cell, to: Cell): Cell[] {
   const cells: Cell[] = [];

@@ -6,7 +6,6 @@ export const en = {
   automata_subtitle: "CELLULAR AUTOMATA",
   automata_rule: "Rule",
   automata_preset: "Initial pattern",
-  automata_preset_image: "Loaded image",
   automata_palette: "Palette",
   automata_time: "Time: t = {0}",
   automata_step: "Advance one step",

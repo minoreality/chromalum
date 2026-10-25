@@ -3,13 +3,6 @@ import { AUTOMATA_PRESETS, makePlaneSeed } from "../presets";
 import { GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
 describe("makePlaneSeed", () => {
-  it("centers presets in the image dimensions without stretching cells", () => {
-    const seed = makePlaneSeed("white", 80, 30);
-    expect(seed.length).toBe(2400);
-    expect(seed[15 * 80 + 40]).toBe(7);
-    expect([...seed].filter(Boolean)).toEqual([7]);
-    expect(makePlaneSeed("white", 1, 1)).toEqual(Uint8Array.of(7));
-  });
   it.each(AUTOMATA_PRESETS)("matches the reference seed for %s", (preset) => {
     expect(makePlaneSeed(preset)).toEqual(decodeRows(GOLDEN_SEEDS[preset]));
     const first = makePlaneSeed(preset);

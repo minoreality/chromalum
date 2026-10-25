@@ -17,8 +17,6 @@ describe("Automata copy", () => {
     expect(english.tab_automata).toBe("Flow");
     expect(jp.automata_step).toBe("1ステップ進む");
     expect(jp.automata_return).toBe("初期配置に戻る");
-    expect(jp.automata_preset_image).toBe("読み込んだ画像");
-    expect(english.automata_preset_image).toBe("Loaded image");
     expect(english.automata_keyboard_hint).toBe("Arrow keys select a cell. At time 0, Enter or Space places the selected color.");
   });
   it("labels all original rules, presets and discrete colors", () => {

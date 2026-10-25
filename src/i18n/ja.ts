@@ -6,7 +6,6 @@ export const ja = {
   automata_subtitle: "CELLULAR AUTOMATA",
   automata_rule: "規則",
   automata_preset: "初期配置",
-  automata_preset_image: "読み込んだ画像",
   automata_palette: "パレット",
   automata_time: "時間：t = {0}",
   automata_step: "1ステップ進む",

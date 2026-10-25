@@ -26,21 +26,35 @@ function renderApp(lang: "en" | "ja" = "en") {
 }
 
 describe("App", () => {
-  it("preserves a saved Flow image when Source restoration fails", async () => {
-    const saved = { ...createAutomataState(80, 30), preset: "image" as const, sourceKey: "saved-source", time: 7 };
+  it.each(["loaded", "failed"])("preserves a saved fixed Flow when Source restoration is %s", async (status) => {
+    const saved = { ...createAutomataState(), preset: "black" as const, time: 7 };
     saved.seed[3] = 6;
     saveAutomataState(saved);
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.mocked(loadStateWithStatus).mockRejectedValueOnce(new Error("Temporary IndexedDB failure"));
+    if (status === "failed") {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(loadStateWithStatus).mockRejectedValueOnce(new Error("Temporary IndexedDB failure"));
+    } else {
+      vi.mocked(loadStateWithStatus).mockResolvedValueOnce({
+        status: "loaded",
+        state: {
+          version: 4,
+          revision: 1,
+          width: 80,
+          height: 30,
+          levelData: new Uint8Array(2400).fill(7),
+          candidateIndexByLevel: Array(8).fill(0),
+        },
+      });
+    }
     window.history.replaceState(null, "", "/#automata");
     renderApp();
-    await screen.findByTestId("automata-board", {}, { timeout: 15000 });
+    const board = await screen.findByTestId("automata-board", {}, { timeout: 15000 });
     await act(async () => {
       await Promise.resolve();
     });
-    const restored = loadAutomataState().state;
-    expect([restored.width, restored.height, restored.time]).toEqual([80, 30, 7]);
-    expect(restored.seed).toEqual(saved.seed);
+    expect(loadAutomataState().state).toEqual(saved);
+    expect(board.getAttribute("data-columns")).toBe("49");
+    expect(board.getAttribute("data-rows")).toBe("49");
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("7");
   });
   it("keeps a cold Automata panel through tab changes even when saves are denied", async () => {
@@ -53,7 +67,7 @@ describe("App", () => {
     expect(screen.getByRole("application", { name: "Cellular automaton board" })).toBe(board);
     const original = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
-      if (key === "chromalum-automata-state-v1") throw new Error("Denied");
+      if (key === "chromalum-flow-state-v1") throw new Error("Denied");
       original.call(this, key, value);
     });
     fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));

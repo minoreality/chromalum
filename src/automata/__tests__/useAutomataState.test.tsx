@@ -42,7 +42,7 @@ describe("useAutomataState", () => {
     expect(result.current.interacting).toBe(false);
     expect(result.current.revision).toBe(1);
     expect(result.current.state.seed[0]).toBe(7);
-    expect(JSON.parse(localStorage.getItem("chromalum-automata-state-v1")!).time).toBe(1);
+    expect(JSON.parse(localStorage.getItem("chromalum-flow-state-v1")!).time).toBe(1);
   });
   it("continues editing in memory after storage rejects saves", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {

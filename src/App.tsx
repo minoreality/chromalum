@@ -13,7 +13,7 @@ import { useImageImportCrop } from "./hooks/useImageImportCrop";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useExport } from "./hooks/useExport";
 import { useCanvasCopy } from "./hooks/useCanvasCopy";
-import { useAppState } from "./hooks/useAppState";
+import { getCanvasDisplaySize, useAppState } from "./hooks/useAppState";
 import { DrawingContextProvider } from "./state/DrawingContext";
 import { GlazeContextProvider } from "./state/GlazeContext";
 import { C, Z, FS, FW, FONT } from "./styles/tokens";
@@ -172,6 +172,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     candidateOverridesByLevel,
     setCandidateOverridesByLevel,
     colorLUT,
+    viewportSize,
     displayWidth,
     displayHeight,
     setLevelLock,
@@ -180,13 +181,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     patternInfo,
   } = app;
 
-  const initialCanvasLevels = useRef(canvasData.levelData);
-  // A failed restore leaves the placeholder canvas in memory. Do not use it to
-  // overwrite an independent saved Flow image; an explicit Source edit/import is usable.
-  const imageSourceReady =
-    app.loaded &&
-    ((app.persistenceIssue !== "restore-failed" && app.persistenceIssue !== "invalid") ||
-      canvasData.levelData !== initialCanvasLevels.current);
+  // Flow fits a square to the viewport independently of the Source image.
+  const flowDisplaySize = getCanvasDisplaySize(1, 1, viewportSize.width, viewportSize.height);
   const levelHistogram = state.levelHistogram;
   const [showAbout, setShowAbout] = useState(false);
   const [scrollToGallery, setScrollToGallery] = useState(false);
@@ -655,12 +651,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
             style={{ width: "100%", display: activeTabId === "automata" ? undefined : "none" }}
           >
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
-              <AutomataPanel
-                active={activeTabId === "automata"}
-                displayWidth={displayWidth}
-                displayHeight={displayHeight}
-                image={imageSourceReady ? canvasData : null}
-              />
+              <AutomataPanel active={activeTabId === "automata"} {...flowDisplaySize} />
             </Suspense>
           </div>
         )}

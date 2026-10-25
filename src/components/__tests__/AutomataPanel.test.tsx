@@ -5,8 +5,7 @@ import { AutomataPanel } from "../AutomataPanel";
 import { LanguageProvider } from "../../i18n";
 import * as model from "../../automata/model";
 import { loadAutomataState } from "../../automata/persistence";
-import type { AutomataImage } from "../../automata/state";
-function show(image?: AutomataImage) {
+function show() {
   localStorage.setItem("chromalum_lang", "en");
   vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 245, 245));
   Object.defineProperties(HTMLCanvasElement.prototype, {
@@ -16,23 +15,12 @@ function show(image?: AutomataImage) {
   });
   return render(
     <LanguageProvider>
-      <AutomataPanel active={true} displayWidth={245} displayHeight={245} {...(image ? { image } : {})} />
+      <AutomataPanel active={true} displayWidth={245} displayHeight={245} />
     </LanguageProvider>,
   );
 }
 afterEach(() => vi.restoreAllMocks());
 describe("AutomataPanel", () => {
-  it("uses the loaded image as an editable rectangular initial pattern", () => {
-    const image = { width: 3, height: 2, levelData: Uint8Array.from([0, 1, 2, 3, 4, 7]) };
-    show(image);
-    fireEvent.change(screen.getByRole("combobox", { name: "Initial pattern" }), { target: { value: "image" } });
-    expect(loadAutomataState().state.seed).toEqual(image.levelData);
-    expect(screen.getByRole("application").style.aspectRatio).toBe("3 / 2");
-    fireEvent.keyDown(screen.getByRole("application"), { key: "ArrowRight" });
-    fireEvent.keyDown(screen.getByRole("application"), { key: "Enter" });
-    expect(loadAutomataState().state.seed[5]).toBe(4);
-    expect(image.levelData[5]).toBe(7);
-  });
   it("offers all eight colors and only the two pattern selectors", () => {
     show();
     const palette = screen.getByRole("group", { name: "Palette" });
@@ -54,7 +42,7 @@ describe("AutomataPanel", () => {
     ).toBe("true");
     expect(screen.getAllByRole("combobox").length).toBe(2);
     expect(within(screen.getByRole("combobox", { name: "Rule" })).getAllByRole("option")).toHaveLength(8);
-    expect(within(screen.getByRole("combobox", { name: "Initial pattern" })).getAllByRole("option")).toHaveLength(13);
+    expect(within(screen.getByRole("combobox", { name: "Initial pattern" })).getAllByRole("option")).toHaveLength(12);
     expect(screen.getAllByRole("application").length).toBe(1);
   });
   it("steps to time twenty and returns to the edited initial pattern", () => {
@@ -94,9 +82,9 @@ describe("AutomataPanel", () => {
     fireEvent.keyDown(screen.getByRole("application"), { key: "ArrowLeft" });
     expect(compute.mock.calls.length).toBe(before);
     fireEvent.keyDown(screen.getByRole("application"), { key: "Enter" });
-    expect(compute.mock.calls.length).toBe(before);
-    fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
     expect(compute.mock.calls.length).toBe(before + 1);
+    fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
+    expect(compute.mock.calls.length).toBe(before + 2);
   });
   it("announces the final dragged cell once the interaction ends", () => {
     show();

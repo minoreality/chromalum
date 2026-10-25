@@ -3,18 +3,17 @@ import type { AutomataController } from "./useAutomataState";
 import { getPlaneGeometry, type PlaneGeometry } from "./geometry";
 import { useAutomataInteraction } from "./useAutomataInteraction";
 import { drawPlane } from "./render";
+import { PLANE_SIZE } from "./model";
 export function AutomataCanvas({
   active,
   controller,
   board,
-  pending = false,
   label,
   description,
 }: {
   active: boolean;
   controller: AutomataController;
   board: Uint8Array;
-  pending?: boolean;
   label: string;
   description: string;
 }): React.JSX.Element {
@@ -22,7 +21,6 @@ export function AutomataCanvas({
     id = useId();
   const [geometry, setGeometry] = useState<PlaneGeometry | null>(null);
   const measured = useRef<PlaneGeometry | null>(null);
-  const { width, height } = controller.state;
   const { cancelInteraction, ...handlers } = useAutomataInteraction({ canvasRef: ref, active, controller, geometry });
   useLayoutEffect(() => {
     const canvas = ref.current;
@@ -35,15 +33,8 @@ export function AutomataCanvas({
         setGeometry(null);
         return;
       }
-      const next = getPlaneGeometry(size, window.devicePixelRatio || 1, { width, height });
-      if (
-        measured.current?.cssWidth === next.cssWidth &&
-        measured.current.cssHeight === next.cssHeight &&
-        measured.current.width === width &&
-        measured.current.height === height &&
-        measured.current.dpr === next.dpr
-      )
-        return;
+      const next = getPlaneGeometry(size, window.devicePixelRatio || 1);
+      if (measured.current?.cssSize === next.cssSize && measured.current.dpr === next.dpr) return;
       cancelInteraction();
       measured.current = next;
       setGeometry(next);
@@ -56,26 +47,24 @@ export function AutomataCanvas({
       observer.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [active, width, height, cancelInteraction]);
+  }, [active, cancelInteraction]);
   useLayoutEffect(() => {
-    if (!active || !geometry || geometry.width !== width || geometry.height !== height) return;
+    if (!active || !geometry) return;
     const ctx = ref.current?.getContext("2d");
     if (ctx) drawPlane(ctx, board, geometry, { x: controller.state.x, y: controller.state.y });
-  }, [active, board, geometry, width, height, controller.state.x, controller.state.y]);
+  }, [active, board, geometry, controller.state.x, controller.state.y]);
   return (
     <div className="automata-canvas-group">
       <div className="automata-board-frame">
         <canvas
           className="automata-board"
           data-testid="automata-board"
-          data-columns={width}
-          data-rows={height}
-          style={{ aspectRatio: `${width} / ${height}` }}
+          data-columns={PLANE_SIZE}
+          data-rows={PLANE_SIZE}
           ref={ref}
           role="application"
           aria-label={label}
           aria-describedby={id}
-          aria-busy={pending}
           tabIndex={0}
           onBlur={cancelInteraction}
           {...handlers}

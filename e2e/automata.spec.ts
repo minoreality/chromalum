@@ -1,11 +1,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-const STORAGE_KEY = "chromalum-automata-state-v1";
+const STORAGE_KEY = "chromalum-flow-state-v1";
 const LABELS = ["K", "B", "R", "M", "G", "C", "Y", "W"];
 type SavedAutomata = {
   version: number;
-  width: number;
-  height: number;
   seed: number[];
   preset: string;
   rule: number | string;
@@ -16,33 +14,6 @@ type SavedAutomata = {
 };
 
 async function openAutomata(page: Page, language: "en" | "ja" = "en") {
-  // Keep the existing interaction fixtures at their authored 49x49 resolution.
-  // Production now takes this size from the editing canvas instead of a constant.
-  await page.addInitScript(() => {
-    const request = indexedDB.open("chromalum", 2);
-    request.onupgradeneeded = () => request.result.createObjectStore("state");
-    request.onsuccess = () => {
-      const db = request.result;
-      const tx = db.transaction("state", "readwrite"),
-        store = tx.objectStore("state");
-      const get = store.get("current");
-      get.onsuccess = () => {
-        if (!get.result)
-          store.put(
-            {
-              version: 4,
-              revision: 1,
-              width: 49,
-              height: 49,
-              levelData: new Uint8Array(2401),
-              candidateIndexByLevel: new Array(8).fill(0),
-            },
-            "current",
-          );
-      };
-      tx.oncomplete = () => db.close();
-    };
-  });
   await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("./#automata");
@@ -52,17 +23,7 @@ async function openAutomata(page: Page, language: "en" | "ja" = "en") {
 }
 
 async function savedState(page: Page): Promise<SavedAutomata> {
-  return page.evaluate((key) => {
-    const data = JSON.parse(localStorage.getItem(key)!);
-    if (data.version === 2) {
-      const digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-      data.seed = Array.from(
-        { length: data.width * data.height },
-        (_, i) => (digits.indexOf(data.seed[Math.floor(i / 2)]) >> (i % 2 ? 0 : 3)) & 7,
-      );
-    }
-    return data;
-  }, STORAGE_KEY);
+  return page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), STORAGE_KEY);
 }
 
 function palette(page: Page) {
@@ -132,7 +93,7 @@ async function readSavedRecord(page: Page): Promise<string> {
           const tx = db.transaction("state", "readonly");
           const get = tx.objectStore("state").get("current");
           get.onerror = () => reject(get.error);
-          get.onsuccess = () => resolve(JSON.stringify(get.result));
+          get.onsuccess = () => resolve(JSON.stringify(get.result ?? null));
           tx.oncomplete = () => db.close();
         };
       }),
@@ -162,101 +123,58 @@ async function importImage(page: Page, width: number, height: number) {
   });
   await page.getByRole("dialog", { name: "Crop image" }).getByRole("button", { name: "OK", exact: true }).click();
   await page.getByRole("tab", { name: "Flow", exact: true }).click();
-  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-columns", String(width));
-  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-rows", String(height));
+  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-columns", "49");
+  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-rows", "49");
 }
 
 for (const viewport of [
   { width: 1280, height: 900 },
+  { width: 840, height: 720 },
   { width: 390, height: 844 },
 ]) {
   for (const [width, height] of [
     [80, 30],
     [30, 80],
+    [1, 2048],
+    [2, 2048],
   ]) {
-    test(`uses an imported ${width}x${height} image at ${viewport.width}px and restores independent edits`, async ({ page }) => {
+    test("keeps Flow independent of a " + width + "x" + height + " Source import at " + viewport.width + "px", async ({ page }) => {
       await page.setViewportSize(viewport);
       await openAutomata(page);
-      await importImage(page, width, height);
-      await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
-      const board = page.getByTestId("automata-board");
-      const box = (await board.boundingBox())!;
-      expect(box.width / box.height).toBeCloseTo(width / height, 2);
-      const sourceSeed = (await savedState(page)).seed;
-      expect(sourceSeed.length).toBe(width * height);
-      expect(sourceSeed[0]).toBe(7);
-      expect(sourceSeed.at(-1)).toBe(0);
-      expect(await renderedCell(board, 0, 0)).toEqual([255, 255, 255, 255]);
+      await blank(page);
       await selectColor(page, 3);
-      await clickCell(page, width - 1, height - 1);
-      await board.press("ArrowRight");
-      await board.press("ArrowDown");
-      expect(await savedState(page)).toMatchObject({ x: width - 1, y: height - 1, width, height });
-      const edited = (await savedState(page)).seed;
-      expect(edited.at(-1)).toBe(3);
+      await clickCell(page, 48, 48);
       await page.getByRole("slider").press("End");
-      await expect(board).toHaveAttribute("aria-busy", "false");
-      await expect.poll(async () => JSON.parse(await readSavedRecord(page)).width).toBe(width);
+      const edited = await savedState(page);
+      const originalBox = (await page.getByTestId("automata-board").boundingBox())!;
+      await importImage(page, width, height);
+      const board = page.getByTestId("automata-board");
+      await expect(board).toBeVisible();
+      const box = (await board.boundingBox())!;
+      expect(box.width / box.height).toBeCloseTo(1, 2);
+      expect(box.width).toBeCloseTo(originalBox.width, 0);
+      expect(box.height).toBeCloseTo(originalBox.height, 0);
+      await expect(page.getByRole("slider")).toHaveValue("20");
+      await expect(page.getByRole("button", { name: "Advance one step", exact: true })).toBeDisabled();
+      await expect(page.getByRole("combobox", { name: "Initial pattern", exact: true }).getByRole("option")).toHaveCount(12);
+      expect(await savedState(page)).toEqual(edited);
+      await expect.poll(async () => JSON.parse(await readSavedRecord(page))?.width).toBe(width);
       const sourceRecord = await savedDrawing(page);
       await page.reload();
-      await expect(board).toHaveAttribute("data-columns", String(width));
-      await expect(board).toHaveAttribute("aria-busy", "false");
+      await expect(board).toHaveAttribute("data-columns", "49");
+      await expect(board).toHaveAttribute("data-rows", "49");
       await expect(page.getByRole("slider")).toHaveValue("20");
-      await expect(page.getByRole("combobox", { name: "Initial pattern", exact: true })).toHaveValue("image");
-      expect((await savedState(page)).seed).toEqual(edited);
+      expect(await savedState(page)).toEqual(edited);
       await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
-      expect((await savedState(page)).seed).toEqual(edited);
+      expect((await savedState(page)).seed).toEqual(edited.seed);
       expect(await savedDrawing(page)).toEqual(sourceRecord);
-      await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("white");
-      expect((await savedState(page)).seed[Math.floor(height / 2) * width + Math.floor(width / 2)]).toBe(7);
+      await board.press("ArrowRight");
+      await board.press("ArrowDown");
+      expect(await savedState(page)).toMatchObject({ x: 48, y: 48 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     });
   }
 }
-
-test("calculates a full-resolution image without blocking control changes", async ({ page }) => {
-  await openAutomata(page);
-  await importImage(page, 1024, 512);
-  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
-  const board = page.getByTestId("automata-board");
-  await page.getByRole("slider").press("End");
-  await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
-  await expect(board).toHaveAttribute("aria-busy", "false");
-  await expect(page.getByRole("slider")).toHaveValue("0");
-  await page.getByRole("combobox", { name: "Rule", exact: true }).selectOption("life");
-  await page.getByRole("button", { name: "Advance one step", exact: true }).click();
-  await expect(board).toHaveAttribute("aria-busy", "false");
-  // Life kills the crowded interior and keeps the corner with exactly three neighbors.
-  expect(await renderedCell(board, 5, 5)).toEqual([0, 0, 0, 255]);
-  expect(await renderedCell(board, 0, 0)).toEqual([255, 255, 255, 255]);
-  await expect(page.getByRole("slider")).toHaveValue("1");
-});
-
-test("keeps a one-column imported image visible", async ({ page }) => {
-  await openAutomata(page);
-  await importImage(page, 1, 2048);
-  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
-  const box = (await page.getByTestId("automata-board").boundingBox())!;
-  expect(box.width).toBeGreaterThan(0);
-  expect(box.height).toBeGreaterThan(0);
-  expect(box.height / box.width).toBeCloseTo(2048, 1);
-});
-
-test("persists and evolves the maximum image resolution", async ({ page }) => {
-  await openAutomata(page);
-  await importImage(page, 2048, 2048);
-  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
-  const board = page.getByTestId("automata-board");
-  await page.getByRole("slider").press("End");
-  await expect(board).toHaveAttribute("aria-busy", "false", { timeout: 15000 });
-  await expect(page.locator(".automata-panel").getByRole("status")).toHaveCount(0);
-  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).seed.length, STORAGE_KEY)).toBe(2097152);
-  await expect.poll(async () => JSON.parse(await readSavedRecord(page)).width).toBe(2048);
-  await page.reload();
-  await expect(board).toHaveAttribute("data-columns", "2048");
-  await expect(board).toHaveAttribute("aria-busy", "false", { timeout: 15000 });
-  await expect(page.getByRole("slider")).toHaveValue("20");
-});
 
 test("opens the eighth tab directly with the complete native controls", async ({ page }) => {
   await openAutomata(page);
@@ -264,7 +182,7 @@ test("opens the eighth tab directly with the complete native controls", async ({
   await expect(page.getByRole("tab")).toHaveText(["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Flow"]);
   await expect(page.getByRole("combobox")).toHaveCount(2);
   await expect(page.getByRole("combobox").nth(0).getByRole("option")).toHaveCount(8);
-  await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(13);
+  await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(12);
   await expect(palette(page).getByRole("button")).toHaveText(LABELS);
   await expect(palette(page).getByRole("button").nth(4)).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("automata-board")).toHaveCount(1);
@@ -281,7 +199,7 @@ for (const viewport of [
     await openAutomata(page);
     for (const [index, lastIndex, firstValue] of [
       [0, 7, "4"],
-      [1, 12, "rosette"],
+      [1, 11, "rosette"],
     ] as const) {
       const select = page.getByRole("combobox").nth(index);
       await select.selectOption({ index: lastIndex });
@@ -482,7 +400,7 @@ test("retains state after reload and language changes, independently of Source a
   await page.getByRole("tab", { name: "Source", exact: true }).click();
   const source = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
   await expect(source).toBeVisible();
-  await expect.poll(async () => (await readSavedRecord(page)) || "").not.toBe("");
+  await expect.poll(async () => JSON.parse(await readSavedRecord(page))).not.toBeNull();
   const oldRevision = JSON.parse(await readSavedRecord(page)).revision;
   await page.getByRole("button", { name: "Level 2 Red", exact: true }).click();
   await source.click();
@@ -714,7 +632,7 @@ for (const language of ["ja", "en"] as const) {
         expect(new Set(controlRows).size).toBe(viewport.controlRows);
         for (const [control, count] of [
           [0, 8],
-          [1, 13],
+          [1, 12],
         ]) {
           for (let i = 0; i < count; i++) {
             await page.getByRole("combobox").nth(control).selectOption({ index: i });

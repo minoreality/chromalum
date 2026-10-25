@@ -417,6 +417,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     lockedLevels,
     setLockedLevels,
     colorLUT: colorState.colorLUT,
+    viewportSize,
     displayWidth,
     displayHeight,
     setLevelLock: colorState.setLevelLock,

@@ -5,30 +5,94 @@ import { createAutomataState } from "../state";
 
 afterEach(() => vi.restoreAllMocks());
 describe("Automata persistence", () => {
+  it("carries forward edits saved before image support", () => {
+    const seed = Array<number>(2401).fill(0);
+    seed[2400] = 6;
+    localStorage.setItem(
+      "chromalum-automata-state-v1",
+      JSON.stringify({ version: 1, seed, preset: "black", rule: 4, time: 20, x: 48, y: 48, color: 6 }),
+    );
+    const state = loadAutomataState().state;
+    expect(Array.from(state.seed)).toEqual(seed);
+    expect([state.time, state.x, state.y, state.color]).toEqual([20, 48, 48, 6]);
+  });
+  it.each(["A".repeat(1200), "?" + "A".repeat(1200), "A".repeat(1200) + "B"])(
+    "rejects malformed packed cells without losing editability (%#)",
+    (seed) => {
+      localStorage.setItem(
+        "chromalum-automata-state-v1",
+        JSON.stringify({ version: 2, width: 49, height: 49, seed, preset: "black", time: 7 }),
+      );
+      expect(loadAutomataState()).toEqual({ state: createAutomataState(), persistenceUnavailable: false });
+    },
+  );
+  it("migrates a rectangular preset to the fixed board without overwriting its original record", () => {
+    const legacy = JSON.stringify({
+      version: 2,
+      width: 80,
+      height: 30,
+      seed: "A".repeat(1200),
+      preset: "white",
+      rule: "rug",
+      time: 7,
+      x: 79,
+      y: 29,
+      color: 5,
+    });
+    localStorage.setItem("chromalum-automata-state-v1", legacy);
+    const state = loadAutomataState().state;
+    expect(state.seed.length).toBe(2401);
+    expect(state.seed[1200]).toBe(7);
+    expect(state.seed.reduce((total, value) => total + value, 0)).toBe(7);
+    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["white", "rug", 0, 24, 24, 5]);
+    expect(saveAutomataState(state)).toBe(true);
+    expect(localStorage.getItem("chromalum-automata-state-v1")).toBe(legacy);
+    expect(localStorage.getItem("chromalum-flow-state-v1")).not.toBeNull();
+    expect(loadAutomataState().state).toEqual(state);
+  });
+  it("restores edited 49x49 packed data and prefers subsequent fixed-board saves", () => {
+    localStorage.setItem(
+      "chromalum-automata-state-v1",
+      JSON.stringify({
+        version: 2,
+        width: 49,
+        height: 49,
+        seed: "A".repeat(600) + "Y" + "A".repeat(600),
+        preset: "black",
+        rule: 5,
+        time: 7,
+        x: 2,
+        y: 6,
+        color: 5,
+      }),
+    );
+    const state = loadAutomataState().state;
+    expect(state.seed[1200]).toBe(3);
+    expect(state.seed.reduce((total, value) => total + value, 0)).toBe(3);
+    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["black", 5, 7, 2, 6, 5]);
+    expect(saveAutomataState({ ...state, time: 12 })).toBe(true);
+    expect(localStorage.getItem("chromalum-flow-state-v1")).not.toBeNull();
+    expect(loadAutomataState().state.time).toBe(12);
+  });
+  it("replaces the retired image preset with the default editable pattern", () => {
+    localStorage.setItem(
+      "chromalum-automata-state-v1",
+      JSON.stringify({ version: 2, width: 3, height: 2, seed: "///", preset: "image", rule: "life", time: 20, color: 1 }),
+    );
+    const state = loadAutomataState().state;
+    expect(state.seed.length).toBe(2401);
+    expect(state.seed[1200]).toBe(1);
+    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["rosette", "life", 0, 24, 24, 1]);
+  });
   it("round-trips edited data through its own key", () => {
     const state = { ...createAutomataState(), time: 20, x: 48, color: 0 as const };
     state.seed[0] = 7;
     expect(saveAutomataState(state)).toBe(true);
     expect(loadAutomataState()).toEqual({ state, persistenceUnavailable: false });
-    expect(Object.keys(localStorage)).toEqual(["chromalum-automata-state-v1"]);
+    expect(Object.keys(localStorage)).toEqual(["chromalum-flow-state-v1"]);
     const raw = JSON.parse(serializeAutomataState(state));
-    expect(raw.version).toBe(2);
-    expect(typeof raw.seed).toBe("string");
-  });
-  it("round-trips a maximum-size image plane within the local storage budget", () => {
-    const state = { ...createAutomataState(2048, 2048), preset: "image" as const, sourceKey: "image-key", time: 20 };
-    for (let i = 0; i < state.seed.length; i++) state.seed[i] = i % 8;
-    const serialized = serializeAutomataState(state);
-    expect(serialized.length * 2).toBeLessThan(5 * 1024 * 1024);
-    const restored = loadAutomataState({ getItem: () => serialized }).state;
-    expect({ ...restored, seed: null }).toEqual({ ...state, seed: null });
-    expect(restored.seed.length).toBe(state.seed.length);
-    expect(restored.seed.every((value, i) => value === state.seed[i])).toBe(true);
-  });
-  it.each([1, 2, 3, 5, 7, 9, 31])("preserves all bits for a %s-pixel row", (width) => {
-    const state = createAutomataState(width, 1);
-    for (let i = 0; i < width; i++) state.seed[i] = i % 8;
-    expect(loadAutomataState({ getItem: () => serializeAutomataState(state) }).state).toEqual(state);
+    expect(raw.version).toBe(1);
+    expect(raw.seed).toEqual(Array.from(state.seed));
   });
   it("resets broken JSON without claiming an API failure", () => {
     expect(loadAutomataState({ getItem: () => "{bad" })).toEqual({ state: createAutomataState(), persistenceUnavailable: false });

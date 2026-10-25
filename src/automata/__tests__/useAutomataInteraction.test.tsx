@@ -40,7 +40,7 @@ const pointer = (x: number, y: number, extra: PointerEventInit = {}) => ({
 });
 beforeEach(() => {
   localStorage.setItem(
-    "chromalum-automata-state-v1",
+    "chromalum-flow-state-v1",
     JSON.stringify({ version: 1, seed: Array(2401).fill(0), rule: 4, preset: "black", time: 0, x: 0, y: 0, color: 2 }),
   );
   vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 245, 245));
