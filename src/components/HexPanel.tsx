@@ -211,8 +211,12 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
               canRandomize={canRandomize}
             />
             {/* Pattern info — 3 aligned rows: labels, dots, ∏ᵢcᵢ = counts × ... = total */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, marginTop: -SP.lg }}>
+            <div
+              className="hex-pattern-info"
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, marginTop: -SP.lg }}
+            >
               <div
+                className="hex-pattern-count"
                 onClick={onPatternClick}
                 role={onPatternClick ? "button" : undefined}
                 tabIndex={onPatternClick ? 0 : undefined}
@@ -231,7 +235,6 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
                 style={{
                   display: "grid",
                   gridTemplateColumns: `auto repeat(15, auto) auto`,
-                  justifyContent: "center",
                   justifyItems: "center",
                   alignItems: "center",
                   rowGap: 3,
