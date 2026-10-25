@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPlaneGeometry } from "../geometry";
 import { useAutomataInteraction } from "../useAutomataInteraction";
 import { useAutomataState } from "../useAutomataState";
+import { loadAutomataState } from "../persistence";
 
 function Harness({ active = true, size = 245 }: { active?: boolean; size?: number }) {
   const controller = useAutomataState();
@@ -119,7 +120,7 @@ describe("Automata pointer interaction", () => {
       const before = seed();
       fireEvent.pointerMove(canvas, pointer(4, 0));
       expect(seed()).toBe(before);
-      expect(JSON.parse(localStorage.getItem("chromalum-automata-state-v1")!).seed.join("")).toBe(before);
+      expect(Array.from(loadAutomataState().state.seed).join("")).toBe(before);
     },
   );
   it("owns arrow selection and paint keys only without modifiers", () => {

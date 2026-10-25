@@ -1,8 +1,11 @@
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation, type TranslationFn } from "../i18n";
 import type { TranslationKey } from "../i18n/types";
-import { CA_RULES, MAX_TIME, PLANE_SIZE, evolvePlane, type AutomataRule, type CAColor } from "../automata/model";
-import { AUTOMATA_PRESETS, type AutomataPreset } from "../automata/presets";
+import { CA_RULES, MAX_TIME, type AutomataRule, type CAColor } from "../automata/model";
+import { useAutomataBoard } from "../automata/useAutomataBoard";
+import { AUTOMATA_PRESETS } from "../automata/presets";
+import type { AutomataImage, AutomataPattern } from "../automata/state";
+import { getImageKey } from "../automata/image";
 import { useAutomataState } from "../automata/useAutomataState";
 import { AutomataCanvas } from "../automata/AutomataCanvas";
 import { AutomataPalette, getColorLabel } from "../automata/AutomataPalette";
@@ -18,7 +21,8 @@ const RULE_KEYS: Record<AutomataRule, TranslationKey> = {
   life: "automata_rule_life",
   rug: "automata_rule_rug",
 };
-const PRESET_KEYS: Record<AutomataPreset, TranslationKey> = {
+const PRESET_KEYS: Record<AutomataPattern, TranslationKey> = {
+  image: "automata_preset_image",
   rosette: "automata_preset_rosette",
   diamond: "automata_preset_diamond",
   corolla: "automata_preset_corolla",
@@ -36,68 +40,82 @@ function readCell(t: TranslationFn, x: number, y: number, initial: CAColor, time
   return t("automata_selected", x, y, getColorLabel(initial, t), time, getColorLabel(current, t));
 }
 
+function makeRoomForPicker(select: HTMLSelectElement): void {
+  if (!window.CSS?.supports?.("appearance", "base-select")) return;
+  const bounds = select.getBoundingClientRect();
+  const space = Math.min(window.innerHeight / 2, bounds.height * 4);
+  if (window.innerHeight - bounds.bottom < space) select.scrollIntoView({ block: "center", behavior: "instant" });
+}
+
 export function AutomataPanel({
   active,
   displayWidth,
   displayHeight,
+  image = null,
 }: {
   active: boolean;
   displayWidth: number;
   displayHeight: number;
+  image?: AutomataImage | null;
 }): React.JSX.Element {
   const { t } = useTranslation(),
     id = useId();
   const controller = useAutomataState();
   const { state, dispatch } = controller;
-  const board = useMemo(() => evolvePlane(state.seed, PLANE_SIZE, state.time, state.rule), [state.seed, state.time, state.rule]);
-  const index = state.y * PLANE_SIZE + state.x;
+  const sourceKey = useMemo(() => (image ? getImageKey(image) : ""), [image]);
+  useLayoutEffect(() => {
+    if (image) dispatch({ type: "sync-source", image, sourceKey });
+  }, [image, sourceKey, dispatch]);
+  const { seed, width, height, time, rule } = state;
+  // Shared display dimensions are rounded to whole CSS pixels. Retain the
+  // fractional width of very thin images instead of collapsing their board.
+  const planeDisplayWidth = displayWidth || (Math.max(1, displayHeight) * width) / height;
+  const { board, pending } = useAutomataBoard(seed, width, height, time, rule, active);
+  const index = state.y * state.width + state.x;
   const readout = readCell(t, state.x, state.y, state.seed[index] as CAColor, state.time, board[index] as CAColor);
   const liveRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!controller.interacting && liveRef.current) liveRef.current.textContent = readout;
-  }, [controller.interacting, readout]);
+    if (!controller.interacting && !pending && liveRef.current) liveRef.current.textContent = readout;
+  }, [controller.interacting, readout, pending]);
   return (
     <section className="automata-panel" aria-labelledby={id + "-title"} data-mode={state.time === 0 ? "edit" : "read"}>
       <header className="automata-heading">
         <h2 id={id + "-title"}>{t("automata_subtitle")}</h2>
       </header>
       <div className={`${getPanelLayoutClassName(displayWidth, displayHeight)} automata-content`}>
-        <div className={getCanvasPanelClassName(displayWidth, displayHeight)} style={getCanvasPanelStyle(displayWidth, displayHeight)}>
+        <div
+          className={getCanvasPanelClassName(planeDisplayWidth, displayHeight)}
+          style={getCanvasPanelStyle(planeDisplayWidth, displayHeight)}
+        >
           <AutomataCanvas
             active={active}
             controller={controller}
             board={board}
+            pending={pending}
             label={t("automata_canvas_label")}
             description={t("automata_keyboard_hint")}
           />
         </div>
         <div className="panel-sidebar automata-sidebar">
           <div className="automata-tools">
-            <div className="automata-mode">
-              <span className={state.time === 0 ? "" : "automata-reserved"} aria-hidden={state.time !== 0}>
-                {t("automata_edit_mode")}
-              </span>
-              <span className={state.time > 0 ? "" : "automata-reserved"} aria-hidden={state.time === 0}>
-                {t("automata_result_mode")}
-              </span>
-            </div>
             <AutomataPalette color={state.color} onSelect={(color) => dispatch({ type: "set-color", color })} />
-            <div className="automata-stable-copy automata-selected-color">
-              <p>{t("automata_selected_color", getColorLabel(state.color, t))}</p>
-              <p className="automata-reserved" aria-hidden="true">
-                {t("automata_selected_color", getColorLabel(3, t))}
-              </p>
-            </div>
             <div className="automata-controls" data-testid="automata-controls">
               <label className="automata-control">
                 <span>{t("automata_rule")}</span>
                 <select
                   value={state.rule}
+                  onPointerDown={(event) => makeRoomForPicker(event.currentTarget)}
+                  onKeyDown={(event) => {
+                    if (["ArrowUp", "ArrowDown", " ", "Enter"].includes(event.key)) makeRoomForPicker(event.currentTarget);
+                  }}
                   onChange={(event) => {
                     const value = CA_RULES.find((rule) => String(rule) === event.target.value);
                     if (value !== undefined) dispatch({ type: "set-rule", rule: value });
                   }}
                 >
+                  <button type="button">
+                    <span>{t(RULE_KEYS[state.rule])}</span>
+                  </button>
                   {CA_RULES.map((rule) => (
                     <option key={rule} value={rule}>
                       {t(RULE_KEYS[rule])}
@@ -109,16 +127,30 @@ export function AutomataPanel({
                 <span>{t("automata_preset")}</span>
                 <select
                   value={state.preset}
+                  onPointerDown={(event) => makeRoomForPicker(event.currentTarget)}
+                  onKeyDown={(event) => {
+                    if (["ArrowUp", "ArrowDown", " ", "Enter"].includes(event.key)) makeRoomForPicker(event.currentTarget);
+                  }}
                   onChange={(event) => {
+                    if (event.target.value === "image" && image) {
+                      dispatch({ type: "set-image", image, sourceKey });
+                      return;
+                    }
                     const value = AUTOMATA_PRESETS.find((preset) => preset === event.target.value);
                     if (value !== undefined) dispatch({ type: "set-preset", preset: value });
                   }}
                 >
+                  <button type="button">
+                    <span>{t(PRESET_KEYS[state.preset])}</span>
+                  </button>
                   {AUTOMATA_PRESETS.map((preset) => (
                     <option key={preset} value={preset}>
                       {t(PRESET_KEYS[preset])}
                     </option>
                   ))}
+                  <option value="image" disabled={!image}>
+                    {t("automata_preset_image")}
+                  </option>
                 </select>
               </label>
               <label className="automata-time">
@@ -144,12 +176,6 @@ export function AutomataPanel({
                   {t("automata_return")}
                 </button>
               </div>
-            </div>
-            <div className="automata-stable-copy automata-readout">
-              <p data-testid="automata-readout">{readout}</p>
-              <p className="automata-reserved" aria-hidden="true">
-                {readCell(t, 48, 48, 3, 20, 3)}
-              </p>
             </div>
             <div className="automata-notice-space">
               <p

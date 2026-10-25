@@ -4,6 +4,8 @@ const STORAGE_KEY = "chromalum-automata-state-v1";
 const LABELS = ["K", "B", "R", "M", "G", "C", "Y", "W"];
 type SavedAutomata = {
   version: number;
+  width: number;
+  height: number;
   seed: number[];
   preset: string;
   rule: number | string;
@@ -14,15 +16,53 @@ type SavedAutomata = {
 };
 
 async function openAutomata(page: Page, language: "en" | "ja" = "en") {
+  // Keep the existing interaction fixtures at their authored 49x49 resolution.
+  // Production now takes this size from the editing canvas instead of a constant.
+  await page.addInitScript(() => {
+    const request = indexedDB.open("chromalum", 2);
+    request.onupgradeneeded = () => request.result.createObjectStore("state");
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction("state", "readwrite"),
+        store = tx.objectStore("state");
+      const get = store.get("current");
+      get.onsuccess = () => {
+        if (!get.result)
+          store.put(
+            {
+              version: 4,
+              revision: 1,
+              width: 49,
+              height: 49,
+              levelData: new Uint8Array(2401),
+              candidateIndexByLevel: new Array(8).fill(0),
+            },
+            "current",
+          );
+      };
+      tx.oncomplete = () => db.close();
+    };
+  });
   await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("./#automata");
   await expect(page.getByTestId("automata-board")).toBeVisible();
+  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-columns", "49");
   await expect.poll(() => page.getByTestId("automata-board").getAttribute("width")).not.toBe("300");
 }
 
 async function savedState(page: Page): Promise<SavedAutomata> {
-  return page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), STORAGE_KEY);
+  return page.evaluate((key) => {
+    const data = JSON.parse(localStorage.getItem(key)!);
+    if (data.version === 2) {
+      const digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+      data.seed = Array.from(
+        { length: data.width * data.height },
+        (_, i) => (digits.indexOf(data.seed[Math.floor(i / 2)]) >> (i % 2 ? 0 : 3)) & 7,
+      );
+    }
+    return data;
+  }, STORAGE_KEY);
 }
 
 function palette(page: Page) {
@@ -43,7 +83,9 @@ async function point(page: Page, x: number, y: number) {
   await board.scrollIntoViewIfNeeded();
   const rect = await board.boundingBox();
   if (!rect) throw new Error("The Automata board must be visible");
-  return { x: rect.x + ((x + 0.5) * rect.width) / 49, y: rect.y + ((y + 0.5) * rect.height) / 49 };
+  const width = Number(await board.getAttribute("data-columns")),
+    height = Number(await board.getAttribute("data-rows"));
+  return { x: rect.x + ((x + 0.5) * rect.width) / width, y: rect.y + ((y + 0.5) * rect.height) / height };
 }
 
 async function clickCell(page: Page, x: number, y: number) {
@@ -67,8 +109,12 @@ async function renderedCell(board: Locator, x: number, y: number) {
       const canvas = node as HTMLCanvasElement;
       const context = canvas.getContext("2d")!;
       return Array.from(
-        context.getImageData(Math.floor(((cell.x + 0.5) * canvas.width) / 49), Math.floor(((cell.y + 0.5) * canvas.height) / 49), 1, 1)
-          .data,
+        context.getImageData(
+          Math.floor(((cell.x + 0.5) * canvas.width) / Number(canvas.dataset.columns)),
+          Math.floor(((cell.y + 0.5) * canvas.height) / Number(canvas.dataset.rows)),
+          1,
+          1,
+        ).data,
       );
     },
     { x, y },
@@ -100,19 +146,160 @@ async function savedDrawing(page: Page) {
   );
 }
 
+async function importImage(page: Page, width: number, height: number) {
+  await page.getByRole("tab", { name: "Source", exact: true }).click();
+  await page.evaluate(() => Object.defineProperty(window, "showOpenFilePicker", { configurable: true, value: undefined }));
+  const chosen = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Open image file", exact: true }).click();
+  await (
+    await chosen
+  ).setFiles({
+    name: "flow-image.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="black"/><rect width="${Math.floor(width / 2)}" height="${Math.floor(height / 2)}" fill="white"/></svg>`,
+    ),
+  });
+  await page.getByRole("dialog", { name: "Crop image" }).getByRole("button", { name: "OK", exact: true }).click();
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
+  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-columns", String(width));
+  await expect(page.getByTestId("automata-board")).toHaveAttribute("data-rows", String(height));
+}
+
+for (const viewport of [
+  { width: 1280, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  for (const [width, height] of [
+    [80, 30],
+    [30, 80],
+  ]) {
+    test(`uses an imported ${width}x${height} image at ${viewport.width}px and restores independent edits`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await openAutomata(page);
+      await importImage(page, width, height);
+      await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
+      const board = page.getByTestId("automata-board");
+      const box = (await board.boundingBox())!;
+      expect(box.width / box.height).toBeCloseTo(width / height, 2);
+      const sourceSeed = (await savedState(page)).seed;
+      expect(sourceSeed.length).toBe(width * height);
+      expect(sourceSeed[0]).toBe(7);
+      expect(sourceSeed.at(-1)).toBe(0);
+      expect(await renderedCell(board, 0, 0)).toEqual([255, 255, 255, 255]);
+      await selectColor(page, 3);
+      await clickCell(page, width - 1, height - 1);
+      await board.press("ArrowRight");
+      await board.press("ArrowDown");
+      expect(await savedState(page)).toMatchObject({ x: width - 1, y: height - 1, width, height });
+      const edited = (await savedState(page)).seed;
+      expect(edited.at(-1)).toBe(3);
+      await page.getByRole("slider").press("End");
+      await expect(board).toHaveAttribute("aria-busy", "false");
+      await expect.poll(async () => JSON.parse(await readSavedRecord(page)).width).toBe(width);
+      const sourceRecord = await savedDrawing(page);
+      await page.reload();
+      await expect(board).toHaveAttribute("data-columns", String(width));
+      await expect(board).toHaveAttribute("aria-busy", "false");
+      await expect(page.getByRole("slider")).toHaveValue("20");
+      await expect(page.getByRole("combobox", { name: "Initial pattern", exact: true })).toHaveValue("image");
+      expect((await savedState(page)).seed).toEqual(edited);
+      await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
+      expect((await savedState(page)).seed).toEqual(edited);
+      expect(await savedDrawing(page)).toEqual(sourceRecord);
+      await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("white");
+      expect((await savedState(page)).seed[Math.floor(height / 2) * width + Math.floor(width / 2)]).toBe(7);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    });
+  }
+}
+
+test("calculates a full-resolution image without blocking control changes", async ({ page }) => {
+  await openAutomata(page);
+  await importImage(page, 1024, 512);
+  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
+  const board = page.getByTestId("automata-board");
+  await page.getByRole("slider").press("End");
+  await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
+  await expect(board).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByRole("slider")).toHaveValue("0");
+  await page.getByRole("combobox", { name: "Rule", exact: true }).selectOption("life");
+  await page.getByRole("button", { name: "Advance one step", exact: true }).click();
+  await expect(board).toHaveAttribute("aria-busy", "false");
+  // Life kills the crowded interior and keeps the corner with exactly three neighbors.
+  expect(await renderedCell(board, 5, 5)).toEqual([0, 0, 0, 255]);
+  expect(await renderedCell(board, 0, 0)).toEqual([255, 255, 255, 255]);
+  await expect(page.getByRole("slider")).toHaveValue("1");
+});
+
+test("keeps a one-column imported image visible", async ({ page }) => {
+  await openAutomata(page);
+  await importImage(page, 1, 2048);
+  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
+  const box = (await page.getByTestId("automata-board").boundingBox())!;
+  expect(box.width).toBeGreaterThan(0);
+  expect(box.height).toBeGreaterThan(0);
+  expect(box.height / box.width).toBeCloseTo(2048, 1);
+});
+
+test("persists and evolves the maximum image resolution", async ({ page }) => {
+  await openAutomata(page);
+  await importImage(page, 2048, 2048);
+  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("image");
+  const board = page.getByTestId("automata-board");
+  await page.getByRole("slider").press("End");
+  await expect(board).toHaveAttribute("aria-busy", "false", { timeout: 15000 });
+  await expect(page.locator(".automata-panel").getByRole("status")).toHaveCount(0);
+  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).seed.length, STORAGE_KEY)).toBe(2097152);
+  await expect.poll(async () => JSON.parse(await readSavedRecord(page)).width).toBe(2048);
+  await page.reload();
+  await expect(board).toHaveAttribute("data-columns", "2048");
+  await expect(board).toHaveAttribute("aria-busy", "false", { timeout: 15000 });
+  await expect(page.getByRole("slider")).toHaveValue("20");
+});
+
 test("opens the eighth tab directly with the complete native controls", async ({ page }) => {
   await openAutomata(page);
   await expect(page).toHaveTitle("CHROMALUM - Flow");
   await expect(page.getByRole("tab")).toHaveText(["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Flow"]);
   await expect(page.getByRole("combobox")).toHaveCount(2);
   await expect(page.getByRole("combobox").nth(0).getByRole("option")).toHaveCount(8);
-  await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(12);
+  await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(13);
   await expect(palette(page).getByRole("button")).toHaveText(LABELS);
   await expect(palette(page).getByRole("button").nth(4)).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("automata-board")).toHaveCount(1);
   await expect(page.getByRole("spinbutton")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Return to initial pattern", exact: true })).toBeDisabled();
 });
+
+for (const viewport of [
+  { width: 714, height: 668 },
+  { width: 320, height: 900 },
+]) {
+  test(`opens both Automata selectors downward at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openAutomata(page);
+    for (const [index, lastIndex, firstValue] of [
+      [0, 7, "4"],
+      [1, 12, "rosette"],
+    ] as const) {
+      const select = page.getByRole("combobox").nth(index);
+      await select.selectOption({ index: lastIndex });
+      await select.scrollIntoViewIfNeeded();
+      await select.click();
+      const option = select.getByRole("option", { selected: true });
+      await expect(option).toBeVisible();
+      const control = (await select.boundingBox())!;
+      const selected = (await option.boundingBox())!;
+      expect(selected.y).toBeGreaterThanOrEqual(control.y + control.height);
+      expect(selected.y + selected.height).toBeLessThanOrEqual(viewport.height);
+      await page.keyboard.press("Home");
+      await page.keyboard.press("Enter");
+      await expect(select).toHaveValue(firstValue);
+      await expect.poll(() => select.evaluate((el) => el.matches(":open"))).toBe(false);
+    }
+  });
+}
 
 test("renders all eight colors, erases with K, and fills fast straight and diagonal strokes", async ({ page }) => {
   await openAutomata(page);
@@ -204,7 +391,7 @@ test("keeps the edited seed through 0 → 1 → 20 → 0 and makes results read-
   const seed = (await savedState(page)).seed;
   await page.getByRole("button", { name: "Advance one step", exact: true }).click();
   await clickCell(page, 20, 20);
-  await expect(page.getByTestId("automata-readout")).toHaveText("Cell (20, 20): initial W White · GRB 111 → t=1 K Black · GRB 000");
+  await expect(page.getByTestId("automata-live")).toHaveText("Cell (20, 20): initial W White · GRB 111 → t=1 K Black · GRB 000");
   await stroke(page, [5, 5], [40, 40]);
   expect((await savedState(page)).seed).toEqual(seed);
   await page.getByRole("slider").press("End");
@@ -337,10 +524,10 @@ test("keeps edits across tabs when Automata storage is blocked", async ({ page }
   await expect(page.locator(".automata-panel").getByRole("status")).toHaveText("Flow edits cannot be restored after reloading.");
   await page.getByRole("tab", { name: "Source", exact: true }).click();
   await page.getByRole("tab", { name: "Flow", exact: true }).click();
-  await expect(page.getByTestId("automata-readout")).toHaveText("Cell (12, 18): initial W White · GRB 111 → t=0 W White · GRB 111");
+  await expect(page.getByTestId("automata-live")).toHaveText("Cell (12, 18): initial W White · GRB 111 → t=0 W White · GRB 111");
   await page.getByRole("button", { name: "Advance one step", exact: true }).click();
   await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
-  await expect(page.getByTestId("automata-readout")).toContainText("initial W White · GRB 111");
+  await expect(page.getByTestId("automata-live")).toContainText("initial W White · GRB 111");
 });
 
 test("navigates all tabs and paints with the keyboard without leaking drawing keys", async ({ page }) => {
@@ -460,15 +647,7 @@ test.describe("native touch", () => {
 
 async function rectangles(page: Page) {
   return page.evaluate(() =>
-    [
-      ".automata-controls",
-      ".automata-mode",
-      ".automata-palette",
-      ".automata-selected-color",
-      ".automata-board",
-      ".automata-readout",
-      ".automata-notice-space",
-    ].map((selector) => {
+    [".automata-controls", ".automata-palette", ".automata-board", ".automata-notice-space"].map((selector) => {
       const r = document.querySelector(selector)!.getBoundingClientRect();
       return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height };
     }),
@@ -477,10 +656,10 @@ async function rectangles(page: Page) {
 
 for (const language of ["ja", "en"] as const) {
   for (const viewport of [
-    { width: 1280, height: 900, paletteRows: 1 },
-    { width: 682, height: 668, paletteRows: 1 },
-    { width: 390, height: 844, paletteRows: 2 },
-    { width: 320, height: 900, paletteRows: 2 },
+    { width: 1280, height: 900, paletteRows: 1, controlRows: 1 },
+    { width: 682, height: 668, paletteRows: 1, controlRows: 1 },
+    { width: 390, height: 844, paletteRows: 2, controlRows: 2 },
+    { width: 320, height: 900, paletteRows: 2, controlRows: 2 },
   ]) {
     for (const wideGlyphs of [false, true]) {
       test(`keeps ${language} Automata geometry stable at ${viewport.width}px${wideGlyphs ? " with MS Gothic" : ""}`, async ({ page }) => {
@@ -528,12 +707,14 @@ for (const language of ["ja", "en"] as const) {
           );
         expect(new Set(buttons.map((r) => r.y)).size).toBe(viewport.paletteRows);
         for (const button of buttons) {
-          expect(button.width).toBeGreaterThanOrEqual(44);
-          expect(button.height).toBeGreaterThanOrEqual(44);
+          expect(button.width).toBeGreaterThanOrEqual(36);
+          expect(button.height).toBeGreaterThanOrEqual(36);
         }
+        const controlRows = await page.getByRole("combobox").evaluateAll((elements) => elements.map((el) => el.getBoundingClientRect().y));
+        expect(new Set(controlRows).size).toBe(viewport.controlRows);
         for (const [control, count] of [
           [0, 8],
-          [1, 12],
+          [1, 13],
         ]) {
           for (let i = 0; i < count; i++) {
             await page.getByRole("combobox").nth(control).selectOption({ index: i });
@@ -542,17 +723,19 @@ for (const language of ["ja", "en"] as const) {
               .nth(control)
               .evaluate((node) => {
                 const select = node as HTMLSelectElement;
-                const style = getComputedStyle(select);
-                const context = document.createElement("canvas").getContext("2d")!;
-                context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-                const width = context.measureText(select.selectedOptions[0].text).width;
+                const label = select.querySelector("button > span")!;
+                const range = document.createRange();
+                range.selectNodeContents(label);
+                const text = range.getBoundingClientRect();
+                const bounds = select.getBoundingClientRect();
                 return {
                   text: select.selectedOptions[0].text,
-                  textWidth: width,
-                  availableWidth: select.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+                  label: label.textContent,
+                  fits: text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom,
                 };
               });
-            expect(fits.textWidth, fits.text).toBeLessThanOrEqual(fits.availableWidth);
+            expect(fits.label).toBe(fits.text);
+            expect(fits.fits, fits.text).toBe(true);
           }
         }
         const nav = await page.getByRole("tab").evaluateAll((tabs) =>

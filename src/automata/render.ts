@@ -1,21 +1,43 @@
-import { CA_COLORS, PLANE_SIZE, type Cell } from "./model";
+import { type Cell } from "./model";
 import type { PlaneGeometry } from "./geometry";
 
+const frames = new WeakMap<CanvasRenderingContext2D, { board: Uint8Array; width: number; height: number; image: ImageData }>();
+
 export function drawPlane(ctx: CanvasRenderingContext2D, board: Uint8Array, geometry: PlaneGeometry, selection: Cell): void {
-  const { cssSize, cellSize, dpr } = geometry;
-  const pixels = Math.max(1, Math.round(cssSize * dpr));
-  if (ctx.canvas.width !== pixels) ctx.canvas.width = pixels;
-  if (ctx.canvas.height !== pixels) ctx.canvas.height = pixels;
+  const { cssWidth, cssHeight, width, height, cellSize, dpr } = geometry;
+  const pixelWidth = Math.max(1, Math.round(cssWidth * dpr));
+  const pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
+  if (ctx.canvas.width !== pixelWidth) ctx.canvas.width = pixelWidth;
+  if (ctx.canvas.height !== pixelHeight) ctx.canvas.height = pixelHeight;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  // Shared integer backing-pixel boundaries keep cell fills opaque and erase the previous frame completely.
-  const boundaries = Array.from({ length: PLANE_SIZE + 1 }, (_, i) => Math.round((i * pixels) / PLANE_SIZE));
-  for (let y = 0; y < PLANE_SIZE; y++)
-    for (let x = 0; x < PLANE_SIZE; x++) {
-      ctx.fillStyle = CA_COLORS[board[y * PLANE_SIZE + x]];
-      ctx.fillRect(boundaries[x], boundaries[y], boundaries[x + 1] - boundaries[x], boundaries[y + 1] - boundaries[y]);
+  let frame = frames.get(ctx);
+  if (
+    !frame ||
+    frame.board !== board ||
+    frame.width !== width ||
+    frame.height !== height ||
+    frame.image.width !== pixelWidth ||
+    frame.image.height !== pixelHeight
+  ) {
+    const image = ctx.createImageData(pixelWidth, pixelHeight);
+    const columns = Uint32Array.from({ length: pixelWidth }, (_, x) => Math.max(0, Math.ceil(((x + 0.5) * width) / pixelWidth) - 1));
+    for (let y = 0; y < pixelHeight; y++) {
+      const row = Math.max(0, Math.ceil(((y + 0.5) * height) / pixelHeight) - 1) * width;
+      for (let x = 0; x < pixelWidth; x++) {
+        const color = board[row + columns[x]],
+          i = (y * pixelWidth + x) * 4;
+        image.data[i] = color & 2 ? 255 : 0;
+        image.data[i + 1] = color & 4 ? 255 : 0;
+        image.data[i + 2] = color & 1 ? 255 : 0;
+        image.data[i + 3] = 255;
+      }
     }
-  ctx.setTransform(pixels / cssSize, 0, 0, pixels / cssSize, 0, 0);
+    frame = { board, width, height, image };
+    frames.set(ctx, frame);
+  }
+  ctx.putImageData(frame.image, 0, 0);
+  ctx.setTransform(pixelWidth / cssWidth, 0, 0, pixelHeight / cssHeight, 0, 0);
   const x = selection.x * cellSize,
     y = selection.y * cellSize;
   ctx.strokeStyle = "#000000";

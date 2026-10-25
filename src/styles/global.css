@@ -263,6 +263,57 @@ svg text {
   color: var(--c-text-primary);
   font-size: inherit;
 }
+@supports (appearance: base-select) {
+  .automata-control select,
+  .automata-control select::picker(select) {
+    appearance: base-select;
+  }
+  .automata-control select {
+    min-height: max(44px, calc(2lh + 14px));
+    line-height: 1.4;
+  }
+  .automata-control select > button {
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: start;
+  }
+  .automata-control select > button > span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .automata-control select::picker-icon {
+    flex-shrink: 0;
+    color: var(--c-text-muted);
+  }
+  .automata-control select::picker(select) {
+    width: anchor-size(self-inline);
+    margin-block-start: 4px;
+    padding: 4px;
+    border: 1px solid var(--c-border-hover);
+    border-radius: 5px;
+    background: var(--c-bg-input);
+    color: var(--c-text-primary);
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: none;
+    position-try-order: normal;
+    max-block-size: stretch;
+    overflow: auto;
+  }
+  .automata-control option {
+    min-height: 36px;
+    padding: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .automata-control option:checked,
+  .automata-control option:hover,
+  .automata-control option:focus-visible {
+    background: var(--c-bg-surface-alt);
+  }
+}
 .automata-time {
   display: grid;
   grid-column: 1 / -1;
@@ -281,12 +332,15 @@ svg text {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
   gap: 8px;
 }
 .automata-actions button {
   min-width: 0;
-  min-height: 44px;
-  padding: 6px 8px;
+  min-height: 36px;
+  padding: 4px clamp(10px, 3cqw, 14px);
   border: 1px solid var(--c-border);
   border-radius: 5px;
   background: var(--c-bg-surface);
@@ -299,29 +353,24 @@ svg text {
   opacity: 0.45;
   cursor: default;
 }
-.automata-mode {
-  display: grid;
-  text-align: center;
-  color: var(--c-accent-bright);
-}
-.automata-mode > span {
-  grid-area: 1 / 1;
-}
 .automata-reserved {
   visibility: hidden;
   pointer-events: none;
 }
 .automata-palette {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 36px);
+  justify-content: center;
   gap: 6px;
+  padding-block: 4px;
 }
 .automata-color {
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
   border: 1px solid var(--c-border-hover);
   border-radius: 5px;
-  font-size: clamp(16px, 4cqw, 20px);
+  font-size: clamp(14px, 3.5cqw, 16px);
   font-weight: 600;
   cursor: pointer;
 }
@@ -339,11 +388,11 @@ svg text {
 }
 .automata-color-2 {
   background: #ff0000;
-  color: #000000;
+  color: #ffffff;
 }
 .automata-color-3 {
   background: #ff00ff;
-  color: #000000;
+  color: #ffffff;
 }
 .automata-color-4 {
   background: #00ff00;
@@ -360,19 +409,6 @@ svg text {
 .automata-color-7 {
   background: #ffffff;
   color: #000000;
-}
-.automata-stable-copy {
-  display: grid;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.automata-stable-copy > p {
-  grid-area: 1 / 1;
-  margin: 0;
-}
-.automata-selected-color {
-  text-align: center;
-  color: var(--c-text-muted);
 }
 .automata-canvas-group {
   display: grid;
@@ -394,7 +430,6 @@ svg text {
   box-sizing: content-box;
   width: 100%;
   height: auto;
-  aspect-ratio: 1;
   padding: 0;
   border: none;
   outline: none;
@@ -406,6 +441,9 @@ svg text {
 .automata-panel[data-mode="read"] .automata-board {
   cursor: default;
 }
+.automata-board[aria-busy="true"] {
+  opacity: 0.6;
+}
 .automata-board-frame:has(.automata-board:focus-visible),
 .automata-control select:focus-visible,
 .automata-time input:focus-visible,
@@ -413,18 +451,6 @@ svg text {
 .automata-actions button:focus-visible {
   outline: 2px solid var(--c-accent-bright);
   outline-offset: 3px;
-}
-.automata-hint {
-  margin: 0;
-  color: var(--c-text-dim);
-  font-size: clamp(10px, 2.4cqw, 12px);
-  overflow-wrap: anywhere;
-}
-.automata-readout {
-  padding: 8px;
-  border: 1px solid var(--c-border);
-  border-radius: 5px;
-  background: var(--c-bg-panel);
 }
 .automata-notice {
   margin: 0;
@@ -441,8 +467,13 @@ svg text {
   white-space: nowrap;
 }
 @container automata (min-width: 400px) {
+  @supports (appearance: base-select) {
+    .automata-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
   .automata-palette {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(8, 36px);
   }
 }
 button:focus-visible {

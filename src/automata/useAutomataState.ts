@@ -34,7 +34,7 @@ export function useAutomataState(): AutomataController {
   }, [publish]);
   const dispatch = useCallback(
     (action: AutomataAction) => {
-      const setting = action.type.startsWith("set-");
+      const setting = action.type.startsWith("set-") || action.type === "sync-source";
       if (setting) finishInteraction();
       const previous = current.current;
       const state = automataReducer(previous.state, action);

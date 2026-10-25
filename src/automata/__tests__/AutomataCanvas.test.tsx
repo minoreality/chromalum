@@ -31,7 +31,7 @@ describe("AutomataCanvas", () => {
       Object.defineProperty(context, "canvas", { value: this, configurable: true });
       return context;
     });
-    const paint = vi.spyOn(context, "fillRect");
+    const paint = vi.spyOn(context, "putImageData");
     const measure = vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 245, 245));
     const observe = vi.fn(),
       disconnect = vi.fn();
@@ -45,7 +45,7 @@ describe("AutomataCanvas", () => {
     expect(observe).not.toHaveBeenCalled();
     rerender(<Harness active={true} />);
     expect(observe).toHaveBeenCalledTimes(1);
-    expect(paint.mock.calls.length).toBeGreaterThanOrEqual(2401);
+    expect(paint).toHaveBeenCalled();
     const canvas = screen.getByRole("application") as HTMLCanvasElement;
     expect([canvas.width, canvas.height]).toEqual([245, 245]);
     const backing = [canvas.width, canvas.height];
@@ -65,7 +65,7 @@ describe("AutomataCanvas", () => {
   it("does not draw a zero-width plane", () => {
     const context = document.createElement("canvas").getContext("2d")!;
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
-    const paint = vi.spyOn(context, "fillRect");
+    const paint = vi.spyOn(context, "putImageData");
     vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 0, 0));
     render(<Harness active={true} />);
     expect(paint).not.toHaveBeenCalled();

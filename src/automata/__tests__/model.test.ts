@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { CA_RULES, evolvePlane, type AutomataRule } from "../model";
 import { GOLDEN_CASES, GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
-function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
+function binaryOracle(seed: Uint8Array, width: number, steps: number, rule: AutomataRule, height = width): Uint8Array {
   let current = seed.slice();
   for (let t = 0; t < steps; t++) {
     const next = new Uint8Array(seed.length);
     for (let bit = 0; bit < 3; bit++) {
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
           let count = 0;
           for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
@@ -19,13 +19,13 @@ function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: Autom
               if (!center && (rule === "diagonal" || rule === "diagonal-center") && !diagonal) continue;
               const xx = x + dx,
                 yy = y + dy;
-              if (xx >= 0 && xx < size && yy >= 0 && yy < size) count += (current[yy * size + xx] >> bit) & 1;
+              if (xx >= 0 && xx < width && yy >= 0 && yy < height) count += (current[yy * width + xx] >> bit) & 1;
             }
           }
-          const alive = Boolean(current[y * size + x] & (1 << bit));
+          const alive = Boolean(current[y * width + x] & (1 << bit));
           const on =
             rule === "life" ? count === 3 || (alive && count === 2) : rule === "rug" ? !alive && count >= 2 && count <= 4 : count % 2 === 1;
-          if (on) next[y * size + x] += 2 ** bit;
+          if (on) next[y * width + x] += 2 ** bit;
         }
       }
     }
@@ -35,6 +35,12 @@ function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: Autom
 }
 
 describe("evolvePlane", () => {
+  it("evolves a rectangular plane without wrapping rows", () => {
+    const seed = Uint8Array.from([0, 0, 7, 0, 0, 0]);
+    expect([...evolvePlane(seed, { width: 3, height: 2 }, 1, 4)]).toEqual([0, 7, 0, 0, 0, 7]);
+    expect([...evolvePlane(Uint8Array.from([4, 0, 2]), { width: 1, height: 3 }, 1, 4)]).toEqual([0, 6, 0]);
+    expect([...evolvePlane(Uint8Array.from([7]), { width: 1, height: 1 }, 1, 5)]).toEqual([7]);
+  });
   it("updates synchronously with black exterior", () => {
     const seed = Uint8Array.from([0, 0, 0, 0, 1, 0, 0, 0, 0]);
     expect([...evolvePlane(seed, 3, 1, 4)]).toEqual([0, 1, 0, 1, 0, 1, 0, 1, 0]);
@@ -48,6 +54,17 @@ describe("evolvePlane", () => {
     const before = seed.slice();
     expect(evolvePlane(seed, 5, 3, rule)).toEqual(binaryOracle(seed, 5, 3, rule));
     expect(seed).toEqual(before);
+  });
+  it.each(CA_RULES)("matches the binary oracle on thin, wide and tall images for %s", (rule) => {
+    for (const [width, height] of [
+      [1, 9],
+      [9, 1],
+      [8, 3],
+      [3, 8],
+    ]) {
+      const seed = Uint8Array.from({ length: width * height }, (_, i) => (i * 5 + 3) % 8);
+      expect(evolvePlane(seed, { width, height }, 4, rule)).toEqual(binaryOracle(seed, width, 4, rule, height));
+    }
   });
 
   it.each(GOLDEN_CASES)("matches reference $preset / $rule / t=$time", ({ preset, rule, time, rows }) => {

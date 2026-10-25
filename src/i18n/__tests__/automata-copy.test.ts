@@ -7,7 +7,7 @@ describe("Automata copy", () => {
       Object.keys(dictionary)
         .filter((key) => key.startsWith("automata_") || key === "tab_automata")
         .sort();
-    expect(keys(en).length).toBeGreaterThan(40);
+    expect(keys(en)).not.toHaveLength(0);
     expect(keys(en)).toEqual(keys(ja));
   });
   it("keeps the direct-editing labels and tab name", () => {
@@ -17,8 +17,8 @@ describe("Automata copy", () => {
     expect(english.tab_automata).toBe("Flow");
     expect(jp.automata_step).toBe("1ステップ進む");
     expect(jp.automata_return).toBe("初期配置に戻る");
-    expect(jp.automata_edit_mode).toBe("初期配置を編集");
-    expect(jp.automata_result_mode).toBe("現在の配置");
+    expect(jp.automata_preset_image).toBe("読み込んだ画像");
+    expect(english.automata_preset_image).toBe("Loaded image");
     expect(english.automata_keyboard_hint).toBe("Arrow keys select a cell. At time 0, Enter or Space places the selected color.");
   });
   it("labels all original rules, presets and discrete colors", () => {

@@ -1,4 +1,4 @@
-import { evolvePlane, PLANE_SIZE } from "./model";
+import { evolvePlane, PLANE_SIZE, resizePlane } from "./model";
 import type { CAColor } from "./model";
 
 export const AUTOMATA_PRESETS = [
@@ -17,7 +17,13 @@ export const AUTOMATA_PRESETS = [
 ] as const;
 export type AutomataPreset = (typeof AUTOMATA_PRESETS)[number];
 const CHANNELS = [4, 2, 1] as const;
-export function makePlaneSeed(preset: AutomataPreset): Uint8Array {
+export function makePlaneSeed(preset: AutomataPreset, width = PLANE_SIZE, height = PLANE_SIZE): Uint8Array {
+  const seed = createPreset(preset);
+  return width === PLANE_SIZE && height === PLANE_SIZE
+    ? seed
+    : resizePlane(seed, { width: PLANE_SIZE, height: PLANE_SIZE }, { width, height });
+}
+function createPreset(preset: AutomataPreset): Uint8Array {
   const size = PLANE_SIZE,
     c = Math.floor(size / 2);
   const seed = new Uint8Array(size * size);

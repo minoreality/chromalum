@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject, type CanvasHTMLAttributes } from "react";
 import type { AutomataController } from "./useAutomataState";
 import { cellsOnLine, hitTestCell, type PlaneGeometry } from "./geometry";
-import { PLANE_SIZE, type CAColor, type Cell } from "./model";
+import { type CAColor, type Cell } from "./model";
 type Handlers = Pick<
   CanvasHTMLAttributes<HTMLCanvasElement>,
   "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel" | "onLostPointerCapture" | "onKeyDown"
@@ -41,7 +41,7 @@ export function useAutomataInteraction({
     (clientX: number, clientY: number) => {
       const stroke = owner.current;
       if (!stroke) return;
-      const cell = hitTestCell(clientX, clientY, stroke.canvas.getBoundingClientRect());
+      const cell = hitTestCell(clientX, clientY, stroke.canvas.getBoundingClientRect(), getSnapshot().state);
       if (!cell) {
         stroke.last = null;
         return;
@@ -58,7 +58,7 @@ export function useAutomataInteraction({
   }, [active, revision, cancelInteraction]);
   useLayoutEffect(() => {
     cancelInteraction();
-  }, [geometry?.cssSize, geometry?.dpr, cancelInteraction]);
+  }, [geometry?.cssWidth, geometry?.cssHeight, geometry?.width, geometry?.height, geometry?.dpr, cancelInteraction]);
   useEffect(() => {
     const end = (event: PointerEvent) => {
       if (owner.current?.id === event.pointerId) cancelInteraction();
@@ -84,7 +84,7 @@ export function useAutomataInteraction({
       const canvas = canvasRef.current;
       if (!active || !geometry || !canvas || owner.current || !event.isPrimary || event.button !== 0) return;
       if ((event.pointerType === "mouse" || event.pointerType === "pen") && !(event.buttons & 1)) return;
-      if (!hitTestCell(event.clientX, event.clientY, canvas.getBoundingClientRect())) return;
+      if (!hitTestCell(event.clientX, event.clientY, canvas.getBoundingClientRect(), getSnapshot().state)) return;
       const snapshot = getSnapshot();
       owner.current = { id: event.pointerId, color: snapshot.state.color, revision: snapshot.revision, last: null, canvas };
       canvas.focus({ preventScroll: true });
@@ -139,8 +139,8 @@ export function useAutomataInteraction({
       if (delta)
         dispatch({
           type: "select-cell",
-          x: Math.max(0, Math.min(PLANE_SIZE - 1, state.x + delta.x)),
-          y: Math.max(0, Math.min(PLANE_SIZE - 1, state.y + delta.y)),
+          x: Math.max(0, Math.min(state.width - 1, state.x + delta.x)),
+          y: Math.max(0, Math.min(state.height - 1, state.y + delta.y)),
         });
       else if (state.time === 0) dispatch({ type: "paint-cells", cells: [{ x: state.x, y: state.y }], color: state.color });
     },

@@ -12,8 +12,23 @@ describe("Automata persistence", () => {
     expect(loadAutomataState()).toEqual({ state, persistenceUnavailable: false });
     expect(Object.keys(localStorage)).toEqual(["chromalum-automata-state-v1"]);
     const raw = JSON.parse(serializeAutomataState(state));
-    expect(raw.version).toBe(1);
-    expect(Object.keys(raw).sort()).toEqual(["color", "preset", "rule", "seed", "time", "version", "x", "y"]);
+    expect(raw.version).toBe(2);
+    expect(typeof raw.seed).toBe("string");
+  });
+  it("round-trips a maximum-size image plane within the local storage budget", () => {
+    const state = { ...createAutomataState(2048, 2048), preset: "image" as const, sourceKey: "image-key", time: 20 };
+    for (let i = 0; i < state.seed.length; i++) state.seed[i] = i % 8;
+    const serialized = serializeAutomataState(state);
+    expect(serialized.length * 2).toBeLessThan(5 * 1024 * 1024);
+    const restored = loadAutomataState({ getItem: () => serialized }).state;
+    expect({ ...restored, seed: null }).toEqual({ ...state, seed: null });
+    expect(restored.seed.length).toBe(state.seed.length);
+    expect(restored.seed.every((value, i) => value === state.seed[i])).toBe(true);
+  });
+  it.each([1, 2, 3, 5, 7, 9, 31])("preserves all bits for a %s-pixel row", (width) => {
+    const state = createAutomataState(width, 1);
+    for (let i = 0; i < width; i++) state.seed[i] = i % 8;
+    expect(loadAutomataState({ getItem: () => serializeAutomataState(state) }).state).toEqual(state);
   });
   it("resets broken JSON without claiming an API failure", () => {
     expect(loadAutomataState({ getItem: () => "{bad" })).toEqual({ state: createAutomataState(), persistenceUnavailable: false });

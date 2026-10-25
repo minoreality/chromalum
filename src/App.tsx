@@ -180,6 +180,13 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     patternInfo,
   } = app;
 
+  const initialCanvasLevels = useRef(canvasData.levelData);
+  // A failed restore leaves the placeholder canvas in memory. Do not use it to
+  // overwrite an independent saved Flow image; an explicit Source edit/import is usable.
+  const imageSourceReady =
+    app.loaded &&
+    ((app.persistenceIssue !== "restore-failed" && app.persistenceIssue !== "invalid") ||
+      canvasData.levelData !== initialCanvasLevels.current);
   const levelHistogram = state.levelHistogram;
   const [showAbout, setShowAbout] = useState(false);
   const [scrollToGallery, setScrollToGallery] = useState(false);
@@ -648,7 +655,12 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
             style={{ width: "100%", display: activeTabId === "automata" ? undefined : "none" }}
           >
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
-              <AutomataPanel active={activeTabId === "automata"} displayWidth={displayWidth} displayHeight={displayHeight} />
+              <AutomataPanel
+                active={activeTabId === "automata"}
+                displayWidth={displayWidth}
+                displayHeight={displayHeight}
+                image={imageSourceReady ? canvasData : null}
+              />
             </Suspense>
           </div>
         )}

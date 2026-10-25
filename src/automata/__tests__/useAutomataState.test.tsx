@@ -2,6 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutomataState } from "../useAutomataState";
+import { loadAutomataState } from "../persistence";
 
 afterEach(() => vi.restoreAllMocks());
 describe("useAutomataState", () => {
@@ -15,8 +16,8 @@ describe("useAutomataState", () => {
     expect(write).not.toHaveBeenCalled();
     act(() => result.current.finishInteraction());
     expect(write).toHaveBeenCalledTimes(1);
-    const stored = JSON.parse(localStorage.getItem("chromalum-automata-state-v1")!);
-    expect(stored.seed.slice(0, 20)).toEqual(Array(20).fill(7));
+    const stored = loadAutomataState().state;
+    expect(stored.seed.slice(0, 20)).toEqual(new Uint8Array(20).fill(7));
     expect([stored.x, stored.y]).toEqual([19, 0]);
     act(() => result.current.finishInteraction());
     expect(write).toHaveBeenCalledTimes(1);
@@ -29,7 +30,7 @@ describe("useAutomataState", () => {
       expect(result.current.getSnapshot().state.seed[0]).toBe(2);
       result.current.finishInteraction();
     });
-    expect(JSON.parse(localStorage.getItem("chromalum-automata-state-v1")!).seed[0]).toBe(2);
+    expect(loadAutomataState().state.seed[0]).toBe(2);
   });
   it("ends strokes and increments revision for setting commands", () => {
     const { result } = renderHook(() => useAutomataState());

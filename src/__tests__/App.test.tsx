@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { LanguageProvider } from "../i18n";
 import { loadStateWithStatus, recoverInvalidState } from "../utils/idb-persistence";
+import { createAutomataState } from "../automata/state";
+import { loadAutomataState, saveAutomataState } from "../automata/persistence";
 
 vi.mock("../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
@@ -24,6 +26,23 @@ function renderApp(lang: "en" | "ja" = "en") {
 }
 
 describe("App", () => {
+  it("preserves a saved Flow image when Source restoration fails", async () => {
+    const saved = { ...createAutomataState(80, 30), preset: "image" as const, sourceKey: "saved-source", time: 7 };
+    saved.seed[3] = 6;
+    saveAutomataState(saved);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(loadStateWithStatus).mockRejectedValueOnce(new Error("Temporary IndexedDB failure"));
+    window.history.replaceState(null, "", "/#automata");
+    renderApp();
+    await screen.findByTestId("automata-board", {}, { timeout: 15000 });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const restored = loadAutomataState().state;
+    expect([restored.width, restored.height, restored.time]).toEqual([80, 30, 7]);
+    expect(restored.seed).toEqual(saved.seed);
+    expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("7");
+  });
   it("keeps a cold Automata panel through tab changes even when saves are denied", async () => {
     window.history.replaceState(null, "", "/#automata");
     renderApp();
