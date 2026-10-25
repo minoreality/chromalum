@@ -32,7 +32,7 @@ export const en = {
   title_undo: "Undo (Ctrl+Z)",
   title_redo: "Redo (Ctrl+Y)",
   title_zoom_reset: "Reset zoom",
-  aria_zoom_reset: "Reset zoom (current {0}%)",
+  aria_zoom_reset: "{0}% — Reset zoom",
   label_size: "Size",
   aria_brush_size: "Brush size",
   aria_brush_size_decrease: "Decrease brush size",
@@ -64,7 +64,7 @@ export const en = {
   // HexDiagram
   hex_diagram_label: "Pure-hue loop color selection",
   hex_edge_label: "Level {0} color candidate ({1})",
-  hex_vertex_label: "{0} — Level {1}",
+  hex_vertex_label: "Level {1} — {0}",
   btn_random_color: "Randomize palette",
 
   random_patterns: "{0} patterns",
