@@ -54,7 +54,8 @@ describe("Automata state", () => {
   });
   it("keeps times bounded and refuses fractional selections", () => {
     const initial = createAutomataState();
-    expect(automataReducer(initial, { type: "set-time", time: 21 }).time).toBe(20);
+    expect(automataReducer(initial, { type: "set-time", time: 64 }).time).toBe(64);
+    expect(automataReducer(initial, { type: "set-time", time: 65 }).time).toBe(64);
     expect(automataReducer(initial, { type: "set-time", time: NaN })).toBe(initial);
     expect(automataReducer(initial, { type: "select-cell", x: 0.5, y: 1 })).toBe(initial);
   });
@@ -67,7 +68,7 @@ describe("Automata state", () => {
     ["preset", "wrong", "rosette"],
     ["rule", 90, 4],
     ["time", 1.5, 0],
-    ["time", 21, 0],
+    ["time", 65, 0],
     ["x", -1, 24],
     ["x", 49, 24],
     ["y", "0", 24],

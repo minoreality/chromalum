@@ -85,7 +85,7 @@ describe("Automata persistence", () => {
     expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["rosette", "life", 0, 24, 24, 1]);
   });
   it("round-trips edited data through its own key", () => {
-    const state = { ...createAutomataState(), time: 20, x: 48, color: 0 as const };
+    const state = { ...createAutomataState(), time: 64, x: 48, color: 0 as const };
     state.seed[0] = 7;
     expect(saveAutomataState(state)).toBe(true);
     expect(loadAutomataState()).toEqual({ state, persistenceUnavailable: false });

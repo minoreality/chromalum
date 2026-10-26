@@ -17,6 +17,12 @@ describe("Automata copy", () => {
     expect(english.tab_automata).toBe("Flow");
     expect(jp.automata_step).toBe("1ステップ進む");
     expect(jp.automata_return).toBe("初期配置に戻る");
+    expect(jp.automata_time).toBe("世代：{0} / {1}");
+    expect(english.automata_time).toBe("Generation: {0} / {1}");
+    expect(jp.automata_edit_mode).toBe("初期配置を編集");
+    expect(jp.automata_result_mode).toBe("結果を表示");
+    expect(english.automata_edit_mode).toBe("Edit initial pattern");
+    expect(english.automata_result_mode).toBe("View result");
     expect(english.automata_keyboard_hint).toBe("Arrow keys select a cell. At time 0, Enter or Space places the selected color.");
   });
   it("labels all original rules, presets and discrete colors", () => {

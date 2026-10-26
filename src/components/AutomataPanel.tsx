@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef } from "react";
 import { useTranslation, type TranslationFn } from "../i18n";
 import type { TranslationKey } from "../i18n/types";
-import { CA_RULES, MAX_TIME, PLANE_SIZE, evolvePlane, type AutomataRule, type CAColor } from "../automata/model";
+import { CA_RULES, MAX_TIME, PLANE_SIZE, evolveVisiblePlane, type AutomataRule, type CAColor } from "../automata/model";
 import { AUTOMATA_PRESETS, type AutomataPreset } from "../automata/presets";
 import { useAutomataState } from "../automata/useAutomataState";
 import { AutomataCanvas } from "../automata/AutomataCanvas";
@@ -56,7 +56,7 @@ export function AutomataPanel({
     id = useId();
   const controller = useAutomataState();
   const { state, dispatch } = controller;
-  const board = useMemo(() => evolvePlane(state.seed, PLANE_SIZE, state.time, state.rule), [state.seed, state.time, state.rule]);
+  const board = useMemo(() => evolveVisiblePlane(state.seed, state.time, state.rule), [state.seed, state.time, state.rule]);
   const index = state.y * PLANE_SIZE + state.x;
   const readout = readCell(t, state.x, state.y, state.seed[index] as CAColor, state.time, board[index] as CAColor);
   const liveRef = useRef<HTMLDivElement>(null);
@@ -128,17 +128,34 @@ export function AutomataPanel({
                   ))}
                 </select>
               </label>
-              <label className="automata-time">
-                <span>{t("automata_time", state.time)}</span>
+              <div className="automata-time">
+                <div className="automata-time-heading">
+                  <label className="automata-generation-label" htmlFor={id + "-time"}>
+                    <span>{t("automata_time", state.time, MAX_TIME)}</span>
+                    <span className="automata-reserved" aria-hidden="true">
+                      {t("automata_time", MAX_TIME, MAX_TIME)}
+                    </span>
+                  </label>
+                  <span className="automata-mode" id={id + "-mode"}>
+                    <span className={state.time === 0 ? undefined : "automata-reserved"} aria-hidden={state.time !== 0}>
+                      {t("automata_edit_mode")}
+                    </span>
+                    <span className={state.time === 0 ? "automata-reserved" : undefined} aria-hidden={state.time === 0}>
+                      {t("automata_result_mode")}
+                    </span>
+                  </span>
+                </div>
                 <input
+                  id={id + "-time"}
                   type="range"
+                  aria-describedby={id + "-mode"}
                   min={0}
                   max={MAX_TIME}
                   step={1}
                   value={state.time}
                   onChange={(event) => dispatch({ type: "set-time", time: Number(event.target.value) })}
                 />
-              </label>
+              </div>
               <div className="automata-actions">
                 <button
                   type="button"

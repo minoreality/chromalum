@@ -45,8 +45,11 @@ describe("AutomataPanel", () => {
     expect(within(screen.getByRole("combobox", { name: "Initial pattern" })).getAllByRole("option")).toHaveLength(12);
     expect(screen.getAllByRole("application").length).toBe(1);
   });
-  it("steps to time twenty and returns to the edited initial pattern", () => {
+  it("steps to generation 64 and returns to the edited initial pattern", () => {
     show();
+    expect(screen.getByRole("slider", { name: "Generation: 0 / 64" })).toBeTruthy();
+    expect(screen.getByText("Edit initial pattern").getAttribute("aria-hidden")).toBe("false");
+    expect(screen.getByText("View result").getAttribute("aria-hidden")).toBe("true");
     const canvas = screen.getByRole("application");
     canvas.focus();
     fireEvent.keyDown(canvas, { key: "Enter" });
@@ -54,15 +57,39 @@ describe("AutomataPanel", () => {
     expect(edited[24 * 49 + 24]).toBe(4);
     expect((screen.getByRole("button", { name: "Return to initial pattern" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
+    expect(screen.getByRole("slider", { name: "Generation: 1 / 64" })).toBeTruthy();
+    expect(screen.getByText("Edit initial pattern").getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("View result").getAttribute("aria-hidden")).toBe("false");
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
     const readout = screen.getByTestId("automata-live").textContent!;
     expect(readout).toContain("initial G Green");
     expect(readout).toContain("t=1 K Black");
-    fireEvent.change(screen.getByRole("slider"), { target: { value: "20" } });
+    expect((screen.getByRole("slider") as HTMLInputElement).max).toBe("64");
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "63" } });
+    expect((screen.getByRole("button", { name: "Advance one step" }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
+    expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("64");
+    expect(screen.getByRole("slider", { name: "Generation: 64 / 64" })).toBeTruthy();
     expect((screen.getByRole("button", { name: "Advance one step" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Return to initial pattern" }));
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("0");
+    expect(screen.getByRole("slider", { name: "Generation: 0 / 64" })).toBeTruthy();
+    expect(screen.getByText("Edit initial pattern").getAttribute("aria-hidden")).toBe("false");
+    expect(screen.getByText("View result").getAttribute("aria-hidden")).toBe("true");
     expect(loadAutomataState().state.seed).toEqual(edited);
+  });
+  it("keeps a Life blinker alive when its middle generation extends beyond the visible board", () => {
+    const seed = Array<number>(49 * 49).fill(0);
+    for (const y of [23, 24, 25]) seed[y * 49] = 7;
+    localStorage.setItem(
+      "chromalum-flow-state-v1",
+      JSON.stringify({ version: 1, seed, preset: "black", rule: "life", time: 0, x: 0, y: 24, color: 7 }),
+    );
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
+    fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
+    expect(screen.getByTestId("automata-live").textContent).toContain("t=2 W White");
+    expect(Array.from(loadAutomataState().state.seed)).toEqual(seed);
   });
   it("resets presets to editable time zero while keeping the selected rule and color", () => {
     show();
@@ -75,7 +102,7 @@ describe("AutomataPanel", () => {
     expect(stored.seed).toEqual(new Uint8Array(2401));
   });
   it("reuses the plane for palette and selection changes", () => {
-    const compute = vi.spyOn(model, "evolvePlane");
+    const compute = vi.spyOn(model, "evolveVisiblePlane");
     show();
     const before = compute.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: /^W White/ }));

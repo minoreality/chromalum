@@ -154,7 +154,7 @@ for (const viewport of [
       expect(box.width / box.height).toBeCloseTo(1, 2);
       expect(box.width).toBeCloseTo(originalBox.width, 0);
       expect(box.height).toBeCloseTo(originalBox.height, 0);
-      await expect(page.getByRole("slider")).toHaveValue("20");
+      await expect(page.getByRole("slider")).toHaveValue("64");
       await expect(page.getByRole("button", { name: "Advance one step", exact: true })).toBeDisabled();
       await expect(page.getByRole("combobox", { name: "Initial pattern", exact: true }).getByRole("option")).toHaveCount(12);
       expect(await savedState(page)).toEqual(edited);
@@ -163,7 +163,7 @@ for (const viewport of [
       await page.reload();
       await expect(board).toHaveAttribute("data-columns", "49");
       await expect(board).toHaveAttribute("data-rows", "49");
-      await expect(page.getByRole("slider")).toHaveValue("20");
+      await expect(page.getByRole("slider")).toHaveValue("64");
       expect(await savedState(page)).toEqual(edited);
       await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
       expect((await savedState(page)).seed).toEqual(edited.seed);
@@ -302,7 +302,7 @@ for (const width of [320, 1280]) {
   }
 }
 
-test("keeps the edited seed through 0 → 1 → 20 → 0 and makes results read-only", async ({ page }) => {
+test("keeps the edited seed through 0 → 1 → 64 → 0 and makes results read-only", async ({ page }) => {
   await openAutomata(page);
   await blank(page);
   await clickCell(page, 20, 20);
@@ -313,6 +313,7 @@ test("keeps the edited seed through 0 → 1 → 20 → 0 and makes results read-
   await stroke(page, [5, 5], [40, 40]);
   expect((await savedState(page)).seed).toEqual(seed);
   await page.getByRole("slider").press("End");
+  await expect(page.getByRole("slider")).toHaveValue("64");
   await expect(page.getByRole("button", { name: "Advance one step", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
   expect((await savedState(page)).seed).toEqual(seed);
@@ -323,6 +324,44 @@ test("keeps the edited seed through 0 → 1 → 20 → 0 and makes results read-
   await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("white");
   expect(await savedState(page)).toMatchObject({ time: 0, x: 24, y: 24, rule: "life", color: 3 });
 });
+
+for (const width of [390, 1280]) {
+  test(`keeps an edge Life blinker through generation 64 and reload at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openAutomata(page);
+    await blank(page);
+    await page.getByRole("combobox", { name: "Rule", exact: true }).selectOption("life");
+    await stroke(page, [0, 23], [0, 25]);
+    const seed = (await savedState(page)).seed;
+    const board = page.getByTestId("automata-board");
+    const size = await board.evaluate((node) => [node.getBoundingClientRect().width, node.getBoundingClientRect().height]);
+    const step = page.getByRole("button", { name: "Advance one step", exact: true });
+    await step.click();
+    await step.click();
+    // The missing left-hand cell in generation one must still revive the vertical blinker.
+    expect(await renderedCell(board, 0, 24)).toEqual([255, 255, 255, 255]);
+    expect(await renderedCell(board, 0, 23)).toEqual([255, 255, 255, 255]);
+    await page.getByRole("slider").press("End");
+    await expect(page.getByRole("slider")).toHaveValue("64");
+    await expect(step).toBeDisabled();
+    await page.getByRole("slider").press("ArrowLeft");
+    await expect(page.getByRole("slider")).toHaveValue("63");
+    await expect(step).toBeEnabled();
+    await step.click();
+    await expect(page.getByRole("slider")).toHaveValue("64");
+    expect(await renderedCell(board, 0, 24)).toEqual([255, 255, 255, 255]);
+    expect((await savedState(page)).seed).toEqual(seed);
+    await page.reload();
+    await expect(page.getByRole("slider")).toHaveValue("64");
+    await expect(board).toHaveAttribute("data-columns", "49");
+    await expect(board).toHaveAttribute("data-rows", "49");
+    expect(await board.evaluate((node) => [node.getBoundingClientRect().width, node.getBoundingClientRect().height])).toEqual(size);
+    expect(await renderedCell(board, 0, 24)).toEqual([255, 255, 255, 255]);
+    await page.getByRole("button", { name: "Return to initial pattern", exact: true }).click();
+    await expect(page.getByRole("slider")).toHaveValue("0");
+    expect((await savedState(page)).seed).toEqual(seed);
+  });
+}
 
 test("does not bridge outside excursions or resume after an outside release", async ({ page }) => {
   await openAutomata(page);
@@ -565,7 +604,14 @@ test.describe("native touch", () => {
 
 async function rectangles(page: Page) {
   return page.evaluate(() =>
-    [".automata-controls", ".automata-palette", ".automata-board", ".automata-notice-space"].map((selector) => {
+    [
+      ".automata-controls",
+      ".automata-palette",
+      ".automata-board",
+      ".automata-notice-space",
+      ".automata-time-heading",
+      ".automata-mode",
+    ].map((selector) => {
       const r = document.querySelector(selector)!.getBoundingClientRect();
       return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height };
     }),
@@ -608,11 +654,47 @@ for (const language of ["ja", "en"] as const) {
         const before = await rectangles(page);
         const step = page.getByRole("button", { name: language === "ja" ? "1ステップ進む" : "Advance one step", exact: true });
         const reset = page.getByRole("button", { name: language === "ja" ? "初期配置に戻る" : "Return to initial pattern", exact: true });
+        const editLabel = language === "ja" ? "初期配置を編集" : "Edit initial pattern";
+        const resultLabel = language === "ja" ? "結果を表示" : "View result";
+        const assertGeneration = async (generation: number) => {
+          const mode = generation === 0 ? editLabel : resultLabel;
+          const otherMode = generation === 0 ? resultLabel : editLabel;
+          await expect(page.getByRole("slider")).toHaveAccessibleName(
+            language === "ja" ? `世代：${generation} / 64` : `Generation: ${generation} / 64`,
+          );
+          await expect(page.getByRole("slider")).toHaveAccessibleDescription(mode);
+          await expect(page.getByText(mode, { exact: true })).toBeVisible();
+          await expect(page.getByText(otherMode, { exact: true })).not.toBeVisible();
+          const fits = await page.locator(".automata-time-heading").evaluate((heading) => {
+            const bounds = heading.getBoundingClientRect();
+            return Array.from(heading.querySelectorAll("span:not([aria-hidden='true'])"))
+              .filter((element) => element.children.length === 0)
+              .every((element) => {
+                const range = document.createRange();
+                range.selectNodeContents(element);
+                return Array.from(range.getClientRects()).every(
+                  (rect) =>
+                    rect.left >= bounds.left && rect.right <= bounds.right && rect.top >= bounds.top && rect.bottom <= bounds.bottom,
+                );
+              });
+          });
+          expect(fits).toBe(true);
+        };
+        await assertGeneration(0);
         await step.click();
+        await assertGeneration(1);
+        expect(await rectangles(page)).toEqual(before);
+        for (let generation = 2; generation <= 9; generation++) await page.getByRole("slider").press("ArrowRight");
+        await assertGeneration(9);
+        expect(await rectangles(page)).toEqual(before);
+        await page.getByRole("slider").press("ArrowRight");
+        await assertGeneration(10);
         expect(await rectangles(page)).toEqual(before);
         await page.getByRole("slider").press("End");
+        await assertGeneration(64);
         expect(await rectangles(page)).toEqual(before);
         await reset.click();
+        await assertGeneration(0);
         expect(await rectangles(page)).toEqual(before);
         await expect(board).toHaveCount(1);
         const buttons = await palette(page)

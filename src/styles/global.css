@@ -248,7 +248,7 @@ svg text {
   min-width: 0;
 }
 .automata-control > span,
-.automata-time > span {
+.automata-time-heading {
   color: var(--c-text-muted);
 }
 .automata-control select {
@@ -319,6 +319,26 @@ svg text {
   grid-column: 1 / -1;
   gap: 0;
   min-width: 0;
+}
+.automata-time-heading {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 2cqw, 12px);
+  align-items: start;
+}
+.automata-generation-label,
+.automata-mode {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.automata-generation-label > span,
+.automata-mode > span {
+  grid-area: 1 / 1;
+}
+.automata-mode {
+  color: var(--c-text-primary);
+  text-align: end;
 }
 .automata-time input {
   box-sizing: border-box;

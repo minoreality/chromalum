@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CA_RULES, evolvePlane, type AutomataRule } from "../model";
+import { CA_RULES, evolvePlane, evolveVisiblePlane, type AutomataRule } from "../model";
 import { GOLDEN_CASES, GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
 function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
@@ -71,9 +71,70 @@ describe("evolvePlane", () => {
 
   it("rejects invalid dimensions, times, cells and rules", () => {
     for (const size of [0, -1, 1.5, NaN]) expect(() => evolvePlane(new Uint8Array(9), size, 1, 4)).toThrow(RangeError);
-    for (const time of [-1, 21, 0.5, NaN]) expect(() => evolvePlane(new Uint8Array(9), 3, time, 4)).toThrow(RangeError);
+    for (const time of [-1, 65, 0.5, NaN]) expect(() => evolvePlane(new Uint8Array(9), 3, time, 4)).toThrow(RangeError);
     expect(() => evolvePlane(new Uint8Array(8), 3, 1, 4)).toThrow(RangeError);
     expect(() => evolvePlane(new Uint8Array(9).fill(8), 3, 1, 4)).toThrow(RangeError);
     expect(() => evolvePlane(new Uint8Array(9), 3, 1, "wrong" as AutomataRule)).toThrow(RangeError);
+  });
+});
+
+describe("evolveVisiblePlane", () => {
+  it.each([
+    [0, 0],
+    [48, 0],
+    [0, 48],
+    [48, 48],
+    [0, 24],
+    [48, 24],
+    [24, 0],
+    [24, 48],
+  ])("preserves XOR cancellation through the exterior at (%i, %i)", (x, y) => {
+    const seed = new Uint8Array(49 * 49);
+    seed[y * 49 + x] = 7;
+    // On the infinite plane the four return paths cancel in XOR after two steps.
+    const result = evolveVisiblePlane(seed, 2, 4);
+    const expected = new Uint8Array(seed.length);
+    for (const [xx, yy] of [
+      [x - 2, y],
+      [x + 2, y],
+      [x, y - 2],
+      [x, y + 2],
+    ]) {
+      if (xx >= 0 && xx < 49 && yy >= 0 && yy < 49) expected[yy * 49 + xx] = 7;
+    }
+    expect(result).toEqual(expected);
+    expect(seed[y * 49 + x]).toBe(7);
+  });
+
+  it.each(CA_RULES)("matches an independent larger binary plane through generation 64 for %s", (rule) => {
+    const seed = Uint8Array.from({ length: 49 * 49 }, (_, i) => (i % 11 === 0 ? ((i * 5) % 7) + 1 : 0));
+    const before = seed.slice();
+    // Two extra rows of padding on each side avoid sharing the production boundary.
+    const referenceSize = 181,
+      offset = 66;
+    const reference = new Uint8Array(referenceSize * referenceSize);
+    for (let y = 0; y < 49; y++) reference.set(seed.subarray(y * 49, (y + 1) * 49), (y + offset) * referenceSize + offset);
+    const evolved = binaryOracle(reference, referenceSize, 64, rule);
+    const result = evolveVisiblePlane(seed, 64, rule);
+    expect(result).toHaveLength(49 * 49);
+    for (let y = 0; y < 49; y++) {
+      const start = (y + offset) * referenceSize + offset;
+      expect(result.subarray(y * 49, (y + 1) * 49)).toEqual(evolved.subarray(start, start + 49));
+    }
+    expect(seed).toEqual(before);
+  });
+
+  it("returns a separate, unchanged initial window at generation zero", () => {
+    const seed = Uint8Array.from({ length: 49 * 49 }, (_, i) => i % 8);
+    const result = evolveVisiblePlane(seed, 0, "rug");
+    expect(result).toEqual(seed);
+    expect(result).not.toBe(seed);
+  });
+
+  it("rejects invalid visible planes, times and rules", () => {
+    expect(() => evolveVisiblePlane(new Uint8Array(2400), 0, 4)).toThrow(RangeError);
+    expect(() => evolveVisiblePlane(new Uint8Array(2401).fill(8), 0, 4)).toThrow(RangeError);
+    for (const time of [-1, 65, 0.5, NaN]) expect(() => evolveVisiblePlane(new Uint8Array(2401), time, 4)).toThrow(RangeError);
+    expect(() => evolveVisiblePlane(new Uint8Array(2401), 1, "wrong" as AutomataRule)).toThrow(RangeError);
   });
 });
