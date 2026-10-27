@@ -10,18 +10,19 @@ export function AutomataPalette({ color, onSelect }: { color: CAColor; onSelect:
     <div className="automata-palette" role="group" aria-label={t("automata_palette")}>
       {CA_LABELS.map((label, index) => {
         const value = index as CAColor,
-          name = getColorLabel(value, t);
+          hint = "GRB:" + value.toString(2).padStart(3, "0"),
+          name = value + " " + t("automata_color_" + value) + " · " + hint;
         return (
           <button
             type="button"
             key={label}
             className={"automata-color automata-color-" + value}
             aria-label={name}
-            title={name}
+            title={hint}
             aria-pressed={color === value}
             onClick={() => onSelect(value)}
           >
-            <span aria-hidden="true">{label}</span>
+            <span aria-hidden="true">{value}</span>
           </button>
         );
       })}

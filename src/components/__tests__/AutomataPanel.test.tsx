@@ -28,16 +28,26 @@ describe("AutomataPanel", () => {
       within(palette)
         .getAllByRole("button")
         .map((node) => node.getAttribute("aria-label")?.split(" ")[0]),
-    ).toEqual(["K", "B", "R", "M", "G", "C", "Y", "W"]);
+    ).toEqual(["0", "1", "2", "3", "4", "5", "6", "7"]);
     expect(
       within(palette)
-        .getByRole("button", { name: /^G Green/ })
+        .getAllByRole("button")
+        .map((node) => node.textContent),
+    ).toEqual(["0", "1", "2", "3", "4", "5", "6", "7"]);
+    expect(
+      within(palette)
+        .getAllByRole("button")
+        .map((node) => node.title),
+    ).toEqual(["GRB:000", "GRB:001", "GRB:010", "GRB:011", "GRB:100", "GRB:101", "GRB:110", "GRB:111"]);
+    expect(
+      within(palette)
+        .getByRole("button", { name: /^4 Green/ })
         .getAttribute("aria-pressed"),
     ).toBe("true");
-    fireEvent.click(within(palette).getByRole("button", { name: /^K Black/ }));
+    fireEvent.click(within(palette).getByRole("button", { name: /^0 Black/ }));
     expect(
       within(palette)
-        .getByRole("button", { name: /^K Black/ })
+        .getByRole("button", { name: /^0 Black/ })
         .getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.getAllByRole("combobox").length).toBe(2);
@@ -118,18 +128,18 @@ describe("AutomataPanel", () => {
     const preset = screen.getByRole("combobox", { name: "Initial pattern" }) as HTMLSelectElement;
     fireEvent.change(preset, { target: { value: "black" } });
     const canvas = screen.getByRole("application");
-    fireEvent.click(screen.getByRole("button", { name: /^K Black/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^0 Black/ }));
     fireEvent.keyDown(canvas, { key: "Enter" });
     expect(preset.value).toBe("black");
-    fireEvent.click(screen.getByRole("button", { name: /^W White/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
     fireEvent.keyDown(canvas, { key: "ArrowLeft" });
     expect(preset.value).toBe("black");
     fireEvent.keyDown(canvas, { key: "Enter" });
     expect(preset.selectedOptions[0].textContent).toBe("Edited pattern");
-    fireEvent.click(screen.getByRole("button", { name: /^K Black/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^0 Black/ }));
     fireEvent.keyDown(canvas, { key: "Enter" });
     expect(preset.value).toBe("black");
-    fireEvent.click(screen.getByRole("button", { name: /^W White/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
     fireEvent.keyDown(canvas, { key: "Enter" });
     fireEvent.change(screen.getByRole("slider"), { target: { value: "5" } });
     view.unmount();
@@ -156,7 +166,7 @@ describe("AutomataPanel", () => {
   it("resets presets to editable time zero while keeping the selected rule and color", () => {
     show();
     fireEvent.change(screen.getByRole("combobox", { name: "Update rule" }), { target: { value: "life" } });
-    fireEvent.click(screen.getByRole("button", { name: /^W White/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
     fireEvent.click(screen.getByRole("button", { name: "Next generation" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Initial pattern" }), { target: { value: "black" } });
     const stored = loadAutomataState().state;
@@ -167,7 +177,7 @@ describe("AutomataPanel", () => {
     const compute = vi.spyOn(model, "evolveVisiblePlane");
     show();
     const before = compute.mock.calls.length;
-    fireEvent.click(screen.getByRole("button", { name: /^W White/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
     fireEvent.keyDown(screen.getByRole("application"), { key: "ArrowLeft" });
     expect(compute.mock.calls.length).toBe(before);
     fireEvent.keyDown(screen.getByRole("application"), { key: "Enter" });

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const STORAGE_KEY = "chromalum-flow-state-v1";
-const LABELS = ["K", "B", "R", "M", "G", "C", "Y", "W"];
+const LABELS = ["0", "1", "2", "3", "4", "5", "6", "7"];
 type SavedAutomata = {
   version: number;
   seed: number[];
