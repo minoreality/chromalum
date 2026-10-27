@@ -10,18 +10,25 @@ export function AutomataCanvas({
   board,
   label,
   description,
+  editable,
+  testId = "automata-board",
+  busy = false,
 }: {
   active: boolean;
   controller: AutomataController;
   board: Uint8Array;
   label: string;
   description: string;
+  editable?: boolean;
+  testId?: string;
+  busy?: boolean;
 }): React.JSX.Element {
   const ref = useRef<HTMLCanvasElement>(null),
     id = useId();
   const [geometry, setGeometry] = useState<PlaneGeometry | null>(null);
   const measured = useRef<PlaneGeometry | null>(null);
-  const { cancelInteraction, ...handlers } = useAutomataInteraction({ canvasRef: ref, active, controller, geometry });
+  const { cancelInteraction, cursorCell, ...handlers } = useAutomataInteraction({ canvasRef: ref, active, controller, geometry, editable });
+  const canEdit = editable ?? controller.state.time === 0;
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!active || !canvas) return;
@@ -51,24 +58,37 @@ export function AutomataCanvas({
   useLayoutEffect(() => {
     if (!active || !geometry) return;
     const ctx = ref.current?.getContext("2d");
-    if (ctx) drawPlane(ctx, board, geometry, { x: controller.state.x, y: controller.state.y });
-  }, [active, board, geometry, controller.state.x, controller.state.y]);
+    if (ctx) drawPlane(ctx, board, geometry, canEdit ? null : { x: controller.state.x, y: controller.state.y });
+  }, [active, board, geometry, controller.state.x, controller.state.y, canEdit]);
   return (
     <div className="automata-canvas-group">
       <div className="automata-board-frame">
         <canvas
           className="automata-board"
-          data-testid="automata-board"
+          data-testid={testId}
+          data-editable={canEdit}
           data-columns={PLANE_SIZE}
           data-rows={PLANE_SIZE}
           ref={ref}
           role="application"
           aria-label={label}
           aria-describedby={id}
+          aria-busy={busy}
           tabIndex={0}
-          onBlur={cancelInteraction}
           {...handlers}
         />
+        {cursorCell && geometry && (
+          <span
+            className="automata-cell-cursor"
+            aria-hidden="true"
+            style={{
+              left: `${(cursorCell.x * 100) / PLANE_SIZE}%`,
+              top: `${(cursorCell.y * 100) / PLANE_SIZE}%`,
+              width: `${100 / PLANE_SIZE}%`,
+              height: `${100 / PLANE_SIZE}%`,
+            }}
+          />
+        )}
       </div>
       <p className="automata-sr-only" id={id}>
         {description}

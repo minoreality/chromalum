@@ -1,9 +1,22 @@
 export type CAColor = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type Cell = { x: number; y: number };
-export type AutomataRule = 4 | 5 | "diagonal" | "diagonal-center" | 8 | 9 | "life" | "rug";
+export type AutomataRule = 4 | 5 | "diagonal" | "diagonal-center" | 8 | 9 | "life" | "rug" | "or" | "and" | "majority" | "hamming";
 export const PLANE_SIZE = 49;
 export const MAX_TIME = 64;
-export const CA_RULES: readonly AutomataRule[] = [4, 5, "diagonal", "diagonal-center", 8, 9, "life", "rug"];
+export const CA_RULES: readonly AutomataRule[] = [
+  4,
+  5,
+  "diagonal",
+  "diagonal-center",
+  8,
+  9,
+  "or",
+  "and",
+  "majority",
+  "hamming",
+  "life",
+  "rug",
+];
 export const CA_LABELS = ["K", "B", "R", "M", "G", "C", "Y", "W"] as const;
 export const CA_COLORS = ["#000000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#ffffff"] as const;
 type Offset = readonly [number, number];
@@ -29,6 +42,10 @@ const OFFSETS: Record<AutomataRule, readonly Offset[]> = {
   9: [...AROUND, [0, 0]],
   life: AROUND,
   rug: AROUND,
+  or: [...CROSS, [0, 0]],
+  and: [...CROSS, [0, 0]],
+  majority: [...CROSS, [0, 0]],
+  hamming: CROSS,
 };
 
 /** Synchronous updates of discrete GRB states; cells outside the plane are K. */
@@ -48,27 +65,33 @@ export function evolvePlane(seed: Uint8Array, size: number, steps: number, rule:
   let current = seed.slice();
   let next = new Uint8Array(seed.length);
   const offsets = OFFSETS[rule];
-  const xor = rule !== "life" && rule !== "rug";
+  const counting = rule === "life" || rule === "rug" || rule === "majority";
   for (let t = 0; t < steps; t++) {
     next.fill(0);
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         const i = y * size + x;
-        let value = 0;
+        let value = rule === "and" ? 7 : rule === "hamming" ? current[i] : 0;
         const counts = [0, 0, 0];
         for (const [dx, dy] of offsets) {
           const xx = x + dx,
             yy = y + dy;
-          if (xx < 0 || xx >= size || yy < 0 || yy >= size) continue;
-          const neighbor = current[yy * size + xx];
-          if (xor) value ^= neighbor;
-          else for (let bit = 0; bit < 3; bit++) counts[bit] += (neighbor >> bit) & 1;
+          const neighbor = xx < 0 || xx >= size || yy < 0 || yy >= size ? 0 : current[yy * size + xx];
+          if (rule === "or") value |= neighbor;
+          else if (rule === "and") value &= neighbor;
+          else if (rule === "hamming") {
+            const difference = current[i] ^ neighbor;
+            // A nonzero power of two changes exactly one GRB channel.
+            if (difference !== 0 && (difference & (difference - 1)) === 0) value ^= difference;
+          } else if (counting) {
+            for (let bit = 0; bit < 3; bit++) counts[bit] += (neighbor >> bit) & 1;
+          } else value ^= neighbor;
         }
-        if (!xor) {
+        if (counting) {
           for (let bit = 0; bit < 3; bit++) {
             const alive = Boolean(current[i] & (1 << bit)),
               n = counts[bit];
-            const active = rule === "life" ? n === 3 || (alive && n === 2) : !alive && n >= 2 && n <= 4;
+            const active = rule === "majority" ? n >= 3 : rule === "life" ? n === 3 || (alive && n === 2) : !alive && n >= 2 && n <= 4;
             if (active) value |= 1 << bit;
           }
         }

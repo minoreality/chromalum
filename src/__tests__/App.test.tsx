@@ -70,7 +70,7 @@ describe("App", () => {
       if (key === "chromalum-flow-state-v1") throw new Error("Denied");
       original.call(this, key, value);
     });
-    fireEvent.click(screen.getByRole("button", { name: "Advance one step" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next generation" }));
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
     fireEvent.click(screen.getByRole("tab", { name: "Source" }));
     fireEvent.click(screen.getByRole("tab", { name: "Flow" }));

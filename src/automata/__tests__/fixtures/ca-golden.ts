@@ -3,7 +3,8 @@ import type { AutomataPreset } from "../../presets";
 // Reference SHA-256: ca-model.cjs 6B43CF04149EE63A4CE085D2C20764F44918BDEA0AE426C8CFBC8F009370CC9C
 // Reference SHA-256: chromalum-ca-lab.html A688A9FFE8E0F5D1937E9D988C4575F5546FCF214BF360A5F29C4ADC0C69BDE2
 // Fixed reference planes; the application and CI never load the external model.
-export const GOLDEN_SEEDS: Record<AutomataPreset, readonly string[]> = {
+type ReferencePreset = Exclude<AutomataPreset, "or-spread" | "and-core" | "majority-cleanup" | "hamming-boundary">;
+export const GOLDEN_SEEDS: Record<ReferencePreset, readonly string[]> = {
   rosette: [
     "0000000000000000000000000000000000000000000000000",
     "0000000000000000000000000000000000000000000000000",
@@ -617,7 +618,7 @@ export const GOLDEN_SEEDS: Record<AutomataPreset, readonly string[]> = {
     "0000000000000000000000000000000000000000000000000",
   ],
 };
-export const GOLDEN_CASES: readonly { preset: AutomataPreset; rule: AutomataRule; time: number; rows: readonly string[] }[] = [
+export const GOLDEN_CASES: readonly { preset: ReferencePreset; rule: AutomataRule; time: number; rows: readonly string[] }[] = [
   {
     preset: "rosette",
     rule: 4,

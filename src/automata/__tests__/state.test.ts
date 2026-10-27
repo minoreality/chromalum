@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { automataReducer, createAutomataState, restoreAutomataState } from "../state";
 import { decodeRows, GOLDEN_SEEDS } from "./fixtures/ca-golden";
+import { CA_RULES } from "../model";
+import { AUTOMATA_PRESETS, makePlaneSeed } from "../presets";
+import { serializeAutomataState } from "../persistence";
 
 const saved = () => ({ version: 1, seed: Array<number>(2401).fill(2), preset: "rgb", rule: "life", time: 20, x: 48, y: 0, color: 0 });
 describe("Automata state", () => {
+  it("round-trips every rule and preset while preserving edits, color and generation", () => {
+    for (const rule of CA_RULES)
+      for (const preset of AUTOMATA_PRESETS) {
+        const seed = makePlaneSeed(preset);
+        seed[0] = 6;
+        const state = { ...createAutomataState(), seed, preset, rule, time: 64, color: 3 as const };
+        expect(restoreAutomataState(JSON.parse(serializeAutomataState(state)))).toEqual(state);
+      }
+  });
   it("opens the editable rosette at the center with green", () => {
     const state = createAutomataState();
     expect([state.rule, state.preset, state.time, state.x, state.y, state.color]).toEqual([4, "rosette", 0, 24, 24, 4]);
@@ -28,11 +40,21 @@ describe("Automata state", () => {
     expect([...erased.seed.slice(0, 2)]).toEqual([0, 7]);
     expect(automataReducer(erased, { type: "paint-cells", cells: [{ x: 0, y: 0 }], color: 0 })).toBe(erased);
   });
-  it("does not paint results or discard edits when returning to time zero", () => {
+  it("edits the initial pattern without changing the observed generation", () => {
     const painted = automataReducer(createAutomataState(), { type: "paint-cells", cells: [{ x: 0, y: 0 }], color: 7 });
     const result = automataReducer(painted, { type: "set-time", time: 20 });
-    expect(automataReducer(result, { type: "paint-cells", cells: [{ x: 1, y: 0 }], color: 2 })).toBe(result);
-    expect(automataReducer(result, { type: "set-time", time: 0 }).seed).toBe(painted.seed);
+    const edited = automataReducer(result, { type: "paint-cells", cells: [{ x: 1, y: 0 }], color: 2 });
+    expect([...edited.seed.slice(0, 2)]).toEqual([7, 2]);
+    expect(edited.time).toBe(20);
+    expect(result.seed[1]).toBe(0);
+    expect(automataReducer(edited, { type: "set-time", time: 0 }).seed).toBe(edited.seed);
+  });
+  it("can replace the initial pattern while retaining the observed generation", () => {
+    const state = { ...createAutomataState(), time: 64, rule: "life" as const };
+    const edited = automataReducer(state, { type: "set-preset", preset: "white", preserveTime: true });
+    expect(edited.time).toBe(64);
+    expect(edited.rule).toBe("life");
+    expect(edited.seed).toEqual(decodeRows(GOLDEN_SEEDS.white));
   });
   it("selects and changes color without changing the seed, rule or time", () => {
     const initial = { ...createAutomataState(), time: 7 };

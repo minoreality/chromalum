@@ -11,7 +11,7 @@ export interface AutomataState {
 }
 export type AutomataAction =
   | { type: "set-rule"; rule: AutomataRule }
-  | { type: "set-preset"; preset: AutomataPreset }
+  | { type: "set-preset"; preset: AutomataPreset; preserveTime?: boolean }
   | { type: "set-time"; time: number }
   | { type: "set-color"; color: CAColor }
   | { type: "select-cell"; x: number; y: number }
@@ -51,7 +51,7 @@ export function automataReducer(state: AutomataState, action: AutomataAction): A
       return CA_RULES.includes(action.rule) && state.rule !== action.rule ? { ...state, rule: action.rule } : state;
     case "set-preset":
       return AUTOMATA_PRESETS.includes(action.preset)
-        ? { ...state, preset: action.preset, seed: makePlaneSeed(action.preset), time: 0, x: 24, y: 24 }
+        ? { ...state, preset: action.preset, seed: makePlaneSeed(action.preset), time: action.preserveTime ? state.time : 0, x: 24, y: 24 }
         : state;
     case "set-time": {
       if (!Number.isInteger(action.time)) return state;
@@ -63,7 +63,7 @@ export function automataReducer(state: AutomataState, action: AutomataAction): A
     case "select-cell":
       return validCell(action) && (state.x !== action.x || state.y !== action.y) ? { ...state, x: action.x, y: action.y } : state;
     case "paint-cells": {
-      if (state.time !== 0 || !integer(action.color, 0, 7)) return state;
+      if (!integer(action.color, 0, 7)) return state;
       let seed = state.seed;
       let last: Cell | undefined;
       for (const cell of action.cells) {

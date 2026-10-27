@@ -157,7 +157,7 @@ test("pre-caches the production app shell and works offline", async ({ page, con
 
   await page.getByRole("tab", { name: "Flow", exact: true }).click();
   await expect(page.getByRole("heading", { name: "CELLULAR AUTOMATA", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Advance one step", exact: true }).click();
+  await page.getByRole("button", { name: "Next generation", exact: true }).click();
   await expect(page.getByRole("slider")).toHaveValue("1");
 
   await page.getByRole("tab", { name: "Theory" }).click();

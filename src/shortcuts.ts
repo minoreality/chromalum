@@ -130,6 +130,8 @@ export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
                 ? [{ key: "Ctrl+C / ⌘C", label: "help_copy_gallery_preview" }]
                 : tab === "theory"
                   ? THEORY_SHORTCUTS
-                  : [];
+                  : tab === "automata"
+                    ? [{ key: "0-7", label: "help_automata_draw" }]
+                    : [];
   return [...own, ...COMMON_SHORTCUTS];
 }

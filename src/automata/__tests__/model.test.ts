@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CA_RULES, evolvePlane, evolveVisiblePlane, type AutomataRule } from "../model";
 import { GOLDEN_CASES, GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
-function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
+function referenceOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
   let current = seed.slice();
   for (let t = 0; t < steps; t++) {
     const next = new Uint8Array(seed.length);
@@ -14,17 +14,35 @@ function binaryOracle(seed: Uint8Array, size: number, steps: number, rule: Autom
             for (let dx = -1; dx <= 1; dx++) {
               const center = dx === 0 && dy === 0;
               const diagonal = dx !== 0 && dy !== 0;
-              if (center && ![5, 9, "diagonal-center"].includes(rule)) continue;
-              if (!center && (rule === 4 || rule === 5) && diagonal) continue;
+              if (center && ![5, 9, "diagonal-center", "or", "and", "majority"].includes(rule)) continue;
+              if (!center && [4, 5, "or", "and", "majority", "hamming"].includes(rule) && diagonal) continue;
               if (!center && (rule === "diagonal" || rule === "diagonal-center") && !diagonal) continue;
               const xx = x + dx,
                 yy = y + dy;
-              if (xx >= 0 && xx < size && yy >= 0 && yy < size) count += (current[yy * size + xx] >> bit) & 1;
+              const neighbor = xx >= 0 && xx < size && yy >= 0 && yy < size ? current[yy * size + xx] : 0;
+              if (rule === "hamming") {
+                const here = current[y * size + x];
+                const distance =
+                  Number((here & 1) !== (neighbor & 1)) + Number((here & 2) !== (neighbor & 2)) + Number((here & 4) !== (neighbor & 4));
+                if (distance === 1 && ((here >> bit) & 1) !== ((neighbor >> bit) & 1)) count++;
+              } else count += (neighbor >> bit) & 1;
             }
           }
           const alive = Boolean(current[y * size + x] & (1 << bit));
           const on =
-            rule === "life" ? count === 3 || (alive && count === 2) : rule === "rug" ? !alive && count >= 2 && count <= 4 : count % 2 === 1;
+            rule === "or"
+              ? count > 0
+              : rule === "and"
+                ? count === 5
+                : rule === "majority"
+                  ? count >= 3
+                  : rule === "hamming"
+                    ? alive !== (count % 2 === 1)
+                    : rule === "life"
+                      ? count === 3 || (alive && count === 2)
+                      : rule === "rug"
+                        ? !alive && count >= 2 && count <= 4
+                        : count % 2 === 1;
           if (on) next[y * size + x] += 2 ** bit;
         }
       }
@@ -43,10 +61,10 @@ describe("evolvePlane", () => {
     expect(evolvePlane(seed, 3, 0, 4)).not.toBe(seed);
   });
 
-  it.each(CA_RULES)("matches the independent binary oracle for %s", (rule) => {
+  it.each(CA_RULES)("matches the independent reference oracle for %s", (rule) => {
     const seed = Uint8Array.from({ length: 25 }, (_, i) => (i * 5 + 3) % 8);
     const before = seed.slice();
-    expect(evolvePlane(seed, 5, 3, rule)).toEqual(binaryOracle(seed, 5, 3, rule));
+    expect(evolvePlane(seed, 5, 3, rule)).toEqual(referenceOracle(seed, 5, 3, rule));
     expect(seed).toEqual(before);
   });
 
@@ -106,7 +124,7 @@ describe("evolveVisiblePlane", () => {
     expect(seed[y * 49 + x]).toBe(7);
   });
 
-  it.each(CA_RULES)("matches an independent larger binary plane through generation 64 for %s", (rule) => {
+  it.each(CA_RULES)("matches an independent larger plane through generation 64 for %s", (rule) => {
     const seed = Uint8Array.from({ length: 49 * 49 }, (_, i) => (i % 11 === 0 ? ((i * 5) % 7) + 1 : 0));
     const before = seed.slice();
     // Two extra rows of padding on each side avoid sharing the production boundary.
@@ -114,7 +132,7 @@ describe("evolveVisiblePlane", () => {
       offset = 66;
     const reference = new Uint8Array(referenceSize * referenceSize);
     for (let y = 0; y < 49; y++) reference.set(seed.subarray(y * 49, (y + 1) * 49), (y + offset) * referenceSize + offset);
-    const evolved = binaryOracle(reference, referenceSize, 64, rule);
+    const evolved = referenceOracle(reference, referenceSize, 64, rule);
     const result = evolveVisiblePlane(seed, 64, rule);
     expect(result).toHaveLength(49 * 49);
     for (let y = 0; y < 49; y++) {

@@ -14,6 +14,10 @@ export const AUTOMATA_PRESETS = [
   "rgb",
   "white",
   "black",
+  "or-spread",
+  "and-core",
+  "majority-cleanup",
+  "hamming-boundary",
 ] as const;
 export type AutomataPreset = (typeof AUTOMATA_PRESETS)[number];
 const CHANNELS = [4, 2, 1] as const;
@@ -27,6 +31,49 @@ export function makePlaneSeed(preset: AutomataPreset): Uint8Array {
     if (x >= 0 && x < size && y >= 0 && y < size) target[y * size + x] |= color;
   };
   switch (preset) {
+    case "or-spread":
+      for (const [x, y, color] of [
+        [-10, -6, 4],
+        [10, -6, 2],
+        [0, 10, 1],
+      ] as const)
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) put(x + dx, y + dy, color);
+      return seed;
+    case "and-core":
+      for (const [x, y, left, right] of [
+        [-11, -9, 3, 6],
+        [11, -9, 5, 6],
+        [0, 11, 3, 5],
+      ] as const)
+        for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) put(x + dx, y + dy, dx < 0 ? left : dx > 0 ? right : 7);
+      return seed;
+    case "majority-cleanup":
+      for (const [x, y, color] of [
+        [-11, -8, 4],
+        [11, -8, 2],
+        [0, 11, 1],
+      ] as const) {
+        for (let dy = -4; dy <= 4; dy++)
+          for (let dx = -4; dx <= 4; dx++) {
+            if ((dx === 0 && dy === 0) || (dx === -2 && dy === 1) || (dx === 2 && dy === -1)) continue;
+            put(x + dx, y + dy, color);
+          }
+        for (const [dx, dy] of [
+          [-5, 0],
+          [5, 0],
+          [-7, -6],
+          [7, 6],
+        ])
+          put(x + dx, y + dy, color);
+      }
+      return seed;
+    case "hamming-boundary":
+      for (const [y, right] of [
+        [-9, 6],
+        [9, 5],
+      ] as const)
+        for (let dy = -4; dy <= 4; dy++) for (let dx = -12; dx < 12; dx++) put(dx, y + dy, dx < 0 ? 2 : right);
+      return seed;
     case "black":
       return seed;
     case "white":

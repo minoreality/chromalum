@@ -7,15 +7,26 @@ import { useAutomataInteraction } from "../useAutomataInteraction";
 import { useAutomataState } from "../useAutomataState";
 import { loadAutomataState } from "../persistence";
 
-function Harness({ active = true, size = 245 }: { active?: boolean; size?: number }) {
+function Harness({ active = true, size = 245, editable }: { active?: boolean; size?: number; editable?: boolean }) {
   const controller = useAutomataState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const geometry = useMemo(() => getPlaneGeometry(size, 1), [size]);
-  const { cancelInteraction, ...handlers } = useAutomataInteraction({ canvasRef, active, controller, geometry });
+  const {
+    cancelInteraction: _cancelInteraction,
+    cursorCell: _cursorCell,
+    ...handlers
+  } = useAutomataInteraction({
+    canvasRef,
+    active,
+    controller,
+    geometry,
+    editable,
+  });
   return (
     <>
-      <canvas ref={canvasRef} role="application" tabIndex={0} onBlur={cancelInteraction} {...handlers} />
+      <canvas ref={canvasRef} role="application" tabIndex={0} {...handlers} />
       <output data-testid="seed">{Array.from(controller.state.seed).join("")}</output>
+      <output data-testid="color">{controller.state.color}</output>
       <output data-testid="selected">
         {controller.state.x},{controller.state.y},{controller.state.time}
       </output>
@@ -51,7 +62,162 @@ beforeEach(() => {
   });
 });
 afterEach(() => vi.restoreAllMocks());
+describe("Automata numeric drawing", () => {
+  beforeEach(() => {
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => screen.queryByRole("application")),
+    });
+  });
+  it("selects and stamps all eight colors at the keyboard cursor, including black to erase", () => {
+    render(<Harness />);
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    for (const color of [7, 0, 1, 2, 3, 4, 5, 6, 7]) {
+      fireEvent.keyDown(canvas, { key: String(color) });
+      expect(seed().slice(0, 3)).toBe(`0${color}0`);
+      expect(screen.getByTestId("color").textContent).toBe(String(color));
+      expect(loadAutomataState().state.seed[1]).toBe(color);
+    }
+  });
+  it("stamps a hovered cell without a click, then follows arrow selection and renewed pointer motion", () => {
+    render(<Harness editable={true} />);
+    fireEvent.click(screen.getByRole("button", { name: "time" }));
+    const canvas = screen.getByRole("application");
+    fireEvent.pointerMove(canvas, pointer(2, 0, { buttons: 0 }));
+    fireEvent.keyDown(document.body, { key: "4", code: "Numpad4" });
+    expect(seed().slice(0, 5)).toBe("00400");
+    expect(document.activeElement).toBe(canvas);
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.keyDown(canvas, { key: "5" });
+    expect(seed().slice(0, 5)).toBe("00450");
+    fireEvent.pointerMove(canvas, pointer(6, 0, { buttons: 0 }));
+    fireEvent.keyDown(canvas, { key: "1" });
+    expect(seed().slice(0, 8)).toBe("00450010");
+    expect(loadAutomataState().state.time).toBe(1);
+  });
+  it.each(["leave", "covered", "blur", "inactive"])("discards the pointer target after %s", (reason) => {
+    const { rerender } = render(<Harness />);
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    fireEvent.pointerMove(canvas, pointer(2, 0, { buttons: 0 }));
+    if (reason === "leave") fireEvent.pointerLeave(canvas);
+    else if (reason === "covered") vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
+    else if (reason === "blur") fireEvent(window, new Event("blur"));
+    else rerender(<Harness active={false} />);
+    fireEvent.keyDown(canvas, { key: "7" });
+    expect(seed()).toBe("0".repeat(2401));
+    expect(screen.getByTestId("color").textContent).toBe("2");
+  });
+  it.each(["result", "later-generation"])("keeps %s read-only for both pointer and keyboard targets", (kind) => {
+    render(<Harness {...(kind === "result" ? { editable: false } : {})} />);
+    if (kind === "later-generation") fireEvent.click(screen.getByRole("button", { name: "time" }));
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    fireEvent.keyDown(canvas, { key: "7" });
+    fireEvent.pointerMove(canvas, pointer(2, 0, { buttons: 0 }));
+    fireEvent.keyDown(canvas, { key: "7" });
+    expect(seed()).toBe("0".repeat(2401));
+    expect(screen.getByTestId("color").textContent).toBe("2");
+  });
+  it("keeps the keyboard target when scrolling causes a pointer leave without pointer motion", () => {
+    render(<Harness />);
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    fireEvent.pointerMove(canvas, pointer(2, 0, { buttons: 0 }));
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.pointerLeave(canvas);
+    fireEvent.keyDown(canvas, { key: "7" });
+    expect(seed().slice(0, 3)).toBe("070");
+  });
+  it("stops using the keyboard target after actual pointer motion outside the canvas", () => {
+    render(<Harness />);
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.pointerLeave(canvas);
+    fireEvent.pointerMove(document.body, pointer(50, 0, { buttons: 0 }));
+    fireEvent.keyDown(canvas, { key: "7" });
+    expect(seed()).toBe("0".repeat(2401));
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.keyDown(canvas, { key: "7" });
+    expect(seed().slice(0, 4)).toBe("0070");
+  });
+  it("leaves modified, composing, repeated and already handled keys alone", () => {
+    render(<Harness />);
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    for (const extra of [
+      { altKey: true },
+      { ctrlKey: true },
+      { metaKey: true },
+      { shiftKey: true },
+      { isComposing: true },
+      { repeat: true },
+    ]) {
+      fireEvent.keyDown(canvas, { key: "7", ...extra });
+    }
+    const event = new KeyboardEvent("keydown", { key: "7", bubbles: true, cancelable: true });
+    event.preventDefault();
+    fireEvent(canvas, event);
+    expect(seed()).toBe("0".repeat(2401));
+    expect(screen.getByTestId("color").textContent).toBe("2");
+  });
+  it.each(["select", "input", "dialog"])("leaves numbers with the active %s", (kind) => {
+    render(<Harness />);
+    const control = document.createElement(kind === "dialog" ? "button" : kind);
+    const host = document.createElement("div");
+    if (kind === "dialog") {
+      host.setAttribute("role", "dialog");
+      host.setAttribute("aria-modal", "true");
+    }
+    host.append(control);
+    document.body.append(host);
+    try {
+      control.focus();
+      fireEvent.pointerMove(screen.getByRole("application"), pointer(2, 0, { buttons: 0 }));
+      fireEvent.keyDown(control, { key: "7" });
+      expect(seed()).toBe("0".repeat(2401));
+      expect(screen.getByTestId("color").textContent).toBe("2");
+    } finally {
+      host.remove();
+    }
+  });
+  it("does not interrupt a pointer stroke or change its color", () => {
+    render(<Harness />);
+    const canvas = screen.getByRole("application");
+    fireEvent.pointerDown(canvas, pointer(0, 0));
+    fireEvent.keyDown(canvas, { key: "7" });
+    fireEvent.pointerMove(canvas, pointer(2, 0));
+    fireEvent.pointerUp(canvas, pointer(2, 0, { buttons: 0 }));
+    expect(seed().slice(0, 4)).toBe("2220");
+    expect(screen.getByTestId("color").textContent).toBe("2");
+  });
+});
 describe("Automata pointer interaction", () => {
+  it("edits the initial pattern while observing a later generation", () => {
+    render(<Harness editable={true} />);
+    fireEvent.click(screen.getByRole("button", { name: "time" }));
+    const canvas = screen.getByRole("application");
+    fireEvent.pointerDown(canvas, pointer(1, 0));
+    fireEvent.pointerUp(canvas, pointer(1, 0, { buttons: 0 }));
+    expect(seed().slice(0, 3)).toBe("020");
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.keyDown(canvas, { key: "Enter" });
+    expect(seed().slice(0, 4)).toBe("0220");
+    expect(loadAutomataState().state.time).toBe(1);
+  });
+  it("keeps the result canvas read-only even at generation zero", () => {
+    render(<Harness editable={false} />);
+    const canvas = screen.getByRole("application");
+    const before = seed();
+    fireEvent.pointerDown(canvas, pointer(1, 0));
+    fireEvent.pointerUp(canvas, pointer(1, 0, { buttons: 0 }));
+    fireEvent.keyDown(canvas, { key: "Enter" });
+    expect(seed()).toBe(before);
+    expect(screen.getByTestId("selected").textContent).toBe("1,0,0");
+  });
   it("paints the clicked cell and erases it with black", () => {
     render(<Harness />);
     const canvas = screen.getByRole("application");
@@ -128,8 +294,10 @@ describe("Automata pointer interaction", () => {
     const canvas = screen.getByRole("application");
     canvas.focus();
     fireEvent.keyDown(canvas, { key: "ArrowLeft" });
+    fireEvent.keyUp(canvas, { key: "ArrowLeft" });
     expect(screen.getByTestId("selected").textContent).toBe("0,0,0");
     fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.keyUp(canvas, { key: "ArrowRight" });
     fireEvent.keyDown(canvas, { key: "Enter" });
     expect(seed().slice(0, 3)).toBe("020");
     fireEvent.keyDown(canvas, { key: "ArrowDown", altKey: true });
@@ -142,5 +310,42 @@ describe("Automata pointer interaction", () => {
     fireEvent.keyDown(canvas, { key: " " });
     expect(seed()).toBe(before);
     expect(screen.getByTestId("selected").textContent).toBe("1,1,1");
+  });
+  it("combines held arrow directions and removes released or opposing directions", () => {
+    render(<Harness />);
+    const canvas = screen.getByRole("application");
+    fireEvent.pointerDown(canvas, pointer(10, 10));
+    fireEvent.pointerUp(canvas, pointer(10, 10, { buttons: 0 }));
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    fireEvent.keyDown(canvas, { key: "ArrowUp" });
+    expect(screen.getByTestId("selected").textContent).toBe("12,9,0");
+    fireEvent.keyDown(canvas, { key: "ArrowUp", repeat: true });
+    expect(screen.getByTestId("selected").textContent).toBe("13,8,0");
+    fireEvent.keyUp(canvas, { key: "ArrowUp" });
+    fireEvent.keyDown(canvas, { key: "ArrowRight", repeat: true });
+    expect(screen.getByTestId("selected").textContent).toBe("14,8,0");
+    fireEvent.keyDown(canvas, { key: "ArrowLeft" });
+    expect(screen.getByTestId("selected").textContent).toBe("14,8,0");
+    fireEvent.keyUp(canvas, { key: "ArrowRight" });
+    fireEvent.keyDown(canvas, { key: "ArrowLeft", repeat: true });
+    expect(screen.getByTestId("selected").textContent).toBe("13,8,0");
+    fireEvent.keyUp(canvas, { key: "ArrowLeft" });
+    fireEvent.keyDown(canvas, { key: "7" });
+    expect(seed()[8 * 49 + 13]).toBe("7");
+  });
+  it.each(["blur", "inactive", "focus"])("clears held directions after %s", (reason) => {
+    const { rerender } = render(<Harness />);
+    const canvas = screen.getByRole("application");
+    canvas.focus();
+    fireEvent.keyDown(canvas, { key: "ArrowRight" });
+    if (reason === "blur") fireEvent(window, new Event("blur"));
+    else if (reason === "focus") screen.getByRole("button", { name: "G" }).focus();
+    else {
+      rerender(<Harness active={false} />);
+      rerender(<Harness />);
+    }
+    canvas.focus();
+    fireEvent.keyDown(canvas, { key: "ArrowDown" });
+    expect(screen.getByTestId("selected").textContent).toBe("1,1,0");
   });
 });

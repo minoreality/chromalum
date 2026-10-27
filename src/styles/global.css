@@ -199,12 +199,12 @@ svg text {
   }
 }
 
-/* Automata: one editable plane and a permanently available discrete palette. */
+/* Automata: compare the editable seed and its evolution when the container is wide. */
 .automata-panel {
   box-sizing: border-box;
   width: 100%;
   margin: 0 auto;
-  container-name: automata;
+  container-name: automata-layout;
   container-type: inline-size;
   color: var(--c-text-primary);
   font-family: var(--font-mono);
@@ -222,6 +222,7 @@ svg text {
   line-height: 14px;
 }
 .automata-content {
+  --automata-comparison: 0;
   font-size: clamp(11px, 2.6cqw, 13px);
   line-height: 1.6;
 }
@@ -247,6 +248,18 @@ svg text {
   gap: 4px;
   min-width: 0;
 }
+.automata-rule-hint {
+  display: grid;
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: clamp(11px, 2.6cqw, 12px);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.automata-rule-hint > span {
+  grid-area: 1 / 1;
+}
 .automata-control > span,
 .automata-time-heading {
   color: var(--c-text-muted);
@@ -271,6 +284,7 @@ svg text {
   .automata-control select {
     min-height: max(44px, calc(2lh + 14px));
     line-height: 1.4;
+    align-items: center;
   }
   .automata-control select > button {
     min-width: 0;
@@ -332,8 +346,7 @@ svg text {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.automata-generation-label > span,
-.automata-mode > span {
+.automata-generation-label > span {
   grid-area: 1 / 1;
 }
 .automata-mode {
@@ -373,61 +386,83 @@ svg text {
   opacity: 0.45;
   cursor: default;
 }
+.automata-actions .automata-return {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
 .automata-reserved {
   visibility: hidden;
   pointer-events: none;
 }
 .automata-palette {
+  --automata-swatch-size: 36px;
   display: grid;
-  grid-template-columns: repeat(4, 36px);
+  grid-template-columns: repeat(4, var(--automata-swatch-size));
   justify-content: center;
-  gap: 6px;
-  padding-block: 4px;
+  gap: 18px 6px;
+  padding-block: 4px 12px;
 }
 .automata-color {
-  min-width: 36px;
-  min-height: 36px;
+  position: relative;
+  min-width: var(--automata-swatch-size);
+  min-height: var(--automata-swatch-size);
   padding: 0;
   border: 1px solid var(--c-border-hover);
   border-radius: 5px;
+  background: var(--automata-swatch-color);
   font-size: clamp(14px, 3.5cqw, 16px);
   font-weight: 600;
   cursor: pointer;
 }
-.automata-color[aria-pressed="true"] {
-  outline: 2px solid var(--c-accent-bright);
-  outline-offset: 2px;
+.automata-color::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: -10px;
+  width: 12px;
+  border-block-end: 3px solid var(--c-accent-bright);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+.automata-color[aria-pressed="true"]::after {
+  opacity: 1;
+}
+.automata-color:hover:not(:disabled) {
+  background: var(--automata-swatch-color);
+  border-color: var(--c-accent-bright);
 }
 .automata-color-0 {
-  background: #000000;
+  --automata-swatch-color: #000000;
   color: #ffffff;
 }
 .automata-color-1 {
-  background: #0000ff;
+  --automata-swatch-color: #0000ff;
   color: #ffffff;
 }
 .automata-color-2 {
-  background: #ff0000;
+  --automata-swatch-color: #ff0000;
   color: #ffffff;
 }
 .automata-color-3 {
-  background: #ff00ff;
+  --automata-swatch-color: #ff00ff;
   color: #ffffff;
 }
 .automata-color-4 {
-  background: #00ff00;
+  --automata-swatch-color: #00ff00;
   color: #000000;
 }
 .automata-color-5 {
-  background: #00ffff;
+  --automata-swatch-color: #00ffff;
   color: #000000;
 }
 .automata-color-6 {
-  background: #ffff00;
+  --automata-swatch-color: #ffff00;
   color: #000000;
 }
 .automata-color-7 {
-  background: #ffffff;
+  --automata-swatch-color: #ffffff;
   color: #000000;
 }
 .automata-canvas-group {
@@ -438,6 +473,7 @@ svg text {
   min-width: 0;
 }
 .automata-board-frame {
+  position: relative;
   box-sizing: content-box;
   justify-self: center;
   width: var(--display-max, 100%);
@@ -456,11 +492,18 @@ svg text {
   outline: none;
   background: #000000;
   image-rendering: pixelated;
-  cursor: crosshair;
+  cursor: none;
   touch-action: none;
 }
-.automata-panel[data-mode="read"] .automata-board {
+.automata-board[data-editable="false"] {
   cursor: default;
+}
+.automata-cell-cursor {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 1px solid #ffffff;
+  box-shadow: inset 0 0 0 1px #000000;
 }
 .automata-board-frame:has(.automata-board:focus-visible),
 .automata-control select:focus-visible,
@@ -491,7 +534,59 @@ svg text {
     }
   }
   .automata-palette {
-    grid-template-columns: repeat(8, 36px);
+    grid-template-columns: repeat(8, var(--automata-swatch-size));
+  }
+}
+@container automata (min-width: 440px) {
+  .automata-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .automata-actions .automata-return {
+    grid-column: auto;
+    justify-self: stretch;
+  }
+}
+@container automata-layout (min-width: 960px) {
+  .automata-content {
+    --automata-comparison: 1;
+  }
+  .automata-comparison {
+    --automata-gap: clamp(16px, 2.5cqw, 32px);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--automata-gap);
+    width: min(100%, calc(2 * var(--display-max) + var(--automata-gap) + 4px));
+    margin-inline: auto;
+  }
+  .automata-pane {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    align-content: start;
+    gap: clamp(8px, 1cqw, 12px);
+    min-width: 0;
+  }
+  .automata-pane-title {
+    margin: 0;
+    font-size: inherit;
+    font-weight: 400;
+    text-align: center;
+    color: var(--c-text-muted);
+  }
+  .automata-comparison .automata-board-frame {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .automata-comparison .automata-tools {
+    align-content: start;
+  }
+  .automata-comparison .automata-palette {
+    --automata-swatch-size: clamp(36px, 9cqw, 40px);
+    grid-template-columns: repeat(8, var(--automata-swatch-size));
+  }
+  @supports (appearance: base-select) {
+    .automata-comparison .automata-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 }
 button:focus-visible {

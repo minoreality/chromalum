@@ -1,7 +1,7 @@
 import { CA_COLORS, PLANE_SIZE, type Cell } from "./model";
 import type { PlaneGeometry } from "./geometry";
 
-export function drawPlane(ctx: CanvasRenderingContext2D, board: Uint8Array, geometry: PlaneGeometry, selection: Cell): void {
+export function drawPlane(ctx: CanvasRenderingContext2D, board: Uint8Array, geometry: PlaneGeometry, selection: Cell | null): void {
   const { cssSize, cellSize, dpr } = geometry;
   const pixels = Math.max(1, Math.round(cssSize * dpr));
   if (ctx.canvas.width !== pixels) ctx.canvas.width = pixels;
@@ -15,6 +15,7 @@ export function drawPlane(ctx: CanvasRenderingContext2D, board: Uint8Array, geom
       ctx.fillStyle = CA_COLORS[board[y * PLANE_SIZE + x]];
       ctx.fillRect(boundaries[x], boundaries[y], boundaries[x + 1] - boundaries[x], boundaries[y + 1] - boundaries[y]);
     }
+  if (!selection) return;
   ctx.setTransform(pixels / cssSize, 0, 0, pixels / cssSize, 0, 0);
   const x = selection.x * cellSize,
     y = selection.y * cellSize;
