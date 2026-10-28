@@ -112,7 +112,7 @@ const THEORY_SHORTCUTS: readonly ShortcutEntry[] = [
 ];
 
 /** Visible controls and standard history keys do not need duplicate help rows. */
-const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "Alt+1-7", label: "help_switch_tab" }];
+const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "Alt+1-8", label: "help_switch_tab" }];
 
 export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
   const own: readonly ShortcutEntry[] =
@@ -130,6 +130,8 @@ export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
                 ? [{ key: "Ctrl+C / ⌘C", label: "help_copy_gallery_preview" }]
                 : tab === "theory"
                   ? THEORY_SHORTCUTS
-                  : [];
+                  : tab === "automata"
+                    ? [{ key: "0-7", label: "help_automata_draw" }]
+                    : [];
   return [...own, ...COMMON_SHORTCUTS];
 }

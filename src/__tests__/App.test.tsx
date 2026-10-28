@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { LanguageProvider } from "../i18n";
 import { loadStateWithStatus, recoverInvalidState } from "../utils/idb-persistence";
+import { createAutomataState } from "../automata/state";
+import { loadAutomataState, saveAutomataState } from "../automata/persistence";
 
 vi.mock("../utils/idb-persistence", () => ({
   SAVED_STATE_VERSION: 1,
@@ -24,6 +26,57 @@ function renderApp(lang: "en" | "ja" = "en") {
 }
 
 describe("App", () => {
+  it.each(["loaded", "failed"])("preserves a saved fixed Flow when Source restoration is %s", async (status) => {
+    const saved = { ...createAutomataState(), preset: "black" as const, time: 7 };
+    saved.seed[3] = 6;
+    saveAutomataState(saved);
+    if (status === "failed") {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(loadStateWithStatus).mockRejectedValueOnce(new Error("Temporary IndexedDB failure"));
+    } else {
+      vi.mocked(loadStateWithStatus).mockResolvedValueOnce({
+        status: "loaded",
+        state: {
+          version: 4,
+          revision: 1,
+          width: 80,
+          height: 30,
+          levelData: new Uint8Array(2400).fill(7),
+          candidateIndexByLevel: Array(8).fill(0),
+        },
+      });
+    }
+    window.history.replaceState(null, "", "/#automata");
+    renderApp();
+    const board = await screen.findByTestId("automata-board", {}, { timeout: 15000 });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(loadAutomataState().state).toEqual(saved);
+    expect(board.getAttribute("data-columns")).toBe("49");
+    expect(board.getAttribute("data-rows")).toBe("49");
+    expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("7");
+  });
+  it("keeps a cold Automata panel through tab changes even when saves are denied", async () => {
+    window.history.replaceState(null, "", "/#automata");
+    renderApp();
+    expect(document.title).toBe("CHROMALUM - Flow");
+    fireEvent.click(screen.getByRole("tab", { name: "Source" }));
+    const board = await screen.findByTestId("automata-board", {}, { timeout: 15000 });
+    fireEvent.click(screen.getByRole("tab", { name: "Flow" }));
+    expect(screen.getByRole("application", { name: "Cellular automaton board" })).toBe(board);
+    const original = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === "chromalum-flow-state-v1") throw new Error("Denied");
+      original.call(this, key, value);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next generation" }));
+    expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
+    fireEvent.click(screen.getByRole("tab", { name: "Source" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Flow" }));
+    expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
+    expect(screen.getByRole("application", { name: "Cellular automaton board" })).toBe(board);
+  });
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();

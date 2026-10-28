@@ -177,6 +177,429 @@ svg text {
 }
 
 /* Focus indicators */
+/* Eight main tabs share a fixed label style, including when selected. */
+.app-tablist {
+  container-name: app-tabs;
+  container-type: inline-size;
+}
+.app-tablist > button[role="tab"] {
+  --sp-tab-h: clamp(2px, 0.8cqw, 4px);
+}
+.app-tab-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  font-weight: 400;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+@container app-tabs (max-width: 360px) {
+  .app-tab-label {
+    font-size: clamp(10px, 3cqw, 11px);
+  }
+}
+
+/* Automata: compare the editable seed and its evolution when the container is wide. */
+.automata-panel {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 auto;
+  container-name: automata-layout;
+  container-type: inline-size;
+  color: var(--c-text-primary);
+  font-family: var(--font-mono);
+}
+.automata-heading {
+  text-align: center;
+  margin-bottom: 6px;
+}
+.automata-heading h2 {
+  margin: 0;
+  color: var(--c-text-dim);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 14px;
+}
+.automata-content {
+  --automata-comparison: 0;
+  font-size: clamp(11px, 2.6cqw, 13px);
+  line-height: 1.6;
+}
+.automata-sidebar {
+  container-name: automata;
+  container-type: inline-size;
+  min-width: 0;
+}
+.automata-tools {
+  display: grid;
+  gap: clamp(8px, 2cqw, 12px);
+  width: 100%;
+  font-size: clamp(11px, 2.6cqw, 13px);
+  line-height: 1.6;
+}
+.automata-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(8px, 2cqw, 12px);
+}
+.automata-control {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.automata-rule-hint {
+  display: grid;
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: clamp(11px, 2.6cqw, 12px);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.automata-rule-hint > span {
+  grid-area: 1 / 1;
+}
+.automata-control > span,
+.automata-time-heading {
+  color: var(--c-text-muted);
+}
+.automata-control select {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px;
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  background: var(--c-bg-input);
+  color: var(--c-text-primary);
+  font-size: inherit;
+}
+@supports (appearance: base-select) {
+  .automata-control select,
+  .automata-control select::picker(select) {
+    appearance: base-select;
+  }
+  .automata-control select {
+    min-height: max(44px, calc(2lh + 14px));
+    line-height: 1.4;
+    align-items: center;
+  }
+  .automata-control select > button {
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: start;
+  }
+  .automata-control select > button > span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .automata-control select::picker-icon {
+    flex-shrink: 0;
+    color: var(--c-text-muted);
+  }
+  .automata-control select::picker(select) {
+    width: anchor-size(self-inline);
+    margin-block-start: 4px;
+    padding: 4px;
+    border: 1px solid var(--c-border-hover);
+    border-radius: 5px;
+    background: var(--c-bg-input);
+    color: var(--c-text-primary);
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: none;
+    position-try-order: normal;
+    max-block-size: stretch;
+    overflow: auto;
+  }
+  .automata-control option {
+    min-height: 36px;
+    padding: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .automata-control option:checked,
+  .automata-control option:hover,
+  .automata-control option:focus-visible {
+    background: var(--c-bg-surface-alt);
+  }
+}
+.automata-time {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0;
+  min-width: 0;
+}
+.automata-time-heading {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 2cqw, 12px);
+  align-items: start;
+}
+.automata-generation-label,
+.automata-mode {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.automata-generation-label > span {
+  grid-area: 1 / 1;
+}
+.automata-mode {
+  color: var(--c-text-primary);
+  text-align: end;
+}
+.automata-time input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--c-accent-bright);
+}
+.automata-actions {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+  gap: 8px;
+}
+.automata-actions button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px clamp(10px, 3cqw, 14px);
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  background: var(--c-bg-surface);
+  color: var(--c-text-primary);
+  line-height: inherit;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.automata-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.automata-reserved {
+  visibility: hidden;
+  pointer-events: none;
+}
+.automata-palette {
+  --automata-swatch-size: 36px;
+  --automata-palette-gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(8, var(--automata-swatch-size));
+  justify-content: center;
+  gap: var(--automata-palette-gap);
+  padding-block: 4px 12px;
+}
+.automata-color {
+  position: relative;
+  min-width: var(--automata-swatch-size);
+  min-height: var(--automata-swatch-size);
+  padding: 0;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 5px;
+  background: var(--automata-swatch-color);
+  font-size: clamp(14px, 3.5cqw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+}
+.automata-color::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: -10px;
+  width: 12px;
+  border-block-end: 3px solid var(--c-accent-bright);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+.automata-color[aria-pressed="true"]::after {
+  opacity: 1;
+}
+.automata-color:hover:not(:disabled) {
+  background: var(--automata-swatch-color);
+  border-color: var(--c-accent-bright);
+}
+.automata-color-0 {
+  --automata-swatch-color: #000000;
+  color: #ffffff;
+}
+.automata-color-1 {
+  --automata-swatch-color: #0000ff;
+  color: #ffffff;
+}
+.automata-color-2 {
+  --automata-swatch-color: #ff0000;
+  color: #ffffff;
+}
+.automata-color-3 {
+  --automata-swatch-color: #ff00ff;
+  color: #ffffff;
+}
+.automata-color-4 {
+  --automata-swatch-color: #00ff00;
+  color: #000000;
+}
+.automata-color-5 {
+  --automata-swatch-color: #00ffff;
+  color: #000000;
+}
+.automata-color-6 {
+  --automata-swatch-color: #ffff00;
+  color: #000000;
+}
+.automata-color-7 {
+  --automata-swatch-color: #ffffff;
+  color: #000000;
+}
+.automata-canvas-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  gap: 8px;
+  min-width: 0;
+}
+.automata-board-frame {
+  position: relative;
+  box-sizing: content-box;
+  justify-self: center;
+  width: var(--display-max, 100%);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.automata-board {
+  display: block;
+  box-sizing: content-box;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: #000000;
+  image-rendering: pixelated;
+  cursor: none;
+  touch-action: none;
+}
+.automata-board[data-editable="false"] {
+  cursor: default;
+}
+.automata-cell-cursor {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 1px solid #ffffff;
+  box-shadow: inset 0 0 0 1px #000000;
+}
+.automata-board-frame:has(.automata-board:focus-visible),
+.automata-control select:focus-visible,
+.automata-time input:focus-visible,
+.automata-color:focus-visible,
+.automata-actions button:focus-visible {
+  outline: 2px solid var(--c-accent-bright);
+  outline-offset: 3px;
+}
+.automata-notice {
+  margin: 0;
+  color: var(--c-warning);
+  overflow-wrap: anywhere;
+}
+.automata-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@container automata (width < 400px) {
+  .automata-palette {
+    --automata-palette-gap: clamp(2px, 1cqw, 6px);
+    --automata-swatch-size: clamp(24px, calc((100cqw - 7 * var(--automata-palette-gap)) / 8), 36px);
+  }
+}
+@container automata (min-width: 300px) {
+  @supports (appearance: base-select) {
+    .automata-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+@container automata (width < 400px) {
+  .automata-control {
+    font-size: clamp(11px, 2.6cqw, 13px);
+  }
+  .automata-control select {
+    column-gap: clamp(2px, 0.8cqw, 4px);
+  }
+}
+@container automata (width < 440px) {
+  .automata-actions {
+    gap: clamp(4px, 1.5cqw, 8px);
+  }
+  .automata-actions button {
+    padding-inline: clamp(4px, 1.5cqw, 10px);
+  }
+}
+@container automata-layout (min-width: 960px) {
+  .automata-content {
+    --automata-comparison: 1;
+  }
+  .automata-comparison {
+    --automata-gap: clamp(16px, 2.5cqw, 32px);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--automata-gap);
+    width: min(100%, calc(2 * var(--display-max) + var(--automata-gap) + 4px));
+    margin-inline: auto;
+  }
+  .automata-pane {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    align-content: start;
+    gap: clamp(8px, 1cqw, 12px);
+    min-width: 0;
+  }
+  .automata-pane-title {
+    margin: 0;
+    font-size: inherit;
+    font-weight: 400;
+    text-align: center;
+    color: var(--c-text-muted);
+  }
+  .automata-comparison .automata-board-frame {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .automata-comparison .automata-tools {
+    align-content: start;
+  }
+  .automata-comparison .automata-palette {
+    --automata-swatch-size: clamp(24px, calc((100cqw - 7 * var(--automata-palette-gap)) / 8), clamp(36px, 9cqw, 40px));
+  }
+  @supports (appearance: base-select) {
+    .automata-comparison .automata-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+@container automata (width < 320px) {
+  .automata-comparison .automata-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 button:focus-visible {
   outline: 2px solid var(--c-accent, #6080ff);
   outline-offset: 2px;
@@ -368,6 +791,12 @@ input[type="checkbox"]:focus-visible {
 .hex-diag-wrap {
   max-width: 462px;
 }
+.panel-layout > .panel-sidebar.hex-palette-switcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  width: min(420px, var(--app-inline-content-width));
+}
 .hex-palette-switcher {
   position: relative;
   touch-action: pan-y pinch-zoom;
@@ -379,18 +808,17 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 .hex-palette-view {
-  /* The diagram retains the sidebar's original flex items and spacing. */
-  display: contents;
-}
-.hex-palette-view[data-view="list"] {
-  position: absolute;
-  inset: 0;
+  /* Both views reserve their full height so switching never moves the page. */
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
-  container: hex-palette / inline-size;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
   min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
+}
+.hex-palette-view[data-view="list"] {
+  container: hex-palette / inline-size;
 }
 .hex-palette-view[data-active="false"] {
   visibility: hidden;
@@ -501,33 +929,27 @@ input[type="checkbox"]:focus-visible {
 }
 @container hex-palette (max-width: 360px) {
   .hex-list-row {
-    display: grid;
-    grid-template-columns: max-content max-content minmax(0, 1fr);
-    row-gap: 3px;
+    gap: clamp(2px, 0.7cqw, 3px);
+    padding-inline: clamp(2px, 0.8cqw, 3px);
   }
   .hex-list-level {
-    grid-column: 1;
-    grid-row: 1;
+    gap: 3px;
+    font-size: 10px;
   }
-  .hex-list-current {
-    grid-column: 2;
-    grid-row: 1;
+  .hex-list-gray {
+    width: 14px;
+    height: 14px;
+  }
+  .hex-list-current-swatch,
+  .hex-list-arrow {
+    width: 22px;
   }
   .hex-list-equation {
-    grid-column: 3;
-    grid-row: 1;
-    justify-content: flex-start;
-    font-size: clamp(9px, 3cqw, 10px);
-  }
-  .hex-list-row[data-multiple="true"] .hex-list-equation {
-    grid-column: 2 / -1;
-    grid-row: 2;
-    padding-bottom: 4px;
+    gap: 1px;
+    font-size: clamp(9px, 2.7cqw, 10px);
   }
   .hex-list-candidates {
-    grid-column: 3;
-    grid-row: 1;
-    width: max-content;
+    gap: 2px;
   }
   .hex-list-row[data-multiple="false"] .hex-list-candidates {
     display: none;

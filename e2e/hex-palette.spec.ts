@@ -79,6 +79,50 @@ async function hold(page: Page, client: CDPSession, at: { x: number; y: number }
   await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
 
+for (const viewport of [
+  { width: 459, height: 668 },
+  { width: 320, height: 740 },
+  { width: 1280, height: 900 },
+]) {
+  test(`keeps Hex equations beside their swatches without internal scrolling at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/#source");
+    await page.getByRole("button", { name: /New/ }).click();
+    const dialog = page.getByRole("dialog", { name: "New Canvas" });
+    await dialog.getByRole("spinbutton", { name: /width/i }).fill("50");
+    await dialog.getByRole("spinbutton", { name: /height/i }).fill("80");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await page.getByRole("tab", { name: "Hex", exact: true }).click();
+    await page.keyboard.press("v");
+    const list = page.getByRole("list", { name: "Level color mapping" });
+    await expect(list).toBeVisible();
+    await page.addStyleTag({ content: '.hex-palette-list, .hex-palette-list * { font-family: "MS Gothic" !important; }' });
+    for (const level of [2, 3, 4, 5]) {
+      const row = list.getByRole("listitem", { name: `L${level}`, exact: true });
+      for (const candidate of await row.locator(".hex-list-candidate").all()) {
+        await candidate.click();
+        const boxes = await row.evaluate((node) => {
+          const rect = (selector: string) => {
+            const box = node.querySelector(selector)!.getBoundingClientRect();
+            return { left: box.left, right: box.right, middle: box.y + box.height / 2 };
+          };
+          return { current: rect(".hex-list-current"), equation: rect(".hex-list-equation"), candidates: rect(".hex-list-candidates") };
+        });
+        expect(boxes.equation.middle).toBeCloseTo(boxes.current.middle, 0);
+        expect(boxes.equation.left).toBeGreaterThanOrEqual(boxes.current.right);
+        expect(boxes.equation.right).toBeLessThanOrEqual(boxes.candidates.left);
+      }
+    }
+    const view = page.locator('.hex-palette-view[data-view="list"]');
+    expect(await view.evaluate((node) => node.scrollHeight <= node.clientHeight && node.scrollWidth <= node.clientWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const bounds = await pageBounds(page);
+    const listBottom = await list.evaluate((node) => node.getBoundingClientRect().bottom + scrollY);
+    expect(listBottom).toBeLessThanOrEqual(bounds.palette.y + bounds.palette.height + 1);
+    expect(bounds.footer.y).toBeGreaterThanOrEqual(listBottom);
+  });
+}
+
 test("preserves the original dashed outline when three chromatic levels are used", async ({ page }) => {
   const palette = await openUsedPalette(page);
   await page.getByRole("tab", { name: "Source" }).click();
@@ -124,7 +168,10 @@ for (const viewport of [
     const original = await originalDiagramLayout(palette);
     const diagramBox = await palette.locator("svg").boundingBox();
     if (!diagramBox) throw new Error("Hex diagram is not visible");
-    expect(before.palette.height).toBeCloseTo(original.height, 1);
+    const listHeight = await palette.locator('.hex-palette-view[data-view="list"]').evaluate((node) => node.getBoundingClientRect().height);
+    // The hidden list may be taller than the diagram with a wide glyph stack.
+    // Reserve the taller view while retaining the diagram's original geometry.
+    expect(before.palette.height).toBeCloseTo(Math.max(original.height, listHeight), 1);
     expect(diagramBox.width).toBeCloseTo(original.width, 1);
     expect(diagramBox.height).toBeCloseTo(original.svgHeight, 1);
     expect(diagramBox.x - before.palette.x).toBeCloseTo(original.offsetX, 1);

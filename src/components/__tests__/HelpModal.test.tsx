@@ -76,7 +76,7 @@ describe("HelpModal", () => {
   it("lists only the figure keys and the common rows for the Theory tab", () => {
     render(<HelpModal showHelp={true} activeTabId="theory" setShowHelp={() => {}} helpRef={helpRef} />);
     expect(screen.getByText("Pin / release")).toBeTruthy();
-    expect(screen.getByText("Alt+1-7")).toBeTruthy();
+    expect(screen.getByText("Alt+1-8")).toBeTruthy();
     expect(screen.getByText("Switch tab")).toBeTruthy();
     expect(screen.queryByText("Ctrl+Z")).toBeNull();
     expect(screen.queryByText("Select level")).toBeNull();

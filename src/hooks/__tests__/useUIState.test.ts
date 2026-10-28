@@ -8,6 +8,38 @@ import { TOAST_DURATION } from "../../constants";
 const t = ((key: string) => key) as import("../../i18n").TranslationFn;
 
 describe("useUIState", () => {
+  it("opens Automata from a hash and remembers its first opening", () => {
+    window.history.replaceState({ existing: "keep" }, "", "/#automata");
+    const { result } = renderHook(() => useUIState(t));
+    expect(result.current.activeTabId).toBe("automata");
+    expect(result.current.hasOpenedAutomata).toBe(true);
+    expect(window.history.state.existing).toBe("keep");
+    act(() => result.current.setActiveTabId("source"));
+    expect(result.current.hasOpenedAutomata).toBe(true);
+  });
+  it("restores the Automata stable ID while legacy number seven stays Music", () => {
+    localStorage.setItem("chromalum-active-tab-v3", "automata");
+    const first = renderHook(() => useUIState(t));
+    expect(first.result.current.activeTabId).toBe("automata");
+    first.unmount();
+    localStorage.removeItem("chromalum-active-tab-v3");
+    localStorage.setItem("chromalum-active-tab-v2", "7");
+    const second = renderHook(() => useUIState(t));
+    expect(second.result.current.activeTabId).toBe("music");
+    expect(second.result.current.hasOpenedAutomata).toBe(false);
+  });
+  it.each(["hashchange", "popstate"])("marks Automata opened through %s", (kind) => {
+    const { result } = renderHook(() => useUIState(t));
+    expect(result.current.hasOpenedAutomata).toBe(false);
+    act(() => {
+      window.history.pushState({ chromalumActiveTab: "automata" }, "", "/#automata");
+      window.dispatchEvent(kind === "popstate" ? new PopStateEvent(kind, { state: window.history.state }) : new HashChangeEvent(kind));
+    });
+    expect(result.current.activeTabId).toBe("automata");
+    expect(result.current.hasOpenedAutomata).toBe(true);
+    act(() => result.current.setActiveTabId("source"));
+    expect(result.current.hasOpenedAutomata).toBe(true);
+  });
   beforeEach(() => {
     vi.useFakeTimers();
     window.history.replaceState(null, "", "/");

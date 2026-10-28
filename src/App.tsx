@@ -13,7 +13,7 @@ import { useImageImportCrop } from "./hooks/useImageImportCrop";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useExport } from "./hooks/useExport";
 import { useCanvasCopy } from "./hooks/useCanvasCopy";
-import { useAppState } from "./hooks/useAppState";
+import { getCanvasDisplaySize, useAppState } from "./hooks/useAppState";
 import { DrawingContextProvider } from "./state/DrawingContext";
 import { GlazeContextProvider } from "./state/GlazeContext";
 import { C, Z, FS, FW, FONT } from "./styles/tokens";
@@ -41,6 +41,10 @@ const TheoryPanel = lazy(async () => {
 const MusicPanel = lazy(async () => {
   const mod = await loadLazyChunk(() => import("./components/MusicPanel"));
   return { default: mod.MusicPanel };
+});
+const AutomataPanel = lazy(async () => {
+  const mod = await loadLazyChunk(() => import("./components/AutomataPanel"));
+  return { default: mod.AutomataPanel };
 });
 
 // Avoid mounting the large Theory page behind another tab during local development.
@@ -151,6 +155,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     activeTabId,
     setActiveTabId,
     hasOpenedMap,
+    hasOpenedAutomata,
     showHelp,
     setShowHelp,
     toast,
@@ -167,6 +172,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     candidateOverridesByLevel,
     setCandidateOverridesByLevel,
     colorLUT,
+    viewportSize,
     displayWidth,
     displayHeight,
     setLevelLock,
@@ -175,6 +181,8 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
     patternInfo,
   } = app;
 
+  // Flow fits a square to the viewport independently of the Source image.
+  const flowDisplaySize = getCanvasDisplaySize(1, 1, viewportSize.width, viewportSize.height);
   const levelHistogram = state.levelHistogram;
   const [showAbout, setShowAbout] = useState(false);
   const [scrollToGallery, setScrollToGallery] = useState(false);
@@ -632,6 +640,18 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
           <div id={getTabPanelId("music")} role="tabpanel" aria-labelledby={getTabButtonId("music")} style={{ width: "100%" }}>
             <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
               <MusicPanel />
+            </Suspense>
+          </div>
+        )}
+        {(activeTabId === "automata" || hasOpenedAutomata) && (
+          <div
+            id={getTabPanelId("automata")}
+            role="tabpanel"
+            aria-labelledby={getTabButtonId("automata")}
+            style={{ width: "100%", display: activeTabId === "automata" ? undefined : "none" }}
+          >
+            <Suspense fallback={<div style={S_LAZY_PANEL_FALLBACK}>Loading...</div>}>
+              <AutomataPanel active={activeTabId === "automata"} {...flowDisplaySize} />
             </Suspense>
           </div>
         )}

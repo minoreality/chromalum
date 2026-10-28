@@ -29,7 +29,7 @@ export function AppTabBar({ activeTabId, onTabChange, t }: AppTabBarProps) {
   };
 
   return (
-    <div role="tablist" aria-label={t("tablist_label")} aria-orientation="horizontal" style={S_TABLIST}>
+    <div className="app-tablist" role="tablist" aria-label={t("tablist_label")} aria-orientation="horizontal" style={S_TABLIST}>
       {MAIN_TABS.map(({ id, key }, index) => (
         <button
           key={key}
@@ -54,7 +54,7 @@ export function AppTabBar({ activeTabId, onTabChange, t }: AppTabBarProps) {
           }}
           style={activeTabId === id ? S_TAB_ACTIVE : S_TAB_INACTIVE}
         >
-          {t(key)}
+          <span className="app-tab-label">{t(key)}</span>
         </button>
       ))}
     </div>

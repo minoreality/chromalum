@@ -111,8 +111,9 @@ deleted all 26 on any install — 78 lines of noise on top of the real change, w
 unnoticed once in 8fec4ba (2026-06-24) and took Dependabot two months to restore. `libc` is
 what picks the `-gnu` against the `-musl` binding on Linux (@oxc-parser 8, @oxc-resolver 8,
 @rolldown 6, lightningcss 4), so nothing breaks on glibc and nothing goes red. Do not pin npm
-below 11.19.1, and do not reach for `npm@latest` (12.0.2) either: it keeps the fields but
-demands `^22.22.2 || ^24.15.0 || >=26.0.0`, the same gap that holds jsdom 30 back. For a
+below 11.19.1, and do not select `npm@latest` automatically. npm 12 and jsdom 30 require
+`^22.22.2 || ^24.15.0 || >=26.0.0`; Node 24.22.1 now meets that engine range, but those
+major upgrades still need their own compatibility checks. For a
 Dependabot pull request, cherry-pick its commit rather than regenerate — its lockfile is
 already right. After any lockfile change, `grep -c '"libc"' package-lock.json` must still
 print 26.

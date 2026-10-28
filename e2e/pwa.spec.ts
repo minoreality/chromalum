@@ -25,7 +25,11 @@ test.beforeEach(async ({ page }) => {
 test.describe("lazy chunk recovery", () => {
   test.use({ serviceWorkers: "block" });
 
-  for (const panel of ["Music", "Theory"]) {
+  for (const { panel, heading } of [
+    { panel: "Music", heading: "CHROMATIC MUSIC" },
+    { panel: "Theory", heading: "Discrete Algebraic Color Theory" },
+    { panel: "Automata", heading: "CELLULAR AUTOMATA" },
+  ]) {
     test(`reloads the ${panel} chunk after a failed load`, async ({ page }) => {
       let failLoad = true;
       let chunkRequests = 0;
@@ -44,9 +48,7 @@ test.describe("lazy chunk recovery", () => {
 
       failLoad = false;
       await reload.click();
-      await expect(
-        page.getByRole("heading", { name: panel === "Music" ? "CHROMATIC MUSIC" : "Discrete Algebraic Color Theory", exact: true }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
       await expect(errorHeading).toHaveCount(0);
       expect(chunkRequests).toBe(2);
     });
@@ -138,6 +140,7 @@ test("pre-caches the production app shell and works offline", async ({ page, con
   expect(swInfo.cachedPaths.some((path) => path.endsWith("/og-image.png"))).toBe(false);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/MusicPanel-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/TheoryPanel-.+\.js$/.test(path))).toBe(true);
+  expect(swInfo.cachedPaths.some((path) => /\/assets\/AutomataPanel-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/flood-fill\.worker-.+\.js$/.test(path))).toBe(true);
   expect(swInfo.cachedPaths.some((path) => /\/assets\/pixel-analysis\.worker-.+\.js$/.test(path))).toBe(true);
 
@@ -151,6 +154,11 @@ test("pre-caches the production app shell and works offline", async ({ page, con
   await context.setOffline(true);
   const offlineReloadResponse = await page.reload({ waitUntil: "domcontentloaded", timeout: 10_000 });
   expect(offlineReloadResponse?.status()).toBe(200);
+
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "CELLULAR AUTOMATA", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Next generation", exact: true }).click();
+  await expect(page.getByRole("slider")).toHaveValue("1");
 
   await page.getByRole("tab", { name: "Theory" }).click();
   await expect(page.getByRole("heading", { name: "Discrete Algebraic Color Theory" })).toBeVisible();
