@@ -66,7 +66,7 @@ describe("Hex palette views", () => {
 
   it("keeps double clicks on dots, the die, and list controls inside their own operations", () => {
     renderPalette();
-    fireEvent.doubleClick(within(diagram()).getByRole("button", { name: "R — Level 2" }));
+    fireEvent.doubleClick(within(diagram()).getByRole("button", { name: "Level 2 — R" }));
     fireEvent.doubleClick(within(diagram()).getByRole("button", { name: "Randomize palette" }));
     expect(diagram()).toBeTruthy();
     fireEvent.keyDown(document, { key: "v" });

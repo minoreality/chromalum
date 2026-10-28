@@ -157,8 +157,11 @@ for (const viewport of [
   test(`switches Hex views without moving the preview or footer at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     const palette = await openUsedPalette(page);
-    // The alternate rows must also fit the wide glyph stack used by CI.
-    await page.addStyleTag({ content: '.hex-palette-list, .hex-palette-list * { font-family: "MS Gothic" !important; }' });
+    // The hidden diagram's count also determines the panel's intrinsic width.
+    // Exercise wide glyphs there as well as in the alternate list.
+    await page.addStyleTag({
+      content: '[role="tabpanel"], .hex-palette-list, .hex-palette-list * { font-family: "MS Gothic", monospace !important; }',
+    });
     await expect.poll(() => previewPixel(page)).toEqual([255, 0, 0, 255]);
     await expect(page.getByRole("button", { name: "View 3 patterns in Gallery" })).toBeVisible();
     const before = await pageBounds(page);

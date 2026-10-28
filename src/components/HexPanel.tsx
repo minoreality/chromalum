@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { S_CANVAS_STATUS_STABLE, S_CHECKERBOARD, S_PANEL_SUBTITLE } from "../styles/shared";
 import { LEVEL_CANDIDATES } from "../color-engine";
 import { controlOwnsKey } from "../shortcuts";
@@ -39,6 +39,7 @@ interface HexPanelProps {
 const S_FLEX_COL_CENTER: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg };
 
 export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
+  const patternCountId = useId();
   const {
     hexPreviewCanvasRef,
     canvasData,
@@ -210,8 +211,12 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
               canRandomize={canRandomize}
             />
             {/* Pattern info — 3 aligned rows: labels, dots, ∏ᵢcᵢ = counts × ... = total */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, marginTop: -SP.lg }}>
+            <div
+              className="hex-pattern-info"
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, marginTop: -SP.lg }}
+            >
               <div
+                className="hex-pattern-count"
                 onClick={onPatternClick}
                 role={onPatternClick ? "button" : undefined}
                 tabIndex={onPatternClick ? 0 : undefined}
@@ -225,11 +230,11 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
                       }
                     : undefined
                 }
-                aria-label={onPatternClick ? t("pattern_count_go_gallery", patternInfo.total) : undefined}
+                id={patternCountId}
+                aria-labelledby={onPatternClick ? `${patternCountId} ${patternCountId}-action` : undefined}
                 style={{
                   display: "grid",
                   gridTemplateColumns: `auto repeat(15, auto) auto`,
-                  justifyContent: "center",
                   justifyItems: "center",
                   alignItems: "center",
                   rowGap: 3,
@@ -338,6 +343,13 @@ export const HexPanel = React.memo(function HexPanel(props: HexPanelProps) {
                   = {t("random_patterns", patternInfo.total)}
                 </span>
               </div>
+              {/* Keep the action outside the self-labelled grid so native
+                  accessibility includes it once after the visible formula. */}
+              {onPatternClick && (
+                <span id={`${patternCountId}-action`} hidden>
+                  {t("pattern_count_go_gallery", patternInfo.total)}
+                </span>
+              )}
             </div>
           </div>
           <div

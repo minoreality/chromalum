@@ -824,6 +824,15 @@ input[type="checkbox"]:focus-visible {
   visibility: hidden;
   pointer-events: none;
 }
+.hex-pattern-info {
+  /* This grid still sizes the panel while the list is visible. */
+  max-width: var(--app-inline-content-width);
+}
+.hex-pattern-count {
+  box-sizing: border-box;
+  /* Keep the start of an overflowing formula reachable by scrolling. */
+  justify-content: safe center;
+}
 .hex-palette-list {
   display: grid;
   width: 100%;

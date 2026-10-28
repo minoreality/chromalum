@@ -64,6 +64,16 @@ for (const tab of MAIN_ACCESSIBILITY_TABS) {
   });
 }
 
+test("keeps visible control labels in their Japanese accessible names", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "JA: Switch to Japanese", exact: true }).click();
+  await expect(page.getByRole("button", { name: "EN: 英語に切り替え", exact: true })).toBeVisible();
+  for (const tab of ["Source", "Hex", "Glaze"]) {
+    await page.getByRole("tab", { name: tab, exact: true }).click();
+    await expectNoA11yViolations(page, `${tab} tab (Japanese)`);
+  }
+});
+
 test("has no detectable accessibility violations in the Hex palette list", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("tab", { name: "Hex" }).click();

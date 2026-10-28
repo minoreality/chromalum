@@ -103,7 +103,7 @@ export const ja = {
   title_undo: "元に戻す (Ctrl+Z)",
   title_redo: "やり直し (Ctrl+Y)",
   title_zoom_reset: "ズームリセット",
-  aria_zoom_reset: "ズームリセット (現在 {0}%)",
+  aria_zoom_reset: "{0}% — ズームリセット",
   label_size: "サイズ",
   aria_brush_size: "ブラシサイズ",
   aria_brush_size_decrease: "ブラシサイズ縮小",
@@ -135,7 +135,7 @@ export const ja = {
   // HexDiagram
   hex_diagram_label: "純色相環の色選択",
   hex_edge_label: "レベル{0}の候補色 ({1})",
-  hex_vertex_label: "{0} — レベル{1}",
+  hex_vertex_label: "レベル{1} — {0}",
   btn_random_color: "配色をランダムに変更",
 
   random_patterns: "{0}通り",

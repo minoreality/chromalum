@@ -468,7 +468,8 @@ export const HexDiagram = memo(
                         fontFamily="var(--font-mono)"
                         fill={act && used ? levelLabelColor(lv) : HOLLOW_DIGIT}
                       >
-                        {lv}
+                        {/* SVG text nodes need a separator for the accessible label. */}
+                        {lv}{" "}
                       </text>
                       <text
                         x={lx}

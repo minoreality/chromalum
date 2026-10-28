@@ -353,7 +353,7 @@ for (const tab of ["Source", "Glaze"] as const) {
 test("keeps the Hex palette unchanged while Help is open", async ({ page }) => {
   await fillSourceRedLevel(page);
   await page.getByRole("tab", { name: "Hex", exact: true }).click();
-  await page.getByRole("button", { name: "R — Level 2", exact: true }).click();
+  await page.getByRole("button", { name: "Level 2 — R", exact: true }).click();
   const canvas = page.getByRole("img", { name: "Color preview canvas", exact: true });
   const before = await canvasImage(canvas);
   await page.keyboard.press("F1");
