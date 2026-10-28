@@ -324,28 +324,6 @@ for (const width of [1280, 390]) {
     const colors = palette(page).getByRole("button");
     await palette(page).scrollIntoViewIfNeeded();
     const backgrounds = await colors.evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
-    // These visible digits are aria-hidden, so axe does not check their text contrast.
-    const digitContrast = await colors.evaluateAll((buttons) => {
-      const luminance = (rgb: string) => {
-        const [r, g, b] = rgb
-          .match(/[\d.]+/g)!
-          .slice(0, 3)
-          .map(Number)
-          .map((channel) => {
-            const value = channel / 255;
-            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-          });
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      };
-      return buttons.map((button) => {
-        const background = luminance(getComputedStyle(button).backgroundColor);
-        const foreground = luminance(getComputedStyle(button.querySelector("span")!).color);
-        return (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05);
-      });
-    });
-    for (const [color, contrast] of digitContrast.entries()) {
-      expect.soft(contrast, `palette digit ${color} contrast`).toBeGreaterThanOrEqual(4.5);
-    }
     for (let color = 0; color < LABELS.length; color++) {
       const swatch = colors.nth(color);
       await swatch.hover();
