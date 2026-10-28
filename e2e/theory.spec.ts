@@ -882,44 +882,43 @@ test("derives primary ranks with a prose supplement and compares K8 distance in 
 });
 
 for (const language of ["ja", "en"]) {
-  test(`links Fano points and lines to H without shifting the ${language} explorer`, async ({ page }) => {
-    test.setTimeout(60_000);
-    await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("theory-dev.html");
-    const explorer = page.getByTestId("fano-hamming-correspondence");
-    const checks = explorer.getByTestId("fano-hamming-checks");
-    const background = explorer.locator(".theory-fano-plot");
-    const clear = () => background.click({ position: { x: 4, y: 4 } });
-    const leaveSelection = () => background.hover({ position: { x: 4, y: 4 } });
-    const column = (point: number) => explorer.locator(`[data-h-column="${point}"]`);
-    const activeColumns = () =>
-      explorer
-        .locator('[data-h-column][data-active="true"]')
-        .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-h-column")));
-    const layout = () =>
-      explorer.evaluate((root) => {
-        const origin = root.getBoundingClientRect();
-        const nodes = [
-          root,
-          ...root.querySelectorAll(
-            ".theory-fano-geometry, .theory-fano-geometry > svg, .theory-fano-controls, .theory-fano-matrix, .theory-fano-checks, .theory-fano-syndrome, .theory-fano-line-choices",
-          ),
-          document.querySelector("#theory-hamming")!,
-        ];
-        return nodes.map((node) => {
-          const bounds = node.getBoundingClientRect();
-          return [bounds.x - origin.x, bounds.y - origin.y, bounds.width, bounds.height].map((value) => Math.round(value * 10) / 10);
+  for (const width of [320, 390, 447, 564, 600, 642, 673, 674, 702, 722, 768, 843, 844, 1043, 1280]) {
+    test(`links Fano points and lines to H without shifting the ${language} explorer at ${width}px`, async ({ page }) => {
+      await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto("theory-dev.html");
+      const explorer = page.getByTestId("fano-hamming-correspondence");
+      const checks = explorer.getByTestId("fano-hamming-checks");
+      const background = explorer.locator(".theory-fano-plot");
+      const clear = () => background.click({ position: { x: 4, y: 4 } });
+      const leaveSelection = () => background.hover({ position: { x: 4, y: 4 } });
+      const column = (point: number) => explorer.locator(`[data-h-column="${point}"]`);
+      const activeColumns = () =>
+        explorer
+          .locator('[data-h-column][data-active="true"]')
+          .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-h-column")));
+      const layout = () =>
+        explorer.evaluate((root) => {
+          const origin = root.getBoundingClientRect();
+          const nodes = [
+            root,
+            ...root.querySelectorAll(
+              ".theory-fano-geometry, .theory-fano-geometry > svg, .theory-fano-controls, .theory-fano-matrix, .theory-fano-checks, .theory-fano-syndrome, .theory-fano-line-choices",
+            ),
+            document.querySelector("#theory-hamming")!,
+          ];
+          return nodes.map((node) => {
+            const bounds = node.getBoundingClientRect();
+            return [bounds.x - origin.x, bounds.y - origin.y, bounds.width, bounds.height].map((value) => Math.round(value * 10) / 10);
+          });
         });
-      });
 
-    await expect(page.getByTestId("hamming-fano-bridge")).toHaveCount(0);
-    await expect(explorer.locator("[data-fano-point]")).toHaveCount(7);
-    await expect(explorer.locator("[data-fano-line]")).toHaveCount(7);
-    await expect(explorer.locator("[data-fano-line-choice]")).toHaveCount(7);
-    await expect(explorer.locator("[data-h-column]")).toHaveCount(7);
+      await expect(page.getByTestId("hamming-fano-bridge")).toHaveCount(0);
+      await expect(explorer.locator("[data-fano-point]")).toHaveCount(7);
+      await expect(explorer.locator("[data-fano-line]")).toHaveCount(7);
+      await expect(explorer.locator("[data-fano-line-choice]")).toHaveCount(7);
+      await expect(explorer.locator("[data-h-column]")).toHaveCount(7);
 
-    for (const width of [320, 390, 447, 564, 600, 642, 673, 674, 702, 722, 768, 843, 844, 1043, 1280]) {
       await page.setViewportSize({ width, height: 1000 });
       await clear();
       await expect(checks).toHaveAttribute("data-word", "");
@@ -1053,8 +1052,8 @@ for (const language of ["ja", "en"]) {
           .map((node) => ({ tag: node.tagName, class: node.className, text: node.textContent })),
       );
       expect(overflow, `${language}, ${width}px`).toEqual([]);
-    }
-  });
+    });
+  }
 }
 
 test.describe("Fano on touch screens", () => {
