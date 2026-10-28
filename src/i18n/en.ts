@@ -29,7 +29,7 @@ export const en = {
   automata_rule_diagonal: "Diagonal XOR (4 cells)",
   automata_rule_diagonal_center: "Diagonal + center XOR (5 cells)",
   automata_rule_8: "Surrounding XOR (8 cells)",
-  automata_rule_9: "Surrounding + center XOR (9 cells)",
+  automata_rule_9: "3×3 XOR (9 cells)",
   automata_rule_life: "Life",
   automata_rule_rug: "Persian rug",
   automata_rule_or: "Cross + center OR (5 cells)",

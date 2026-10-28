@@ -64,6 +64,7 @@ describe("Automata copy", () => {
       "ライフゲーム",
       "ペルシャ絨毯",
     ]);
+    expect(english.automata_rule_9).toBe("3×3 XOR (9 cells)");
     const presets = [
       "rosette",
       "diamond",
