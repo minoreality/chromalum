@@ -3,6 +3,19 @@ import { CA_RULES, createVisibleEvolution, evolvePlane, evolveVisiblePlane, type
 import { GOLDEN_CASES, GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
 function referenceOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
+  // The neighborhood depends only on the rule, not on the cell or generation.
+  // Keep this reference independent of the production neighborhood tables.
+  const offsets: [number, number][] = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const center = dx === 0 && dy === 0;
+      const diagonal = dx !== 0 && dy !== 0;
+      if (center && ![5, 9, "diagonal-center", "or", "and", "majority"].includes(rule)) continue;
+      if (!center && [4, 5, "or", "and", "majority", "hamming"].includes(rule) && diagonal) continue;
+      if (!center && (rule === "diagonal" || rule === "diagonal-center") && !diagonal) continue;
+      offsets.push([dx, dy]);
+    }
+  }
   let current = seed.slice();
   for (let t = 0; t < steps; t++) {
     const next = new Uint8Array(seed.length);
@@ -10,23 +23,16 @@ function referenceOracle(seed: Uint8Array, size: number, steps: number, rule: Au
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
           let count = 0;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const center = dx === 0 && dy === 0;
-              const diagonal = dx !== 0 && dy !== 0;
-              if (center && ![5, 9, "diagonal-center", "or", "and", "majority"].includes(rule)) continue;
-              if (!center && [4, 5, "or", "and", "majority", "hamming"].includes(rule) && diagonal) continue;
-              if (!center && (rule === "diagonal" || rule === "diagonal-center") && !diagonal) continue;
-              const xx = x + dx,
-                yy = y + dy;
-              const neighbor = xx >= 0 && xx < size && yy >= 0 && yy < size ? current[yy * size + xx] : 0;
-              if (rule === "hamming") {
-                const here = current[y * size + x];
-                const distance =
-                  Number((here & 1) !== (neighbor & 1)) + Number((here & 2) !== (neighbor & 2)) + Number((here & 4) !== (neighbor & 4));
-                if (distance === 1 && ((here >> bit) & 1) !== ((neighbor >> bit) & 1)) count++;
-              } else count += (neighbor >> bit) & 1;
-            }
+          for (const [dx, dy] of offsets) {
+            const xx = x + dx,
+              yy = y + dy;
+            const neighbor = xx >= 0 && xx < size && yy >= 0 && yy < size ? current[yy * size + xx] : 0;
+            if (rule === "hamming") {
+              const here = current[y * size + x];
+              const distance =
+                Number((here & 1) !== (neighbor & 1)) + Number((here & 2) !== (neighbor & 2)) + Number((here & 4) !== (neighbor & 4));
+              if (distance === 1 && ((here >> bit) & 1) !== ((neighbor >> bit) & 1)) count++;
+            } else count += (neighbor >> bit) & 1;
           }
           const alive = Boolean(current[y * size + x] & (1 << bit));
           const on =
