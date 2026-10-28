@@ -142,7 +142,7 @@ describe("Automata copy", () => {
       "OR: Spreading primaries",
       "AND: Shared-color cores",
       "Majority: Holes and stray dots",
-      "Hamming: One-bit and complement boundaries",
+      "Hamming: Color edges",
     ]);
     expect(rules.map((id) => ja[`automata_rule_hint_${id}`])).toEqual([
       "自分と上下左右にあるチャンネルを集めます。重なっても相殺しません。",

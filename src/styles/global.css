@@ -364,7 +364,7 @@ svg text {
 .automata-actions {
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   justify-self: center;
   width: fit-content;
   max-width: 100%;
@@ -386,20 +386,17 @@ svg text {
   opacity: 0.45;
   cursor: default;
 }
-.automata-actions .automata-return {
-  grid-column: 1 / -1;
-  justify-self: center;
-}
 .automata-reserved {
   visibility: hidden;
   pointer-events: none;
 }
 .automata-palette {
   --automata-swatch-size: 36px;
+  --automata-palette-gap: 6px;
   display: grid;
-  grid-template-columns: repeat(4, var(--automata-swatch-size));
+  grid-template-columns: repeat(8, var(--automata-swatch-size));
   justify-content: center;
-  gap: 18px 6px;
+  gap: var(--automata-palette-gap);
   padding-block: 4px 12px;
 }
 .automata-color {
@@ -527,23 +524,33 @@ svg text {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-@container automata (min-width: 400px) {
+@container automata (width < 400px) {
+  .automata-palette {
+    --automata-palette-gap: clamp(2px, 1cqw, 6px);
+    --automata-swatch-size: clamp(24px, calc((100cqw - 7 * var(--automata-palette-gap)) / 8), 36px);
+  }
+}
+@container automata (min-width: 300px) {
   @supports (appearance: base-select) {
     .automata-controls {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  .automata-palette {
-    grid-template-columns: repeat(8, var(--automata-swatch-size));
+}
+@container automata (width < 400px) {
+  .automata-control {
+    font-size: clamp(11px, 2.6cqw, 13px);
+  }
+  .automata-control select {
+    column-gap: clamp(2px, 0.8cqw, 4px);
   }
 }
-@container automata (min-width: 440px) {
+@container automata (width < 440px) {
   .automata-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(4px, 1.5cqw, 8px);
   }
-  .automata-actions .automata-return {
-    grid-column: auto;
-    justify-self: stretch;
+  .automata-actions button {
+    padding-inline: clamp(4px, 1.5cqw, 10px);
   }
 }
 @container automata-layout (min-width: 960px) {
@@ -580,13 +587,17 @@ svg text {
     align-content: start;
   }
   .automata-comparison .automata-palette {
-    --automata-swatch-size: clamp(36px, 9cqw, 40px);
-    grid-template-columns: repeat(8, var(--automata-swatch-size));
+    --automata-swatch-size: clamp(24px, calc((100cqw - 7 * var(--automata-palette-gap)) / 8), clamp(36px, 9cqw, 40px));
   }
   @supports (appearance: base-select) {
     .automata-comparison .automata-controls {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
+}
+@container automata (width < 320px) {
+  .automata-comparison .automata-controls {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 button:focus-visible {

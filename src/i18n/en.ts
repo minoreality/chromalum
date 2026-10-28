@@ -54,7 +54,7 @@ export const en = {
   automata_preset_or_spread: "OR: Spreading primaries",
   automata_preset_and_core: "AND: Shared-color cores",
   automata_preset_majority_cleanup: "Majority: Holes and stray dots",
-  automata_preset_hamming_boundary: "Hamming: One-bit and complement boundaries",
+  automata_preset_hamming_boundary: "Hamming: Color edges",
   automata_preset_rosette: "Three-color rosette",
   automata_preset_diamond: "Diamond ring",
   automata_preset_corolla: "Three-color corolla",

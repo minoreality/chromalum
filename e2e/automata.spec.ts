@@ -27,7 +27,15 @@ async function openAutomata(page: Page, language: "en" | "ja" = "en") {
   await page.goto("./#automata");
   await expect(currentBoard(page)).toBeVisible();
   await expect(currentBoard(page)).toHaveAttribute("data-columns", "49");
-  await expect.poll(() => currentBoard(page).getAttribute("width")).not.toBe("300");
+  await expect
+    .poll(() =>
+      currentBoard(page).evaluate((node) => {
+        const canvas = node as HTMLCanvasElement;
+        const pixels = Math.round(canvas.getBoundingClientRect().width * devicePixelRatio);
+        return canvas.width === pixels && canvas.height === pixels;
+      }),
+    )
+    .toBe(true);
 }
 
 async function savedState(page: Page): Promise<SavedAutomata> {
@@ -384,6 +392,49 @@ test("draws immediately at generation 64 and updates the result when the stroke 
 });
 
 for (const language of ["ja", "en"] as const) {
+  for (const viewport of [
+    { width: 360, height: 640 },
+    { width: 1280, height: 480 },
+    { width: 1280, height: 360 },
+  ]) {
+    test(`keeps ${language} Flow controls inside short ${viewport.width}x${viewport.height} viewports`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await openAutomata(page, language);
+      // Classic scrollbars consume layout width; Latin monospace glyphs can also be wider than Consolas.
+      await page.addStyleTag({ content: "html { scrollbar-gutter: stable; } .automata-panel * { font-family: monospace !important; }" });
+      const controls = page.getByRole("combobox");
+      await controls.nth(0).selectOption("white");
+      await controls.nth(1).selectOption("life");
+      const before = await rectangles(page);
+      const paletteFits = await palette(page).evaluate((node) => {
+        const bounds = node.parentElement!.getBoundingClientRect();
+        return Array.from(node.querySelectorAll("button")).every((button) => {
+          const box = button.getBoundingClientRect();
+          return box.left >= bounds.left && box.right <= bounds.right;
+        });
+      });
+      expect(paletteFits, "palette fits its parent, not just its own overflowing grid").toBe(true);
+      for (const [index, count] of [
+        [0, 16],
+        [1, 12],
+      ]) {
+        for (let option = 0; option < count; option++) {
+          await controls.nth(index).selectOption({ index: option });
+          const label = await controls.nth(index).evaluate((node) => {
+            const range = document.createRange();
+            range.selectNodeContents(node.querySelector("button > span")!);
+            return { text: node.textContent, lines: range.getClientRects().length, fits: node.scrollWidth <= node.clientWidth };
+          });
+          expect(label.lines, label.text ?? "selected label").toBeLessThanOrEqual(2);
+          expect(label.fits).toBe(true);
+          expect(await rectangles(page)).toEqual(before);
+        }
+      }
+    });
+  }
+}
+
+for (const language of ["ja", "en"] as const) {
   test(`compares the editable initial pattern with its generation in ${language}`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await openAutomata(page, language);
@@ -588,6 +639,7 @@ test("opens the eighth tab directly with the complete native controls", async ({
 
 for (const viewport of [
   { width: 714, height: 668 },
+  { width: 360, height: 844 },
   { width: 320, height: 900 },
 ]) {
   test(`opens both Automata selectors downward at ${viewport.width}px`, async ({ page }) => {
@@ -1101,10 +1153,12 @@ async function rectangles(page: Page) {
 
 for (const language of ["ja", "en"] as const) {
   for (const viewport of [
-    { width: 1280, height: 900, paletteRows: 1, controlRows: 1 },
-    { width: 682, height: 668, paletteRows: 1, controlRows: 1 },
-    { width: 390, height: 844, paletteRows: 2, controlRows: 2 },
-    { width: 320, height: 900, paletteRows: 2, controlRows: 2 },
+    { width: 1280, height: 900, controlRows: 1 },
+    { width: 682, height: 668, controlRows: 1 },
+    { width: 566, height: 668, controlRows: 1 },
+    { width: 390, height: 844, controlRows: 1 },
+    { width: 360, height: 844, controlRows: 1 },
+    { width: 320, height: 900, controlRows: 2 },
   ]) {
     for (const wideGlyphs of [false, true]) {
       test(`keeps ${language} Automata geometry stable at ${viewport.width}px${wideGlyphs ? " with MS Gothic" : ""}`, async ({ page }) => {
@@ -1186,13 +1240,20 @@ for (const language of ["ja", "en"] as const) {
               return { x: r.x, y: r.y, width: r.width, height: r.height };
             }),
           );
-        expect(new Set(buttons.map((r) => r.y)).size).toBe(viewport.paletteRows);
+        expect(new Set(buttons.map((r) => r.y)).size, "palette colors stay on one row").toBe(1);
+        const paletteBounds = (await palette(page).boundingBox())!;
         for (const button of buttons) {
-          expect(button.width).toBeGreaterThanOrEqual(36);
-          expect(button.height).toBeGreaterThanOrEqual(36);
+          expect(button.width).toBeGreaterThanOrEqual(24);
+          expect(button.height).toBeGreaterThanOrEqual(24);
+          expect(button.x).toBeGreaterThanOrEqual(paletteBounds.x);
+          expect(button.x + button.width).toBeLessThanOrEqual(paletteBounds.x + paletteBounds.width);
         }
         const controlRows = await page.getByRole("combobox").evaluateAll((elements) => elements.map((el) => el.getBoundingClientRect().y));
         expect(new Set(controlRows).size).toBe(viewport.controlRows);
+        const actionRows = await page
+          .locator(".automata-actions button")
+          .evaluateAll((elements) => elements.map((el) => el.getBoundingClientRect().y));
+        expect(new Set(actionRows).size, "generation buttons stay on one row").toBe(1);
         const actionsFit = await page.locator(".automata-actions").evaluate((actions) => {
           const bounds = actions.getBoundingClientRect();
           return Array.from(actions.querySelectorAll("button")).every((button) => {
@@ -1228,11 +1289,15 @@ for (const language of ["ja", "en"] as const) {
                 return {
                   text: select.selectedOptions[0].text,
                   label: label.textContent,
+                  lines: range.getClientRects().length,
+                  noHorizontalOverflow: select.scrollWidth <= select.clientWidth,
                   fits: text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom,
                 };
               });
             expect(fits.label).toBe(fits.text);
             expect(fits.fits, fits.text).toBe(true);
+            expect(fits.lines, fits.text).toBeLessThanOrEqual(2);
+            expect(fits.noHorizontalOverflow, fits.text).toBe(true);
             expect(await rectangles(page)).toEqual(before);
           }
         }
