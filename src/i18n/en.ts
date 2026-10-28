@@ -172,7 +172,7 @@ export const en = {
   help_title: "Keyboard Shortcuts",
   help_level: "Select level",
   help_source_level: "Level / paint",
-  help_automata_draw: "Draw in the initial pattern",
+  help_automata_draw: "Draw pattern",
   help_source_shape: "Draw shape",
   help_source_shape_key: "Hold 0-7",
   help_source_cancel: "Cancel shape",

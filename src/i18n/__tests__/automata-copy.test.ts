@@ -41,7 +41,7 @@ describe("Automata copy", () => {
     expect(jp.automata_initial_keyboard_hint).toBe(
       "マウスまたは矢印キーでセルを選び、0〜7で対応する色を置きます。EnterまたはSpaceでは選択中の色を置きます。",
     );
-    expect(english.help_automata_draw).toBe("Draw in the initial pattern");
+    expect(english.help_automata_draw).toBe("Draw pattern");
     expect(jp.help_automata_draw).toBe("初期配置に描画");
     expect(jp.automata_result_heading).toBe("世代配置");
     expect(english.automata_result_heading).toBe("Evolved pattern");

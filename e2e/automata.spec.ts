@@ -273,7 +273,7 @@ test("keeps Flow numeric drawing out of controls, dialogs and other tabs", async
   await page.keyboard.press("F1");
   const help = page.getByRole("dialog", { name: "Keyboard Shortcuts", exact: true });
   await expect(help).toBeVisible();
-  await expect(help.getByText("Draw in the initial pattern", { exact: true })).toBeVisible();
+  await expect(help.getByText("Draw pattern", { exact: true })).toBeVisible();
   await page.keyboard.press("7");
   expect(await savedState(page)).toEqual(painted);
   await page.keyboard.press("Escape");
