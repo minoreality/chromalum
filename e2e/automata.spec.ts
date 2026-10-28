@@ -983,11 +983,11 @@ test("retains state after reload and language changes, independently of Source a
   await page.reload();
   await expect(currentBoard(page)).toBeVisible();
   expect(await savedState(page)).toEqual(before);
-  await page.getByRole("button", { name: "Switch to Japanese", exact: true }).click();
+  await page.getByRole("button", { name: "JA: Switch to Japanese", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "更新規則", exact: true })).toHaveValue("diagonal-center");
   expect(await savedState(page)).toEqual(before);
   expect(await savedDrawing(page)).toEqual(sourceRecord);
-  await page.getByRole("button", { name: "英語に切り替え", exact: true }).click();
+  await page.getByRole("button", { name: "EN: 英語に切り替え", exact: true }).click();
   await page.getByRole("tab", { name: "Glaze", exact: true }).click();
   const glaze = page.getByRole("img", { name: "HUE GLAZE OVERLAY", exact: true });
   await expect(glaze).toBeVisible();

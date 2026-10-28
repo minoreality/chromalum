@@ -168,7 +168,10 @@ for (const viewport of [
     const original = await originalDiagramLayout(palette);
     const diagramBox = await palette.locator("svg").boundingBox();
     if (!diagramBox) throw new Error("Hex diagram is not visible");
-    expect(before.palette.height).toBeCloseTo(original.height, 1);
+    const listHeight = await palette.locator('.hex-palette-view[data-view="list"]').evaluate((node) => node.getBoundingClientRect().height);
+    // The hidden list may be taller than the diagram with a wide glyph stack.
+    // Reserve the taller view while retaining the diagram's original geometry.
+    expect(before.palette.height).toBeCloseTo(Math.max(original.height, listHeight), 1);
     expect(diagramBox.width).toBeCloseTo(original.width, 1);
     expect(diagramBox.height).toBeCloseTo(original.svgHeight, 1);
     expect(diagramBox.x - before.palette.x).toBeCloseTo(original.offsetX, 1);
