@@ -440,11 +440,11 @@ svg text {
 }
 .automata-color-2 {
   --automata-swatch-color: #ff0000;
-  color: #ffffff;
+  color: #000000;
 }
 .automata-color-3 {
   --automata-swatch-color: #ff00ff;
-  color: #ffffff;
+  color: #000000;
 }
 .automata-color-4 {
   --automata-swatch-color: #00ff00;
