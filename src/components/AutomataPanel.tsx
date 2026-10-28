@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation, type TranslationFn } from "../i18n";
 import type { TranslationKey } from "../i18n/types";
-import { CA_RULES, MAX_TIME, PLANE_SIZE, evolveVisiblePlane, type AutomataRule, type CAColor } from "../automata/model";
+import { CA_RULES, MAX_TIME, PLANE_SIZE, createVisibleEvolution, type AutomataRule, type CAColor } from "../automata/model";
 import { AUTOMATA_PRESETS, makePlaneSeed, type AutomataPreset } from "../automata/presets";
 import { useAutomataState } from "../automata/useAutomataState";
 import { AutomataCanvas } from "../automata/AutomataCanvas";
@@ -105,7 +105,8 @@ export function AutomataPanel({
   const editedPreset = useMemo(() => state.seed.some((color, index) => color !== presetSeed[index]), [state.seed, presetSeed]);
   // Keep seed painting immediate; evolve a later generation once the stroke settles.
   const resultSeed = state.time === 0 ? state.seed : controller.settledSeed;
-  const board = useMemo(() => evolveVisiblePlane(resultSeed, state.time, state.rule), [resultSeed, state.time, state.rule]);
+  const evolution = useMemo(() => createVisibleEvolution(resultSeed, state.rule), [resultSeed, state.rule]);
+  const board = useMemo(() => evolution.at(state.time), [evolution, state.time]);
   const index = state.y * PLANE_SIZE + state.x;
   const readout = readCell(t, state.x, state.y, state.seed[index] as CAColor, state.time, board[index] as CAColor);
   const liveRef = useRef<HTMLDivElement>(null);

@@ -173,8 +173,8 @@ describe("AutomataPanel", () => {
     expect([stored.rule, stored.color, stored.time, stored.x, stored.y]).toEqual(["life", 7, 0, 24, 24]);
     expect(stored.seed).toEqual(new Uint8Array(2401));
   });
-  it("reuses the plane for palette and selection changes", () => {
-    const compute = vi.spyOn(model, "evolveVisiblePlane");
+  it("reuses the evolution across palette, selection and generation changes", () => {
+    const compute = vi.spyOn(model, "createVisibleEvolution");
     show();
     const before = compute.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
@@ -183,7 +183,11 @@ describe("AutomataPanel", () => {
     fireEvent.keyDown(screen.getByRole("application"), { key: "Enter" });
     expect(compute.mock.calls.length).toBe(before + 1);
     fireEvent.click(screen.getByRole("button", { name: "Next generation" }));
+    expect(compute.mock.calls.length).toBe(before + 1);
+    fireEvent.change(screen.getByRole("combobox", { name: "Update rule" }), { target: { value: "life" } });
     expect(compute.mock.calls.length).toBe(before + 2);
+    fireEvent.change(screen.getByRole("combobox", { name: "Initial pattern" }), { target: { value: "black" } });
+    expect(compute.mock.calls.length).toBe(before + 3);
   });
   it("announces the final dragged cell once the interaction ends", () => {
     show();

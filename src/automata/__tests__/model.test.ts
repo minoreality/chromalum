@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CA_RULES, evolvePlane, evolveVisiblePlane, type AutomataRule } from "../model";
+import { CA_RULES, createVisibleEvolution, evolvePlane, evolveVisiblePlane, type AutomataRule } from "../model";
 import { GOLDEN_CASES, GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
 function referenceOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
@@ -97,6 +97,32 @@ describe("evolvePlane", () => {
 });
 
 describe("evolveVisiblePlane", () => {
+  it("reuses visited generations and continues after moving backwards", () => {
+    const seed = new Uint8Array(49 * 49);
+    for (const y of [23, 24, 25]) seed[y * 49] = 7;
+    const evolution = createVisibleEvolution(seed, "life");
+    const initial = evolution.at(0);
+    const first = evolution.at(1);
+    const later = evolution.at(63);
+    expect(evolution.at(1)).toBe(first);
+    expect(evolution.at(63)).toBe(later);
+    expect(evolution.at(0)).toBe(initial);
+    expect(evolution.at(64)).toEqual(seed);
+    expect(evolution.at(63)).toBe(later);
+    expect(first).not.toEqual(seed);
+    expect(initial).toEqual(seed);
+  });
+
+  it("owns its seed snapshot and rejects invalid cached generations", () => {
+    const seed = new Uint8Array(49 * 49);
+    seed[24 * 49 + 24] = 7;
+    const evolution = createVisibleEvolution(seed, 4);
+    seed.fill(0);
+    expect(evolution.at(0)[24 * 49 + 24]).toBe(7);
+    expect(evolution.at(1)[23 * 49 + 24]).toBe(7);
+    for (const time of [-1, 65, 0.5, NaN]) expect(() => evolution.at(time)).toThrow(RangeError);
+  });
+
   it.each([
     [0, 0],
     [48, 0],

@@ -103,23 +103,73 @@ export function evolvePlane(seed: Uint8Array, size: number, steps: number, rule:
   return current;
 }
 
+/** Cache visible generations; keep only the latest full plane for further evolution. */
+export function createVisibleEvolution(seed: Uint8Array, rule: AutomataRule): { at: (steps: number) => Uint8Array } {
+  const initial = evolvePlane(seed, PLANE_SIZE, 0, rule);
+  // Radius-one rules and a quiescent black background bound propagation by time.
+  // One extra black border lets the inner loop read neighbors without edge checks.
+  const origin = MAX_TIME + 1;
+  const size = PLANE_SIZE + 2 * origin;
+  let current = new Uint8Array(size * size);
+  let next = new Uint8Array(current.length);
+  for (let y = 0; y < PLANE_SIZE; y++) {
+    current.set(initial.subarray(y * PLANE_SIZE, (y + 1) * PLANE_SIZE), (y + origin) * size + origin);
+  }
+  const offsets = OFFSETS[rule].map(([dx, dy]) => dy * size + dx);
+  const counting = rule === "life" || rule === "rug" || rule === "majority";
+  // Each channel gets a four-bit counter, so summing up to nine neighbors cannot carry into another channel.
+  const channelCounts = [0, 1, 16, 17, 256, 257, 272, 273];
+  const channelNext = Array.from({ length: 18 }, (_, index) => {
+    const alive = index >= 9;
+    const count = index % 9;
+    return Number(
+      rule === "majority" ? count >= 3 : rule === "life" ? count === 3 || (alive && count === 2) : !alive && count >= 2 && count <= 4,
+    );
+  });
+  const frames = [initial];
+  return {
+    at(steps) {
+      if (!Number.isInteger(steps) || steps < 0 || steps > MAX_TIME) throw new RangeError("Invalid Automata time");
+      while (frames.length <= steps) {
+        const time = frames.length;
+        const low = origin - time;
+        const high = origin + PLANE_SIZE + time;
+        for (let y = low; y < high; y++) {
+          for (let i = y * size + low, end = y * size + high; i < end; i++) {
+            const here = current[i];
+            let value = rule === "and" ? 7 : rule === "hamming" ? here : 0;
+            let counts = 0;
+            for (let n = 0; n < offsets.length; n++) {
+              const neighbor = current[i + offsets[n]];
+              if (counting) counts += channelCounts[neighbor];
+              else if (rule === "or") value |= neighbor;
+              else if (rule === "and") value &= neighbor;
+              else if (rule === "hamming") {
+                const difference = here ^ neighbor;
+                if (difference !== 0 && (difference & (difference - 1)) === 0) value ^= difference;
+              } else value ^= neighbor;
+            }
+            next[i] = counting
+              ? channelNext[(counts & 15) + (here & 1) * 9] |
+                (channelNext[((counts >> 4) & 15) + ((here >> 1) & 1) * 9] << 1) |
+                (channelNext[((counts >> 8) & 15) + ((here >> 2) & 1) * 9] << 2)
+              : value;
+          }
+        }
+        [current, next] = [next, current];
+        const visible = new Uint8Array(initial.length);
+        for (let y = 0; y < PLANE_SIZE; y++) {
+          const start = (y + origin) * size + origin;
+          visible.set(current.subarray(start, start + PLANE_SIZE), y * PLANE_SIZE);
+        }
+        frames.push(visible);
+      }
+      return frames[steps];
+    },
+  };
+}
+
 /** Evolve the black exterior too, then return the unchanged 49×49 viewing window. */
 export function evolveVisiblePlane(seed: Uint8Array, steps: number, rule: AutomataRule): Uint8Array {
-  const initial = evolvePlane(seed, PLANE_SIZE, 0, rule);
-  if (steps === 0) return initial;
-  // Every rule has radius one and a quiescent black background, so this halo
-  // contains every reachable cell through MAX_TIME, even for an edge seed.
-  const padding = MAX_TIME;
-  const size = PLANE_SIZE + 2 * padding;
-  const padded = new Uint8Array(size * size);
-  for (let y = 0; y < PLANE_SIZE; y++) {
-    padded.set(initial.subarray(y * PLANE_SIZE, (y + 1) * PLANE_SIZE), (y + padding) * size + padding);
-  }
-  const evolved = evolvePlane(padded, size, steps, rule);
-  const visible = new Uint8Array(initial.length);
-  for (let y = 0; y < PLANE_SIZE; y++) {
-    const start = (y + padding) * size + padding;
-    visible.set(evolved.subarray(start, start + PLANE_SIZE), y * PLANE_SIZE);
-  }
-  return visible;
+  return createVisibleEvolution(seed, rule).at(steps);
 }
