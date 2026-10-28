@@ -152,7 +152,7 @@ This project uses Node.js and npm. The expected toolchain is pinned through
 Volta:
 
 ```text
-node 24.14.1
+node 24.22.1
 npm 11.19.1
 ```
 
