@@ -246,6 +246,13 @@ export const en = {
   // Header
   header_about: "About",
   header_shortcuts: "Shortcuts",
+  pwa_update_ready: "A new version is available",
+  pwa_update_now: "Update now",
+  pwa_update_later: "Later",
+  pwa_updating: "Updating…",
+  pwa_update_failed: "The update could not be applied. Please try again.",
+  pwa_update_unsaved: "Your edits could not be saved. Updating will discard unsaved changes.",
+  pwa_update_without_saving: "Update without saving",
   about_title: "Overview",
   about_body_1:
     "CHROMALUM is an art tool that starts from eight colors: the three primary colors of light, the three primary colors of pigment, white, and black. It reorganizes brightness into relationships among colors. Behind this color expression lies an algebraic structure connecting the eight colors.",

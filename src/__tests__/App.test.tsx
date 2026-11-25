@@ -2,6 +2,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
+import * as pwa from "../pwa";
 import { LanguageProvider } from "../i18n";
 import { loadStateWithStatus, recoverInvalidState } from "../utils/idb-persistence";
 import { createAutomataState } from "../automata/state";
@@ -253,20 +254,19 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "↩Undo" }).hasAttribute("disabled")).toBe(false);
   }, 15000);
 
-  it("does not interrupt the app with legacy service worker update notifications", async () => {
+  it("keeps the active tab open and offers a retry when an update cannot activate", async () => {
+    let notify!: (worker: ServiceWorker | null) => void;
+    vi.spyOn(pwa, "registerServiceWorker").mockImplementation((onUpdate) => {
+      notify = onUpdate;
+    });
+    vi.spyOn(pwa, "activateUpdate").mockRejectedValue(new Error("Update superseded"));
     renderApp();
-
-    expect(await screen.findByRole("tab", { name: "Source" })).toBeTruthy();
-
-    fireEvent(
-      window,
-      new CustomEvent("chromalum:pwa-update-ready", {
-        detail: { registration: { waiting: null } as unknown as ServiceWorkerRegistration },
-      }),
-    );
-
-    expect(screen.queryByText("A new version is available")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Reload" })).toBeNull();
+    await screen.findByRole("tab", { name: "Source" });
+    expect(screen.queryByRole("button", { name: "Update now" })).toBeNull();
+    act(() => notify({} as ServiceWorker));
+    fireEvent.click(screen.getByRole("button", { name: "Update now" }));
+    await screen.findByText("The update could not be applied. Please try again.");
+    expect((screen.getByRole("button", { name: "Update now" }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByRole("tab", { name: "Source" }).getAttribute("aria-selected")).toBe("true");
   });
 });

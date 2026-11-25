@@ -126,16 +126,13 @@ export function useAppState(t: import("../i18n").TranslationFn) {
   const [persistenceRecoveryFailed, setPersistenceRecoveryFailed] = useState(false);
   const recoveryInFlightRef = useRef(false);
   const persistentStorageRequestInFlightRef = useRef(false);
-  const lastSavedRef = useRef<{
-    levelData: Uint8Array | null;
-    pixelCandidateOverrideMap: Uint8Array | null;
-    candidateIndexByLevel: number[] | null;
-    lockedLevels: boolean[] | null;
-  }>({
-    levelData: null,
-    pixelCandidateOverrideMap: null,
-    candidateIndexByLevel: null,
-    lockedLevels: null,
+  // An untouched new canvas can also be left safely if another tab writes the
+  // first revision first. Still schedule its usual baseline autosave below.
+  const lastSavedRef = useRef({
+    levelData: canvasData.levelData,
+    pixelCandidateOverrideMap: canvasData.pixelCandidateOverrideMap,
+    candidateIndexByLevel,
+    lockedLevels,
   });
 
   const blockPersistence = useCallback(
@@ -178,6 +175,23 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     candidateIndexByLevel,
     lockedLevels,
   ]);
+
+  const isCurrentCanvasSaved = useCallback(() => {
+    const current = currentPersistedStateRef.current;
+    const saved = lastSavedRef.current;
+    return (
+      saved.levelData === current.levelData &&
+      saved.pixelCandidateOverrideMap === current.pixelCandidateOverrideMap &&
+      saved.candidateIndexByLevel === current.candidateIndexByLevel &&
+      saved.lockedLevels === current.lockedLevels
+    );
+  }, []);
+
+  const flushPendingSave = useCallback(async () => {
+    flushSaveRef.current?.();
+    await saveQueueRef.current;
+    return isCurrentCanvasSaved();
+  }, [isCurrentCanvasSaved]);
 
   const recoverPersistence = useCallback(async (): Promise<boolean> => {
     if (persistenceIssue !== "invalid" || !persistenceBlockedRef.current || recoveryInFlightRef.current) return false;
@@ -278,14 +292,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
       baselineSaveCompleteRef.current = true;
       return;
     }
-    const prev = lastSavedRef.current;
-    if (
-      prev.levelData === canvasData.levelData &&
-      prev.pixelCandidateOverrideMap === canvasData.pixelCandidateOverrideMap &&
-      prev.candidateIndexByLevel === candidateIndexByLevel &&
-      prev.lockedLevels === lockedLevels
-    )
-      return;
+    if (baselineSaveCompleteRef.current && isCurrentCanvasSaved()) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     const pendingCanvas = canvasData,
       pendingCandidateIndexByLevel = candidateIndexByLevel,
@@ -359,7 +366,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [canvasData, candidateIndexByLevel, lockedLevels, loaded, persistenceIssue, showToast, t, blockPersistence]);
+  }, [canvasData, candidateIndexByLevel, lockedLevels, loaded, persistenceIssue, showToast, t, blockPersistence, isCurrentCanvasSaved]);
 
   // Flush pending save on tab hide / page unload to avoid data loss
   useEffect(() => {
@@ -410,6 +417,7 @@ export function useAppState(t: import("../i18n").TranslationFn) {
     ...toolState,
     ...uiState,
     loaded,
+    flushPendingSave,
     persistenceIssue,
     recoverPersistence,
     recoveringPersistence,

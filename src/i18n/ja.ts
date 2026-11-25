@@ -244,6 +244,13 @@ export const ja = {
   // Header
   header_about: "About",
   header_shortcuts: "Shortcuts",
+  pwa_update_ready: "新しいバージョンがあります",
+  pwa_update_now: "最新版に更新",
+  pwa_update_later: "あとで",
+  pwa_updating: "更新中…",
+  pwa_update_failed: "更新できませんでした。もう一度お試しください。",
+  pwa_update_unsaved: "編集内容を保存できませんでした。更新すると未保存の編集は失われます。",
+  pwa_update_without_saving: "保存せずに更新",
   about_title: "概要",
   about_body_1:
     "CHROMALUMは、光の三原色と色の三原色、そして白と黒からなる八色を出発点に、明るさを色の関係へと組み替えていくアートツールです。この色彩表現の奥には、八つの色をめぐる代数的な構造があります。",

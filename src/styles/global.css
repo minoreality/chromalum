@@ -158,6 +158,100 @@ svg text {
   outline-offset: 2px;
 }
 
+.pwa-update-notice {
+  position: fixed;
+  z-index: 900;
+  inset-inline: 0;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  margin-inline: auto;
+  box-sizing: border-box;
+  width: min(16rem, var(--app-inline-content-width));
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 8px;
+  background: var(--c-bg-panel);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 35%);
+  color: var(--c-text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.pwa-update-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 12.5rem);
+  gap: 8px;
+}
+
+.pwa-update-actions button {
+  min-height: 32px;
+  padding: 4px 8px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--c-border-hover);
+  border-radius: 4px;
+  background: var(--c-bg-surface);
+  color: var(--c-text-primary);
+  cursor: pointer;
+}
+
+.pwa-update-actions .pwa-update-primary {
+  border-color: var(--c-accent-bright);
+  background: var(--c-accent-bright);
+  color: var(--c-bg-root);
+  font-weight: 600;
+}
+
+/* Keep transient messages and the autosave control clear of the update buttons. */
+main:has(.pwa-update-notice) {
+  --toast-top: max(12px, env(safe-area-inset-top));
+  --toast-bottom: auto;
+}
+
+main:has(.pwa-update-notice) > .persistence-notice-trigger {
+  top: var(--toast-top);
+  bottom: auto;
+}
+
+.pwa-update-actions button:enabled:hover {
+  border-color: var(--c-accent-bright);
+}
+
+.pwa-update-actions .pwa-update-primary:enabled:hover {
+  background: #a1b9ff;
+}
+
+.pwa-update-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--c-accent-bright);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.pwa-update-actions button:focus-visible,
+.pwa-update-link:focus-visible {
+  outline: 2px solid var(--c-accent-bright);
+  outline-offset: 2px;
+}
+
+.pwa-update-actions button:disabled,
+.pwa-update-link:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+@media (pointer: coarse) {
+  .pwa-update-actions button {
+    min-height: 44px;
+  }
+}
+
 /* Header action links (About / Shortcuts / language switcher) */
 .header-action-link:hover,
 .header-action-link:focus-visible {

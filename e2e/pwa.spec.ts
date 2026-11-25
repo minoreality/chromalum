@@ -326,6 +326,7 @@ for (const mode of ["failed", "held"] as const) {
       server.publishUpdate(mode);
       await requestUpdate(page, mode === "failed" ? "redundant" : "installing");
       if (mode === "held") await expect.poll(server.heldRequestCount).toBeGreaterThan(0);
+      await expect(page.getByRole("button", { name: "Update now" })).toHaveCount(0);
 
       await page.reload();
       await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
@@ -348,7 +349,105 @@ for (const mode of ["failed", "held"] as const) {
   });
 }
 
-test("uses a completed update only after every previous app client closes", async ({ page, context }) => {
+test("offers a deployed update and reloads only the tab that accepts it", async ({ page, context }) => {
+  const server = await startUpdateServer();
+  try {
+    await openControlledBuild(page, `${server.url}#glaze`);
+    const otherClient = await context.newPage();
+    await openControlledBuild(otherClient, server.url);
+    await expectMusicNotLoaded(otherClient);
+    const update = page.getByRole("button", { name: "Update now", exact: true });
+    await expect(update).toHaveCount(0);
+
+    server.publishUpdate("complete");
+    await context.setOffline(true);
+    await context.setOffline(false);
+    await expect(page.getByText("A new version is available", { exact: true })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
+    await page.getByRole("button", { name: "Later", exact: true }).click();
+    await expect(page.getByText("A new version is available", { exact: true })).toHaveCount(0);
+    await expect(update).toBeVisible();
+
+    await update.click();
+    await expect(page.locator("html")).toHaveAttribute("data-build-version", "v2");
+    await expect(page.getByRole("tab", { name: "Glaze", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(update).toHaveCount(0);
+    await expect(otherClient.locator("html")).toHaveAttribute("data-build-version", "v1");
+
+    server.setOffline(true);
+    await context.setOffline(true);
+    await otherClient.getByRole("tab", { name: "Music", exact: true }).click();
+    await expect(otherClient.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+    await otherClient.getByRole("button", { name: "Update now", exact: true }).click();
+    await expect(otherClient.locator("html")).toHaveAttribute("data-build-version", "v2");
+    await expect(otherClient.getByRole("heading", { name: "CHROMATIC MUSIC" })).toBeVisible();
+    await expect.poll(() => page.evaluate(async () => (await caches.keys()).filter((key) => key.endsWith("fixture-v1")))).toEqual([]);
+  } finally {
+    await server.close();
+  }
+});
+
+test("shows an already waiting update on a narrow screen and saves the last stroke before reloading", async ({ page }) => {
+  const server = await startUpdateServer();
+  try {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await openControlledBuild(page, `${server.url}#source`);
+    server.publishUpdate("complete");
+    await requestUpdate(page, "installed");
+    await page.reload();
+    await page.getByRole("button", { name: /Switch to Japanese/ }).click();
+
+    const update = page.getByRole("button", { name: "最新版に更新", exact: true });
+    const message = page.getByText("新しいバージョンがあります", { exact: true });
+    const later = page.getByRole("button", { name: "あとで", exact: true });
+    await expect(message).toBeInViewport({ ratio: 1 });
+    await expect(later).toBeInViewport({ ratio: 1 });
+    await expect(update).toBeInViewport({ ratio: 1 });
+    const [line, left, right] = await Promise.all([message.boundingBox(), later.boundingBox(), update.boundingBox()]);
+    const center = await page.evaluate(() => document.documentElement.clientWidth / 2);
+    expect(line!.x + line!.width / 2).toBeCloseTo(center, 0);
+    expect((left!.x + right!.x + right!.width) / 2).toBeCloseTo(center, 0);
+    expect(left!.width).toBeCloseTo(right!.width, 0);
+    expect(left!.y).toBeGreaterThanOrEqual(line!.y + line!.height);
+
+    const canvas = page.getByRole("application", { name: "描画キャンバス（グレースケール）" });
+    await canvas.click();
+    await update.click();
+    await expect(page.locator("html")).toHaveAttribute("data-build-version", "v2");
+    const restored = page.getByRole("application", { name: "Drawing canvas (grayscale)" });
+    await expect
+      .poll(() => restored.evaluate((element: HTMLCanvasElement) => element.getContext("2d")!.getImageData(160, 160, 1, 1).data[0]))
+      .toBe(255);
+  } finally {
+    await server.close();
+  }
+});
+
+test("keeps unsaved edits open until discarding them is explicitly chosen", async ({ page }) => {
+  const server = await startUpdateServer();
+  try {
+    await page.addInitScript(() => {
+      indexedDB.open = () => {
+        throw new DOMException("Storage unavailable", "SecurityError");
+      };
+    });
+    await openControlledBuild(page, `${server.url}#source`);
+    await expect(page.getByRole("button", { name: "Auto-save off" })).toBeVisible();
+    server.publishUpdate("complete");
+    await requestUpdate(page, "installed");
+    await page.getByRole("application", { name: "Drawing canvas (grayscale)" }).click();
+    await page.getByRole("button", { name: "Update now", exact: true }).click();
+    const discard = page.getByRole("button", { name: "Update without saving", exact: true });
+    await expect(discard).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-build-version", "v1");
+    await discard.click();
+    await expect(page.locator("html")).toHaveAttribute("data-build-version", "v2");
+  } finally {
+    await server.close();
+  }
+});
+
+test("adopts a deferred update after every previous app client closes", async ({ page, context }) => {
   const server = await startUpdateServer();
   try {
     await openControlledBuild(page, server.url);
