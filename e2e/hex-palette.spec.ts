@@ -41,7 +41,7 @@ async function pageBounds(page: Page) {
   return {
     preview: await rect(page.getByRole("img", { name: "Color preview canvas" })),
     palette: await rect(page.getByRole("group", { name: "Palette display", exact: true })),
-    footer: await rect(page.getByText(/Copyright ©/)),
+    footer: await rect(page.getByText("© Doctor Chromaticus", { exact: true })),
   };
 }
 

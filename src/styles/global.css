@@ -165,6 +165,33 @@ svg text {
   text-decoration-color: var(--c-accent-bright, #80a0ff);
 }
 
+.app-footer::before,
+.app-footer::after {
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Each 2px square represents one unit of the GRB weights 4, 2 and 1. */
+.app-footer::before {
+  width: 11px;
+  height: 10px;
+  margin-inline-end: 6px;
+  background:
+    repeating-linear-gradient(to right, #0f0 0 2px, transparent 2px 3px) left top / 11px 2px no-repeat,
+    repeating-linear-gradient(to right, #f00 0 2px, transparent 2px 3px) left center / 5px 2px no-repeat,
+    linear-gradient(#00f, #00f) left bottom / 2px 2px no-repeat;
+}
+
+.app-footer::after {
+  width: 9px;
+  height: 8px;
+  margin-inline-start: 6px;
+  background-color: currentColor;
+  mask: url("../assets/dc-monogram.png") center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
 /* Tab bar: mobile stretches to fill width */
 [role="tablist"] > button[role="tab"] {
   flex: 1;

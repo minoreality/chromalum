@@ -656,7 +656,9 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
           </div>
         )}
       </div>
-      <footer style={S_FOOTER}>Copyright © 2026 Doctor Chromaticus</footer>
+      <footer className="app-footer" style={S_FOOTER}>
+        © Doctor Chromaticus
+      </footer>
     </main>
   );
 }
