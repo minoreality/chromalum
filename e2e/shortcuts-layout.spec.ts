@@ -13,7 +13,11 @@ for (const language of ["ja", "en"] as const) {
       await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.goto("./#source");
-      if (wideGlyphs) await page.addStyleTag({ content: '[role="dialog"] span { font-family: "MS Gothic", monospace !important; }' });
+      if (wideGlyphs) {
+        // MS Gothic has narrower Latin glyphs than the monospace fallback on Ubuntu.
+        const fontFamily = language === "en" ? '"DejaVu Sans Mono", "Courier New", monospace' : '"MS Gothic", monospace';
+        await page.addStyleTag({ content: `[role="dialog"] span { font-family: ${fontFamily} !important; }` });
+      }
 
       for (const tab of ["Source", "Glaze", "Hex", "Map", "Gallery", "Theory", "Music", "Flow"]) {
         await page.getByRole("tab", { name: tab, exact: true }).click();
