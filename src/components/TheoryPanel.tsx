@@ -144,6 +144,15 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
 
           <p className="theory-hint">{t("theory_pin_hint")}</p>
 
+          <section id="theory-reference" className="theory-chapter" aria-labelledby="theory-reference-heading" style={S_SECTION}>
+            <figure className="theory-figure" aria-labelledby="theory-reference-heading">
+              <figcaption id="theory-reference-heading">{t("theory_binary_title")}</figcaption>
+              <BinaryTable hlLevel={hlLevel} onHover={onHover} />
+            </figure>
+          </section>
+
+          <hr style={S_DIVIDER} />
+
           {/* Chapter 1 — primary combinations, subsets, and bits */}
           <Section id="theory-algebra" title={t("theory_generation_title")} desc={t("theory_states_desc")}>
             <Subsection
@@ -279,15 +288,6 @@ export const TheoryPanel = React.memo(function TheoryPanel({ active = true }: { 
           <Section id="theory-scope" title={t("theory_connections_title")}>
             <ConnectionsSummary />
             <ScopeSummary />
-          </Section>
-
-          <hr style={S_DIVIDER} />
-
-          {/* Reference — correspondences collected after their derivations */}
-          <Section id="theory-reference" title={t("theory_binary_title")}>
-            <figure className="theory-figure" aria-labelledby="theory-reference-heading">
-              <BinaryTable hlLevel={hlLevel} onHover={onHover} />
-            </figure>
           </Section>
         </div>
       </div>

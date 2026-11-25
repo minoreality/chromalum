@@ -102,7 +102,7 @@ describe("TheoryPanel", () => {
     expect(screen.getAllByTestId("hamming-parity-check-card")).toHaveLength(1);
     expect(screen.getByTestId("hamming-parity-sets").closest('[data-testid="hamming-flow-operation-check"]')).not.toBeNull();
   });
-  it("renders conceptual chapters followed by the correspondence table and keeps the toggle table in the action chapter", () => {
+  it("opens with the correspondence table below the interaction hint and keeps the toggle table in the action chapter", () => {
     const { container } = renderWithLanguage();
 
     expect(screen.getByText("Discrete Algebraic Color Theory")).toBeTruthy();
@@ -115,7 +115,6 @@ describe("TheoryPanel", () => {
       "Hue Order and Polyhedral Duality",
       "Continuous Extension of the Chromatic Six-Cycle",
       "Conclusion and Scope",
-      "Eight-State Correspondence Table",
     ]);
     expect(Array.from(container.querySelectorAll("h4")).map((heading) => heading.textContent)).toEqual([
       "Subsets and Three Bits",
@@ -131,6 +130,7 @@ describe("TheoryPanel", () => {
     expect(container.querySelectorAll("h5, h6")).toHaveLength(0);
     const chapters = Array.from(container.querySelectorAll(".theory-chapter"));
     expect(chapters.map((chapter) => chapter.id)).toEqual([
+      "theory-reference",
       "theory-algebra",
       "theory-rank",
       "theory-boolean-operations",
@@ -139,7 +139,6 @@ describe("TheoryPanel", () => {
       "theory-polyhedra",
       "theory-geometry",
       "theory-scope",
-      "theory-reference",
     ]);
     expect(container.querySelector("#theory-k8")?.parentElement?.id).toBe("theory-cube-cycle");
     expect(container.querySelector("#theory-toggle-table")?.closest(".theory-chapter")?.id).toBe("theory-cube-cycle");
@@ -158,7 +157,9 @@ describe("TheoryPanel", () => {
     expect(rankSections[1].querySelector(":scope > .theory-desc")?.textContent).toContain("primary count |S|=g+r+b");
     const reference = screen.getByRole("group", { name: "Eight-State Correspondence Table" }).closest("section");
     expect(reference?.id).toBe("theory-reference");
-    expect(chapters[chapters.length - 1]).toBe(reference);
+    expect(reference?.previousElementSibling).toBe(screen.getByText("Hover to highlight · Click to pin"));
+    const referenceFigure = screen.getByRole("figure", { name: "Eight-State Correspondence Table" });
+    expect(referenceFigure.querySelector("figcaption + .theory-binary-table")).toBeTruthy();
     expect(rankSections[1].textContent).toContain("a⊊b ⇒ L(a)<L(b)");
     const complement = screen.getByTestId("complement-ranks");
     const identities = screen.getByTestId("rank-identities");
