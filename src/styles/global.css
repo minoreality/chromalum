@@ -964,6 +964,10 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* Theory tab */
+.theory-dev-page {
+  /* The development page saves scrollY on pagehide. Anchoring can shift it during reload. */
+  overflow-anchor: none;
+}
 .theory-reset-surface {
   width: 100%;
 }
