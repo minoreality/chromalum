@@ -369,17 +369,34 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
   gap: 4px;
   min-width: 0;
 }
-.automata-rule-hint {
+.automata-description {
   display: grid;
-  grid-column: 1 / -1;
-  margin: 0;
+  min-width: 0;
   color: var(--c-text-muted);
   font-size: clamp(11px, 2.6cqw, 12px);
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.automata-rule-hint > span {
+.automata-description > div {
+  display: grid;
+  align-self: start;
+  gap: 4px;
   grid-area: 1 / 1;
+}
+.automata-description-reserve > div {
+  display: grid;
+}
+.automata-description-reserve > div > span {
+  grid-area: 1 / 1;
+}
+.automata-description p {
+  margin: 0;
+}
+.automata-viewing-note {
+  color: var(--c-text-primary);
+}
+.automata-description code {
+  white-space: nowrap;
 }
 .automata-control > span,
 .automata-time-heading {
@@ -425,23 +442,31 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
   }
   .automata-control select::picker(select) {
     width: anchor-size(self-inline);
-    margin-block-start: 4px;
+    margin-block: 4px 8px;
     padding: 4px;
     border: 1px solid var(--c-border-hover);
     border-radius: 5px;
     background: var(--c-bg-input);
     color: var(--c-text-primary);
     position-area: block-end span-inline-end;
-    position-try-fallbacks: none;
-    position-try-order: normal;
+    position-try-fallbacks: flip-block;
+    position-try-order: most-block-size;
     max-block-size: stretch;
     overflow: auto;
+    overscroll-behavior: contain;
   }
   .automata-control option {
+    box-sizing: border-box;
     min-height: 36px;
     padding: 6px;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+  @media (pointer: fine) {
+    .automata-control option {
+      min-height: max(26px, 2em);
+      padding-block: 3px;
+    }
   }
   .automata-control option:checked,
   .automata-control option:hover,
@@ -449,17 +474,40 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
     background: var(--c-bg-surface-alt);
   }
 }
-.automata-time {
+.automata-generation-controls {
   display: grid;
-  grid-column: 1 / -1;
-  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
   min-width: 0;
 }
 .automata-time-heading {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(8px, 2cqw, 12px);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: clamp(8px, 2cqw, 12px);
+}
+.automata-time-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: inherit;
+}
+.automata-generation-sound {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 5px;
+  min-height: 28px;
+  cursor: pointer;
+}
+.automata-generation-sound input {
+  margin: 0;
+  accent-color: var(--c-accent-bright);
+}
+@media (pointer: coarse) {
+  .automata-generation-sound {
+    min-height: 44px;
+  }
 }
 .automata-generation-label,
 .automata-mode {
@@ -471,10 +519,11 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
   grid-area: 1 / 1;
 }
 .automata-mode {
+  margin-inline-start: auto;
   color: var(--c-text-primary);
   text-align: end;
 }
-.automata-time input {
+.automata-slider {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -490,6 +539,7 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
   width: fit-content;
   max-width: 100%;
   gap: 8px;
+  margin-block-start: clamp(8px, 2cqw, 12px);
 }
 .automata-actions button {
   min-width: 0;
@@ -596,7 +646,7 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
   justify-self: center;
   width: var(--display-max, 100%);
   border: 1px solid var(--c-border);
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
 }
 .automata-board {
@@ -625,7 +675,7 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
 }
 .automata-board-frame:has(.automata-board:focus-visible),
 .automata-control select:focus-visible,
-.automata-time input:focus-visible,
+.automata-slider:focus-visible,
 .automata-color:focus-visible,
 .automata-actions button:focus-visible {
   outline: 2px solid var(--c-accent-bright);
@@ -682,19 +732,25 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
     --automata-gap: clamp(16px, 2.5cqw, 32px);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--automata-gap);
+    gap: clamp(8px, 1cqw, 12px) var(--automata-gap);
     width: min(100%, calc(2 * var(--display-max) + var(--automata-gap) + 4px));
     margin-inline: auto;
+  }
+  .automata-comparison > .automata-description,
+  .automata-comparison > .automata-notice-space {
+    grid-column: 1 / -1;
+  }
+  .automata-comparison > .automata-description {
+    text-align: center;
   }
   .automata-pane {
     display: grid;
     grid-template-rows: auto auto 1fr;
     align-content: start;
-    gap: clamp(8px, 1cqw, 12px);
     min-width: 0;
   }
   .automata-pane-title {
-    margin: 0;
+    margin: 0 0 6px;
     font-size: inherit;
     font-weight: 400;
     text-align: center;
@@ -706,9 +762,14 @@ main:has(.pwa-update-notice) > .persistence-notice-trigger {
   }
   .automata-comparison .automata-tools {
     align-content: start;
+    margin-block-start: clamp(8px, 1cqw, 12px);
+  }
+  .automata-comparison .automata-initial-tools {
+    row-gap: 4px;
   }
   .automata-comparison .automata-palette {
-    --automata-swatch-size: clamp(24px, calc((100cqw - 7 * var(--automata-palette-gap)) / 8), clamp(36px, 9cqw, 40px));
+    --automata-swatch-size: clamp(24px, calc((100cqw - 7 * var(--automata-palette-gap)) / 8), clamp(36px, 9cqw, 38px));
+    padding-block-end: 10px;
   }
   @supports (appearance: base-select) {
     .automata-comparison .automata-controls {

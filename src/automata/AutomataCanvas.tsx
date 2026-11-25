@@ -11,6 +11,7 @@ export function AutomataCanvas({
   label,
   description,
   editable,
+  onPaintChanges,
   testId = "automata-board",
   busy = false,
 }: {
@@ -20,15 +21,25 @@ export function AutomataCanvas({
   label: string;
   description: string;
   editable?: boolean;
+  onPaintChanges?: ((changes: readonly number[]) => void) | undefined;
   testId?: string;
   busy?: boolean;
 }): React.JSX.Element {
   const ref = useRef<HTMLCanvasElement>(null),
     id = useId();
   const [geometry, setGeometry] = useState<PlaneGeometry | null>(null);
+  const [focused, setFocused] = useState(false);
   const measured = useRef<PlaneGeometry | null>(null);
-  const { cancelInteraction, cursorCell, ...handlers } = useAutomataInteraction({ canvasRef: ref, active, controller, geometry, editable });
+  const { cancelInteraction, cursorCell, ...handlers } = useAutomataInteraction({
+    canvasRef: ref,
+    active,
+    controller,
+    geometry,
+    editable,
+    onPaintChanges,
+  });
   const canEdit = editable ?? controller.state.time === 0;
+  const showSelection = focused && !canEdit;
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!active || !canvas) return;
@@ -58,11 +69,11 @@ export function AutomataCanvas({
   useLayoutEffect(() => {
     if (!active || !geometry) return;
     const ctx = ref.current?.getContext("2d");
-    if (ctx) drawPlane(ctx, board, geometry, canEdit ? null : { x: controller.state.x, y: controller.state.y });
-  }, [active, board, geometry, controller.state.x, controller.state.y, canEdit]);
+    if (ctx) drawPlane(ctx, board, geometry, showSelection ? { x: controller.state.x, y: controller.state.y } : null);
+  }, [active, board, geometry, controller.state.x, controller.state.y, showSelection]);
   return (
     <div className="automata-canvas-group">
-      <div className="automata-board-frame">
+      <div className="automata-board-frame" onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}>
         <canvas
           className="automata-board"
           data-testid={testId}
@@ -73,6 +84,7 @@ export function AutomataCanvas({
           role="application"
           aria-label={label}
           aria-describedby={id}
+          aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
           aria-busy={busy}
           tabIndex={0}
           {...handlers}

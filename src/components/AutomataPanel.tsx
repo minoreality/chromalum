@@ -4,7 +4,11 @@ import type { TranslationKey } from "../i18n/types";
 import { CA_RULES, MAX_TIME, PLANE_SIZE, createVisibleEvolution, type AutomataRule, type CAColor } from "../automata/model";
 import { AUTOMATA_PRESETS, makePlaneSeed, type AutomataPreset } from "../automata/presets";
 import { useAutomataState } from "../automata/useAutomataState";
+import { useGenerationSound } from "../automata/useGenerationSound";
+import { useStrokePreview } from "../automata/useStrokePreview";
+import { FLOW_SOUND_KEY } from "../shortcuts";
 import { AutomataCanvas } from "../automata/AutomataCanvas";
+import { AutomataDescription } from "../automata/AutomataDescription";
 import { AutomataPalette, getColorLabel } from "../automata/AutomataPalette";
 import { getCanvasPanelClassName, getCanvasPanelStyle, getPanelLayoutClassName } from "../utils/panel-layout";
 
@@ -17,6 +21,8 @@ const RULE_KEYS: Record<AutomataRule, TranslationKey> = {
   9: "automata_rule_9",
   life: "automata_rule_life",
   rug: "automata_rule_rug",
+  seeds: "automata_rule_seeds",
+  "day-night": "automata_rule_day_night",
   or: "automata_rule_or",
   and: "automata_rule_and",
   majority: "automata_rule_majority",
@@ -24,55 +30,25 @@ const RULE_KEYS: Record<AutomataRule, TranslationKey> = {
 };
 const RULE_GROUPS: readonly { label: TranslationKey; rules: readonly AutomataRule[] }[] = [
   { label: "automata_rules_xor", rules: [4, 5, "diagonal", "diagonal-center", 8, 9] },
-  { label: "automata_rules_color", rules: ["or", "and", "majority", "hamming"] },
-  { label: "automata_rules_life", rules: ["life", "rug"] },
+  { label: "automata_rules_or_and", rules: ["or", "and"] },
+  { label: "automata_rules_majority_toggle", rules: ["majority", "hamming"] },
+  { label: "automata_rules_life", rules: ["life", "rug", "seeds", "day-night"] },
 ];
-const RULE_HINT_KEYS: Record<AutomataRule, TranslationKey> = {
-  4: "automata_rule_hint_xor",
-  5: "automata_rule_hint_xor",
-  diagonal: "automata_rule_hint_xor",
-  "diagonal-center": "automata_rule_hint_xor",
-  8: "automata_rule_hint_xor",
-  9: "automata_rule_hint_xor",
-  or: "automata_rule_hint_or",
-  and: "automata_rule_hint_and",
-  majority: "automata_rule_hint_majority",
-  hamming: "automata_rule_hint_hamming",
-  life: "automata_rule_hint_life",
-  rug: "automata_rule_hint_rug",
-};
 const PRESET_KEYS: Record<AutomataPreset, TranslationKey> = {
+  "overlapping-squares": "automata_preset_overlapping_squares",
   rosette: "automata_preset_rosette",
-  diamond: "automata_preset_diamond",
   corolla: "automata_preset_corolla",
   luminous: "automata_preset_luminous",
-  clock: "automata_preset_clock",
-  "phase-clock": "automata_preset_phase_clock",
-  pulse: "automata_preset_pulse",
-  fireworks: "automata_preset_fireworks",
   weave: "automata_preset_weave",
-  rgb: "automata_preset_rgb",
-  white: "automata_preset_white",
+  glider: "automata_preset_glider",
+  pulse: "automata_preset_pulse",
+  "phase-clock": "automata_preset_phase_clock",
+  fireworks: "automata_preset_fireworks",
+  "all-white": "automata_preset_all_white",
   black: "automata_preset_black",
-  "or-spread": "automata_preset_or_spread",
-  "and-core": "automata_preset_and_core",
-  "majority-cleanup": "automata_preset_majority_cleanup",
-  "hamming-boundary": "automata_preset_hamming_boundary",
 };
-const EXAMPLE_PRESETS: readonly AutomataPreset[] = ["or-spread", "and-core", "majority-cleanup", "hamming-boundary"];
-const PRESET_GROUPS = [
-  { label: "automata_presets_examples", presets: EXAMPLE_PRESETS },
-  { label: "automata_presets_patterns", presets: AUTOMATA_PRESETS.filter((preset) => !EXAMPLE_PRESETS.includes(preset)) },
-] as const;
 function readCell(t: TranslationFn, x: number, y: number, initial: CAColor, time: number, current: CAColor): string {
   return t("automata_selected", x, y, getColorLabel(initial, t), time, getColorLabel(current, t));
-}
-
-function makeRoomForPicker(select: HTMLSelectElement): void {
-  if (!window.CSS?.supports?.("appearance", "base-select")) return;
-  const bounds = select.getBoundingClientRect();
-  const space = Math.min(window.innerHeight / 2, bounds.height * 4);
-  if (window.innerHeight - bounds.bottom < space) select.scrollIntoView({ block: "center", behavior: "instant" });
 }
 
 export function AutomataPanel({
@@ -103,121 +79,125 @@ export function AutomataPanel({
   const editing = !comparison && state.time === 0;
   const presetSeed = useMemo(() => makePlaneSeed(state.preset), [state.preset]);
   const editedPreset = useMemo(() => state.seed.some((color, index) => color !== presetSeed[index]), [state.seed, presetSeed]);
-  // Keep seed painting immediate; evolve a later generation once the stroke settles.
+  // The main-thread timeline stays cached while the worker previews the changing seed.
   const resultSeed = state.time === 0 ? state.seed : controller.settledSeed;
   const evolution = useMemo(() => createVisibleEvolution(resultSeed, state.rule), [resultSeed, state.rule]);
-  const board = useMemo(() => evolution.at(state.time), [evolution, state.time]);
+  const preview = useStrokePreview(active && comparison, state.seed, resultSeed, state.rule, state.time);
+  const board = useMemo(() => preview?.board ?? evolution.at(state.time), [preview, evolution, state.time]);
+  const sound = useGenerationSound(active, state.time, evolution, board, controller.drawingLine && state.time > 0);
   const index = state.y * PLANE_SIZE + state.x;
   const readout = readCell(t, state.x, state.y, state.seed[index] as CAColor, state.time, board[index] as CAColor);
   const liveRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!controller.interacting && liveRef.current) liveRef.current.textContent = readout;
   }, [controller.interacting, readout]);
-  const initialControls = (
-    <>
-      {" "}
-      <AutomataPalette color={state.color} onSelect={(color) => dispatch({ type: "set-color", color })} />
-      <div className="automata-controls" data-testid="automata-controls">
-        <label className="automata-control">
-          <span>{t("automata_preset")}</span>
-          <select
-            value={editedPreset ? "edited" : state.preset}
-            onPointerDown={(event) => makeRoomForPicker(event.currentTarget)}
-            onKeyDown={(event) => {
-              if (["ArrowUp", "ArrowDown", " ", "Enter"].includes(event.key)) makeRoomForPicker(event.currentTarget);
-            }}
-            onChange={(event) => {
-              const value = AUTOMATA_PRESETS.find((preset) => preset === event.target.value);
-              if (value !== undefined) dispatch({ type: "set-preset", preset: value, preserveTime: comparison });
-            }}
-          >
-            <button type="button">
-              <span>{t(editedPreset ? "automata_preset_edited" : PRESET_KEYS[state.preset])}</span>
-            </button>
-            {PRESET_GROUPS.map((group) => (
-              <optgroup key={group.label} label={t(group.label)}>
-                {group.presets.map((preset) => (
-                  <option key={preset} value={preset}>
-                    {t(PRESET_KEYS[preset])}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-            {editedPreset && (
-              <option value="edited" disabled>
-                {t("automata_preset_edited")}
-              </option>
-            )}
-          </select>
-        </label>
-        <label className="automata-control">
-          <span>{t("automata_rule")}</span>
-          <select
-            value={state.rule}
-            aria-describedby={id + "-rule-hint"}
-            onPointerDown={(event) => makeRoomForPicker(event.currentTarget)}
-            onKeyDown={(event) => {
-              if (["ArrowUp", "ArrowDown", " ", "Enter"].includes(event.key)) makeRoomForPicker(event.currentTarget);
-            }}
-            onChange={(event) => {
-              const value = CA_RULES.find((rule) => String(rule) === event.target.value);
-              if (value !== undefined) dispatch({ type: "set-rule", rule: value });
-            }}
-          >
-            <button type="button">
-              <span>{t(RULE_KEYS[state.rule])}</span>
-            </button>
-            {RULE_GROUPS.map((group) => (
-              <optgroup key={group.label} label={t(group.label)}>
-                {group.rules.map((rule) => (
-                  <option key={rule} value={rule}>
-                    {t(RULE_KEYS[rule])}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        <p className="automata-rule-hint" id={id + "-rule-hint"}>
-          {CA_RULES.map((rule) => (
-            <span key={rule} className={rule === state.rule ? undefined : "automata-reserved"} aria-hidden={rule !== state.rule}>
-              {t(RULE_HINT_KEYS[rule])}
-            </span>
+  const palette = <AutomataPalette color={state.color} onSelect={(color) => dispatch({ type: "set-color", color })} />;
+  const descriptionId = id + "-description";
+  const description = <AutomataDescription id={descriptionId} preset={editedPreset ? null : state.preset} rule={state.rule} />;
+  const patternControls = (
+    <div className="automata-controls" data-testid="automata-controls">
+      <label className="automata-control">
+        <span>{t("automata_preset")}</span>
+        <select
+          value={editedPreset ? "edited" : state.preset}
+          aria-describedby={editedPreset ? undefined : descriptionId + "-note"}
+          onChange={(event) => {
+            const value = AUTOMATA_PRESETS.find((preset) => preset === event.target.value);
+            if (value !== undefined) dispatch({ type: "set-preset", preset: value, preserveTime: comparison });
+          }}
+        >
+          <button type="button">
+            <span>{t(editedPreset ? "automata_preset_edited" : PRESET_KEYS[state.preset])}</span>
+          </button>
+          {AUTOMATA_PRESETS.map((preset) => (
+            <option key={preset} value={preset}>
+              {t(PRESET_KEYS[preset])}
+            </option>
           ))}
-        </p>
-      </div>
-    </>
+          {editedPreset && (
+            <option value="edited" disabled>
+              {t("automata_preset_edited")}
+            </option>
+          )}
+        </select>
+      </label>
+      <label className="automata-control">
+        <span>{t("automata_rule")}</span>
+        <select
+          value={state.rule}
+          aria-describedby={descriptionId}
+          onChange={(event) => {
+            const value = CA_RULES.find((rule) => String(rule) === event.target.value);
+            if (value !== undefined) dispatch({ type: "set-rule", rule: value });
+          }}
+        >
+          <button type="button">
+            <span>{t(RULE_KEYS[state.rule])}</span>
+          </button>
+          {RULE_GROUPS.map((group) => (
+            <optgroup key={group.label} label={t(group.label)}>
+              {group.rules.map((rule) => (
+                <option key={rule} value={rule}>
+                  {t(RULE_KEYS[rule])}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+    </div>
   );
   const generationControls = (
-    <div className="automata-controls">
-      {" "}
-      <div className="automata-time">
-        <div className="automata-time-heading">
+    <div className="automata-generation-controls">
+      <div className="automata-time-heading">
+        <div className="automata-time-summary">
           <label className="automata-generation-label" htmlFor={id + "-time"}>
             <span>{t("automata_time", state.time, MAX_TIME)}</span>
             <span className="automata-reserved" aria-hidden="true">
               {t("automata_time", MAX_TIME, MAX_TIME)}
             </span>
           </label>
-          <span className={editing ? "automata-mode" : "automata-mode automata-reserved"} id={id + "-mode"} aria-hidden={!editing}>
-            {t("automata_edit_mode")}
-          </span>
+          {!comparison && (
+            <span className={editing ? "automata-mode" : "automata-mode automata-reserved"} id={id + "-mode"} aria-hidden={!editing}>
+              {t("automata_edit_mode")}
+            </span>
+          )}
         </div>
-        <input
-          id={id + "-time"}
-          type="range"
-          aria-describedby={editing ? id + "-mode" : undefined}
-          min={0}
-          max={MAX_TIME}
-          step={1}
-          value={state.time}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowUp" || event.key === "ArrowDown") event.preventDefault();
-          }}
-          onChange={(event) => dispatch({ type: "set-time", time: Number(event.target.value) })}
-        />
+        <label className="automata-generation-sound">
+          <input
+            type="checkbox"
+            aria-keyshortcuts={FLOW_SOUND_KEY}
+            checked={sound.enabled}
+            disabled={typeof AudioContext === "undefined"}
+            onChange={(event) => sound.toggle(event.target.checked)}
+          />
+          {t("automata_generation_sound")}
+        </label>
       </div>
+      <input
+        className="automata-slider"
+        id={id + "-time"}
+        type="range"
+        aria-describedby={editing ? id + "-mode" : undefined}
+        min={0}
+        max={MAX_TIME}
+        step={1}
+        value={state.time}
+        {...sound.sliderEvents}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowUp" || event.key === "ArrowDown") event.preventDefault();
+        }}
+        onChange={(event) => dispatch({ type: "set-time", time: Number(event.target.value) })}
+      />
       <div className="automata-actions">
+        <button
+          className="automata-return"
+          type="button"
+          disabled={state.time === 0}
+          onClick={() => dispatch({ type: "set-time", time: 0 })}
+        >
+          {t("automata_return")}
+        </button>
         <button type="button" disabled={state.time === 0} onClick={() => dispatch({ type: "set-time", time: Math.max(0, state.time - 1) })}>
           {t("automata_back")}
         </button>
@@ -227,14 +207,6 @@ export function AutomataPanel({
           onClick={() => dispatch({ type: "set-time", time: Math.min(MAX_TIME, state.time + 1) })}
         >
           {t("automata_step")}
-        </button>
-        <button
-          className="automata-return"
-          type="button"
-          disabled={state.time === 0}
-          onClick={() => dispatch({ type: "set-time", time: 0 })}
-        >
-          {t("automata_return")}
         </button>
       </div>
     </div>
@@ -276,13 +248,14 @@ export function AutomataPanel({
                 controller={controller}
                 board={state.seed}
                 editable={true}
+                onPaintChanges={sound.onPaintChanges}
                 testId="automata-initial-board"
                 label={t("automata_initial_canvas_label")}
                 description={t("automata_initial_keyboard_hint")}
               />
               <div className="automata-sidebar automata-tools automata-initial-tools">
-                {initialControls}
-                {storageNotice}
+                {palette}
+                {patternControls}
               </div>
             </div>
             <div className="automata-pane">
@@ -292,12 +265,14 @@ export function AutomataPanel({
                 controller={controller}
                 board={board}
                 editable={false}
-                busy={state.seed !== resultSeed}
+                busy={state.seed !== (preview?.seed ?? resultSeed)}
                 label={t("automata_result_canvas_label")}
                 description={t("automata_result_keyboard_hint")}
               />
               <div className="automata-sidebar automata-tools automata-result-tools">{generationControls}</div>
             </div>
+            {description}
+            {storageNotice}
           </>
         ) : (
           <>
@@ -307,13 +282,16 @@ export function AutomataPanel({
                 controller={controller}
                 board={board}
                 label={t("automata_canvas_label")}
+                onPaintChanges={sound.onPaintChanges}
                 description={t("automata_keyboard_hint")}
               />
             </div>
             <div className="panel-sidebar automata-sidebar">
               <div className="automata-tools">
-                {initialControls}
+                {palette}
                 {generationControls}
+                {patternControls}
+                {description}
                 {storageNotice}
               </div>
             </div>

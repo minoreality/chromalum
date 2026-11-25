@@ -11,10 +11,16 @@ function element(html: string): Element {
 const key = (key: string, code = key) => ({ key, code });
 
 describe("controlOwnsKey", () => {
-  it("offers numeric drawing and tab switching without Source tools on Automata", () => {
+  it("lists the Flow board, generation slider and sound keys alongside tab switching", () => {
     expect(hasDrawingShortcuts("automata")).toBe(false);
     expect(shortcutsForTab("automata")).toEqual([
+      { key: "↑ ↓ ← →", label: "help_automata_select_cell" },
       { key: "0-7", label: "help_automata_draw" },
+      { key: "Enter / Space", label: "help_automata_paint_selected" },
+      { key: "Shift+←/→", label: "help_automata_board_step" },
+      { key: "← / →", label: "help_automata_slider_step" },
+      { key: "Home / End", label: "help_automata_slider_limits" },
+      { key: "M", label: "help_automata_toggle_sound" },
       { key: "Alt+1-8", label: "help_switch_tab" },
     ]);
   });

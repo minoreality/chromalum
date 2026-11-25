@@ -24,6 +24,7 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, activeTabId, 
 
   if (!showHelp) return null;
 
+  const isFlow = activeTabId === "automata";
   const rows = shortcutsForTab(activeTabId).map((entry) => ({
     keys: "key" in entry ? entry.key : t(entry.keyCopy),
     label: t(entry.label),
@@ -53,7 +54,7 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, activeTabId, 
           borderRadius: R["2xl"],
           padding: SP["4xl"],
           boxSizing: "border-box",
-          maxWidth: "min(400px, calc(100vw - 48px))",
+          maxWidth: `min(400px, calc(100vw - ${isFlow ? 24 : 48}px))`,
           maxHeight: "80vh",
           overflowY: "auto",
           fontFamily: FONT.sans,
@@ -80,7 +81,7 @@ export const HelpModal = React.memo(function HelpModal({ showHelp, activeTabId, 
             key={index}
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(116px, 0.9fr) minmax(0, 1fr)",
+              gridTemplateColumns: isFlow ? "max-content minmax(0, 1fr)" : "minmax(116px, 0.9fr) minmax(0, 1fr)",
               columnGap: SP["2xl"],
               alignItems: "baseline",
               padding: `${SP.xs}px 0`,

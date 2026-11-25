@@ -174,6 +174,243 @@ test("uses only horizontal arrow keys on the generation slider", async ({ page }
   await expect(slider).toHaveValue("64");
 });
 
+test("toggles Sound of change with M while Flow is active", async ({ page }) => {
+  await openAutomata(page);
+  const sound = page.getByRole("checkbox", { name: "Sound of change" });
+  const board = currentBoard(page);
+  await board.focus();
+  await page.keyboard.down("m");
+  await expect(sound).toBeChecked();
+  await page.keyboard.down("m");
+  await page.keyboard.up("m");
+  await expect(sound).toBeChecked();
+  await expect(board).toBeFocused();
+  await expect(sound).toHaveAttribute("aria-keyshortcuts", "M");
+
+  const slider = page.getByRole("slider");
+  await slider.press("m");
+  await expect(sound).not.toBeChecked();
+  for (const chord of ["Shift+m", "Control+m", "Alt+m", "Meta+m"]) {
+    await slider.press(chord);
+    await expect(sound).not.toBeChecked();
+  }
+  await page.getByRole("combobox", { name: "Update rule", exact: true }).press("m");
+  await expect(sound).not.toBeChecked();
+  await page.getByRole("button", { name: "Shortcuts", exact: true }).click();
+  await expect(page.getByRole("dialog").getByText("Toggle sound of change", { exact: true })).toBeVisible();
+  await page.keyboard.press("m");
+  await page.keyboard.press("Escape");
+  await expect(sound).not.toBeChecked();
+  await page.getByRole("tab", { name: "Music", exact: true }).click();
+  const mute = page.getByRole("button", { name: "Mute", exact: true });
+  await expect(mute).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("m");
+  await expect(mute).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
+  await expect(sound).not.toBeChecked();
+  await expect(slider).toHaveValue("0");
+});
+
+test("sustains the changing chord while dragging the slider forward and backward", async ({ page }) => {
+  await openAutomata(page);
+  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("phase-clock");
+  await page.getByRole("combobox", { name: "Update rule", exact: true }).selectOption("life");
+  await page.getByRole("checkbox", { name: "Sound of change" }).check();
+  const slider = page.getByRole("slider");
+  const playback = await slider.evaluateHandle((input: HTMLInputElement) => {
+    const log = { voices: 0, ended: 0, changes: [] as number[], notes: [] as number[] };
+    const startVoice = OscillatorNode.prototype.start;
+    OscillatorNode.prototype.start = function (...args) {
+      log.voices++;
+      this.addEventListener("ended", () => log.ended++, { once: true });
+      return startVoice.apply(this, args);
+    };
+    const target = AudioParam.prototype.setTargetAtTime;
+    AudioParam.prototype.setTargetAtTime = function (...args) {
+      if (args[0] > 0 && log.changes.at(-1) !== input.valueAsNumber) log.changes.push(input.valueAsNumber);
+      return target.apply(this, args);
+    };
+    const startNote = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      log.notes.push(input.valueAsNumber);
+      return startNote.apply(this, args);
+    };
+    return log;
+  });
+  await slider.scrollIntoViewIfNeeded();
+  const box = (await slider.boundingBox())!;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + 1, y);
+  await page.mouse.down();
+  const expected: number[] = [];
+  for (const position of [0.1, 0.3, 0.15]) {
+    await page.mouse.move(box.x + position * box.width, y);
+    const generation = Number(await slider.inputValue());
+    expect(generation).not.toBe(expected.at(-1) ?? 0);
+    expected.push(generation);
+    await expect.poll(() => playback.jsonValue()).toEqual({ voices: 14, ended: 0, changes: expected, notes: [] });
+  }
+  await page.mouse.up();
+  await expect.poll(() => playback.evaluate((log) => log.ended)).toBe(14);
+  await slider.press("ArrowRight");
+  const step = expected.at(-1)! + 1;
+  await expect.poll(() => playback.evaluate((log) => log.notes)).toEqual([step]);
+
+  // A drag can also start on the track away from the thumb.
+  await page.mouse.move(box.x + 0.55 * box.width, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 0.65 * box.width, y);
+  await expect.poll(() => playback.evaluate((log) => log.voices)).toBe(28);
+  await page.mouse.up();
+  await page.mouse.click(box.x + 0.4 * box.width, y);
+  const clicked = Number(await slider.inputValue());
+  await expect.poll(() => playback.evaluate((log) => log.notes)).toEqual([step, clicked]);
+});
+
+test("sounds the changed color components when editing the initial board at a later generation", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openAutomata(page);
+  await blank(page);
+  await selectColor(page, 2);
+  await clickCell(page, 8, 8);
+  await page.getByRole("slider").press("ArrowRight");
+  const initial = page.getByTestId("automata-initial-board");
+  const notes = await page.evaluateHandle(() => {
+    const heard: { duration: number; fingerprint: number[] }[] = [];
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      if (this.buffer) {
+        const data = this.buffer.getChannelData(0);
+        heard.push({ duration: this.buffer.duration, fingerprint: Array.from(data.filter((_, i) => i % 101 === 0)) });
+      }
+      return start.apply(this, args);
+    };
+    return heard;
+  });
+  const sound = page.getByRole("checkbox", { name: "Sound of change" });
+  await hoverCell(page, initial, 5, 8);
+  await page.keyboard.press("4"); // Muted edit.
+  await sound.check();
+  await selectColor(page, 4);
+  await hoverCell(page, initial, 6, 8);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect.poll(() => notes.evaluate((values) => values.length)).toBe(1);
+  const [green] = await notes.jsonValue();
+  expect(green.duration).toBeCloseTo(0.08, 4);
+  expect(green.fingerprint.some((sample) => sample !== 0)).toBe(true);
+  await page.keyboard.press("Enter"); // The cell is already green.
+  await hoverCell(page, initial, 8, 8);
+  await page.keyboard.press("6"); // Red to yellow also flips only green.
+  await page.keyboard.press("2"); // Reversing the change gives the same chord.
+  await page.keyboard.press("3"); // Red to magenta flips blue instead.
+  await expect.poll(() => notes.evaluate((values) => values.length)).toBe(4);
+  const [, yellow, reverse, blue] = await notes.jsonValue();
+  expect(yellow).toEqual(green);
+  expect(reverse).toEqual(green);
+  expect(blue.fingerprint).not.toEqual(green.fingerprint);
+  await expect(page.getByRole("slider")).toHaveValue("1");
+  await page.getByTestId("automata-board").click();
+  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("all-white");
+  expect(await notes.evaluate((values) => values.length)).toBe(4);
+});
+
+test("sounds an opted-in generation change with a tail shaped by neighboring cells", async ({ page }) => {
+  await openAutomata(page);
+  const sound = page.getByRole("checkbox", { name: "Sound of change" });
+  const slider = page.getByRole("slider");
+  const step = page.getByRole("button", { name: "Next generation", exact: true });
+  await expect(sound).not.toBeChecked();
+  const notes = await page.evaluateHandle(() => {
+    const recorded: { attack: number; tail: number }[] = [];
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      if (this.buffer) {
+        const samples = this.buffer.getChannelData(0);
+        const rate = this.buffer.sampleRate;
+        const energy = (from: number, to: number) =>
+          samples.subarray(Math.round(from * rate), Math.round(to * rate)).reduce((sum, value) => sum + value * value, 0);
+        recorded.push({ attack: energy(0, 0.05), tail: energy(0.18, 0.34) });
+      }
+      return start.apply(this, args);
+    };
+    return recorded;
+  });
+  const draw = async (cells: [number, number][]) => {
+    await blank(page);
+    for (const [x, y] of cells) await clickCell(page, x, y);
+  };
+  await page.getByRole("combobox", { name: "Update rule", exact: true }).selectOption("and");
+  await draw([
+    [8, 8],
+    [9, 8],
+    [8, 9],
+    [9, 9],
+  ]);
+  await step.click();
+  await slider.press("Home");
+  expect(await notes.jsonValue()).toEqual([]);
+  await sound.check();
+  await slider.press("m");
+  await expect(sound).not.toBeChecked();
+  await slider.press("m");
+  await expect(sound).toBeChecked();
+  await step.click();
+  await step.click();
+  const [square] = await notes.jsonValue();
+  expect(square.attack).toBeGreaterThan(0);
+  expect(square.tail).toBeGreaterThan(0);
+  // AND clears the four cells on the first step. The second step stays silent.
+  expect(await notes.jsonValue()).toHaveLength(1);
+  await slider.press("Home");
+  await sound.uncheck();
+  await draw([
+    [8, 8],
+    [12, 8],
+    [8, 12],
+    [12, 12],
+  ]);
+  await sound.check();
+  await step.click();
+  const [forward, backward, isolated] = await notes.jsonValue();
+  expect(backward).toEqual(forward);
+  expect(isolated.attack).toBe(square.attack);
+  // The square exposes half as many changed-to-unchanged neighbor pairs.
+  expect(square.tail / isolated.tail).toBeCloseTo(0.5, 5);
+  await page.getByRole("tab", { name: "Hex", exact: true }).click();
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
+  await expect(sound).not.toBeChecked();
+});
+
+for (const width of [1280, 682]) {
+  test(`steps generations from the focused board without moving the selected cell at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openAutomata(page);
+    const slider = page.getByRole("slider");
+    const boards = page.locator(".automata-board");
+    await expect(boards).toHaveCount(width === 1280 ? 2 : 1);
+    for (const board of await boards.all()) {
+      await slider.press("Home");
+      await board.press("ArrowDown");
+      const initial = await savedState(page);
+      await board.press("Shift+ArrowLeft");
+      await expect(slider).toHaveValue("0");
+      await board.press("Shift+ArrowRight");
+      await expect(slider).toHaveValue("1");
+      await expect(board).toBeFocused();
+      expect(await savedState(page)).toEqual({ ...initial, time: 1 });
+      await page.keyboard.press("Shift+ArrowLeft");
+      await expect(slider).toHaveValue("0");
+      await slider.press("End");
+      await board.press("Shift+ArrowRight");
+      await expect(slider).toHaveValue("64");
+      await board.press("Shift+ArrowLeft");
+      await expect(slider).toHaveValue("63");
+      expect(await savedState(page)).toEqual({ ...initial, time: 63 });
+    }
+  });
+}
+
 test("moves the canvas selection diagonally while two arrow keys are held", async ({ page }) => {
   await openAutomata(page);
   await blank(page);
@@ -273,7 +510,8 @@ test("keeps Flow numeric drawing out of controls, dialogs and other tabs", async
   await page.keyboard.press("F1");
   const help = page.getByRole("dialog", { name: "Keyboard Shortcuts", exact: true });
   await expect(help).toBeVisible();
-  await expect(help.getByText("Draw pattern", { exact: true })).toBeVisible();
+  await expect(help.getByText("Paint with the matching color", { exact: true })).toBeVisible();
+  await page.keyboard.press("Shift+ArrowRight");
   await page.keyboard.press("7");
   expect(await savedState(page)).toEqual(painted);
   await page.keyboard.press("Escape");
@@ -346,6 +584,32 @@ for (const width of [1280, 390]) {
   });
 }
 
+test("places generation controls between the palette and selectors in the single-board layout", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 678 });
+  await openAutomata(page);
+  const slider = page.getByRole("slider");
+  const sound = page.getByRole("checkbox", { name: "Sound of change" });
+  const actions = page.locator(".automata-actions");
+  const settings = page.getByTestId("automata-controls");
+  await expect(actions.getByRole("button")).toHaveText(["Return to generation 0", "Previous generation", "Next generation"]);
+  let previous = (await palette(page).boundingBox())!;
+  for (const section of [page.locator(".automata-time-heading"), slider, actions, settings]) {
+    const current = (await section.boundingBox())!;
+    expect(current.y).toBeGreaterThanOrEqual(previous.y + previous.height);
+    previous = current;
+  }
+  const soundBox = (await sound.locator("..").boundingBox())!;
+  const sliderBox = (await slider.boundingBox())!;
+  expect(soundBox.y + soundBox.height).toBeLessThanOrEqual(sliderBox.y);
+  expect(soundBox.x + soundBox.width).toBeCloseTo(sliderBox.x + sliderBox.width, 1);
+  await slider.press("ArrowRight");
+  await palette(page).getByRole("button").last().focus();
+  for (const control of [sound, slider, ...(await actions.getByRole("button").all()), ...(await settings.getByRole("combobox").all())]) {
+    await page.keyboard.press("Tab");
+    await expect(control).toBeFocused();
+  }
+});
+
 test("keeps the palette and pattern selectors in rows below large comparison boards", async ({ page }) => {
   await page.setViewportSize({ width: 1159, height: 668 });
   await openAutomata(page);
@@ -356,14 +620,93 @@ test("keeps the palette and pattern selectors in rows below large comparison boa
     .locator(".automata-content")
     .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue("--display-max")));
   expect(box.width).toBeCloseTo(maximum, 0);
-  for (const controls of [palette(page).getByRole("button"), page.getByRole("combobox")]) {
+  const initialTools = page.locator(".automata-initial-tools");
+  await expect(page.locator(".automata-result-tools").getByRole("slider")).toBeVisible();
+  for (const controls of [initialTools.getByRole("group", { name: "Palette" }).getByRole("button"), initialTools.getByRole("combobox")]) {
     const rows = await controls.evaluateAll((elements) => elements.map((el) => el.getBoundingClientRect().y));
     expect(new Set(rows).size).toBe(1);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test("draws immediately at generation 64 and updates the result when the stroke ends", async ({ page }) => {
+test("places the selected pair's description below both comparison boards and their controls", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 678 });
+  await openAutomata(page, "ja");
+  const preset = page.getByRole("combobox", { name: "初期配置", exact: true });
+  const rule = page.getByRole("combobox", { name: "更新規則", exact: true });
+  const slider = page.getByRole("slider");
+  const note = page.locator(".automata-viewing-note");
+  const hint = page.locator(".automata-rule-hint");
+  await preset.selectOption("corolla");
+  await rule.selectOption("life");
+  await expect(note).toContainText("黒い中心を囲む緑の4点");
+  await expect(slider).toHaveAccessibleDescription("初期配置を編集できます");
+  await expect(preset).toHaveAccessibleDescription((await note.textContent())!);
+  await expect(rule).toHaveAccessibleDescription([await note.textContent(), await hint.textContent()].join(" "));
+  const selectors = (await page.getByTestId("automata-controls").boundingBox())!;
+  expect((await note.boundingBox())!.y).toBeGreaterThanOrEqual(selectors.y + selectors.height);
+  for (const paragraph of [note, hint]) await expect(paragraph).toHaveCSS("text-align", /^(left|start)$/);
+  await slider.press("ArrowRight");
+  await expect(note).toContainText("黒い中心を囲む緑の4点");
+  await rule.selectOption("or");
+  await expect(note).toContainText("緑、黄、白");
+
+  await page.setViewportSize({ width: 1159, height: 678 });
+  const right = page.locator(".automata-result-tools");
+  await expect(right.locator(".automata-actions button")).toHaveText(["第0世代に戻る", "1世代戻る", "1世代進む"]);
+  await expect(note).toContainText("緑、黄、白");
+  for (const paragraph of [note, hint]) await expect(paragraph).toHaveCSS("text-align", "center");
+  const checkComparisonLayout = async () => {
+    const layout = await page.locator(".automata-comparison").evaluate((root) => {
+      const rect = (selector: string) => {
+        const { left, right, top, bottom } = root.querySelector(selector)!.getBoundingClientRect();
+        return { left, right, top, bottom };
+      };
+      const [initial, result] = root.querySelectorAll(".automata-board-frame");
+      return {
+        leftEdge: initial.getBoundingClientRect().left,
+        rightEdge: result.getBoundingClientRect().right,
+        caption: rect(".automata-description-text"),
+        settings: rect(".automata-controls"),
+        actions: rect(".automata-actions"),
+        heading: rect(".automata-time-heading"),
+        sound: rect(".automata-generation-sound"),
+        track: rect(".automata-slider"),
+      };
+    });
+    const { caption, settings, actions, heading, track } = layout;
+    expect(caption.left).toBeCloseTo(layout.leftEdge, 1);
+    expect(caption.right).toBeCloseTo(layout.rightEdge, 1);
+    expect(caption.top).toBeGreaterThanOrEqual(Math.max(settings.bottom, actions.bottom));
+    expect(track.top).toBeGreaterThanOrEqual(heading.bottom);
+    expect(track.top).toBeGreaterThanOrEqual(layout.sound.bottom);
+    expect(layout.sound.right).toBeCloseTo(track.right, 1);
+    expect(track.left).toBeCloseTo(heading.left, 1);
+    expect(track.right).toBeCloseTo(layout.rightEdge, 1);
+    expect(actions.top).toBeGreaterThanOrEqual(track.bottom);
+    return track.left;
+  };
+  const trackLeft = await checkComparisonLayout();
+  await slider.press("End");
+  expect((await slider.boundingBox())!.x).toBe(trackLeft);
+  await page.getByTestId("automata-initial-board").press("7");
+  await expect(preset).toHaveValue("edited");
+  await expect(note).toHaveCount(0);
+  await expect(rule).toHaveAccessibleDescription((await hint.textContent())!);
+
+  await page.setViewportSize({ width: 1050, height: 450 });
+  const compactActions = right.locator(".automata-actions");
+  await checkComparisonLayout();
+  await page.getByTestId("automata-board").focus();
+  await page.keyboard.press("Tab");
+  await expect(right.getByRole("checkbox", { name: "変化の響き" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(slider).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(compactActions.getByRole("button").first()).toBeFocused();
+});
+
+test("updates both boards at generation 64 before the drawing stroke ends", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await openAutomata(page);
   await blank(page);
@@ -380,15 +723,58 @@ test("draws immediately at generation 64 and updates the result when the stroke 
     const next = point(x);
     await page.mouse.move(next.x, next.y);
     expect(await renderedCell(initial, x, 5)).toEqual([255, 255, 255, 255]);
-    expect(await renderedCell(result, x, 5)).toEqual([0, 0, 0, 255]);
-    await expect(result).toHaveAttribute("aria-busy", "true");
+    // A center-including XOR at 64 steps reproduces the seed inside this viewing window.
+    await expect.poll(() => renderedCell(result, x, 5)).toEqual([255, 255, 255, 255]);
+    await expect(result).toHaveAttribute("aria-busy", "false");
   }
   await page.mouse.up();
   await expect(result).toHaveAttribute("aria-busy", "false");
-  // A center-including XOR at 64 steps reproduces the seed inside this viewing window.
   expect(await renderedCell(result, 10, 5)).toEqual([255, 255, 255, 255]);
   await expect(page.getByRole("slider")).toHaveValue("64");
   expect((await savedState(page)).seed.slice(5 * 49 + 5, 5 * 49 + 21)).toEqual(new Array(16).fill(7));
+});
+
+test("sounds changes to the displayed generation while the drawing stroke is still held", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openAutomata(page);
+  const initial = page.getByTestId("automata-initial-board");
+  const result = page.getByTestId("automata-board");
+  const levels = await page.evaluateHandle(() => {
+    const heard: number[] = [];
+    const target = AudioParam.prototype.setTargetAtTime;
+    AudioParam.prototype.setTargetAtTime = function (...args) {
+      if (args[0] > 0) heard.push(args[0]);
+      return target.apply(this, args);
+    };
+    return heard;
+  });
+  const sound = page.getByRole("checkbox", { name: "Sound of change" });
+  for (const rule of ["and", "or"]) {
+    await blank(page);
+    await page.getByRole("combobox", { name: "Update rule", exact: true }).selectOption(rule);
+    await page.getByRole("slider").press("Home");
+    await page.getByRole("slider").press("ArrowRight");
+    await sound.check();
+    await hoverCell(page, initial, 5, 10);
+    await page.mouse.down();
+    await expect(result).toHaveAttribute("aria-busy", "false");
+    await hoverCell(page, initial, 6, 10);
+    await expect(result).toHaveAttribute("aria-busy", "false");
+    const first = await levels.jsonValue();
+    await hoverCell(page, initial, 8, 10);
+    await expect(result).toHaveAttribute("aria-busy", "false");
+    if (rule === "and") {
+      // The seed changed, but an isolated line under AND leaves the generation black.
+      expect(await levels.jsonValue()).toEqual([]);
+    } else {
+      expect(first.length).toBeGreaterThan(0);
+      const second = (await levels.jsonValue()).slice(first.length);
+      // OR lights three new result cells, then six. Normalized powers have ratio (6/7)/(3/4).
+      expect(Math.max(...second) / Math.max(...first)).toBeCloseTo(8 / 7, 5);
+    }
+    await page.mouse.up();
+    await sound.uncheck();
+  }
 });
 
 for (const language of ["ja", "en"] as const) {
@@ -403,7 +789,7 @@ for (const language of ["ja", "en"] as const) {
       // Classic scrollbars consume layout width; Latin monospace glyphs can also be wider than Consolas.
       await page.addStyleTag({ content: "html { scrollbar-gutter: stable; } .automata-panel * { font-family: monospace !important; }" });
       const controls = page.getByRole("combobox");
-      await controls.nth(0).selectOption("white");
+      await controls.nth(0).selectOption("all-white");
       await controls.nth(1).selectOption("life");
       const before = await rectangles(page);
       const paletteFits = await palette(page).evaluate((node) => {
@@ -414,13 +800,11 @@ for (const language of ["ja", "en"] as const) {
         });
       });
       expect(paletteFits, "palette fits its parent, not just its own overflowing grid").toBe(true);
-      for (const [index, count] of [
-        [0, 16],
-        [1, 12],
-      ]) {
+      for (const control of await controls.all()) {
+        const count = await control.getByRole("option", { disabled: false }).count();
         for (let option = 0; option < count; option++) {
-          await controls.nth(index).selectOption({ index: option });
-          const label = await controls.nth(index).evaluate((node) => {
+          await control.selectOption({ index: option });
+          const label = await control.evaluate((node) => {
             const range = document.createRange();
             range.selectNodeContents(node.querySelector("button > span")!);
             return { text: node.textContent, lines: range.getClientRects().length, fits: node.scrollWidth <= node.clientWidth };
@@ -485,11 +869,12 @@ for (const language of ["ja", "en"] as const) {
     expect((await savedState(page)).seed[24 * 49 + 23]).toBe(7);
     expect(await renderedCell(result, 22, 24)).toEqual([255, 255, 255, 255]);
     await page.getByRole("combobox").nth(1).selectOption("5");
-    await page.getByRole("combobox").nth(0).selectOption("white");
+    await page.getByRole("combobox").nth(0).selectOption("all-white");
     await expect(page.getByRole("slider")).toHaveValue("1");
     expect(await renderedCell(result, 24, 24)).toEqual([255, 255, 255, 255]);
     expect(await boardPositions()).toEqual(originalPositions);
 
+    await selectColor(page, 3);
     // Resizing during an initial-pattern stroke must finish it and keep the observed time.
     const currentLeft = (await initial.boundingBox())!;
     const p = { x: currentLeft.x + (currentLeft.width * 5.5) / 49, y: currentLeft.y + (currentLeft.height * 5.5) / 49 };
@@ -501,7 +886,7 @@ for (const language of ["ja", "en"] as const) {
     await expect(page.getByRole("application")).toHaveCount(1);
     await expect(page.getByRole("slider")).toHaveValue("1");
     const saved = await savedState(page);
-    expect(saved.seed[5 * 49 + 5]).toBe(7);
+    expect(saved.seed[5 * 49 + 5]).toBe(3);
     await result.press("Enter");
     expect((await savedState(page)).seed).toEqual(saved.seed);
     await page.reload();
@@ -517,8 +902,8 @@ for (const language of ["ja", "en"] as const) {
     expect((await savedState(page)).seed).toEqual(saved.seed);
     await step.click();
     await expect(page.getByRole("slider")).toHaveValue("1");
-    await preset.selectOption("white");
-    await expect(preset).toHaveValue("white");
+    await preset.selectOption("all-white");
+    await expect(preset).toHaveValue("all-white");
     await expect(page.getByRole("slider")).toHaveValue("1");
     await page.getByRole("button", { name: language === "ja" ? "第0世代に戻る" : "Return to generation 0", exact: true }).click();
     await expect(page.getByRole("slider")).toHaveValue("0");
@@ -602,7 +987,7 @@ for (const viewport of [
       await expect(page.getByRole("slider")).toHaveValue("64");
       await expect(page.getByRole("button", { name: "Next generation", exact: true })).toBeDisabled();
       const presets = page.getByRole("combobox", { name: "Initial pattern", exact: true });
-      await expect(presets.getByRole("option", { disabled: false })).toHaveCount(16);
+      await expect(presets.getByRole("option", { disabled: false })).toHaveCount(11);
       await expect(presets.getByRole("option", { selected: true, disabled: true })).toHaveText("Edited pattern");
       expect(await savedState(page)).toEqual(edited);
       await expect.poll(async () => JSON.parse(await readSavedRecord(page))?.width).toBe(width);
@@ -628,8 +1013,10 @@ test("opens the eighth tab directly with the complete native controls", async ({
   await expect(page).toHaveTitle("CHROMALUM - Flow");
   await expect(page.getByRole("tab")).toHaveText(["Gallery", "Hex", "Source", "Glaze", "Map", "Theory", "Music", "Flow"]);
   await expect(page.getByRole("combobox")).toHaveCount(2);
-  await expect(page.getByRole("combobox").nth(0).getByRole("option")).toHaveCount(16);
-  await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(12);
+  const presets = page.getByRole("combobox").nth(0);
+  await expect(presets.getByRole("option")).toHaveCount(11);
+  await expect(presets).toHaveValue("overlapping-squares");
+  await expect(page.getByRole("combobox").nth(1).getByRole("option")).toHaveCount(14);
   await expect(palette(page).getByRole("button")).toHaveText(LABELS);
   await expect(palette(page).getByRole("button").nth(4)).toHaveAttribute("aria-pressed", "true");
   await expect(currentBoard(page)).toHaveCount(1);
@@ -637,17 +1024,43 @@ test("opens the eighth tab directly with the complete native controls", async ({
   await expect(page.getByRole("button", { name: "Return to generation 0", exact: true })).toBeDisabled();
 });
 
+test("opens both Flow pickers near the footer without moving the page or its controls", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 678 });
+  await openAutomata(page, "ja");
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+  const controls = page.getByRole("combobox");
+  const layout = () =>
+    controls.evaluateAll((els) => [scrollY, document.documentElement.scrollHeight, ...els.map((el) => el.getBoundingClientRect().top)]);
+  const before = await layout();
+  for (const [index, select] of (await controls.all()).entries()) {
+    if (index === 0) await select.click();
+    else await select.press("Space");
+    await expect.poll(() => select.evaluate((el) => el.matches(":open"))).toBe(true);
+    expect(await layout()).toEqual(before);
+    await page.keyboard.press("End");
+    const last = select.getByRole("option").last();
+    await expect(last).toBeFocused();
+    const row = (await last.boundingBox())!;
+    expect(row.y).toBeGreaterThanOrEqual(0);
+    expect(row.y + row.height).toBeLessThanOrEqual((await select.boundingBox())!.y);
+    expect(await layout()).toEqual(before);
+    await page.keyboard.press("Escape");
+    await expect.poll(() => select.evaluate((el) => el.matches(":open"))).toBe(false);
+    expect(await layout()).toEqual(before);
+  }
+});
+
 for (const viewport of [
   { width: 714, height: 668 },
   { width: 360, height: 844 },
   { width: 320, height: 900 },
 ]) {
-  test(`opens both Automata selectors downward at ${viewport.width}px`, async ({ page }) => {
+  test(`keeps both Automata menus and the chosen option inside the viewport at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await openAutomata(page);
     for (const [index, lastIndex, firstValue] of [
-      [0, 15, "or-spread"],
-      [1, 11, "4"],
+      [0, 10, "overlapping-squares"],
+      [1, 13, "4"],
     ] as const) {
       const select = page.getByRole("combobox").nth(index);
       await select.selectOption({ index: lastIndex });
@@ -657,7 +1070,8 @@ for (const viewport of [
       await expect(option).toBeVisible();
       const control = (await select.boundingBox())!;
       const selected = (await option.boundingBox())!;
-      expect(selected.y).toBeGreaterThanOrEqual(control.y + control.height);
+      expect(selected.y >= control.y + control.height || selected.y + selected.height <= control.y).toBe(true);
+      expect(selected.y).toBeGreaterThanOrEqual(0);
       expect(selected.y + selected.height).toBeLessThanOrEqual(viewport.height);
       await page.keyboard.press("Home");
       await page.keyboard.press("Enter");
@@ -675,44 +1089,47 @@ for (const language of ["ja", "en"] as const) {
       const preset = page.getByRole("combobox").nth(0);
       const rule = page.getByRole("combobox").nth(1);
       const slider = page.getByRole("slider");
-      await expect(rule.locator("optgroup")).toHaveCount(3);
+      await expect(rule.locator("optgroup")).toHaveCount(4);
       await expect(rule.locator('optgroup[label="XOR"] option')).toHaveCount(6);
-      await expect(preset.locator("optgroup").first().locator("option")).toHaveCount(4);
+      await expect(preset.locator("optgroup")).toHaveCount(0);
       // A fresh visit is saved only after editing or choosing a setting.
       await preset.selectOption("black");
       const rgba = (color: number) => [color & 2 ? 255 : 0, color & 4 ? 255 : 0, color & 1 ? 255 : 0, 255];
       const examples = [
-        { rule: "or", preset: "or-spread", time: 12, cells: [[24, 23, 0, 7]] },
         {
-          rule: "and",
-          preset: "and-core",
+          rule: "or",
+          preset: "rosette",
           time: 1,
           cells: [
-            [13, 15, 7, 2],
-            [35, 15, 7, 4],
-            [24, 35, 7, 1],
+            [24, 23, 0, 7],
+            [24, 21, 0, 4],
+          ],
+        },
+        {
+          rule: "and",
+          preset: "luminous",
+          time: 1,
+          cells: [
+            [24, 24, 7, 4],
+            [24, 23, 4, 0],
           ],
         },
         {
           rule: "majority",
-          preset: "majority-cleanup",
+          preset: "corolla",
           time: 1,
           cells: [
-            [13, 16, 0, 4],
-            [35, 16, 0, 2],
-            [24, 35, 0, 1],
-            [6, 10, 4, 0],
+            [24, 24, 0, 4],
+            [24, 23, 4, 0],
           ],
         },
         {
           rule: "hamming",
-          preset: "hamming-boundary",
+          preset: "rosette",
           time: 1,
           cells: [
-            [23, 15, 2, 6],
-            [24, 15, 6, 2],
-            [23, 33, 2, 2],
-            [24, 33, 5, 5],
+            [24, 23, 0, 5],
+            [22, 24, 4, 4],
           ],
         },
       ];
@@ -723,10 +1140,10 @@ for (const language of ["ja", "en"] as const) {
         await preset.selectOption(example.preset);
         await expect(rule).toHaveValue(example.rule);
         await expect(slider).toHaveValue(String(width >= 960 ? before.time : 0));
-        const visibleHint = page.locator('.automata-rule-hint [aria-hidden="false"]');
-        await expect(visibleHint).toHaveCount(1);
-        await expect(rule).toHaveAccessibleDescription((await visibleHint.textContent())!);
+        const description = page.locator(".automata-description-text p");
+        await expect(rule).toHaveAccessibleDescription((await description.allTextContents()).join(" "));
         await slider.press("Home");
+        await currentBoard(page).press("ArrowRight"); // Keep the selection outline outside the sampled cells.
         for (const [x, y, initial] of example.cells) expect(await renderedCell(currentBoard(page), x, y)).toEqual(rgba(initial));
         for (let t = 0; t < example.time; t++) await slider.press("ArrowRight");
         for (const [x, y, initial, evolved] of example.cells) {
@@ -740,7 +1157,7 @@ for (const language of ["ja", "en"] as const) {
       const saved = await savedState(page);
       await page.reload();
       await expect(rule).toHaveValue("hamming");
-      await expect(preset).toHaveValue("hamming-boundary");
+      await expect(preset).toHaveValue("rosette");
       await expect(slider).toHaveValue("1");
       expect(await savedState(page)).toEqual(saved);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -830,6 +1247,57 @@ for (const width of [320, 1280]) {
   }
 }
 
+test.describe("result cell selection", () => {
+  test.use({ hasTouch: true });
+  for (const [width, input] of [
+    [390, "touch"],
+    [1280, "mouse"],
+  ] as const) {
+    test(`dismisses the result cell outline on an outside ${input} press`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await openAutomata(page);
+      await blank(page);
+      await page.getByRole("button", { name: "Next generation", exact: true }).click();
+      const board = currentBoard(page);
+      // The empty board makes the white outline distinguishable from every cell.
+      const hasOutline = (x: number, y: number) =>
+        board.evaluate(
+          (el, cell) => {
+            const canvas = el as HTMLCanvasElement;
+            const edge = (n: number) => Math.round((n * canvas.width) / Number(canvas.dataset.columns));
+            const pixels = canvas
+              .getContext("2d")!
+              .getImageData(edge(cell.x), edge(cell.y), edge(cell.x + 1) - edge(cell.x), edge(cell.y + 1) - edge(cell.y)).data;
+            return pixels.some((value, index) => index % 4 === 0 && value > 0);
+          },
+          { x, y },
+        );
+      const target = await point(page, 10, 12);
+      if (input === "touch") await page.touchscreen.tap(target.x, target.y);
+      else await page.mouse.click(target.x, target.y);
+      await expect.poll(() => hasOutline(10, 12)).toBe(true);
+      const selected = await savedState(page);
+      const heading = page.locator(".automata-heading");
+      if (input === "touch") await heading.tap();
+      else {
+        await heading.hover();
+        expect(await hasOutline(10, 12)).toBe(true);
+        await heading.click();
+      }
+      await expect.poll(() => hasOutline(10, 12)).toBe(false);
+      expect(await savedState(page)).toEqual(selected);
+      await board.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect.poll(() => hasOutline(11, 12)).toBe(true);
+      await page.keyboard.press("Tab");
+      await expect.poll(() => hasOutline(11, 12)).toBe(false);
+      await page.keyboard.press("Shift+Tab");
+      await expect(board).toBeFocused();
+      await expect.poll(() => hasOutline(11, 12)).toBe(true);
+    });
+  }
+});
+
 test("keeps the edited seed through 0 → 1 → 64 → 0 and makes results read-only", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openAutomata(page);
@@ -850,7 +1318,7 @@ test("keeps the edited seed through 0 → 1 → 64 → 0 and makes results read-
   await page.getByRole("combobox", { name: "Update rule", exact: true }).selectOption("life");
   await selectColor(page, 3);
   await page.getByRole("slider").press("End");
-  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("white");
+  await page.getByRole("combobox", { name: "Initial pattern", exact: true }).selectOption("all-white");
   expect(await savedState(page)).toMatchObject({ time: 0, x: 24, y: 24, rule: "life", color: 3 });
 });
 
@@ -1054,6 +1522,8 @@ test("navigates all tabs and paints with the keyboard without leaking drawing ke
   await page.keyboard.press("Tab");
   await expect(page.getByTestId("automata-board")).toBeFocused();
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("checkbox", { name: "Sound of change" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("slider")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Next generation", exact: true })).toBeFocused();
@@ -1136,17 +1606,17 @@ test.describe("native touch", () => {
 async function rectangles(page: Page) {
   return page.evaluate(() =>
     [
-      ".automata-controls",
+      '[data-testid="automata-controls"]',
       ".automata-palette",
       ".automata-board",
       ".automata-notice-space",
       ".automata-time-heading",
       ".automata-mode",
       ".automata-actions",
-      ".automata-rule-hint",
-    ].map((selector) => {
-      const r = document.querySelector(selector)!.getBoundingClientRect();
-      return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height };
+      ".automata-description",
+    ].flatMap((selector) => {
+      const r = document.querySelector(selector)?.getBoundingClientRect();
+      return r ? [{ x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height }] : [];
     }),
   );
 }
@@ -1189,7 +1659,7 @@ for (const language of ["ja", "en"] as const) {
         const before = await rectangles(page);
         const step = page.getByRole("button", { name: language === "ja" ? "1世代進む" : "Next generation", exact: true });
         const reset = page.getByRole("button", { name: language === "ja" ? "第0世代に戻る" : "Return to generation 0", exact: true });
-        const editLabel = language === "ja" ? "初期配置を編集" : "Edit initial pattern";
+        const editLabel = language === "ja" ? "初期配置を編集できます" : "Pattern is editable";
         const resultLabel = language === "ja" ? "結果を表示" : "View result";
         const assertGeneration = async (generation: number) => {
           const editing = viewport.width < 1024 && generation === 0;
@@ -1197,8 +1667,17 @@ for (const language of ["ja", "en"] as const) {
             language === "ja" ? `世代：${generation} / 64` : `Generation: ${generation} / 64`,
           );
           await expect(page.getByRole("slider")).toHaveAccessibleDescription(editing ? editLabel : "");
-          if (editing) await expect(page.getByText(editLabel, { exact: true })).toBeVisible();
-          else await expect(page.getByText(editLabel, { exact: true })).not.toBeVisible();
+          const modeLabel = page.getByText(editLabel, { exact: true });
+          if (editing) {
+            await expect(modeLabel).toBeVisible();
+            expect(
+              await modeLabel.evaluate((el) => {
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                return range.getClientRects().length;
+              }),
+            ).toBe(1);
+          } else await expect(modeLabel).not.toBeVisible();
           await expect(page.getByText(resultLabel, { exact: true })).toHaveCount(0);
           const fits = await page.locator(".automata-time-heading").evaluate((heading) => {
             const bounds = heading.getBoundingClientRect();
@@ -1270,30 +1749,25 @@ for (const language of ["ja", "en"] as const) {
           });
         });
         expect(actionsFit).toBe(true);
-        for (const [control, count] of [
-          [0, 16],
-          [1, 12],
-        ]) {
+        for (const control of await page.getByRole("combobox").all()) {
+          const count = await control.getByRole("option", { disabled: false }).count();
           for (let i = 0; i < count; i++) {
-            await page.getByRole("combobox").nth(control).selectOption({ index: i });
-            const fits = await page
-              .getByRole("combobox")
-              .nth(control)
-              .evaluate((node) => {
-                const select = node as HTMLSelectElement;
-                const label = select.querySelector("button > span")!;
-                const range = document.createRange();
-                range.selectNodeContents(label);
-                const text = range.getBoundingClientRect();
-                const bounds = select.getBoundingClientRect();
-                return {
-                  text: select.selectedOptions[0].text,
-                  label: label.textContent,
-                  lines: range.getClientRects().length,
-                  noHorizontalOverflow: select.scrollWidth <= select.clientWidth,
-                  fits: text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom,
-                };
-              });
+            await control.selectOption({ index: i });
+            const fits = await control.evaluate((node) => {
+              const select = node as HTMLSelectElement;
+              const label = select.querySelector("button > span")!;
+              const range = document.createRange();
+              range.selectNodeContents(label);
+              const text = range.getBoundingClientRect();
+              const bounds = select.getBoundingClientRect();
+              return {
+                text: select.selectedOptions[0].text,
+                label: label.textContent,
+                lines: range.getClientRects().length,
+                noHorizontalOverflow: select.scrollWidth <= select.clientWidth,
+                fits: text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom,
+              };
+            });
             expect(fits.label).toBe(fits.text);
             expect(fits.fits, fits.text).toBe(true);
             expect(fits.lines, fits.text).toBeLessThanOrEqual(2);

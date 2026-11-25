@@ -17,7 +17,8 @@ export type AutomataAction =
   | { type: "select-cell"; x: number; y: number }
   | { type: "paint-cells"; cells: readonly Cell[]; color: CAColor };
 export function createAutomataState(): AutomataState {
-  return { seed: makePlaneSeed("rosette"), preset: "rosette", rule: 4, time: 0, x: 24, y: 24, color: 4 };
+  const preset = AUTOMATA_PRESETS[0];
+  return { seed: makePlaneSeed(preset), preset, rule: 4, time: 0, x: 24, y: 24, color: 4 };
 }
 function integer(value: unknown, min: number, max: number): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;

@@ -10,7 +10,11 @@ function restoreSavedState(data: unknown): AutomataState {
   const legacy = data as Record<string, unknown>;
   const state = restoreAutomataState({ ...legacy, version: 1, seed: undefined });
   if (legacy.width !== PLANE_SIZE || legacy.height !== PLANE_SIZE || legacy.preset === "image") {
-    return { ...state, seed: makePlaneSeed(state.preset), time: 0, x: 24, y: 24 };
+    const preset =
+      legacy.preset === "white" || legacy.preset === "rgb" || legacy.preset === "clock" || legacy.preset === "diamond"
+        ? legacy.preset
+        : state.preset;
+    return { ...state, seed: makePlaneSeed(preset), time: 0, x: 24, y: 24 };
   }
   const length = PLANE_SIZE * PLANE_SIZE;
   if (typeof legacy.seed !== "string" || legacy.seed.length !== Math.ceil(length / 2)) throw new RangeError("Invalid saved Flow seed");

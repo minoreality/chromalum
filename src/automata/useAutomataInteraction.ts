@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
 import type { AutomataController } from "./useAutomataState";
 import { cellsOnLine, hitTestCell, type PlaneGeometry } from "./geometry";
 import { PLANE_SIZE, type CAColor, type Cell } from "./model";
-import { controlOwnsKey } from "../shortcuts";
+import { canHandleUnmodifiedShortcut } from "../shortcuts";
 type Handlers = Pick<
   CanvasHTMLAttributes<HTMLCanvasElement>,
   | "onPointerDown"
@@ -29,6 +29,7 @@ interface Stroke {
   color: CAColor;
   revision: number;
   last: Cell | null;
+  lastChange: number;
   canvas: HTMLCanvasElement;
 }
 export function useAutomataInteraction({
@@ -37,12 +38,14 @@ export function useAutomataInteraction({
   controller,
   geometry,
   editable,
+  onPaintChanges,
 }: {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   active: boolean;
   controller: AutomataController;
   geometry: PlaneGeometry | null;
   editable?: boolean | undefined;
+  onPaintChanges?: ((changes: readonly number[]) => void) | undefined;
 }): Handlers & { cancelInteraction: () => void; cursorCell: Cell | null } {
   const owner = useRef<Stroke | null>(null);
   const target = useRef<DrawingTarget | null>(null);
@@ -79,6 +82,28 @@ export function useAutomataInteraction({
     }
     finishInteraction();
   }, [finishInteraction]);
+  const paint = useCallback(
+    (cells: readonly Cell[], color: CAColor, stroke?: Stroke) => {
+      const before = getSnapshot().state.seed;
+      dispatch({ type: "paint-cells", cells, color });
+      if (!onPaintChanges) {
+        if (stroke) stroke.lastChange = 0;
+        return;
+      }
+      const changes: number[] = [];
+      let previous = stroke?.last ? stroke.lastChange : 0;
+      // An interpolated segment includes the previous endpoint, which is already painted.
+      for (let i = stroke?.last ? 1 : 0; i < cells.length; i++) {
+        const { x, y } = cells[i];
+        const change = before[y * PLANE_SIZE + x] ^ color;
+        if (change && change !== previous) changes.push(change);
+        previous = change;
+      }
+      if (stroke) stroke.lastChange = previous;
+      if (changes.length) onPaintChanges(changes);
+    },
+    [dispatch, getSnapshot, onPaintChanges],
+  );
   const visit = useCallback(
     (clientX: number, clientY: number) => {
       const stroke = owner.current;
@@ -89,11 +114,11 @@ export function useAutomataInteraction({
         return;
       }
       if (editable ?? getSnapshot().state.time === 0) {
-        dispatch({ type: "paint-cells", cells: stroke.last ? cellsOnLine(stroke.last, cell) : [cell], color: stroke.color });
+        paint(stroke.last ? cellsOnLine(stroke.last, cell) : [cell], stroke.color, stroke);
       } else dispatch({ type: "select-cell", ...cell });
       stroke.last = cell;
     },
-    [dispatch, getSnapshot, editable],
+    [dispatch, getSnapshot, editable, paint],
   );
   useLayoutEffect(() => {
     if (!active) {
@@ -145,25 +170,8 @@ export function useAutomataInteraction({
     const draw = (event: KeyboardEvent) => {
       const canvas = canvasRef.current;
       const aim = target.current;
-      if (
-        !canvas ||
-        !geometry ||
-        !aim ||
-        owner.current ||
-        interacting ||
-        document.hidden ||
-        event.defaultPrevented ||
-        event.repeat ||
-        event.isComposing ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        !/^[0-7]$/.test(event.key) ||
-        controlOwnsKey(event.target, event) ||
-        document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]')
-      )
-        return;
+      if (!canvas || !geometry || !aim || owner.current || interacting) return;
+      if (!/^[0-7]$/.test(event.key) || !canHandleUnmodifiedShortcut(event)) return;
       const state = getSnapshot().state;
       if (!(editable ?? state.time === 0)) return;
       let cell: Cell | null;
@@ -178,7 +186,7 @@ export function useAutomataInteraction({
       setTarget(aim);
       const color = Number(event.key) as CAColor;
       dispatch({ type: "set-color", color });
-      dispatch({ type: "paint-cells", cells: [cell], color });
+      paint([cell], color);
     };
     window.addEventListener("pointermove", pointerMoved);
     window.addEventListener("keydown", draw);
@@ -190,7 +198,7 @@ export function useAutomataInteraction({
       window.removeEventListener("scroll", refreshPointerTarget, true);
       window.removeEventListener("resize", refreshPointerTarget);
     };
-  }, [active, canvasRef, geometry, interacting, getSnapshot, editable, dispatch, setTarget, refreshPointerTarget]);
+  }, [active, canvasRef, geometry, interacting, getSnapshot, editable, dispatch, paint, setTarget, refreshPointerTarget]);
   return {
     cancelInteraction,
     cursorCell:
@@ -218,7 +226,7 @@ export function useAutomataInteraction({
       if ((event.pointerType === "mouse" || event.pointerType === "pen") && !(event.buttons & 1)) return;
       if (!hitTestCell(event.clientX, event.clientY, canvas.getBoundingClientRect())) return;
       const snapshot = getSnapshot();
-      owner.current = { id: event.pointerId, color: snapshot.state.color, revision: snapshot.revision, last: null, canvas };
+      owner.current = { id: event.pointerId, color: snapshot.state.color, revision: snapshot.revision, last: null, lastChange: 0, canvas };
       canvas.focus({ preventScroll: true });
       arrows.current.clear();
       setTarget({ kind: "pointer", clientX: event.clientX, clientY: event.clientY });
@@ -267,15 +275,19 @@ export function useAutomataInteraction({
       if (owner.current?.id === event.pointerId) cancelInteraction();
     },
     onKeyDown: (event) => {
-      if (!active || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (!active || event.altKey || event.ctrlKey || event.metaKey) return;
       const delta = ARROW_DELTAS[event.key];
+      if (event.shiftKey && !delta?.x) return;
       if (!delta && event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       event.stopPropagation();
       cancelInteraction();
       setTarget({ kind: "keyboard" });
       const state = getSnapshot().state;
-      if (delta) {
+      if (event.shiftKey) {
+        arrows.current.clear();
+        dispatch({ type: "set-time", time: state.time + delta.x });
+      } else if (delta) {
         if (event.repeat && !arrows.current.has(event.key)) return;
         arrows.current.add(event.key);
         const x = Number(arrows.current.has("ArrowRight")) - Number(arrows.current.has("ArrowLeft"));
@@ -285,7 +297,7 @@ export function useAutomataInteraction({
           x: Math.max(0, Math.min(PLANE_SIZE - 1, state.x + x)),
           y: Math.max(0, Math.min(PLANE_SIZE - 1, state.y + y)),
         });
-      } else if (editable ?? state.time === 0) dispatch({ type: "paint-cells", cells: [{ x: state.x, y: state.y }], color: state.color });
+      } else if (editable ?? state.time === 0) paint([{ x: state.x, y: state.y }], state.color);
     },
   };
 }

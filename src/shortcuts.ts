@@ -56,6 +56,22 @@ export function controlOwnsKey(target: EventTarget | null, event: Pick<KeyboardE
   return false;
 }
 
+/** A single press may trigger a shortcut when no control or modal owns the key. */
+export function canHandleUnmodifiedShortcut(event: KeyboardEvent): boolean {
+  return (
+    !event.defaultPrevented &&
+    !event.repeat &&
+    !event.isComposing &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !document.hidden &&
+    !controlOwnsKey(event.target, event) &&
+    document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]') === null
+  );
+}
+
 const CANVAS_COPY_SHORTCUT: ShortcutEntry = { key: "Ctrl+C / ⌘C", label: "help_copy_canvas" };
 
 const DRAWING_SHORTCUTS: readonly ShortcutEntry[] = [
@@ -111,6 +127,17 @@ const THEORY_SHORTCUTS: readonly ShortcutEntry[] = [
   { keyCopy: "help_theory_navigate_key", label: "help_theory_navigate" },
 ];
 
+export const FLOW_SOUND_KEY = "M";
+const AUTOMATA_SHORTCUTS: readonly ShortcutEntry[] = [
+  { key: "↑ ↓ ← →", label: "help_automata_select_cell" },
+  { key: "0-7", label: "help_automata_draw" },
+  { key: "Enter / Space", label: "help_automata_paint_selected" },
+  { key: "Shift+←/→", label: "help_automata_board_step" },
+  { key: "← / →", label: "help_automata_slider_step" },
+  { key: "Home / End", label: "help_automata_slider_limits" },
+  { key: FLOW_SOUND_KEY, label: "help_automata_toggle_sound" },
+];
+
 /** Visible controls and standard history keys do not need duplicate help rows. */
 const COMMON_SHORTCUTS: readonly ShortcutEntry[] = [{ key: "Alt+1-8", label: "help_switch_tab" }];
 
@@ -131,7 +158,7 @@ export function shortcutsForTab(tab: MainTabId): readonly ShortcutEntry[] {
                 : tab === "theory"
                   ? THEORY_SHORTCUTS
                   : tab === "automata"
-                    ? [{ key: "0-7", label: "help_automata_draw" }]
+                    ? AUTOMATA_SHORTCUTS
                     : [];
   return [...own, ...COMMON_SHORTCUTS];
 }
