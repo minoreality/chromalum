@@ -2,6 +2,29 @@ import { describe, expect, it } from "vitest";
 import { CA_RULES, createVisibleEvolution, evolvePlane, evolveVisiblePlane, type AutomataRule } from "../model";
 import { GOLDEN_CASES, GOLDEN_SEEDS, decodeRows } from "./fixtures/ca-golden";
 
+function referenceChannel(rule: AutomataRule, alive: boolean, count: number): boolean {
+  switch (rule) {
+    case "or":
+      return count > 0;
+    case "and":
+      return count === 5;
+    case "majority":
+      return count >= 3;
+    case "hamming":
+      return alive !== (count % 2 === 1);
+    case "life":
+      return count === 3 || (alive && count === 2);
+    case "rug":
+      return !alive && count >= 2 && count <= 4;
+    case "seeds":
+      return !alive && count === 2;
+    case "day-night":
+      return count === 3 || count >= 6 || (alive && count === 4);
+    default:
+      return count % 2 === 1;
+  }
+}
+
 function referenceOracle(seed: Uint8Array, size: number, steps: number, rule: AutomataRule): Uint8Array {
   // The neighborhood depends only on the rule, not on the cell or generation.
   // Keep this reference independent of the production neighborhood tables.
@@ -35,21 +58,7 @@ function referenceOracle(seed: Uint8Array, size: number, steps: number, rule: Au
             } else count += (neighbor >> bit) & 1;
           }
           const alive = Boolean(current[y * size + x] & (1 << bit));
-          const on =
-            rule === "or"
-              ? count > 0
-              : rule === "and"
-                ? count === 5
-                : rule === "majority"
-                  ? count >= 3
-                  : rule === "hamming"
-                    ? alive !== (count % 2 === 1)
-                    : rule === "life"
-                      ? count === 3 || (alive && count === 2)
-                      : rule === "rug"
-                        ? !alive && count >= 2 && count <= 4
-                        : count % 2 === 1;
-          if (on) next[y * size + x] += 2 ** bit;
+          if (referenceChannel(rule, alive, count)) next[y * size + x] += 2 ** bit;
         }
       }
     }
@@ -91,6 +100,19 @@ describe("evolvePlane", () => {
     expect(evolvePlane(new Uint8Array(9).fill(7), 3, 1, "rug")).toEqual(new Uint8Array(9));
     const seed = Uint8Array.from([4, 2, 0, 4, 0, 2, 1, 1, 0]);
     expect(evolvePlane(seed, 3, 1, "rug")[4]).toBe(7);
+  });
+
+  it.each(["seeds", "day-night"] as const)("checks every birth and survival count for %s", (rule) => {
+    const neighbors = [0, 1, 2, 3, 5, 6, 7, 8];
+    const seed = new Uint8Array(9);
+    for (let count = 0; count <= 8; count++) {
+      if (count > 0) seed[neighbors[count - 1]] = 7;
+      for (const center of [0, 7]) {
+        seed[4] = center;
+        const expected = referenceChannel(rule, center !== 0, count) ? 7 : 0;
+        expect(evolvePlane(seed, 3, 1, rule)[4]).toBe(expected);
+      }
+    }
   });
 
   it("rejects invalid dimensions, times, cells and rules", () => {

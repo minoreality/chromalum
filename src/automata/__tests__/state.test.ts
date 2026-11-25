@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { automataReducer, createAutomataState, restoreAutomataState } from "../state";
-import { decodeRows, GOLDEN_SEEDS } from "./fixtures/ca-golden";
 import { CA_RULES } from "../model";
 import { AUTOMATA_PRESETS, makePlaneSeed } from "../presets";
 import { serializeAutomataState } from "../persistence";
 
-const saved = () => ({ version: 1, seed: Array<number>(2401).fill(2), preset: "rgb", rule: "life", time: 20, x: 48, y: 0, color: 0 });
+const saved = () => ({ version: 1, seed: Array<number>(2401).fill(2), preset: "rosette", rule: "life", time: 20, x: 48, y: 0, color: 0 });
 describe("Automata state", () => {
   it("round-trips every rule and preset while preserving edits, color and generation", () => {
     for (const rule of CA_RULES)
@@ -16,10 +15,10 @@ describe("Automata state", () => {
         expect(restoreAutomataState(JSON.parse(serializeAutomataState(state)))).toEqual(state);
       }
   });
-  it("opens the editable rosette at the center with green", () => {
+  it("opens the overlapping squares at the center with green", () => {
     const state = createAutomataState();
-    expect([state.rule, state.preset, state.time, state.x, state.y, state.color]).toEqual([4, "rosette", 0, 24, 24, 4]);
-    expect(state.seed).toEqual(decodeRows(GOLDEN_SEEDS.rosette));
+    expect([state.rule, state.preset, state.time, state.x, state.y, state.color]).toEqual([4, "overlapping-squares", 0, 24, 24, 4]);
+    expect(state.seed).toEqual(makePlaneSeed("overlapping-squares"));
   });
   it("paints cells without mutating the seed and erases with K", () => {
     const initial = createAutomataState();
@@ -51,10 +50,10 @@ describe("Automata state", () => {
   });
   it("can replace the initial pattern while retaining the observed generation", () => {
     const state = { ...createAutomataState(), time: 64, rule: "life" as const };
-    const edited = automataReducer(state, { type: "set-preset", preset: "white", preserveTime: true });
+    const edited = automataReducer(state, { type: "set-preset", preset: "all-white", preserveTime: true });
     expect(edited.time).toBe(64);
     expect(edited.rule).toBe("life");
-    expect(edited.seed).toEqual(decodeRows(GOLDEN_SEEDS.white));
+    expect(edited.seed).toEqual(new Uint8Array(2401).fill(7));
   });
   it("selects and changes color without changing the seed, rule or time", () => {
     const initial = { ...createAutomataState(), time: 7 };
@@ -67,12 +66,12 @@ describe("Automata state", () => {
   it("regenerates any selected preset at time zero while retaining rule and color", () => {
     const edited = automataReducer(
       { ...createAutomataState(), time: 20, rule: "life" as const, color: 1 as const, x: 1, y: 2 },
-      { type: "set-preset", preset: "white" },
+      { type: "set-preset", preset: "all-white" },
     );
     expect([edited.time, edited.x, edited.y, edited.rule, edited.color]).toEqual([0, 24, 24, "life", 1]);
-    expect(edited.seed).toEqual(decodeRows(GOLDEN_SEEDS.white));
-    edited.seed[0] = 7;
-    expect(automataReducer(edited, { type: "set-preset", preset: "white" }).seed[0]).toBe(0);
+    expect(edited.seed).toEqual(new Uint8Array(2401).fill(7));
+    edited.seed[0] = 0;
+    expect(automataReducer(edited, { type: "set-preset", preset: "all-white" }).seed[0]).toBe(7);
   });
   it("keeps times bounded and refuses fractional selections", () => {
     const initial = createAutomataState();
@@ -87,7 +86,7 @@ describe("Automata state", () => {
     expect(restored.seed).toEqual(new Uint8Array(2401).fill(2));
   });
   it.each([
-    ["preset", "wrong", "rosette"],
+    ["preset", "wrong", "overlapping-squares"],
     ["rule", 90, 4],
     ["time", 1.5, 0],
     ["time", 65, 0],
@@ -107,9 +106,9 @@ describe("Automata state", () => {
     "defaults only invalid seeds",
     (seed) => {
       const restored = restoreAutomataState({ ...saved(), seed });
-      expect(restored.seed).toEqual(decodeRows(GOLDEN_SEEDS.rosette));
+      expect(restored.seed).toEqual(makePlaneSeed("overlapping-squares"));
       expect([restored.preset, restored.rule, restored.time, restored.x, restored.y, restored.color]).toEqual([
-        "rgb",
+        "rosette",
         "life",
         20,
         48,

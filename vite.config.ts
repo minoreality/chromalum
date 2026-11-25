@@ -35,6 +35,7 @@ const PRECACHE_CACHE = \`\${CACHE_PREFIX}-precache-${cacheVersion}\`;
 const RUNTIME_CACHE = \`\${CACHE_PREFIX}-runtime-${cacheVersion}\`;
 const PRECACHE_URLS = ${JSON.stringify(precacheUrls, null, 2)};
 const PRECACHE_SET = new Set(PRECACHE_URLS.map((path) => new URL(path, self.registration.scope).href));
+const RETIRED_CLIENTS = new URL("./.retired-clients", self.registration.scope).href;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -45,25 +46,39 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith(CACHE_PREFIX + "-") && key !== PRECACHE_CACHE && key !== RUNTIME_CACHE)
-            .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => self.clients.claim()),
-  );
+  event.waitUntil(releaseUnusedCaches(true).then(() => self.clients.claim()));
 });
 
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
+  if (event.data?.type === "SKIP_WAITING") {
+    event.waitUntil(self.skipWaiting());
+  } else if (event.data?.type === "RELEASE_UNUSED_CACHES") {
+    event.waitUntil(releaseUnusedCaches(false));
   }
 });
+
+// On activation, remember which documents could still request each old build's
+// lazy chunks. A reload gets a new client ID. Keep these IDs in Cache Storage
+// so a worker restart or another deployment cannot strand an older open tab.
+async function releaseUnusedCaches(retirePrevious) {
+  const keys = (await caches.keys()).filter((key) =>
+    key.startsWith(CACHE_PREFIX + "-") && key !== PRECACHE_CACHE && key !== RUNTIME_CACHE,
+  );
+  if (!keys.length) return;
+  const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  const ids = windows.filter((client) => client.url.startsWith(self.registration.scope)).map((client) => client.id);
+  await Promise.all(keys.map(async (key) => {
+    const record = await caches.match(RETIRED_CLIENTS, { cacheName: key });
+    // An unmarked cache may belong to the next, still installing worker.
+    if (!record && !retirePrevious) return;
+    const owners = record ? await record.json() : ids;
+    if (!owners.some((id) => ids.includes(id))) await caches.delete(key);
+    else if (!record) {
+      const cache = await caches.open(key);
+      await cache.put(RETIRED_CLIENTS, new Response(JSON.stringify(owners)));
+    }
+  }));
+}
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
@@ -82,7 +97,7 @@ self.addEventListener("fetch", (event) => {
 
 async function precachedNavigation(request) {
   // Keep the HTML and lazy chunks on the active worker's version until the
-  // next fully installed worker activates after all existing clients close.
+  // next fully installed worker activates.
   const cache = await caches.open(PRECACHE_CACHE);
   return (await cache.match(request, { ignoreSearch: true, ignoreVary: true })) ||
     (await cache.match("./")) || (await cache.match("./index.html")) || Response.error();
@@ -90,7 +105,10 @@ async function precachedNavigation(request) {
 
 async function cacheFirst(request) {
   const requestUrl = new URL(request.url);
-  const cached = await caches.match(request, { ignoreSearch: true, ignoreVary: true });
+  const options = { ignoreSearch: true, ignoreVary: true };
+  const current = await caches.open(PRECACHE_CACHE);
+  const cached = (await current.match(request, options)) ||
+    (requestUrl.pathname.startsWith(new URL("./assets/", self.registration.scope).pathname) && await caches.match(request, options));
   if (cached) return cached;
 
   const response = await fetch(request);

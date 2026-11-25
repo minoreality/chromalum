@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadAutomataState, saveAutomataState, serializeAutomataState } from "../persistence";
 import { createAutomataState } from "../state";
+import { makePlaneSeed } from "../presets";
 
 afterEach(() => vi.restoreAllMocks());
 describe("Automata persistence", () => {
@@ -44,7 +45,7 @@ describe("Automata persistence", () => {
     expect(state.seed.length).toBe(2401);
     expect(state.seed[1200]).toBe(7);
     expect(state.seed.reduce((total, value) => total + value, 0)).toBe(7);
-    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["white", "rug", 0, 24, 24, 5]);
+    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["overlapping-squares", "rug", 0, 24, 24, 5]);
     expect(saveAutomataState(state)).toBe(true);
     expect(localStorage.getItem("chromalum-automata-state-v1")).toBe(legacy);
     expect(localStorage.getItem("chromalum-flow-state-v1")).not.toBeNull();
@@ -81,8 +82,18 @@ describe("Automata persistence", () => {
     );
     const state = loadAutomataState().state;
     expect(state.seed.length).toBe(2401);
-    expect(state.seed[1200]).toBe(1);
-    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["rosette", "life", 0, 24, 24, 1]);
+    expect(state.seed).toEqual(makePlaneSeed("overlapping-squares"));
+    expect([state.preset, state.rule, state.time, state.x, state.y, state.color]).toEqual(["overlapping-squares", "life", 0, 24, 24, 1]);
+  });
+  it("keeps a retired diamond board and its edits when restoring saved work", () => {
+    const seed = makePlaneSeed("diamond");
+    const settings = { preset: "diamond", rule: "rug", time: 12, color: 5 };
+    const rectangular = { ...settings, version: 2, width: 80, height: 30 };
+    const load = (data: object) => loadAutomataState({ getItem: () => JSON.stringify(data) }).state;
+    expect(load(rectangular)).toMatchObject({ preset: "overlapping-squares", seed, rule: "rug", time: 0, color: 5 });
+    seed[0] = 6;
+    const edited = { ...settings, version: 1, seed: Array.from(seed), x: 2, y: 3 };
+    expect(load(edited)).toEqual({ preset: "overlapping-squares", seed, rule: "rug", time: 12, color: 5, x: 2, y: 3 });
   });
   it("round-trips edited data through its own key", () => {
     const state = { ...createAutomataState(), time: 64, x: 48, color: 0 as const };

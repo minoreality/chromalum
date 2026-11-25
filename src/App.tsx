@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from "react";
 import { PersistenceNotice } from "./components/PersistenceNotice";
+import { PwaUpdateNotice } from "./components/PwaUpdateNotice";
 
 import { isShapeTool } from "./constants";
 import { useSyncRef } from "./hooks/useSyncRef";
@@ -468,6 +469,7 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
           </button>
           <span style={S_HEADER_LANGUAGE_SEPARATOR}>|</span>
           <LanguageSwitcher />
+          <PwaUpdateNotice flushPendingSave={app.flushPendingSave} />
         </div>
       </div>
 
@@ -656,7 +658,9 @@ function AppContent({ app, panZoom, sharedScheduleCursorRedrawRef, announce, ari
           </div>
         )}
       </div>
-      <footer style={S_FOOTER}>Copyright © 2026 Doctor Chromaticus</footer>
+      <footer className="app-footer" style={S_FOOTER}>
+        © Doctor Chromaticus
+      </footer>
     </main>
   );
 }

@@ -66,9 +66,9 @@ export const AboutModal = React.memo(function AboutModal({ open, onClose }: Abou
         >
           {t("about_title")}
         </h2>
-        {[t("about_body_1"), t("about_body_2"), t("about_body_3")].map((paragraph) => (
-          <p key={paragraph} style={{ margin: `0 0 ${SP["2xl"]}px`, color: C.textSecondary }}>
-            {paragraph}
+        {(["about_body_1", "about_body_2", "about_body_3"] as const).map((key) => (
+          <p key={key} style={{ margin: key === "about_body_2" ? 0 : `0 0 ${SP["2xl"]}px`, color: C.textSecondary }}>
+            {t(key)}
           </p>
         ))}
         <button onClick={onClose} tabIndex={0} style={{ ...S_BTN, marginTop: SP.sm, width: "100%", textAlign: "center" }}>

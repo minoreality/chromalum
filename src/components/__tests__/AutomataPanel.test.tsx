@@ -51,31 +51,60 @@ describe("AutomataPanel", () => {
         .getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.getAllByRole("combobox").length).toBe(2);
-    expect(within(screen.getByRole("combobox", { name: "Update rule" })).getAllByRole("option")).toHaveLength(12);
-    expect(within(screen.getByRole("combobox", { name: "Initial pattern" })).getAllByRole("option")).toHaveLength(16);
+    expect(within(screen.getByRole("combobox", { name: "Update rule" })).getAllByRole("option")).toHaveLength(14);
+    const presets = screen.getByRole("combobox", { name: "Initial pattern" });
+    expect(within(presets).getAllByRole("option")).toHaveLength(11);
+    expect(within(presets).getByRole("option", { selected: true }).textContent).toBe("Overlapping squares");
     expect(screen.getAllByRole("application").length).toBe(1);
   });
-  it("groups existing XOR choices and keeps the new rule and preset selections independent", () => {
+  it("groups update rules and keeps the rule and preset selections independent", () => {
     show();
     const rule = screen.getByRole("combobox", { name: "Update rule" });
-    expect(within(within(rule).getByRole("group", { name: "XOR" })).getAllByRole("option")).toHaveLength(6);
-    expect(within(within(rule).getByRole("group", { name: "Color operations" })).getAllByRole("option")).toHaveLength(4);
-    expect(within(within(rule).getByRole("group", { name: "Life-like" })).getAllByRole("option")).toHaveLength(2);
+    expect(
+      within(rule)
+        .getAllByRole("group")
+        .map((group) => [group.getAttribute("label"), ...Array.from(group.querySelectorAll("option"), (option) => option.value)]),
+    ).toEqual([
+      ["XOR", "4", "5", "diagonal", "diagonal-center", "8", "9"],
+      ["OR / AND", "or", "and"],
+      ["Majority / toggles", "majority", "hamming"],
+      ["Life-like", "life", "rug", "seeds", "day-night"],
+    ]);
+    expect(
+      within(within(rule).getByRole("group", { name: "Life-like" }))
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Conway’s Game of Life", "Persian Rug", "Seeds", "Day & Night"]);
     const original = loadAutomataState().state.seed;
     fireEvent.change(rule, { target: { value: "and" } });
     expect(loadAutomataState().state.seed).toEqual(original);
-    fireEvent.change(screen.getByRole("combobox", { name: "Initial pattern" }), { target: { value: "or-spread" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Initial pattern" }), { target: { value: "all-white" } });
     expect(loadAutomataState().state.rule).toBe("and");
-    expect(loadAutomataState().state.preset).toBe("or-spread");
+    expect(loadAutomataState().state.preset).toBe("all-white");
     const description = document.getElementById(rule.getAttribute("aria-describedby")!)!;
-    expect(description.querySelector('[aria-hidden="false"]')?.textContent).toBe(
-      "Keeps only channels shared by the cell and all four orthogonal neighbors.",
-    );
+    expect(description.querySelector(".automata-rule-hint")?.textContent).toContain("This is erosion in image processing.");
+  });
+  it("shows B/S notation on the two named XOR rules and the four Life-like rules", () => {
+    show();
+    const rule = screen.getByRole("combobox", { name: "Update rule" });
+    const description = document.getElementById(rule.getAttribute("aria-describedby")!)!;
+    const notations = new Map<string, string>([
+      ["8", "B1357/S1357"],
+      ["9", "B1357/S02468"],
+      ["life", "B3/S23"],
+      ["rug", "B234/S"],
+      ["seeds", "B2/S"],
+      ["day-night", "B3678/S34678"],
+    ]);
+    for (const option of (rule as HTMLSelectElement).options) {
+      fireEvent.change(rule, { target: { value: option.value } });
+      expect(description.querySelector("code")?.textContent).toBe(notations.get(option.value));
+    }
   });
   it("steps to generation 64 and returns to the edited initial pattern", () => {
     show();
     expect(screen.getByRole("slider", { name: "Generation: 0 / 64" })).toBeTruthy();
-    expect(screen.getByText("Edit initial pattern").getAttribute("aria-hidden")).toBe("false");
+    expect(screen.getByText("Pattern is editable").getAttribute("aria-hidden")).toBe("false");
     expect(screen.queryByText("View result")).toBeNull();
     const canvas = screen.getByRole("application");
     canvas.focus();
@@ -85,7 +114,7 @@ describe("AutomataPanel", () => {
     expect((screen.getByRole("button", { name: "Return to generation 0" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Next generation" }));
     expect(screen.getByRole("slider", { name: "Generation: 1 / 64" })).toBeTruthy();
-    expect(screen.getByText("Edit initial pattern").getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("Pattern is editable").getAttribute("aria-hidden")).toBe("true");
     expect(screen.queryByText("View result")).toBeNull();
     expect(screen.getByRole("slider").getAttribute("aria-describedby")).toBeNull();
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("1");
@@ -102,7 +131,7 @@ describe("AutomataPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Return to generation 0" }));
     expect((screen.getByRole("slider") as HTMLInputElement).value).toBe("0");
     expect(screen.getByRole("slider", { name: "Generation: 0 / 64" })).toBeTruthy();
-    expect(screen.getByText("Edit initial pattern").getAttribute("aria-hidden")).toBe("false");
+    expect(screen.getByText("Pattern is editable").getAttribute("aria-hidden")).toBe("false");
     expect(screen.queryByText("View result")).toBeNull();
     expect(loadAutomataState().state.seed).toEqual(edited);
   });
@@ -127,6 +156,7 @@ describe("AutomataPanel", () => {
     const view = show();
     const preset = screen.getByRole("combobox", { name: "Initial pattern" }) as HTMLSelectElement;
     fireEvent.change(preset, { target: { value: "black" } });
+    const originalHint = document.querySelector(".automata-rule-hint")!.textContent;
     const canvas = screen.getByRole("application");
     fireEvent.click(screen.getByRole("button", { name: /^0 Black/ }));
     fireEvent.keyDown(canvas, { key: "Enter" });
@@ -136,9 +166,13 @@ describe("AutomataPanel", () => {
     expect(preset.value).toBe("black");
     fireEvent.keyDown(canvas, { key: "Enter" });
     expect(preset.selectedOptions[0].textContent).toBe("Edited pattern");
+    expect(preset.hasAttribute("aria-describedby")).toBe(false);
+    expect(document.querySelector(".automata-viewing-note")).toBeNull();
+    expect(document.querySelector(".automata-rule-hint")?.textContent).toBe(originalHint);
     fireEvent.click(screen.getByRole("button", { name: /^0 Black/ }));
     fireEvent.keyDown(canvas, { key: "Enter" });
     expect(preset.value).toBe("black");
+    expect(document.getElementById(preset.getAttribute("aria-describedby")!)?.textContent).toContain("same black");
     fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
     fireEvent.keyDown(canvas, { key: "Enter" });
     fireEvent.change(screen.getByRole("slider"), { target: { value: "5" } });
@@ -146,6 +180,7 @@ describe("AutomataPanel", () => {
     show();
     const restored = screen.getByRole("combobox", { name: "Initial pattern" }) as HTMLSelectElement;
     expect(restored.selectedOptions[0].textContent).toBe("Edited pattern");
+    expect(document.querySelector(".automata-viewing-note")).toBeNull();
     fireEvent.change(restored, { target: { value: "black" } });
     expect(restored.value).toBe("black");
     expect(loadAutomataState().state.seed).toEqual(new Uint8Array(2401));
@@ -176,6 +211,8 @@ describe("AutomataPanel", () => {
   it("reuses the evolution across palette, selection and generation changes", () => {
     const compute = vi.spyOn(model, "createVisibleEvolution");
     show();
+    const preset = screen.getByRole("combobox", { name: "Initial pattern" });
+    fireEvent.change(preset, { target: { value: "black" } });
     const before = compute.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: /^7 White/ }));
     fireEvent.keyDown(screen.getByRole("application"), { key: "ArrowLeft" });
@@ -186,7 +223,7 @@ describe("AutomataPanel", () => {
     expect(compute.mock.calls.length).toBe(before + 1);
     fireEvent.change(screen.getByRole("combobox", { name: "Update rule" }), { target: { value: "life" } });
     expect(compute.mock.calls.length).toBe(before + 2);
-    fireEvent.change(screen.getByRole("combobox", { name: "Initial pattern" }), { target: { value: "black" } });
+    fireEvent.change(preset, { target: { value: "all-white" } });
     expect(compute.mock.calls.length).toBe(before + 3);
   });
   it("announces the final dragged cell once the interaction ends", () => {

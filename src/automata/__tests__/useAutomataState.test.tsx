@@ -6,7 +6,7 @@ import { loadAutomataState } from "../persistence";
 
 afterEach(() => vi.restoreAllMocks());
 describe("useAutomataState", () => {
-  it("publishes seed edits immediately but settles the result after a stroke", () => {
+  it("publishes live edits and keeps the timeline seed until the stroke ends", () => {
     const { result } = renderHook(() => useAutomataState());
     act(() => result.current.dispatch({ type: "set-time", time: 64 }));
     const before = result.current.state.seed;
@@ -14,11 +14,23 @@ describe("useAutomataState", () => {
     act(() => result.current.dispatch({ type: "paint-cells", cells: [{ x: 0, y: 0 }], color: 7 }));
     expect(result.current.state.seed[0]).toBe(7);
     expect(result.current.settledSeed).toBe(before);
-    act(() => result.current.dispatch({ type: "paint-cells", cells: [{ x: 1, y: 0 }], color: 2 }));
+    expect(result.current.drawingLine).toBe(false);
+    act(() =>
+      result.current.dispatch({
+        type: "paint-cells",
+        cells: [
+          { x: 0, y: 0 },
+          { x: 1, y: 0 },
+        ],
+        color: 7,
+      }),
+    );
     expect(result.current.settledSeed).toBe(before);
+    expect(result.current.drawingLine).toBe(true);
     act(() => result.current.finishInteraction());
     expect(result.current.settledSeed).toBe(result.current.state.seed);
-    expect(result.current.settledSeed.slice(0, 2)).toEqual(new Uint8Array([7, 2]));
+    expect(result.current.settledSeed.slice(0, 2)).toEqual(new Uint8Array([7, 7]));
+    expect(result.current.drawingLine).toBe(false);
     expect(result.current.state.time).toBe(64);
   });
   it("saves the last edit once on release or cancel", () => {

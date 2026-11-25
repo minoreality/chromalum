@@ -6,6 +6,7 @@ export interface AutomataController {
   settledSeed: Uint8Array;
   revision: number;
   interacting: boolean;
+  drawingLine: boolean;
   persistenceUnavailable: boolean;
   dispatch: (action: AutomataAction) => void;
   getSnapshot: () => { state: AutomataState; revision: number };
@@ -15,7 +16,7 @@ export interface AutomataController {
 export function useAutomataState(): AutomataController {
   const [view, setView] = useState(() => {
     const loaded = loadAutomataState();
-    return { ...loaded, settledSeed: loaded.state.seed, revision: 0, interacting: false };
+    return { ...loaded, settledSeed: loaded.state.seed, revision: 0, interacting: false, drawingLine: false };
   });
   const current = useRef(view);
   const dirty = useRef(false);
@@ -27,7 +28,7 @@ export function useAutomataState(): AutomataController {
   }, []);
   const finishInteraction = useCallback(() => {
     if (!current.current.interacting && !dirty.current) return;
-    current.current = { ...current.current, settledSeed: current.current.state.seed, interacting: false };
+    current.current = { ...current.current, settledSeed: current.current.state.seed, interacting: false, drawingLine: false };
     flush();
     publish();
   }, [flush, publish]);
@@ -47,6 +48,7 @@ export function useAutomataState(): AutomataController {
         ...previous,
         state,
         settledSeed: previous.interacting ? previous.settledSeed : state.seed,
+        drawingLine: previous.drawingLine || (previous.interacting && action.type === "paint-cells" && action.cells.length > 1),
         revision: previous.revision + (setting ? 1 : 0),
       };
       if (state !== previous.state) dirty.current = true;

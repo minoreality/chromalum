@@ -7,7 +7,17 @@ import { useAutomataInteraction } from "../useAutomataInteraction";
 import { useAutomataState } from "../useAutomataState";
 import { loadAutomataState } from "../persistence";
 
-function Harness({ active = true, size = 245, editable }: { active?: boolean; size?: number; editable?: boolean }) {
+function Harness({
+  active = true,
+  size = 245,
+  editable,
+  onPaintChanges,
+}: {
+  active?: boolean;
+  size?: number;
+  editable?: boolean;
+  onPaintChanges?: (changes: readonly number[]) => void;
+}) {
   const controller = useAutomataState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const geometry = useMemo(() => getPlaneGeometry(size, 1), [size]);
@@ -21,6 +31,7 @@ function Harness({ active = true, size = 245, editable }: { active?: boolean; si
     controller,
     geometry,
     editable,
+    onPaintChanges,
   });
   return (
     <>
@@ -34,7 +45,7 @@ function Harness({ active = true, size = 245, editable }: { active?: boolean; si
       <button onClick={() => controller.dispatch({ type: "set-color", color: 4 })}>G</button>
       <button onClick={() => controller.dispatch({ type: "set-time", time: 1 })}>time</button>
       <button onClick={() => controller.dispatch({ type: "set-rule", rule: "life" })}>rule</button>
-      <button onClick={() => controller.dispatch({ type: "set-preset", preset: "white" })}>preset</button>
+      <button onClick={() => controller.dispatch({ type: "set-preset", preset: "all-white" })}>preset</button>
     </>
   );
 }
@@ -68,6 +79,28 @@ describe("Automata numeric drawing", () => {
       configurable: true,
       value: vi.fn(() => screen.queryByRole("application")),
     });
+  });
+  it("sounds each run of changed color components once per stroke, including interpolated crossings", () => {
+    const onPaintChanges = vi.fn();
+    render(<Harness onPaintChanges={onPaintChanges} />);
+    const canvas = screen.getByRole("application");
+    const dot = (x: number) => {
+      fireEvent.pointerDown(canvas, pointer(x, 0));
+      fireEvent.pointerUp(canvas, pointer(x, 0, { buttons: 0 }));
+    };
+    dot(4);
+    dot(5);
+    fireEvent.click(screen.getByRole("button", { name: "G" }));
+    dot(8);
+    onPaintChanges.mockClear();
+
+    fireEvent.pointerDown(canvas, pointer(0, 0));
+    fireEvent.pointerMove(canvas, pointer(2, 0));
+    fireEvent.pointerMove(canvas, pointer(10, 0)); // Cross the red pair and the already-green cell.
+    fireEvent.pointerUp(canvas, pointer(10, 0, { buttons: 0 }));
+    dot(11);
+    dot(11);
+    expect(onPaintChanges.mock.calls).toEqual([[[4]], [[6, 4, 4]], [[4]]]);
   });
   it("selects and stamps all eight colors at the keyboard cursor, including black to erase", () => {
     render(<Harness />);

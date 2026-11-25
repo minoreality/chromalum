@@ -11,7 +11,8 @@ const FILE_MESSAGE_PREFIXES = ["画像を長押しして保存してください
 
 const S_TOAST_BASE: CSSProperties = {
   position: "fixed",
-  bottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+  top: "var(--toast-top, auto)",
+  bottom: "var(--toast-bottom, calc(24px + env(safe-area-inset-bottom, 0px)))",
   left: "50%",
   transform: "translateX(-50%)",
   width: "max-content",

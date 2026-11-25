@@ -20,6 +20,9 @@ npm run test:e2e -- --workers=2  # default worker count flakes on this machine
 npx playwright test e2e/theory.spec.ts -g "<title>"
 ```
 
+For each small change, check the affected behavior and run only the directly relevant tests.
+Run `npm run verify` once at the end of the batch, before pushing.
+
 `.husky/pre-push` runs `typecheck:app` and `lint`, about 20 seconds against the 77 a full
 `verify` takes. It leaves the tests to you and to `ci.yml`, which runs all of them on the
 pull request anyway: the suite is load-sensitive enough that the hook could refuse a push

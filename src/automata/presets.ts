@@ -2,26 +2,32 @@ import { evolvePlane, PLANE_SIZE } from "./model";
 import type { CAColor } from "./model";
 
 export const AUTOMATA_PRESETS = [
+  "overlapping-squares",
   "rosette",
-  "diamond",
   "corolla",
   "luminous",
-  "clock",
-  "phase-clock",
-  "pulse",
-  "fireworks",
   "weave",
-  "rgb",
-  "white",
+  "glider",
+  "pulse",
+  "phase-clock",
+  "fireworks",
+  "all-white",
   "black",
-  "or-spread",
-  "and-core",
-  "majority-cleanup",
-  "hamming-boundary",
 ] as const;
 export type AutomataPreset = (typeof AUTOMATA_PRESETS)[number];
 const CHANNELS = [4, 2, 1] as const;
-export function makePlaneSeed(preset: AutomataPreset): Uint8Array {
+
+function layerThreePhases(pattern: Uint8Array, rule: "life" | "rug"): Uint8Array {
+  const seed = new Uint8Array(pattern.length);
+  for (const [time, channel] of CHANNELS.entries()) {
+    const phase = evolvePlane(pattern, PLANE_SIZE, time, rule);
+    for (let i = 0; i < phase.length; i++) if (phase[i]) seed[i] |= channel;
+  }
+  return seed;
+}
+
+// Retired preset IDs are still needed to restore older rectangular boards.
+export function makePlaneSeed(preset: AutomataPreset | "white" | "rgb" | "clock" | "diamond"): Uint8Array {
   const size = PLANE_SIZE,
     c = Math.floor(size / 2);
   const seed = new Uint8Array(size * size);
@@ -31,51 +37,10 @@ export function makePlaneSeed(preset: AutomataPreset): Uint8Array {
     if (x >= 0 && x < size && y >= 0 && y < size) target[y * size + x] |= color;
   };
   switch (preset) {
-    case "or-spread":
-      for (const [x, y, color] of [
-        [-10, -6, 4],
-        [10, -6, 2],
-        [0, 10, 1],
-      ] as const)
-        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) put(x + dx, y + dy, color);
-      return seed;
-    case "and-core":
-      for (const [x, y, left, right] of [
-        [-11, -9, 3, 6],
-        [11, -9, 5, 6],
-        [0, 11, 3, 5],
-      ] as const)
-        for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) put(x + dx, y + dy, dx < 0 ? left : dx > 0 ? right : 7);
-      return seed;
-    case "majority-cleanup":
-      for (const [x, y, color] of [
-        [-11, -8, 4],
-        [11, -8, 2],
-        [0, 11, 1],
-      ] as const) {
-        for (let dy = -4; dy <= 4; dy++)
-          for (let dx = -4; dx <= 4; dx++) {
-            if ((dx === 0 && dy === 0) || (dx === -2 && dy === 1) || (dx === 2 && dy === -1)) continue;
-            put(x + dx, y + dy, color);
-          }
-        for (const [dx, dy] of [
-          [-5, 0],
-          [5, 0],
-          [-7, -6],
-          [7, 6],
-        ])
-          put(x + dx, y + dy, color);
-      }
-      return seed;
-    case "hamming-boundary":
-      for (const [y, right] of [
-        [-9, 6],
-        [9, 5],
-      ] as const)
-        for (let dy = -4; dy <= 4; dy++) for (let dx = -12; dx < 12; dx++) put(dx, y + dy, dx < 0 ? 2 : right);
-      return seed;
     case "black":
       return seed;
+    case "all-white":
+      return seed.fill(7);
     case "white":
       put(0, 0, 7);
       return seed;
@@ -83,6 +48,15 @@ export function makePlaneSeed(preset: AutomataPreset): Uint8Array {
       put(-2, 0, 4);
       put(2, 0, 2);
       put(0, -2, 1);
+      return seed;
+    case "overlapping-squares":
+      for (const [cx, cy, channel] of [
+        [-2, -2, 4],
+        [2, -1, 2],
+        [0, 2, 1],
+      ] as const) {
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) put(cx + dx, cy + dy, channel);
+      }
       return seed;
     case "rosette":
     case "diamond":
@@ -128,15 +102,19 @@ export function makePlaneSeed(preset: AutomataPreset): Uint8Array {
           if (radius >= 1 && radius <= 3) put(dx, dy, CHANNELS[radius - 1]);
         }
       return seed;
-    case "weave": {
-      const square = new Uint8Array(seed.length);
-      for (const dx of [-1, 0]) for (const dy of [-1, 0]) put(dx, dy, 1, square);
-      for (let channel = 0; channel < 3; channel++) {
-        const phase = evolvePlane(square, size, channel, "rug");
-        for (let i = 0; i < phase.length; i++) if (phase[i]) seed[i] |= CHANNELS[channel];
-      }
-      return seed;
-    }
+    case "weave":
+      for (const dx of [-1, 0]) for (const dy of [-1, 0]) put(dx, dy, 1);
+      return layerThreePhases(seed, "rug");
+    case "glider":
+      for (const [dx, dy] of [
+        [0, -1],
+        [1, 0],
+        [-1, 1],
+        [0, 1],
+        [1, 1],
+      ])
+        put(dx, dy, 1);
+      return layerThreePhases(seed, "life");
     default: {
       const oscillator = new Uint8Array(seed.length);
       if (preset === "pulse") {
