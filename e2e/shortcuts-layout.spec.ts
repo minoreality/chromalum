@@ -19,12 +19,13 @@ for (const language of ["ja", "en"] as const) {
         await page.addStyleTag({ content: `[role="dialog"] span { font-family: ${fontFamily} !important; }` });
       }
 
+      const dialogWidths = new Set<number>();
       for (const tab of ["Source", "Glaze", "Hex", "Map", "Gallery", "Theory", "Music", "Flow"]) {
         await page.getByRole("tab", { name: tab, exact: true }).click();
         await page.getByRole("button", { name: "Shortcuts", exact: true }).click();
         const dialog = page.getByRole("dialog", { name: language === "ja" ? "ショートカット一覧" : "Keyboard Shortcuts" });
         await expect(dialog).toBeVisible();
-        const measurements = await dialog.evaluate((el) => {
+        const { dialogWidth, ...measurements } = await dialog.evaluate((el) => {
           const box = el.getBoundingClientRect();
           const rows = Array.from(el.children).filter((child) => getComputedStyle(child).display === "grid");
           const wrapped = rows
@@ -41,6 +42,7 @@ for (const language of ["ja", "en"] as const) {
             })
             .map((row) => row.textContent);
           return {
+            dialogWidth: box.width,
             fitsHeight: el.scrollHeight <= el.clientHeight + 1,
             fitsWidth: el.scrollWidth <= el.clientWidth + 1,
             withinScreen: box.left >= 0 && box.right <= window.innerWidth && box.top >= 0 && box.bottom <= window.innerHeight,
@@ -48,6 +50,7 @@ for (const language of ["ja", "en"] as const) {
             overlaps,
           };
         });
+        dialogWidths.add(dialogWidth);
         expect(measurements, `${tab} shortcuts`).toEqual({
           fitsHeight: true,
           fitsWidth: true,
@@ -58,6 +61,7 @@ for (const language of ["ja", "en"] as const) {
         await page.keyboard.press("Escape");
         await expect(dialog).toHaveCount(0);
       }
+      expect([...dialogWidths], "Shortcut dialog widths across tabs").toHaveLength(1);
     });
   }
 }

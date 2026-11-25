@@ -180,7 +180,7 @@ export const en = {
   help_source_level: "Level / paint",
   help_automata_select_cell: "Select a cell on the board",
   help_automata_draw: "Paint with the matching color",
-  help_automata_paint_selected: "Apply selected color",
+  help_automata_paint_selected: "Place the selected color",
   help_automata_board_step: "Step one generation (board)",
   help_automata_slider_step: "Step one generation (slider)",
   help_automata_slider_limits: "Generation 0 / 64 (slider)",

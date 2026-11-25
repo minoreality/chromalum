@@ -65,6 +65,7 @@ describe("Automata copy", () => {
     );
     expect(english.help_automata_draw).toBe("Paint with the matching color");
     expect(jp.help_automata_draw).toBe("数字に対応する色を置く");
+    expect(english.help_automata_paint_selected).toBe("Place the selected color");
     expect(jp.automata_result_heading).toBe("世代配置");
     expect(english.automata_result_heading).toBe("Evolved pattern");
     expect(jp.automata_initial_canvas_label).toBe("初期配置の盤面");

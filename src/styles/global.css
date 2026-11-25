@@ -158,6 +158,24 @@ svg text {
   outline-offset: 2px;
 }
 
+.shortcuts-overlay {
+  container-type: inline-size;
+}
+
+.shortcuts-dialog {
+  width: min(22rem, calc(100% - 24px));
+  padding: 20px clamp(12px, 5cqw, 20px);
+}
+
+.shortcut-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 12px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
 .pwa-update-notice {
   position: fixed;
   z-index: 900;
